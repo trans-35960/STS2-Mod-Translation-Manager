@@ -170,7 +170,7 @@ function SettingsPage({
               {t.choose}
             </button>
           </div>
-          <small>기본 위치: {"C:\\Users\\angel\\AppData\\Roaming\\SlayTheSpire2\\logs\\godot.log"}</small>
+          <small>기본 위치: {"%APPDATA%\\SlayTheSpire2\\logs\\godot.log"}</small>
         </label>
         <label className="settings-field">
           <span>세이브 폴더</span>
@@ -186,7 +186,7 @@ function SettingsPage({
               {t.choose}
             </button>
           </div>
-          <small>기본 위치: {"C:\\Users\\angel\\AppData\\Roaming\\SlayTheSpire2\\steam\\76561198093641030"}</small>
+          <small>기본 위치: {"%APPDATA%\\SlayTheSpire2\\steam\\{Steam ID}"}</small>
         </label>
         <label className="settings-field">
           <span>세이브 백업 경로</span>
