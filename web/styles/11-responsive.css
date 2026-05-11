@@ -1,0 +1,66 @@
+@media (max-width: 1060px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+
+  .topbar,
+  .toolbar {
+    align-items: stretch;
+  }
+
+  .mod-toolbar {
+    grid-template-columns: minmax(220px, 1fr) 150px;
+  }
+
+  .mod-grid {
+    grid-template-columns: minmax(240px, 1fr) 145px 118px 104px 190px 184px;
+    gap: 7px;
+  }
+
+  .mod-simple-grid {
+    grid-template-columns: minmax(240px, 1fr) 150px 190px 176px;
+    gap: 7px;
+  }
+
+  .translation-work-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .translation-work-actions {
+    justify-content: flex-start;
+  }
+
+  .tool-layout {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+
+  .result-strip {
+    grid-template-columns: repeat(2, minmax(90px, 1fr));
+  }
+
+  .sheet-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .sheet-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .sheet-replace {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .toolbar-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .project-tree-card {
+    max-height: min(260px, 34vh);
+  }
+}
+
+/* Native-style top menu layout. The old in-app sidebar and title header are replaced
+   by a compact menu strip so the app content can use the full window width. */

@@ -1,0 +1,78 @@
+@media (max-width: 720px) {
+  .content {
+    padding: 12px 20px 24px;
+  }
+
+  .tool-layout,
+  .preset-layout,
+  .settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    overflow: visible;
+  }
+
+  .tool-form,
+  .tool-results,
+  .preset-controls {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-menu-bar {
+    gap: 4px;
+    padding-left: 6px;
+  }
+
+  .app-menu-left {
+    gap: 3px;
+  }
+
+  .menu-brand {
+    margin-right: 0;
+    padding: 0 4px;
+  }
+
+  .menu-brand strong {
+    display: none;
+  }
+
+  .menu-tab span {
+    display: none;
+  }
+
+  .menu-tab,
+  .menu-icon-button {
+    width: 28px;
+    min-width: 28px;
+    padding: 0;
+  }
+
+  .titlebar-spacer {
+    min-width: 4px;
+  }
+
+  .window-control {
+    width: 38px;
+  }
+}
+
+@media (max-width: 380px) {
+  .content {
+    padding: 10px 12px 20px;
+  }
+
+  .app-menu-bar {
+    padding-left: 4px;
+  }
+
+  .menu-brand {
+    display: none;
+  }
+
+  .window-control {
+    width: 34px;
+  }
+}

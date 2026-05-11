@@ -1,0 +1,282 @@
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 22, 0.42);
+  padding: 24px;
+}
+
+.modal {
+  width: min(620px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
+  padding: 18px;
+}
+
+.modal header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.modal header p {
+  margin: 6px 0 16px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.modal-detail {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid #e7eeeb;
+}
+
+.modal-detail span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.modal-detail strong {
+  font-size: 13px;
+}
+
+.modal-detail code {
+  white-space: normal;
+  word-break: break-all;
+}
+
+.modal-field {
+  display: grid;
+  gap: 7px;
+  padding: 10px 0;
+  border-top: 1px solid #e7eeeb;
+}
+
+.modal-field > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.modal-field > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.modal-languages {
+  margin: 12px 0 4px;
+}
+
+.modal-cache-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  background: #fffbeb;
+  padding: 10px;
+}
+
+.modal-cache-controls > span {
+  min-width: 0;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.modal-cache-controls button {
+  flex: 0 0 auto;
+}
+
+.modal-tree-section {
+  margin-top: 14px;
+  border: 1px solid #e0e9e5;
+  border-radius: 8px;
+  background: #f8fbfa;
+  overflow: hidden;
+}
+
+.modal-tree-title {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-bottom: 1px solid #e0e9e5;
+  border-radius: 0;
+  background: transparent;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+}
+
+.modal-tree-title span:last-child {
+  color: var(--accent-strong);
+}
+
+.modal-tree-body {
+  max-height: 320px;
+  overflow: auto;
+  padding: 12px;
+}
+
+.file-tree {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.file-tree .file-tree {
+  margin-left: 18px;
+  padding-left: 12px;
+  border-left: 1px solid #d8e5df;
+}
+
+.tree-node {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-height: 24px;
+  color: #334155;
+  font-size: 12px;
+  text-align: left;
+}
+
+.tree-toggle {
+  cursor: pointer;
+}
+
+.tree-toggle:hover span:last-child {
+  color: var(--accent-strong);
+}
+
+.tree-node span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-icon {
+  color: #6d7c89;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.tree-node.language {
+  color: var(--accent-strong);
+  font-weight: 900;
+}
+
+.tree-node.language .tree-icon {
+  color: var(--accent-strong);
+}
+
+.tree-select {
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  min-height: 28px;
+  border-radius: 6px;
+  padding: 0 6px;
+}
+
+.tree-select:hover,
+.tree-select.selected {
+  background: #e7f5f1;
+}
+
+.tree-select.selected {
+  color: var(--accent-strong);
+  font-weight: 900;
+}
+
+.tree-select span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-select small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.tree-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tree-context-menu {
+  position: fixed;
+  z-index: 70;
+  display: grid;
+  min-width: 220px;
+  overflow: hidden;
+  border: 1px solid #23342f;
+  border-radius: 8px;
+  background: #17211f;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.35);
+  color: #effaf6;
+}
+
+.tree-context-menu strong {
+  max-width: 320px;
+  overflow: hidden;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #b9d8cf;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-context-menu button {
+  justify-content: flex-start;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #f8fffd;
+  text-align: left;
+}
+
+.tree-context-menu button:hover {
+  background: #0f766e;
+  color: white;
+}
+
+.project-context-menu {
+  z-index: 90;
+}
+
+.modal footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* 2026 compact desktop refresh based on the accepted mod manager reference. */

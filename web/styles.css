@@ -1,0 +1,16 @@
+@import "./styles/01-base.css";
+@import "./styles/02-shell.css";
+@import "./styles/03-dashboard.css";
+@import "./styles/04-mods.css";
+@import "./styles/05-translation-workflow.css";
+@import "./styles/06-translation-sheet.css";
+@import "./styles/07-settings.css";
+@import "./styles/08-logs.css";
+@import "./styles/09-modal-tree.css";
+@import "./styles/10-ui-refresh-overrides.css";
+@import "./styles/11-responsive.css";
+@import "./styles/12-loading.css";
+@import "./styles/13-menu-titlebar.css";
+@import "./styles/14-mobile.css";
+@import "./styles/15-tooltips.css";
+.has-issue { outline: 2px solid #ef4444; outline-offset: 1px; border-radius: 4px; }

@@ -1,0 +1,225 @@
+code {
+  overflow: hidden;
+  color: #1f2937;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logs {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111a1f;
+  color: #d1d5db;
+  min-height: 260px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 16px;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 13px;
+}
+
+.logs p {
+  margin: 0 0 8px;
+}
+
+.logs .log-line.warn {
+  color: #fbbf24;
+}
+
+.logs .log-line.error {
+  color: #fca5a5;
+}
+
+.logs .empty {
+  min-height: 100%;
+  border-color: rgba(209, 213, 219, 0.22);
+  background: rgba(255, 255, 255, 0.035);
+  color: #aeb9bf;
+}
+
+.game-log-list {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden auto;
+}
+
+.game-log-card {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+}
+
+.game-log-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.game-log-head strong,
+.game-log-head small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-log-head strong {
+  color: #0f172a;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+}
+
+.game-log-head small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.game-log-tail {
+  max-height: 360px;
+  min-height: 180px;
+  height: auto;
+  padding: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.game-log-tail p {
+  margin-bottom: 5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.game-log-empty {
+  display: grid;
+  gap: 4px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  padding: 12px;
+  font-size: 12px;
+}
+
+.game-log-empty strong {
+  color: #0f172a;
+}
+
+.missing-log-paths {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 8px;
+}
+
+.missing-log-paths summary {
+  cursor: pointer;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.missing-log-paths code {
+  display: block;
+  overflow: hidden;
+  margin-top: 6px;
+  color: #64748b;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-toasts {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 80;
+  display: grid;
+  gap: 10px;
+  width: min(420px, calc(100vw - 36px));
+  pointer-events: none;
+}
+
+.log-toast {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  border: 1px solid #b9d7cf;
+  border-radius: 8px;
+  background: #f8fdfb;
+  box-shadow: 0 16px 34px rgba(10, 25, 30, 0.18);
+  padding: 11px 12px;
+  pointer-events: auto;
+}
+
+.log-toast.warn {
+  border-color: #f6c56f;
+  background: #fff7e5;
+}
+
+.log-toast.warn p {
+  color: #7c3f00;
+}
+
+.log-toast.error {
+  border-color: #f2a6a6;
+  background: #fff1f2;
+}
+
+.log-toast.error p {
+  color: #8a1f1f;
+}
+
+.log-toast p {
+  margin: 0;
+  color: #213631;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.log-toast strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #14231f;
+  font-size: 13px;
+}
+
+.log-toast small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.log-toast.apply-toast.good {
+  border-color: #9fd8ca;
+  background: #ecfbf7;
+}
+
+.log-toast.apply-toast.warn {
+  border-color: #f3d28f;
+  background: #fff7e5;
+}
+
+.log-toast button {
+  height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.empty {
+  display: grid;
+  min-height: 160px;
+  place-items: center;
+  border: 1px dashed #cbd8d4;
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--surface);
+  font-weight: 700;
+}

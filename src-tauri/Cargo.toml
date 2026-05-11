@@ -1,0 +1,15 @@
+[package]
+name = "sts2_mod_manager_tauri"
+version = "0.1.0"
+edition = "2024"
+
+[build-dependencies]
+tauri-build = { version = "2.3.1", features = [] }
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tauri = { version = "2.7.0", features = [] }
+tauri-plugin-dialog = "2.4.0"
+tauri-plugin-window-state = "2.4.1"
+sts2_mod_manager = { path = ".." }

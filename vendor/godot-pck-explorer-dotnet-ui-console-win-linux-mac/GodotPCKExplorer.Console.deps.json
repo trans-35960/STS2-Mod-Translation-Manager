@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "GodotPCKExplorer.Console/1.0.0": {
+        "dependencies": {
+          "GodotPCKExplorer": "1.0.0"
+        },
+        "runtime": {
+          "GodotPCKExplorer.Console.dll": {}
+        }
+      },
+      "GodotPCKExplorer/1.0.0": {
+        "runtime": {
+          "GodotPCKExplorer.dll": {
+            "assemblyVersion": "1.6.0.0",
+            "fileVersion": "1.6.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "GodotPCKExplorer.Console/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "GodotPCKExplorer/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

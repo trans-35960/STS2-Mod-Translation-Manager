@@ -1,0 +1,219 @@
+.app-shell {
+  position: relative;
+  display: block;
+  height: 100vh;
+  background: #f6f8fb;
+}
+
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 248, 251, 0.96)),
+    radial-gradient(circle at 50% 38%, rgba(20, 184, 166, 0.16), transparent 260px),
+    #f6f8fb;
+  color: #0f172a;
+}
+
+.loading-card {
+  display: grid;
+  width: min(320px, calc(100vw - 48px));
+  justify-items: center;
+  gap: 18px;
+  padding: 12px;
+  animation: loading-enter 420ms ease both;
+}
+
+.loading-icon-wrap {
+  position: relative;
+  display: grid;
+  width: 132px;
+  height: 132px;
+  place-items: center;
+}
+
+.loading-icon-glow {
+  position: absolute;
+  inset: 12px;
+  border-radius: 32px;
+  background: rgba(16, 185, 129, 0.28);
+  filter: blur(20px);
+  animation: loading-glow 1.8s ease-in-out infinite;
+}
+
+.loading-app-icon {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  border-radius: 28px;
+  box-shadow:
+    0 22px 48px rgba(15, 23, 42, 0.16),
+    0 0 0 1px rgba(15, 23, 42, 0.08);
+  object-fit: cover;
+}
+
+.loading-copy {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  text-align: center;
+}
+
+.loading-copy strong {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.loading-copy span {
+  min-height: 18px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.loading-progress {
+  position: relative;
+  width: 190px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.loading-progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0f766e, #f59e0b, #f97316);
+  animation: loading-progress 1.15s ease-in-out infinite;
+}
+
+.busy-progress-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.34);
+  padding: 24px;
+}
+
+.busy-progress-modal {
+  display: grid;
+  width: min(420px, calc(100vw - 48px));
+  gap: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24);
+  padding: 20px;
+  color: #0f172a;
+}
+
+.busy-progress-modal header {
+  display: grid;
+  gap: 6px;
+}
+
+.busy-progress-modal strong {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.busy-progress-modal header span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.busy-progress-bar {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dbe7e3;
+}
+
+.busy-progress-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 44%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0f766e, #14b8a6, #f59e0b);
+  animation: loading-progress 1.05s ease-in-out infinite;
+}
+
+.busy-progress-steps {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.busy-progress-steps li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.busy-progress-steps li > span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  font-size: 11px;
+}
+
+.busy-progress-steps li.active {
+  color: #0f766e;
+}
+
+.busy-progress-steps li.active > span {
+  border-color: rgba(15, 118, 110, 0.32);
+  background: #e7f5f1;
+}
+
+.busy-progress-steps p {
+  margin: 0;
+}
+
+@keyframes loading-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes loading-glow {
+  50% {
+    opacity: 0.62;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes loading-progress {
+  from {
+    transform: translateX(-105%);
+  }
+  to {
+    transform: translateX(245%);
+  }
+}

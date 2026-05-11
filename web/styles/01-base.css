@@ -1,0 +1,102 @@
+:root {
+  color-scheme: light;
+  font-family:
+    Inter, "Segoe UI", "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f3f5f3;
+  color: #17211f;
+  --accent: #0f766e;
+  --accent-strong: #115e59;
+  --accent-soft: #e4f4f1;
+  --ink: #17211f;
+  --muted: #65736f;
+  --line: #d6e0dc;
+  --surface: #ffffff;
+  --sidebar: #121a1f;
+  --warn: #a65f00;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 960px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  height: 36px;
+  border: 1px solid #cbd8d4;
+  border-radius: 7px;
+  background: linear-gradient(#ffffff, #f7faf8);
+  color: var(--ink);
+  padding: 0 13px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+button:hover:not(:disabled) {
+  background: #f2f7f5;
+  border-color: #8cadab;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+button.primary {
+  background: linear-gradient(180deg, #118579, var(--accent-strong));
+  border-color: var(--accent-strong);
+  color: #ffffff;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #0f6f67;
+}
+
+.compact-button {
+  width: 64px;
+  min-width: 64px;
+  padding: 0 8px;
+}
+
+input,
+select {
+  height: 38px;
+  width: 100%;
+  border: 1px solid #cbd8d4;
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 12px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
