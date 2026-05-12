@@ -48,6 +48,7 @@ function SettingsPage({
   onRefreshGameLogs,
   onOpenPath,
   onRepairInstallations,
+  onClearCurrentRuns,
   onCleanupCaches,
   onRestoreDeleted,
   onEmptyDeleted,
@@ -62,7 +63,7 @@ function SettingsPage({
   dashboard: Dashboard;
   draft: UiSettings;
   setupIssues: SetupIssue[];
-    diagnostics: TroubleshootDiagnostic[];
+  diagnostics: TroubleshootDiagnostic[];
   logs: string[];
   gameLogs: GameLog[];
   gameLogsLoading: boolean;
@@ -75,7 +76,8 @@ function SettingsPage({
   onSave: () => void;
   onRefreshGameLogs: () => void;
   onOpenPath: (path: string) => void;
-    onRepairInstallations: () => void;
+  onRepairInstallations: () => void;
+  onClearCurrentRuns: () => void;
   onCleanupCaches: () => void;
   onRestoreDeleted: (item: DeletedMod) => void;
   onEmptyDeleted: () => void;
@@ -96,11 +98,32 @@ function SettingsPage({
     ["Game Mods", dashboard.paths.game_mods],
     ["Save", dashboard.paths.save_dir],
     ["Save Backups", dashboard.paths.save_backup],
-    ["Vault", dashboard.paths.vault],
     ["Presets", dashboard.paths.presets],
     ["Translation", dashboard.paths.translation_work],
     ["Vendor", dashboard.paths.vendor],
   ];
+  function confirmCleanupCaches() {
+    const message = [
+      "작업 캐시를 정리할까요?",
+      "",
+      `정리 대상: ${formatBytes(dashboard.cache_usage.bytes)} · 폴더 ${dashboard.cache_usage.dirs}개 · 파일 ${dashboard.cache_usage.files}개`,
+      "",
+      "삭제되는 것:",
+      "- 모드/번역 미리보기 추출 캐시",
+      "- 드래그한 압축 모드 임시 해제 파일",
+      "- PCK/압축 빌드 임시 파일",
+      "",
+      "남기는 것:",
+      "- 번역 시트와 번역 메모리",
+      "- 세이브 백업",
+      "- 최근 삭제 복구 항목",
+      "",
+      "계속할까요?",
+    ].join("\n");
+    if (window.confirm(message)) {
+      onCleanupCaches();
+    }
+  }
   return (
     <div className="settings-grid">
       <section className="settings-section">
@@ -170,7 +193,7 @@ function SettingsPage({
               {t.choose}
             </button>
           </div>
-          <small>기본 위치: {"%APPDATA%\\SlayTheSpire2\\logs\\godot.log"}</small>
+          <small>기본 위치: {"C:\\Users\\angel\\AppData\\Roaming\\SlayTheSpire2\\logs\\godot.log"}</small>
         </label>
         <label className="settings-field">
           <span>세이브 폴더</span>
@@ -186,7 +209,7 @@ function SettingsPage({
               {t.choose}
             </button>
           </div>
-          <small>기본 위치: {"%APPDATA%\\SlayTheSpire2\\steam\\{Steam ID}"}</small>
+          <small>기본 위치: {"C:\\Users\\angel\\AppData\\Roaming\\SlayTheSpire2\\steam\\76561198093641030"}</small>
         </label>
         <label className="settings-field">
           <span>세이브 백업 경로</span>
@@ -244,7 +267,7 @@ function SettingsPage({
           </select>
         </label>
         <label className="settings-field">
-          <span>삭제 보관기한</span>
+          <span>삭제 보관기간</span>
           <select
             value={draft.deleted_retention_days}
             onChange={(event) => setDraft({ ...draft, deleted_retention_days: Number(event.target.value) })}
@@ -257,14 +280,21 @@ function SettingsPage({
             <option value={0}>자동 비우기 안 함</option>
           </select>
         </label>
-        <button className="primary icon-button-text" onClick={onSave} disabled={inputDisabled}>
-          <Save size={15} />
-          {t.saveSettings}
-        </button>
-        <button className="icon-button-text" type="button" onClick={onCleanupCaches} disabled={Boolean(busy)}>
-          <Trash2 size={15} />
-          작업 캐시 정리
-        </button>
+        <div className="settings-action-bar">
+          <button className="primary icon-button-text" onClick={onSave} disabled={inputDisabled}>
+            <Save size={15} />
+            {t.saveSettings}
+          </button>
+          <div className="cache-cleanup-row">
+            <button className="icon-button-text cache-cleanup-button" type="button" onClick={confirmCleanupCaches} disabled={Boolean(busy)}>
+              <Trash2 size={15} />
+              작업 캐시 정리
+            </button>
+            <small>
+              현재 사용량 {formatBytes(dashboard.cache_usage.bytes)} · 폴더 {dashboard.cache_usage.dirs}개 · 파일 {dashboard.cache_usage.files}개
+            </small>
+          </div>
+        </div>
         <details className="settings-details" style={{ marginTop: "16px", padding: "8px 0" }}>
           <summary style={{ cursor: "pointer", fontWeight: "bold" }}>고급 경로 정보 표시</summary>
           <div className="details-content" style={{ marginTop: "8px" }}>
@@ -300,6 +330,7 @@ function SettingsPage({
           diagnostics={diagnostics}
           busy={busy}
           onRepairInstallations={onRepairInstallations}
+          onClearCurrentRuns={onClearCurrentRuns}
           onOpenPath={onOpenPath}
         />
         <details className="settings-section settings-details">
@@ -368,15 +399,33 @@ function TroubleshootPanel({
   diagnostics,
   busy,
   onRepairInstallations,
+  onClearCurrentRuns,
   onOpenPath,
 }: {
   diagnostics: TroubleshootDiagnostic[];
   busy: string | null;
   onRepairInstallations: () => void;
+  onClearCurrentRuns: () => void;
   onOpenPath: (path: string) => void;
 }) {
   const fixable = diagnostics.some((item) => item.can_auto_fix);
+  const saveFixable = diagnostics.some((item) => item.can_auto_fix && item.category === "safety");
+  const fixing = busy === "clear_current_runs" || busy === "repair_mod_installations";
   const visible = diagnostics.slice(0, 10);
+  const runAutoFix = () => {
+    if (saveFixable) {
+      onClearCurrentRuns();
+      return;
+    }
+    onRepairInstallations();
+  };
+  const runDiagnosticFix = (item: TroubleshootDiagnostic) => {
+    if (item.category === "safety") {
+      onClearCurrentRuns();
+      return;
+    }
+    onRepairInstallations();
+  };
   return (
     <section className="settings-section troubleshoot-section">
       <div className="settings-title-row">
@@ -384,9 +433,9 @@ function TroubleshootPanel({
           <h2>문제 해결</h2>
           <small>{diagnosticSummary(diagnostics)}</small>
         </div>
-        <button className="icon-button-text compact" type="button" onClick={onRepairInstallations} disabled={Boolean(busy) || !fixable}>
-          <ReplaceAll size={14} />
-          자동 정리
+        <button className="icon-button-text compact" type="button" onClick={runAutoFix} disabled={Boolean(busy) || !fixable} aria-busy={fixing}>
+          <ReplaceAll size={14} className={fixing ? "spin-icon" : undefined} />
+          {fixing ? "정리 중" : "자동 정리"}
         </button>
       </div>
       {visible.length === 0 && <div className="empty compact">표시할 진단 항목이 없습니다.</div>}
@@ -403,8 +452,9 @@ function TroubleshootPanel({
             </div>
             <div className="diagnostic-actions">
               {item.can_auto_fix && (
-                <button className="icon-only-button" type="button" aria-label={item.action_label} data-tooltip={item.action_label} onClick={onRepairInstallations} disabled={Boolean(busy)}>
-                  <Replace size={15} />
+                <button className="icon-button-text compact" type="button" aria-label={item.action_label} data-tooltip={fixing ? "정리 중" : item.action_label} onClick={() => runDiagnosticFix(item)} disabled={Boolean(busy)} aria-busy={fixing}>
+                  <Replace size={14} className={fixing ? "spin-icon" : undefined} />
+                  {fixing ? "정리 중" : "정리"}
                 </button>
               )}
               {item.related_path && (
@@ -469,18 +519,31 @@ function DeletedModsPanel({
   onEmpty: () => void;
   onOpenPath: (path: string) => void;
 }) {
+  const totalBytes = items.reduce((total, item) => total + item.bytes, 0);
+  const retentionLabel = retentionDays === 0 ? "자동 비우기 안 함" : `${retentionDays}일 보관`;
   return (
-    <div className="deleted-mods-panel">
-      <div className="settings-title-row compact">
-        <div>
-          <h2>최근 삭제</h2>
-          <small>{retentionDays === 0 ? "자동 비우기 안 함" : `${retentionDays}일 보관`}</small>
+    <details className="deleted-mods-panel summary-panel">
+      <summary>
+        <div className="settings-title-row compact">
+          <div>
+            <h2>최근 삭제</h2>
+            <small>{retentionLabel} · 삭제 {items.length}개 · 총 {formatBytes(totalBytes)}</small>
+          </div>
+          <button
+            className="icon-button-text compact danger-text"
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onEmpty();
+            }}
+            disabled={Boolean(busy) || items.length === 0}
+          >
+            <Trash2 size={14} />
+            비우기
+          </button>
         </div>
-        <button className="icon-button-text compact danger-text" type="button" onClick={onEmpty} disabled={Boolean(busy) || items.length === 0}>
-          <Trash2 size={14} />
-          비우기
-        </button>
-      </div>
+      </summary>
       {items.length === 0 && <div className="empty compact">복원 가능한 삭제 항목이 없습니다.</div>}
       <div className="deleted-mod-list">
         {items.map((item) => (
@@ -503,7 +566,7 @@ function DeletedModsPanel({
           </article>
         ))}
       </div>
-    </div>
+    </details>
   );
 }
 
@@ -527,22 +590,35 @@ function SaveBackupsPanel({
   onOpenPath: (path: string) => void;
 }) {
   const groups = groupSaveBackups(items);
+  const totalBytes = items.reduce((total, item) => total + item.bytes, 0);
+  const retentionLabel = retentionDays === 0 ? "기간 제한 없음" : `${retentionDays}일 보관`;
   return (
-    <div className="deleted-mods-panel save-backups-panel">
-      <div className="settings-title-row compact">
-        <div>
-          <h2>세이브 백업</h2>
-          <small>{retentionDays === 0 ? "기간 제한 없음" : `${retentionDays}일 보관`} · 세트별 표시 · 종류별 최대 {maxEntries}개</small>
+    <details className="deleted-mods-panel save-backups-panel summary-panel">
+      <summary>
+        <div className="settings-title-row compact">
+          <div>
+            <h2>세이브 백업</h2>
+            <small>{retentionLabel} · {groups.length}세트 · 백업 {items.length}개 · 총 {formatBytes(totalBytes)} · 종류별 최대 {maxEntries}개</small>
+          </div>
+          <button
+            className="icon-button-text compact"
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onCreate();
+            }}
+            disabled={Boolean(busy)}
+          >
+            <Archive size={14} />
+            지금 백업
+          </button>
         </div>
-        <button className="icon-button-text compact" type="button" onClick={onCreate} disabled={Boolean(busy)}>
-          <Archive size={14} />
-          지금 백업
-        </button>
-      </div>
+      </summary>
       {groups.length === 0 && <div className="empty compact">아직 복원 가능한 세이브 백업이 없습니다.</div>}
       <div className="save-backup-set-list">
-        {groups.map((group, index) => (
-          <details className="save-backup-set" key={group.id} open={index < 2}>
+        {groups.map((group) => (
+          <details className="save-backup-set" key={group.id}>
             <summary>
               <div>
                 <strong>{formatFullDateTime(group.createdEpoch)}</strong>
@@ -572,7 +648,7 @@ function SaveBackupsPanel({
           </details>
         ))}
       </div>
-    </div>
+    </details>
   );
 }
 

@@ -103,7 +103,8 @@ fn language_preview_from_scan_root(scan_root: &Path) -> Vec<LanguagePreviewDto> 
         if is_hardcoded_source_file(&candidate.path) {
             continue;
         }
-        let code = infer_language_code(&candidate.path).unwrap_or_else(|| "unknown".to_string());
+        let code = infer_language_code_for_candidate(scan_root, &candidate.path)
+            .unwrap_or_else(|| "unknown".to_string());
         let entry = by_code
             .entry(code.clone())
             .or_insert_with(|| LanguagePreviewBuilder {
@@ -158,7 +159,19 @@ fn compare_scan_root(sheet: &JsonTranslationSheet) -> Option<PathBuf> {
         }
     }
     let source = PathBuf::from(&sheet.source_path);
-    source.exists().then_some(source)
+    scan_root_before_localization(&source).or_else(|| source.exists().then_some(source))
+}
+
+fn scan_root_before_localization(source: &Path) -> Option<PathBuf> {
+    for ancestor in source.ancestors() {
+        let Some(name) = ancestor.file_name().and_then(|value| value.to_str()) else {
+            continue;
+        };
+        if name.eq_ignore_ascii_case("localization") {
+            return ancestor.parent().map(Path::to_path_buf);
+        }
+    }
+    None
 }
 
 
@@ -291,6 +304,15 @@ fn infer_language_code(path: &Path) -> Option<String> {
     }
 
     None
+}
+
+fn infer_language_code_for_candidate(scan_root: &Path, path: &Path) -> Option<String> {
+    let relative = path.strip_prefix(scan_root).unwrap_or(path);
+    infer_language_code(relative).or_else(|| {
+        scan_root
+            .file_name()
+            .and_then(|name| infer_language_code(Path::new(name)))
+    })
 }
 
 fn split_language_tokens(text: &str) -> Vec<String> {
@@ -462,7 +484,7 @@ fn language_preview_cache_path(config: &AppConfig) -> PathBuf {
 fn language_cache_key(record: &ModRecord, extraction_source: &Path, vendor_dir: &Path) -> String {
     format!(
         "{}|{}|{}|{}|{}|{}|{}|{}",
-        "sts2-localization-v4",
+        "sts2-localization-v6",
         record.source.as_key(),
         record.stable_key(),
         record.fingerprint.bytes,

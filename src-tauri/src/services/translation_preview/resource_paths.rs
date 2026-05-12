@@ -275,9 +275,140 @@ fn fallback_translation_memory_sheet(
                 .unwrap_or(false)
         })
         .filter(|path| translation_sheet_matches_resource(path, resource_path))
+        .filter_map(|path| {
+            read_sheet(&path)
+                .ok()
+                .filter(|sheet| {
+                    sheet
+                        .entries
+                        .iter()
+                        .any(|entry| !entry.translated_value.is_empty())
+                })
+                .map(|sheet| (sheet.updated_epoch, path))
+        })
         .collect::<Vec<_>>();
     candidates.sort();
-    candidates.pop()
+    candidates.pop().map(|(_, path)| path)
+}
+
+fn select_translation_memory_sheet(
+    translation_work_dir: &Path,
+    exact_sheet: Option<PathBuf>,
+    mod_keys: &[String],
+    target_language: &str,
+    resource_path: &str,
+) -> Option<PathBuf> {
+    if exact_sheet
+        .as_deref()
+        .is_some_and(translation_sheet_has_translations)
+    {
+        return exact_sheet;
+    }
+    for mod_key in mod_keys {
+        let Some(candidate) = fallback_translation_memory_sheet(
+            translation_work_dir,
+            mod_key,
+            target_language,
+            resource_path,
+        ) else {
+            continue;
+        };
+        if exact_sheet.as_ref().is_some_and(|exact| exact == &candidate) {
+            continue;
+        }
+        if translation_sheet_has_translations(&candidate) {
+            return Some(candidate);
+        }
+    }
+    exact_sheet
+}
+
+fn translation_sheet_has_translations(sheet_path: &Path) -> bool {
+    read_sheet(sheet_path)
+        .map(|sheet| {
+            sheet
+                .entries
+                .iter()
+                .any(|entry| !entry.translated_value.is_empty())
+        })
+        .unwrap_or(false)
+}
+
+fn translation_memory_candidate_keys(
+    app: &App,
+    record: &ModRecord,
+    manifest: &ModManifestInfo,
+) -> Vec<String> {
+    let current_key = record.stable_key();
+    let current_tokens = translation_memory_family_tokens(record, manifest);
+    let mut keys = vec![current_key.clone()];
+    let Ok(summary) = app.scan_preview_report().map(|report| report.summary) else {
+        return keys;
+    };
+    for candidate in summary
+        .game_mods
+        .into_iter()
+        .chain(summary.vault_mods)
+        .chain(summary.external_manager_mods)
+    {
+        let candidate_key = candidate.stable_key();
+        if candidate_key == current_key || keys.iter().any(|key| key == &candidate_key) {
+            continue;
+        }
+        let candidate_source = extraction_source_for_record(&candidate);
+        let candidate_cache_key =
+            language_cache_key(&candidate, &candidate_source, &app.config().vendor_dir);
+        let candidate_scan_root =
+            extraction_scan_root(&candidate_source, &candidate_cache_key, &app.config().vendor_dir)
+                .unwrap_or(candidate_source);
+        let candidate_manifest = read_mod_manifest_for_record(&candidate.path, &candidate_scan_root);
+        let candidate_tokens = translation_memory_family_tokens(&candidate, &candidate_manifest);
+        if related_translation_memory_tokens(&current_tokens, &candidate_tokens) {
+            keys.push(candidate_key);
+        }
+    }
+    keys
+}
+
+fn translation_memory_family_tokens(
+    record: &ModRecord,
+    manifest: &ModManifestInfo,
+) -> BTreeSet<String> {
+    let mut tokens = BTreeSet::new();
+    add_translation_memory_token(&mut tokens, &record.stable_key());
+    add_translation_memory_token(&mut tokens, &record.name);
+    if let Some(prefix) = record.stable_key().split(['-', '_', ' ']).next() {
+        add_translation_memory_token(&mut tokens, prefix);
+    }
+    if let Some(id) = manifest.id.as_deref() {
+        add_translation_memory_token(&mut tokens, id);
+    }
+    if let Some(name) = manifest.name.as_deref() {
+        add_translation_memory_token(&mut tokens, name);
+    }
+    tokens
+}
+
+fn add_translation_memory_token(tokens: &mut BTreeSet<String>, value: &str) {
+    let token = normalize_dependency_token(value);
+    let char_count = token.chars().count();
+    let numeric_only = token.chars().all(|character| character.is_ascii_digit());
+    if char_count >= 2 && !numeric_only {
+        tokens.insert(token);
+    }
+}
+
+fn related_translation_memory_tokens(
+    left: &BTreeSet<String>,
+    right: &BTreeSet<String>,
+) -> bool {
+    left.iter().any(|left_token| {
+        right.iter().any(|right_token| {
+            left_token == right_token
+                || left_token.starts_with(right_token)
+                || right_token.starts_with(left_token)
+        })
+    })
 }
 
 fn translation_sheet_matches_resource(sheet_path: &Path, resource_path: &str) -> bool {
@@ -296,8 +427,32 @@ fn translation_sheet_matches_resource(sheet_path: &Path, resource_path: &str) ->
     {
         relative.pop();
     }
-    normalize_resource_path(&format!("res://{}", slash_path(&relative)))
-        == normalize_resource_path(resource_path)
+    resource_paths_match(&format!("res://{}", slash_path(&relative)), resource_path)
+}
+
+fn resource_paths_match(left: &str, right: &str) -> bool {
+    let left_normalized = normalize_resource_path(left);
+    let right_normalized = normalize_resource_path(right);
+    if left_normalized == right_normalized {
+        return true;
+    }
+    let left_localization = localization_resource_tail(&left_normalized);
+    let right_localization = localization_resource_tail(&right_normalized);
+    left_localization
+        .zip(right_localization)
+        .is_some_and(|(left_tail, right_tail)| left_tail == right_tail)
+}
+
+fn localization_resource_tail(path: &str) -> Option<String> {
+    let parts = path
+        .trim_start_matches("res://")
+        .split('/')
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+    let localization = parts
+        .iter()
+        .position(|part| part.eq_ignore_ascii_case("localization"))?;
+    Some(parts[localization..].join("/"))
 }
 
 fn normalize_resource_path(path: &str) -> String {

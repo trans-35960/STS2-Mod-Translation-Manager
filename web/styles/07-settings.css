@@ -41,7 +41,7 @@
   overflow: visible;
 }
 
-.settings-log-section {
+.settings-log-section[open] {
   display: grid;
   grid-template-rows: auto minmax(260px, auto);
   gap: 10px;
@@ -223,6 +223,41 @@
   gap: 8px;
 }
 
+.settings-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 14px;
+}
+
+.settings-action-bar > button,
+.settings-action-bar .cache-cleanup-button {
+  height: 36px;
+}
+
+.cache-cleanup-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cache-cleanup-row small {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #dbe5e1;
+  border-radius: 7px;
+  background: #f8faf9;
+  color: #64748b;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 .settings-section p {
   margin: 0 0 14px;
   color: #526071;
@@ -250,6 +285,39 @@
   margin-top: 16px;
   border-top: 1px solid #e7eeeb;
   padding-top: 14px;
+}
+
+.summary-panel > summary {
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+  padding-left: 18px;
+}
+
+.summary-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary-panel > summary::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.summary-panel[open] > summary::before {
+  content: "▾";
+}
+
+.summary-panel > summary .settings-title-row.compact {
+  margin-bottom: 0;
+}
+
+.summary-panel[open] > summary {
+  margin-bottom: 10px;
 }
 
 .save-backups-panel {

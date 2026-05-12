@@ -102,23 +102,32 @@ pub fn apply_preset(
     presets_dir: &Path,
     vault_dir: &Path,
     game_mods_dir: &Path,
+    vendor_dir: &Path,
 ) -> AppResult<PresetApplyReport> {
     let preset = load_preset(name, presets_dir)?;
     let disabled = vault::disable_all(game_mods_dir, vault_dir)?;
-    let vault_entries = vault::list_vault(vault_dir)?;
+    let inactive_records = vault::list_disabled_game_mods(game_mods_dir)?;
 
     let mut enabled = Vec::new();
     let mut missing = Vec::new();
     let mut version_warnings = Vec::new();
 
     for key in preset.keys.clone() {
-        if vault_entries.iter().any(|entry| entry.key == key) {
+        if inactive_records
+            .iter()
+            .any(|record| record.stable_key() == key)
+        {
             if let Some(expected) = preset.mods.iter().find(|item| item.key == key) {
-                if let Some(warning) = version_warning(expected, vault_dir) {
+                if let Some(warning) = version_warning(expected, game_mods_dir) {
                     version_warnings.push(warning);
                 }
             }
-            enabled.push(vault::enable_mod(&key, vault_dir, game_mods_dir)?);
+            enabled.push(vault::enable_mod(
+                &key,
+                vault_dir,
+                game_mods_dir,
+                vendor_dir,
+            )?);
         } else {
             missing.push(key);
         }
@@ -135,7 +144,7 @@ pub fn apply_preset(
 pub fn export_preset_archive(
     name: &str,
     presets_dir: &Path,
-    vault_dir: &Path,
+    game_mods_dir: &Path,
     archive_path: &Path,
 ) -> AppResult<PresetExportReport> {
     let preset = load_preset(name, presets_dir)?;
@@ -149,19 +158,22 @@ pub fn export_preset_archive(
     )
     .map_err(|source| AppError::io(&staging_dir, source))?;
 
-    let vault_entries = vault::list_vault(vault_dir)?;
+    let available_records = preset_available_records(game_mods_dir)?;
     let mut included_mods = 0;
     let mut missing = Vec::new();
 
     for key in &preset.keys {
-        if let Some(entry) = vault_entries.iter().find(|entry| &entry.key == key) {
+        if let Some(record) = available_records
+            .iter()
+            .find(|record| &record.stable_key() == key)
+        {
             let target = mods_dir.join(
-                entry
-                    .payload_path
+                record
+                    .path
                     .file_name()
-                    .unwrap_or_else(|| std::ffi::OsStr::new(&entry.display_name)),
+                    .unwrap_or_else(|| std::ffi::OsStr::new(&record.name)),
             );
-            copy_path(&entry.payload_path, &target)?;
+            copy_path(&record.path, &target)?;
             included_mods += 1;
         } else {
             missing.push(key.clone());
@@ -184,7 +196,7 @@ pub fn export_preset_archive(
 pub fn import_preset_archive(
     archive_path: &Path,
     presets_dir: &Path,
-    vault_dir: &Path,
+    game_mods_dir: &Path,
 ) -> AppResult<PresetImportReport> {
     if !archive_path.exists() {
         return Err(AppError::InvalidCommand(format!(
@@ -204,7 +216,7 @@ pub fn import_preset_archive(
     if mods_dir.exists() {
         for entry in fs::read_dir(&mods_dir).map_err(|source| AppError::io(&mods_dir, source))? {
             let entry = entry.map_err(|source| AppError::io(&mods_dir, source))?;
-            vault::import_mod(&entry.path(), vault_dir)?;
+            vault::import_mod_to_disabled(&entry.path(), game_mods_dir)?;
             imported_mods += 1;
         }
     }
@@ -337,14 +349,20 @@ fn preset_mod_from_record(record: &ModRecord) -> PresetMod {
     }
 }
 
-fn version_warning(expected: &PresetMod, vault_dir: &Path) -> Option<String> {
-    let entry = vault::list_vault(vault_dir)
+fn preset_available_records(game_mods_dir: &Path) -> AppResult<Vec<ModRecord>> {
+    let mut records = scan_mod_directory(game_mods_dir, ModSource::GameMods)?;
+    records.extend(vault::list_disabled_game_mods(game_mods_dir)?);
+    Ok(records)
+}
+
+fn version_warning(expected: &PresetMod, game_mods_dir: &Path) -> Option<String> {
+    let record = vault::list_disabled_game_mods(game_mods_dir)
         .ok()?
         .into_iter()
-        .find(|entry| entry.key == expected.key)?;
-    let metadata = fs::metadata(&entry.payload_path).ok()?;
+        .find(|record| record.stable_key() == expected.key)?;
+    let metadata = fs::metadata(&record.path).ok()?;
     let bytes = if metadata.is_dir() {
-        directory_bytes(&entry.payload_path).unwrap_or(0)
+        directory_bytes(&record.path).unwrap_or(0)
     } else {
         metadata.len()
     };
@@ -516,7 +534,7 @@ mod tests {
     #[test]
     fn applies_preset_and_reports_missing_mods() {
         let fixture = TestWorkspace::create("applies_preset_and_reports_missing_mods");
-        fixture.write_file("vault/alpha-v1/Alpha-v1.jar", "alpha");
+        fixture.write_file("game/mods.disabled/Alpha-v1.jar", "alpha");
         fs::create_dir_all(fixture.presets_dir()).expect("preset dir");
         fs::write(
             fixture.presets_dir().join("daily.txt"),
@@ -529,6 +547,7 @@ mod tests {
             &fixture.presets_dir(),
             &fixture.vault_dir(),
             &fixture.game_mods_dir(),
+            &fixture.vendor_dir(),
         )
         .expect("apply");
 
@@ -544,17 +563,12 @@ mod tests {
         let preset =
             save_from_enabled("portable", &fixture.presets_dir(), &fixture.game_mods_dir())
                 .expect("save preset");
-        vault::import_mod(
-            &fixture.path.join("game/mods/Alpha-v1.zip"),
-            &fixture.vault_dir(),
-        )
-        .expect("import to vault");
         let archive = fixture.path.join("portable.zip");
 
         let export_report = export_preset_archive(
             &preset.name,
             &fixture.presets_dir(),
-            &fixture.vault_dir(),
+            &fixture.game_mods_dir(),
             &archive,
         )
         .expect("export preset");
@@ -562,7 +576,7 @@ mod tests {
         let import_report = import_preset_archive(
             &archive,
             &import_root.presets_dir(),
-            &import_root.vault_dir(),
+            &import_root.game_mods_dir(),
         )
         .expect("import preset");
 
@@ -571,6 +585,12 @@ mod tests {
         assert_eq!(import_report.preset.name, "portable");
         assert_eq!(import_report.imported_mods, 1);
         assert!(import_root.path.join("presets/portable.txt").exists());
+        assert!(
+            import_root
+                .path
+                .join("game/mods.disabled/Alpha-v1.zip")
+                .exists()
+        );
     }
 
     struct TestWorkspace {
@@ -604,6 +624,10 @@ mod tests {
 
         fn game_mods_dir(&self) -> PathBuf {
             self.path.join("game").join("mods")
+        }
+
+        fn vendor_dir(&self) -> PathBuf {
+            self.path.join("vendor")
         }
 
         fn write_file(&self, child: &str, content: &str) -> PathBuf {

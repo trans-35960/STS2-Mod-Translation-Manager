@@ -107,6 +107,11 @@ pub(crate) fn cleanup_orphan_caches() -> Result<ActionDto, String> {
 }
 
 #[tauri::command]
+pub(crate) fn cleanup_dropped_mod_preview_cache() -> Result<(), String> {
+    crate::services::cleanup_dropped_mod_preview_cache()
+}
+
+#[tauri::command]
 pub(crate) fn extract_translation(
     key: String,
     output_dir: Option<String>,
@@ -172,6 +177,11 @@ pub(crate) fn create_save_backup() -> Result<ActionDto, String> {
 }
 
 #[tauri::command]
+pub(crate) fn clear_current_runs() -> Result<ActionDto, String> {
+    crate::services::clear_current_runs()
+}
+
+#[tauri::command]
 pub(crate) fn restore_save_backup(id: String) -> Result<ActionDto, String> {
     crate::services::restore_save_backup(id)
 }
@@ -191,6 +201,21 @@ pub(crate) fn create_json_translation_sheet(
     crate::services::create_json_translation_sheet(
         source_path,
         existing_sheet_path,
+        output_path,
+        target_language,
+    )
+}
+
+#[tauri::command]
+pub(crate) fn recalculate_json_translation_sheet(
+    source_path: String,
+    current_sheet_path: String,
+    output_path: Option<String>,
+    target_language: Option<String>,
+) -> Result<JsonSheetActionDto, String> {
+    crate::services::recalculate_json_translation_sheet(
+        source_path,
+        current_sheet_path,
         output_path,
         target_language,
     )
@@ -253,6 +278,15 @@ pub(crate) fn export_json_translation_warning_json(
     include_keys: Option<Vec<String>>,
 ) -> Result<ShortJsonExportDto, String> {
     crate::services::export_json_translation_warning_json(output_path, sheet, include_keys)
+}
+
+#[tauri::command]
+pub(crate) fn export_json_translation_change_json(
+    output_path: String,
+    sheet: JsonSheetDto,
+    include_keys: Option<Vec<String>>,
+) -> Result<ShortJsonExportDto, String> {
+    crate::services::export_json_translation_change_json(output_path, sheet, include_keys)
 }
 
 #[tauri::command]

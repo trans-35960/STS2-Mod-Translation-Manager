@@ -129,12 +129,13 @@ export function buildModGroups(
       .filter((mod) => !mod.is_translation_patch)
       .map((mod) => [mod.key, modGroupName(mod)]),
   );
+  const targetGroupsByToken = buildTargetGroupsByToken(mods);
   const groups = new Map<string, ModGroup>();
   for (const mod of mods) {
     if (!matchesStatFilter(mod, statFilter) || !matchesModFilters(mod, activeFilter, changeFilter, translationApplyFilter) || !matchesModSearch(mod, normalizedSearch)) {
       continue;
     }
-    const name = modDisplayGroupName(mod, targetGroupNames);
+    const name = modDisplayGroupName(mod, targetGroupNames, targetGroupsByToken);
     const id = name.toLowerCase();
     const group = groups.get(id) ?? {
       id,
@@ -164,7 +165,11 @@ export function buildModGroups(
     .sort((a, b) => compareGroups(a, b, sort));
 }
 
-function modDisplayGroupName(mod: ModRow, targetGroupNames: Map<string, string>): string {
+function modDisplayGroupName(
+  mod: ModRow,
+  targetGroupNames: Map<string, string>,
+  targetGroupsByToken: Map<string, string>,
+): string {
   if (!mod.is_translation_patch) {
     return modGroupName(mod);
   }
@@ -177,7 +182,71 @@ function modDisplayGroupName(mod: ModRow, targetGroupNames: Map<string, string>)
   if (dependencyTarget) {
     return targetGroupNames.get(dependencyTarget) ?? modGroupName(mod);
   }
+  for (const token of translationPatchTargetTokens(mod)) {
+    const groupName = targetGroupsByToken.get(token);
+    if (groupName) {
+      return groupName;
+    }
+  }
   return modGroupName(mod);
+}
+
+function buildTargetGroupsByToken(mods: ModRow[]): Map<string, string> {
+  const tokens = new Map<string, string>();
+  for (const mod of mods) {
+    if (mod.is_translation_patch) {
+      continue;
+    }
+    const groupName = modGroupName(mod);
+    for (const token of modTargetTokens(mod, groupName)) {
+      if (token && !tokens.has(token)) {
+        tokens.set(token, groupName);
+      }
+    }
+  }
+  return tokens;
+}
+
+function modTargetTokens(mod: ModRow, groupName: string): string[] {
+  return [
+    mod.key,
+    mod.name,
+    mod.manifest_id ?? "",
+    mod.group_name ?? "",
+    groupName,
+    modActivationGroupName(mod),
+  ].flatMap(groupingTokenVariants);
+}
+
+function translationPatchTargetTokens(mod: ModRow): string[] {
+  const dependencyValues = mod.dependencies.flatMap((dependency) => [
+    dependency.key ?? "",
+    dependency.id,
+    dependency.name,
+  ]);
+  return [
+    mod.translation_target_key ?? "",
+    mod.translation_target_id ?? "",
+    mod.translation_target_name ?? "",
+    ...dependencyValues,
+  ].flatMap(groupingTokenVariants);
+}
+
+function groupingTokenVariants(value: string): string[] {
+  const withoutTranslationSuffix = value.replace(/\s+korean\s+translation$/i, "").replace(/[_-]?tr$/i, "");
+  const withoutArchiveSuffix = withoutTranslationSuffix.replace(/\.(zip|rar|7z|pck)$/i, "");
+  return [
+    normalizeGroupingToken(value),
+    normalizeGroupingToken(withoutTranslationSuffix),
+    normalizeGroupingToken(withoutArchiveSuffix),
+  ].filter(Boolean);
+}
+
+function normalizeGroupingToken(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣\u3400-\u9fff]/g, "");
 }
 
 function matchesStatFilter(mod: ModRow, statFilter: DashboardStatFilter): boolean {
@@ -202,7 +271,7 @@ export function activeSiblingMods(mods: ModRow[], mod: ModRow): ModRow[] {
 }
 
 export function preferredGroupActivationTarget(mods: ModRow[]): ModRow | undefined {
-  return [...mods].sort(compareGroupActivationTarget)[0];
+  return mods.filter((mod) => !isDownloadingMod(mod)).sort(compareGroupActivationTarget)[0];
 }
 
 function compareGroupActivationTarget(left: ModRow, right: ModRow): number {
@@ -261,7 +330,7 @@ function mergeModRows(left: ModRow, right: ModRow): ModRow {
     extraction_source_path: primary.extraction_source_path || secondary.extraction_source_path,
     extraction_target: primary.extraction_target || secondary.extraction_target,
     dependencies: mergeDependencies(left.dependencies, right.dependencies),
-    language_preview: mergeLanguagePreviews(left.language_preview, right.language_preview),
+    language_preview: primary.language_preview.length > 0 ? primary.language_preview : secondary.language_preview,
     extraction_tree: primary.extraction_tree.length > 0 ? primary.extraction_tree : secondary.extraction_tree,
   };
 }
@@ -301,10 +370,6 @@ function mergeDependencies(left: ModDependency[], right: ModDependency[]): ModDe
     );
   }
   return Array.from(byId.values());
-}
-
-function mergeLanguagePreviews(left: LanguagePreview[], right: LanguagePreview[]): LanguagePreview[] {
-  return uniqueLanguagePreviews([...left, ...right]);
 }
 
 function compareGroups(left: ModGroup, right: ModGroup, sort: ModSort): number {
@@ -373,6 +438,10 @@ export function canDeleteMod(mod: ModRow): boolean {
   return mod.active || mod.managed || mod.external || source.includes("게임") || source.includes("game") || source.includes("vault") || source.includes("nexus") || source.includes("vortex");
 }
 
+export function isDownloadingMod(mod: ModRow): boolean {
+  return mod.download_state === "downloading";
+}
+
 function matchesModSearch(mod: ModRow, normalizedSearch: string): boolean {
   if (!normalizedSearch) {
     return true;
@@ -388,6 +457,7 @@ function modSearchTokens(mod: ModRow): string[] {
     mod.version_hint ?? "",
     mod.path,
     mod.source_label,
+    isDownloadingMod(mod) ? "다운로드 중 vortex download downloading" : "",
     mod.change_reasons.join(" "),
     mod.active ? "활성 enabled active" : "비활성 disabled inactive",
     mod.update_state === "clean" ? "변경 없음 clean" : `변경 있음 ${mod.update_state}`,

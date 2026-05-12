@@ -144,6 +144,27 @@ export function useSettingsActions({
     await runAction("repair_mod_installations");
   }
 
+  async function clearCurrentRuns() {
+    const confirmed = window.confirm(
+      [
+        "진행 중 런(current_run.save)을 정리할까요?",
+        "",
+        "현재 진행 중인 전투/런은 게임에서 이어할 수 없게 됩니다.",
+        "앱이 먼저 백업한 뒤 로컬 세이브와 Steam remote 위치의 current_run.save/current_run.save.backup을 제거합니다.",
+        "Steam Cloud가 다시 내려받지 않도록 remotecache.vdf의 current_run 항목도 함께 정리합니다.",
+        "Steam이 켜져 있어도 먼저 시도합니다. 파일이 잠겨 실패하면 그때 종료 안내를 표시합니다.",
+        "정리 후 Steam에 '동기화 불가'가 남을 수 있습니다. 그때는 게임을 한 번 정상 종료하거나 Steam을 재시작한 뒤, 충돌 창이 뜨면 로컬 파일을 선택하세요.",
+        "",
+        "세이브 슬롯 자체는 삭제하지 않습니다. 계속할까요?",
+      ].join("\n"),
+    );
+    if (!confirmed) {
+      return;
+    }
+    appendLog("진행 중 런 정리를 시작합니다. Steam Cloud 캐시까지 확인합니다.");
+    await runAction("clear_current_runs");
+  }
+
   async function restoreDeletedMod(item: DeletedMod) {
     await runAction("restore_deleted_mod", { id: item.id });
   }
@@ -167,6 +188,7 @@ export function useSettingsActions({
     chooseSaveDir,
     chooseSaveBackupDir,
     repairInstallations,
+    clearCurrentRuns,
     restoreDeletedMod,
     emptyDeletedMods,
   };

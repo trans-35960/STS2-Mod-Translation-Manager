@@ -59,10 +59,9 @@ impl AppConfig {
         }
     }
 
-    pub fn managed_dirs(&self) -> [&Path; 7] {
+    pub fn managed_dirs(&self) -> [&Path; 6] {
         [
             self.save_backup_dir.as_path(),
-            self.vault_dir.as_path(),
             self.presets_dir.as_path(),
             self.translation_work_dir.as_path(),
             self.logs_dir.as_path(),

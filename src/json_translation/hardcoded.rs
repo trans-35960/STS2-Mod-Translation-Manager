@@ -494,6 +494,7 @@ mod tests {
             entries: vec![super::super::types::JsonTranslationEntry {
                 key,
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "Applied value".to_string(),
                 translated_value: "적용됨".to_string(),
                 status: JsonTranslationStatus::Ready,

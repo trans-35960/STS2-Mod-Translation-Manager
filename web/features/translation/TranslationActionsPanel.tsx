@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Loader2,
   Package,
+  RefreshCw,
   Save,
   UploadCloud,
   X,
@@ -49,6 +50,7 @@ export function TranslationWorkHeader({
     props.busy === "validate_json_translation_sheet_data";
   const currentSheetMatchesTarget = !props.sheet || translationLanguagesMatch(props.sheet.target_language, props.targetLanguage);
   const canUseCurrentSheet = Boolean(props.sheet && currentSheetMatchesTarget);
+  const canExportPatchMod = props.projectInfo?.canExportPatchMod ?? Boolean(props.pckTargetPath);
   return (
     <section className="translation-work-header">
       <details className="work-summary-accordion">
@@ -75,6 +77,16 @@ export function TranslationWorkHeader({
         >
           <FileJson size={15} />
         </button>
+        <button
+          className="toolbar-icon-button"
+          type="button"
+          aria-label={props.busy === "recalculate_json_translation_sheet" ? "시트 재계산 중..." : "번역값 유지하고 시트 재계산"}
+          data-tooltip={props.busy === "recalculate_json_translation_sheet" ? "시트 재계산 중..." : "번역값 유지하고 시트 재계산"}
+          onClick={props.onRecalculate}
+          disabled={!props.sourcePath || !sheetPath || Boolean(props.busy)}
+        >
+          {props.busy === "recalculate_json_translation_sheet" ? <Loader2 size={15} className="spin-icon" /> : <RefreshCw size={15} />}
+        </button>
         <button className="toolbar-icon-button" aria-label="시트 열기" data-tooltip="시트 열기" onClick={props.onLoad} disabled={!sheetPath || Boolean(props.busy)}>
           <FolderOpen size={15} />
         </button>
@@ -99,16 +111,18 @@ export function TranslationWorkHeader({
         >
           {props.busy === "apply_json_translation_sheet" || props.busy === "save_json_translation_sheet" ? <Loader2 size={15} className="spin-icon" /> : <UploadCloud size={15} />}
         </button>
-        <button
-          className="toolbar-icon-button"
-          type="button"
-          aria-label="실험적 번역 모드 내보내기"
-          data-tooltip="실험적 번역 모드 내보내기"
-          onClick={props.onExportPatchMod}
-          disabled={!canUseCurrentSheet || filledTranslations === 0 || Boolean(props.busy)}
-        >
-          <Package size={15} />
-        </button>
+        {canExportPatchMod && (
+          <button
+            className="toolbar-icon-button"
+            type="button"
+            aria-label="번역 모드로 내보내기"
+            data-tooltip="번역 모드로 내보내기"
+            onClick={props.onExportPatchMod}
+            disabled={!canUseCurrentSheet || filledTranslations === 0 || Boolean(props.busy)}
+          >
+            <Package size={15} />
+          </button>
+        )}
         <button className="toolbar-icon-button" type="button" aria-label="닫기" data-tooltip="닫기" onClick={props.onCloseSession} disabled={Boolean(props.busy)}>
           <X size={15} />
         </button>
@@ -154,6 +168,7 @@ export function TranslationActionsPanel({
     (props.validation?.updated_entries.length ?? 0) +
     (props.validation?.removed_entries.length ?? 0) +
     (props.validation?.format_issues?.length ?? 0);
+  const changeEntryCount = props.sheet?.entries.filter((entry) => entry.status === "new" || entry.status === "updated").length ?? 0;
   const currentSheetMatchesTarget = !props.sheet || translationLanguagesMatch(props.sheet.target_language, props.targetLanguage);
   const canUseCurrentSheet = Boolean(props.sheet && currentSheetMatchesTarget);
   return (
@@ -302,6 +317,15 @@ export function TranslationActionsPanel({
               disabled={!canUseCurrentSheet || validationWarningCount === 0 || Boolean(props.busy)}
             >
               <AlertTriangle size={15} />
+            </button>
+            <button
+              className="toolbar-icon-button"
+              aria-label="신규/변경 JSON"
+              data-tooltip="신규/변경 JSON"
+              onClick={() => props.onExportShortJson({ changeOnly: true })}
+              disabled={!canUseCurrentSheet || changeEntryCount === 0 || Boolean(props.busy)}
+            >
+              <FileJson size={15} />
             </button>
           </div>
         </details>

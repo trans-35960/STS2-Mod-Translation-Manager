@@ -77,7 +77,123 @@ fn setup_issues(
         });
     }
 
+    issues.extend(path_overlap_issues(config, settings));
+
     issues
+}
+
+#[derive(Debug, Clone)]
+struct CheckedPath {
+    field: &'static str,
+    label: &'static str,
+    path: PathBuf,
+}
+
+fn path_overlap_issues(config: &AppConfig, settings: &UiSettingsDto) -> Vec<SetupIssueDto> {
+    let paths = checked_paths(config, settings);
+    let mut issues = Vec::new();
+
+    for (index, left) in paths.iter().enumerate() {
+        for right in paths.iter().skip(index + 1) {
+            let Some(kind) = path_overlap_kind(&left.path, &right.path) else {
+                continue;
+            };
+            issues.push(SetupIssueDto {
+                field: left.field.to_string(),
+                message: format!(
+                    "{}와 {} 경로가 {}. 정리/복구 작업이 다른 데이터를 건드릴 수 있으니 분리하는 것을 권장합니다. ({} / {})",
+                    left.label,
+                    right.label,
+                    kind,
+                    left.path.display(),
+                    right.path.display()
+                ),
+                blocking: false,
+            });
+        }
+    }
+
+    issues
+}
+
+fn checked_paths(config: &AppConfig, settings: &UiSettingsDto) -> Vec<CheckedPath> {
+    let mut paths = vec![
+        CheckedPath {
+            field: "game_mods_dir",
+            label: "게임 모드 폴더",
+            path: config.game_mods_dir.clone(),
+        },
+        CheckedPath {
+            field: "disabled_mods_dir",
+            label: "비활성 모드 저장소",
+            path: game_disabled_dir(&config.game_mods_dir),
+        },
+    ];
+
+    push_checked_setting_path(
+        &mut paths,
+        "save_dir",
+        "세이브 폴더",
+        settings.save_dir.trim(),
+    );
+    push_checked_setting_path(
+        &mut paths,
+        "save_backup_dir",
+        "세이브 백업 경로",
+        settings.save_backup_dir.trim(),
+    );
+    push_checked_setting_path(
+        &mut paths,
+        "translation_work_dir",
+        "번역/추출 작업 경로",
+        settings.translation_work_dir.trim(),
+    );
+
+    paths
+}
+
+fn push_checked_setting_path(
+    paths: &mut Vec<CheckedPath>,
+    field: &'static str,
+    label: &'static str,
+    value: &str,
+) {
+    if value.is_empty() {
+        return;
+    }
+    paths.push(CheckedPath {
+        field,
+        label,
+        path: PathBuf::from(value),
+    });
+}
+
+fn path_overlap_kind(left: &Path, right: &Path) -> Option<&'static str> {
+    let left = comparable_path(left);
+    let right = comparable_path(right);
+    if left.is_empty() || right.is_empty() {
+        return None;
+    }
+    if left == right {
+        return Some("같습니다");
+    }
+    if is_path_ancestor(&left, &right) || is_path_ancestor(&right, &left) {
+        return Some("포함 관계입니다");
+    }
+    None
+}
+
+fn comparable_path(path: &Path) -> String {
+    path.to_string_lossy()
+        .replace('\\', "/")
+        .trim_end_matches('/')
+        .to_ascii_lowercase()
+}
+
+fn is_path_ancestor(parent: &str, child: &str) -> bool {
+    child
+        .strip_prefix(parent)
+        .is_some_and(|rest| rest.starts_with('/'))
 }
 
 fn game_updated_epoch(launch: &LaunchStatus, config: &AppConfig) -> Option<u64> {
@@ -92,32 +208,8 @@ fn game_updated_epoch(launch: &LaunchStatus, config: &AppConfig) -> Option<u64> 
         .and_then(|time| epoch_seconds(Some(time)))
 }
 
-fn mod_safety_warnings(manifest: &ModManifestInfo) -> Vec<String> {
-    let text = [
-        manifest.name.as_deref().unwrap_or_default(),
-        manifest.description.as_deref().unwrap_or_default(),
-    ]
-    .join(" ")
-    .to_ascii_lowercase();
-    let mut warnings = Vec::new();
-    if any_keyword(
-        &text,
-        &[
-            "multi",
-            "multiplayer",
-            "coop",
-            "co-op",
-            "online",
-            "network",
-            "sync",
-        ],
-    ) {
-        warnings.push("멀티/동기화 관련 모드로 보입니다. 실행 전 세이브 백업과 프로필 전환 상태를 확인하세요.".to_string());
-    }
-    if any_keyword(&text, &["save", "profile", "progression"]) {
-        warnings.push("세이브나 프로필을 건드릴 수 있는 모드 설명이 감지되었습니다.".to_string());
-    }
-    warnings
+fn mod_safety_warnings(_manifest: &ModManifestInfo) -> Vec<String> {
+    Vec::new()
 }
 
 fn nested_mod_payload_dir(path: &Path) -> Option<PathBuf> {

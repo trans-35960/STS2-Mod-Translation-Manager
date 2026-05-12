@@ -60,7 +60,7 @@ export function useJsonToolRunner({
         appendLog(`Preview action: ${command}`);
         return true;
       }
-      if (command === "create_json_translation_sheet") {
+      if (command === "create_json_translation_sheet" || command === "recalculate_json_translation_sheet") {
         const result = await invokeCommand<JsonSheetAction>(command, args);
         setJsonSheet(result.sheet);
         setJsonReport(result.report);

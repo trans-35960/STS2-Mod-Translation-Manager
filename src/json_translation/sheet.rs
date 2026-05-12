@@ -68,45 +68,59 @@ pub fn create_or_update_sheet(
         let previous_entry = existing_entries
             .get(&key)
             .or_else(|| existing_entries_by_stable_key.get(&stable_slot_key(&key)));
-        let (translated_value, status) = match previous_entry {
+        let (translated_value, status, previous_source_value) = match previous_entry {
             Some(previous) if previous.source_value == source_value => {
                 if previous.translated_value.is_empty() {
                     match target_entries.get(&key) {
                         Some(target_value) if !target_value.is_empty() => {
-                            (target_value.clone(), JsonTranslationStatus::Ready)
+                            (target_value.clone(), JsonTranslationStatus::Ready, None)
                         }
-                        _ => (String::new(), JsonTranslationStatus::Missing),
+                        _ => (String::new(), JsonTranslationStatus::Missing, None),
                     }
                 } else {
+                    let status = if previous.status == JsonTranslationStatus::Updated {
+                        JsonTranslationStatus::Updated
+                    } else {
+                        JsonTranslationStatus::Ready
+                    };
                     (
                         previous.translated_value.clone(),
-                        JsonTranslationStatus::Ready,
+                        status,
+                        (status == JsonTranslationStatus::Updated)
+                            .then(|| previous.previous_source_value.clone())
+                            .flatten(),
                     )
                 }
             }
-            Some(previous) => (
-                target_entries
-                    .get(&key)
-                    .filter(|value| !value.is_empty())
-                    .cloned()
-                    .unwrap_or_else(|| previous.translated_value.clone()),
-                if target_entries.contains_key(&key) {
+            Some(previous) => {
+                let status = if target_entries.contains_key(&key) {
                     JsonTranslationStatus::Ready
                 } else {
                     JsonTranslationStatus::Updated
-                },
-            ),
+                };
+                (
+                    target_entries
+                        .get(&key)
+                        .filter(|value| !value.is_empty())
+                        .cloned()
+                        .unwrap_or_else(|| previous.translated_value.clone()),
+                    status,
+                    (status == JsonTranslationStatus::Updated)
+                        .then(|| previous.source_value.clone()),
+                )
+            }
             None => match target_entries.get(&key) {
                 Some(target_value) if !target_value.is_empty() => {
-                    (target_value.clone(), JsonTranslationStatus::Ready)
+                    (target_value.clone(), JsonTranslationStatus::Ready, None)
                 }
-                _ => (String::new(), JsonTranslationStatus::New),
+                _ => (String::new(), JsonTranslationStatus::New, None),
             },
         };
 
         entries.push(JsonTranslationEntry {
             key,
             slot_id: previous_entry.and_then(|previous| previous.slot_id.clone()),
+            previous_source_value,
             source_value,
             translated_value,
             status,
@@ -121,6 +135,7 @@ pub fn create_or_update_sheet(
             entries.push(JsonTranslationEntry {
                 key,
                 slot_id: previous.slot_id,
+                previous_source_value: None,
                 source_value: previous.source_value,
                 translated_value: previous.translated_value,
                 status: JsonTranslationStatus::Removed,

@@ -88,6 +88,7 @@ export function useTranslationSessionActions({
         mod_author: "",
         mod_description: "",
         available_languages: sourceMod.language_preview,
+        can_export_patch_mod: true,
       };
     }
     return await invokeCommand<NodeTranslationResult>("prepare_translation_node", {
@@ -145,6 +146,7 @@ export function useTranslationSessionActions({
         author: prepared.mod_author,
         description: prepared.mod_description,
         languages: prepared.available_languages,
+        canExportPatchMod: prepared.can_export_patch_mod,
       });
       setSelectedRows([]);
       setPasteCandidatesByKey({});
@@ -247,6 +249,7 @@ export function useTranslationSessionActions({
       ? {
           key: translationProject.modKey,
           name: translationProject.modName,
+          manifest_id: null,
           group_name: null,
           active: false,
           managed: true,

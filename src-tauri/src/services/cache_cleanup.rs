@@ -1,102 +1,115 @@
 pub(crate) fn cleanup_orphan_caches() -> Result<ActionDto, String> {
     let app = app();
-    let config = app.config();
-    let report = app
-        .scan_preview_report()
-        .map_err(|error| error.to_string())?;
-    let connected_keys = connected_mod_keys(&report.summary);
-    let current_cache_dirs = current_language_preview_scan_dirs(&report.summary, config);
+    let config = app.config().clone();
     let mut removed_dirs = 0usize;
     let mut removed_files = 0usize;
 
-    cleanup_translation_work_children(
-        &config.translation_work_dir,
-        &connected_keys,
-        &mut removed_dirs,
-        &mut removed_files,
-    )?;
-    cleanup_named_cache_children(
-        &config.translation_work_dir.join("selected"),
-        &connected_keys,
-        &mut removed_dirs,
-        &mut removed_files,
-    )?;
-    cleanup_named_cache_children(
-        &config.translation_work_dir.join("translation_memory"),
-        &connected_keys,
-        &mut removed_dirs,
-        &mut removed_files,
-    )?;
-    cleanup_translation_memory_payloads(
-        &config.translation_work_dir.join("translation_memory"),
-        &mut removed_dirs,
-        &mut removed_files,
-    )?;
-    cleanup_translation_work_payloads(
-        &config.translation_work_dir,
-        &mut removed_dirs,
-        &mut removed_files,
-    )?;
-    cleanup_language_preview_extract(
-        &config.state_dir.join("language_preview_extract"),
-        &current_cache_dirs,
-        &mut removed_dirs,
-        &mut removed_files,
-    )?;
-    prune_language_preview_cache(config, &report.summary)?;
+    cleanup_work_caches(&config, &mut removed_dirs, &mut removed_files)?;
+    let mut dashboard = dashboard().map_err(|error| error.to_string())?;
+    cleanup_work_caches(&config, &mut removed_dirs, &mut removed_files)?;
+    dashboard.cache_usage = work_cache_usage(&config);
 
     Ok(ActionDto {
         message: format!("작업 캐시 정리 완료: 폴더 {removed_dirs}개, 파일 {removed_files}개"),
-        dashboard: dashboard().map_err(|error| error.to_string())?,
+        dashboard,
     })
 }
 
-
-fn cleanup_translation_work_children(
-    root: &Path,
-    connected_keys: &BTreeSet<String>,
-    removed_dirs: &mut usize,
-    removed_files: &mut usize,
-) -> Result<(), String> {
-    if !root.is_dir() {
-        return Ok(());
-    }
-    let entries = fs::read_dir(root).map_err(|error| error.to_string())?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if !path.is_dir() {
-            continue;
-        }
-        let name = entry.file_name().to_string_lossy().to_string();
-        if matches!(name.as_str(), "selected" | "translation_memory") {
-            continue;
-        }
-        if connected_keys.contains(&name) {
-            continue;
-        }
-        remove_cache_path(&path, removed_dirs, removed_files)?;
-    }
-    Ok(())
+pub(crate) fn cleanup_dropped_mod_preview_cache() -> Result<(), String> {
+    let app = app();
+    remove_path_if_exists(&app.config().state_dir.join("drop_imports"))
+        .map_err(|error| error.to_string())
 }
 
-fn cleanup_named_cache_children(
-    root: &Path,
-    connected_keys: &BTreeSet<String>,
+fn work_cache_usage(config: &AppConfig) -> CacheUsageDto {
+    let mut usage = CacheUsageDto {
+        bytes: 0,
+        files: 0,
+        dirs: 0,
+    };
+    add_cache_path_usage(
+        &config.state_dir.join("language_preview_extract"),
+        &mut usage,
+    );
+    add_cache_path_usage(&config.state_dir.join("drop_imports"), &mut usage);
+    add_cache_path_usage(&config.state_dir.join("language_preview_cache.tsv"), &mut usage);
+    add_translation_work_payload_usage(&config.translation_work_dir, &mut usage);
+    usage
+}
+
+fn add_translation_work_payload_usage(root: &Path, usage: &mut CacheUsageDto) {
+    if !root.is_dir() {
+        return;
+    }
+    let Ok(entries) = fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            let name = entry.file_name().to_string_lossy().to_ascii_lowercase();
+            if matches!(name.as_str(), "selected" | "translation_memory") {
+                continue;
+            }
+            if matches!(name.as_str(), "expanded_archive" | "pck_build")
+                || name.ends_with(".pck.contents")
+            {
+                add_cache_path_usage(&path, usage);
+                continue;
+            }
+            add_translation_work_payload_usage(&path, usage);
+            continue;
+        }
+        if is_translation_memory_payload_file(&path) {
+            add_cache_path_usage(&path, usage);
+        }
+    }
+}
+
+fn add_cache_path_usage(path: &Path, usage: &mut CacheUsageDto) {
+    let Ok(metadata) = fs::metadata(path) else {
+        return;
+    };
+    if metadata.is_dir() {
+        usage.dirs += 1;
+        let Ok(entries) = fs::read_dir(path) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            add_cache_path_usage(&entry.path(), usage);
+        }
+    } else {
+        usage.files += 1;
+        usage.bytes = usage.bytes.saturating_add(metadata.len());
+    }
+}
+
+fn cleanup_work_caches(
+    config: &AppConfig,
     removed_dirs: &mut usize,
     removed_files: &mut usize,
 ) -> Result<(), String> {
-    if !root.is_dir() {
-        return Ok(());
-    }
-    let entries = fs::read_dir(root).map_err(|error| error.to_string())?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().to_string();
-        if connected_keys.contains(&name) {
-            continue;
-        }
-        remove_cache_path(&path, removed_dirs, removed_files)?;
-    }
+    cleanup_translation_memory_payloads(
+        &config.translation_work_dir.join("translation_memory"),
+        removed_dirs,
+        removed_files,
+    )?;
+    cleanup_translation_work_payloads(&config.translation_work_dir, removed_dirs, removed_files)?;
+    remove_cache_path_if_exists(
+        &config.state_dir.join("language_preview_extract"),
+        removed_dirs,
+        removed_files,
+    )?;
+    remove_cache_path_if_exists(
+        &config.state_dir.join("drop_imports"),
+        removed_dirs,
+        removed_files,
+    )?;
+    remove_cache_path_if_exists(
+        &config.state_dir.join("language_preview_cache.tsv"),
+        removed_dirs,
+        removed_files,
+    )?;
     Ok(())
 }
 
@@ -205,69 +218,6 @@ fn is_translation_memory_payload_file(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-fn cleanup_language_preview_extract(
-    root: &Path,
-    current_cache_dirs: &BTreeSet<String>,
-    removed_dirs: &mut usize,
-    removed_files: &mut usize,
-) -> Result<(), String> {
-    if !root.is_dir() {
-        return Ok(());
-    }
-    let entries = fs::read_dir(root).map_err(|error| error.to_string())?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().to_string();
-        if current_cache_dirs.contains(&name) {
-            continue;
-        }
-        remove_cache_path(&path, removed_dirs, removed_files)?;
-    }
-    Ok(())
-}
-
-fn current_language_preview_scan_dirs(
-    summary: &ScanSummary,
-    config: &AppConfig,
-) -> BTreeSet<String> {
-    current_language_preview_cache_keys(summary, config)
-        .into_iter()
-        .filter_map(|cache_key| {
-            language_preview_extract_dir(&cache_key)
-                .file_name()
-                .map(|name| name.to_string_lossy().to_string())
-        })
-        .collect()
-}
-
-fn current_language_preview_cache_keys(
-    summary: &ScanSummary,
-    config: &AppConfig,
-) -> BTreeSet<String> {
-    summary
-        .game_mods
-        .iter()
-        .chain(summary.vault_mods.iter())
-        .chain(summary.external_manager_mods.iter())
-        .map(|record| {
-            let extraction_source = extraction_source_for_record(record);
-            language_cache_key(record, &extraction_source, &config.vendor_dir)
-        })
-        .collect()
-}
-
-fn prune_language_preview_cache(config: &AppConfig, summary: &ScanSummary) -> Result<(), String> {
-    let current_keys = current_language_preview_cache_keys(summary, config);
-    let mut cache = read_language_preview_cache(config).map_err(|error| error.to_string())?;
-    let before = cache.entries.len();
-    cache.entries.retain(|key, _| current_keys.contains(key));
-    if cache.entries.len() != before {
-        cache.dirty = true;
-        write_language_preview_cache(config, &cache).map_err(|error| error.to_string())?;
-    }
-    Ok(())
-}
-
 fn remove_cache_path(
     path: &Path,
     removed_dirs: &mut usize,
@@ -284,6 +234,17 @@ fn remove_cache_path(
     *removed_dirs += dirs;
     *removed_files += files;
     Ok(())
+}
+
+fn remove_cache_path_if_exists(
+    path: &Path,
+    removed_dirs: &mut usize,
+    removed_files: &mut usize,
+) -> Result<(), String> {
+    if !path.exists() {
+        return Ok(());
+    }
+    remove_cache_path(path, removed_dirs, removed_files)
 }
 
 fn count_path_items(path: &Path) -> (usize, usize) {

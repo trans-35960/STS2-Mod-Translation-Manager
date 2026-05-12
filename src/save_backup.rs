@@ -56,6 +56,13 @@ pub struct SaveBackupReport {
     pub skipped_reason: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CurrentRunCleanupReport {
+    pub cleared_files: Vec<PathBuf>,
+    pub cleaned_cloud_caches: Vec<PathBuf>,
+    pub remaining_files: Vec<PathBuf>,
+}
+
 pub fn backup_before_launch(
     config: &AppConfig,
     ensure_modded: bool,
@@ -209,7 +216,8 @@ pub fn quarantine_modded_current_runs_for_vanilla(config: &AppConfig) -> AppResu
     let created_epoch = epoch_seconds();
     let mut quarantined = Vec::new();
     for profile in PROFILE_NAMES {
-        for current_run in current_run_candidates_for_profile(config, save_dir, profile) {
+        for current_run in current_run_quarantine_candidates_for_profile(config, save_dir, profile)
+        {
             if !current_run.exists() || !is_modded_current_run_save(&current_run)? {
                 continue;
             }
@@ -264,6 +272,116 @@ pub fn bridge_modded_current_runs_for_modded_launch(config: &AppConfig) -> AppRe
     Ok(bridged)
 }
 
+pub fn clear_current_runs_for_mode_switch(
+    config: &AppConfig,
+) -> AppResult<CurrentRunCleanupReport> {
+    let Some(save_dir) = config.save_dir.as_deref() else {
+        return Ok(CurrentRunCleanupReport {
+            cleared_files: Vec::new(),
+            cleaned_cloud_caches: Vec::new(),
+            remaining_files: Vec::new(),
+        });
+    };
+    if !save_dir.exists() {
+        return Ok(CurrentRunCleanupReport {
+            cleared_files: Vec::new(),
+            cleaned_cloud_caches: Vec::new(),
+            remaining_files: Vec::new(),
+        });
+    }
+
+    let created_epoch = epoch_seconds();
+    let mut cleared = Vec::new();
+    for profile in PROFILE_NAMES {
+        for current_run in current_run_cleanup_candidates_for_profile(config, save_dir, profile) {
+            if !current_run.exists() {
+                continue;
+            }
+            let target_dir = unique_snapshot_dir(
+                &config.save_backup_dir.join("current-run-cleanup"),
+                created_epoch,
+            )?
+            .join(profile)
+            .join("saves");
+            fs::create_dir_all(&target_dir).map_err(|source| AppError::io(&target_dir, source))?;
+            let file_name = current_run
+                .file_name()
+                .and_then(|value| value.to_str())
+                .unwrap_or("current_run.save");
+            let target = unique_backup_file(&target_dir, file_name);
+            move_path_to_backup(&current_run, &target)?;
+            cleared.push(target);
+        }
+    }
+    let cleaned_cloud_caches = clear_current_run_steam_cloud_cache_entries(config, save_dir)?;
+    let remaining_files = modded_current_run_paths_for_mode_switch(config)?;
+    Ok(CurrentRunCleanupReport {
+        cleared_files: cleared,
+        cleaned_cloud_caches,
+        remaining_files,
+    })
+}
+
+pub fn has_modded_current_run_for_mode_switch(config: &AppConfig) -> AppResult<bool> {
+    Ok(!modded_current_run_paths_for_mode_switch(config)?.is_empty())
+}
+
+pub fn modded_current_run_paths_for_mode_switch(config: &AppConfig) -> AppResult<Vec<PathBuf>> {
+    let Some(save_dir) = config.save_dir.as_deref() else {
+        return Ok(Vec::new());
+    };
+    if !save_dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut paths = Vec::new();
+    for profile in PROFILE_NAMES {
+        for current_run in current_run_cleanup_candidates_for_profile(config, save_dir, profile) {
+            if current_run.exists() && is_modded_current_run_save(&current_run)? {
+                paths.push(current_run);
+            }
+        }
+    }
+    Ok(dedupe_paths(paths))
+}
+
+fn current_run_cleanup_candidates_for_profile(
+    config: &AppConfig,
+    save_dir: &Path,
+    profile: &str,
+) -> Vec<PathBuf> {
+    let mut paths = current_run_quarantine_candidates_for_profile(config, save_dir, profile);
+    paths.push(
+        save_dir
+            .join("modded")
+            .join(profile)
+            .join("saves")
+            .join("current_run.save"),
+    );
+    paths.extend(steam_cloud_modded_current_run_paths(
+        config, save_dir, profile,
+    ));
+    let backup_paths = paths
+        .iter()
+        .map(|path| path.with_file_name("current_run.save.backup"))
+        .collect::<Vec<_>>();
+    paths.extend(backup_paths);
+    dedupe_paths(paths)
+}
+
+fn current_run_quarantine_candidates_for_profile(
+    config: &AppConfig,
+    save_dir: &Path,
+    profile: &str,
+) -> Vec<PathBuf> {
+    let mut paths = current_run_candidates_for_profile(config, save_dir, profile);
+    let backup_paths = paths
+        .iter()
+        .map(|path| path.with_file_name("current_run.save.backup"))
+        .collect::<Vec<_>>();
+    paths.extend(backup_paths);
+    dedupe_paths(paths)
+}
+
 fn current_run_candidates_for_profile(
     config: &AppConfig,
     save_dir: &Path,
@@ -284,20 +402,112 @@ fn steam_cloud_current_run_paths(
     save_dir: &Path,
     profile: &str,
 ) -> Vec<PathBuf> {
+    steam_cloud_current_run_paths_with_prefix(config, save_dir, profile, None)
+}
+
+fn steam_cloud_modded_current_run_paths(
+    config: &AppConfig,
+    save_dir: &Path,
+    profile: &str,
+) -> Vec<PathBuf> {
+    steam_cloud_current_run_paths_with_prefix(config, save_dir, profile, Some("modded"))
+}
+
+fn steam_cloud_current_run_paths_with_prefix(
+    config: &AppConfig,
+    save_dir: &Path,
+    profile: &str,
+    prefix: Option<&str>,
+) -> Vec<PathBuf> {
     let Some(account_id) = steam_account_id_from_save_dir(save_dir) else {
         return Vec::new();
     };
     steam_userdata_roots(config)
         .into_iter()
         .map(|root| {
-            root.join(account_id.to_string())
+            let mut path = root
+                .join(account_id.to_string())
                 .join(STEAM_APP_ID)
-                .join("remote")
-                .join(profile)
-                .join("saves")
-                .join("current_run.save")
+                .join("remote");
+            if let Some(prefix) = prefix {
+                path = path.join(prefix);
+            }
+            path.join(profile).join("saves").join("current_run.save")
         })
         .collect()
+}
+
+fn clear_current_run_steam_cloud_cache_entries(
+    config: &AppConfig,
+    save_dir: &Path,
+) -> AppResult<Vec<PathBuf>> {
+    let Some(account_id) = steam_account_id_from_save_dir(save_dir) else {
+        return Ok(Vec::new());
+    };
+    let mut cleaned = Vec::new();
+    for cache in steam_userdata_roots(config).into_iter().map(|root| {
+        root.join(account_id.to_string())
+            .join(STEAM_APP_ID)
+            .join("remotecache.vdf")
+    }) {
+        if !cache.exists() {
+            continue;
+        }
+        let content = fs::read_to_string(&cache).map_err(|source| AppError::io(&cache, source))?;
+        let updated = remove_current_run_entries_from_vdf(&content);
+        if updated == content {
+            continue;
+        }
+        fs::write(&cache, updated).map_err(|source| AppError::io(&cache, source))?;
+        cleaned.push(cache);
+    }
+    Ok(dedupe_paths(cleaned))
+}
+
+fn remove_current_run_entries_from_vdf(content: &str) -> String {
+    let had_trailing_newline = content.ends_with(['\n', '\r']);
+    let lines = content.lines().collect::<Vec<_>>();
+    let mut output = Vec::new();
+    let mut index = 0;
+    while index < lines.len() {
+        let trimmed = lines[index].trim();
+        if is_current_run_vdf_key(trimmed) {
+            index += 1;
+            if index < lines.len() && lines[index].trim_start().starts_with('{') {
+                let mut depth = 0_i32;
+                while index < lines.len() {
+                    let line = lines[index].trim();
+                    depth += line.matches('{').count() as i32;
+                    depth -= line.matches('}').count() as i32;
+                    index += 1;
+                    if depth <= 0 {
+                        break;
+                    }
+                }
+            }
+            continue;
+        }
+        output.push(lines[index]);
+        index += 1;
+    }
+    let mut result = output.join("\n");
+    if had_trailing_newline {
+        result.push('\n');
+    }
+    result
+}
+
+fn is_current_run_vdf_key(trimmed: &str) -> bool {
+    if !trimmed.starts_with('"') {
+        return false;
+    }
+    let lower = trimmed.to_ascii_lowercase().replace('\\', "/");
+    (lower.contains("/current_run.save") || lower.contains("\"current_run.save\""))
+        && !lower.contains("\"sha\"")
+        && !lower.contains("\"size\"")
+        && !lower.contains("\"localtime\"")
+        && !lower.contains("\"time\"")
+        && !lower.contains("\"root\"")
 }
 
 fn steam_account_id_from_save_dir(save_dir: &Path) -> Option<u64> {
@@ -682,6 +892,11 @@ mod tests {
         )
         .expect("write modded current run");
         fs::write(
+            save_dir.join("profile1/saves/current_run.save.backup"),
+            r#"{ "players": [{ "character_id": "CHARACTER.ONEMOD_HERTA" }] }"#,
+        )
+        .expect("write modded current run backup");
+        fs::write(
             save_dir.join("profile2/saves/current_run.save"),
             r#"{ "players": [{ "character_id": "CHARACTER.IRONCLAD" }] }"#,
         )
@@ -691,14 +906,131 @@ mod tests {
         let quarantined =
             quarantine_modded_current_runs_for_vanilla(&config).expect("quarantine current runs");
 
-        assert_eq!(quarantined.len(), 1);
+        assert_eq!(quarantined.len(), 2);
         assert!(!save_dir.join("profile1/saves/current_run.save").exists());
-        assert!(save_dir.join("profile2/saves/current_run.save").exists());
-        assert!(quarantined[0].exists());
-        assert_eq!(
-            fs::read_to_string(&quarantined[0]).expect("read quarantined"),
-            r#"{ "players": [{ "character_id": "CHARACTER.MIYU_CHARACTER" }] }"#
+        assert!(
+            !save_dir
+                .join("profile1/saves/current_run.save.backup")
+                .exists()
         );
+        assert!(save_dir.join("profile2/saves/current_run.save").exists());
+        assert!(quarantined.iter().all(|path| path.exists()));
+        assert!(quarantined.iter().any(|path| {
+            fs::read_to_string(path)
+                .expect("read quarantined")
+                .contains("CHARACTER.MIYU_CHARACTER")
+        }));
+        assert!(quarantined.iter().any(|path| {
+            fs::read_to_string(path)
+                .expect("read quarantined backup")
+                .contains("CHARACTER.ONEMOD_HERTA")
+        }));
+    }
+
+    #[test]
+    fn clears_current_runs_for_mode_switch_after_warning() {
+        let workspace = test_dir("clears_current_runs_for_mode_switch_after_warning");
+        let save_dir = workspace.join("saves");
+        fs::create_dir_all(save_dir.join("profile1/saves")).expect("profile1");
+        fs::write(
+            save_dir.join("profile1/saves/current_run.save"),
+            r#"{ "players": [{ "character_id": "CHARACTER.MIYU_CHARACTER" }] }"#,
+        )
+        .expect("write current run");
+        fs::write(
+            save_dir.join("profile1/saves/current_run.save.backup"),
+            r#"{ "players": [{ "character_id": "CHARACTER.MIYU_CHARACTER" }] }"#,
+        )
+        .expect("write current run backup");
+        fs::create_dir_all(save_dir.join("modded/profile1/saves")).expect("modded profile1");
+        fs::write(
+            save_dir.join("modded/profile1/saves/current_run.save"),
+            r#"{ "players": [{ "character_id": "CHARACTER.MIYU_CHARACTER" }] }"#,
+        )
+        .expect("write modded current run");
+        let config = test_config(&workspace, &save_dir);
+
+        let report =
+            clear_current_runs_for_mode_switch(&config).expect("clear current runs for switch");
+
+        assert_eq!(report.cleared_files.len(), 3);
+        assert!(report.cleaned_cloud_caches.is_empty());
+        assert!(report.remaining_files.is_empty());
+        assert!(!save_dir.join("profile1/saves/current_run.save").exists());
+        assert!(
+            !save_dir
+                .join("profile1/saves/current_run.save.backup")
+                .exists()
+        );
+        assert!(
+            !save_dir
+                .join("modded/profile1/saves/current_run.save")
+                .exists()
+        );
+        assert!(report.cleared_files.iter().all(|path| path.exists()));
+        assert!(report.cleared_files.iter().any(|path| {
+            fs::read_to_string(path)
+                .expect("read cleared current run")
+                .contains("CHARACTER.MIYU_CHARACTER")
+        }));
+    }
+
+    #[test]
+    fn clears_steam_remote_current_run_and_remotecache_entries() {
+        let workspace = test_dir("clears_steam_remote_current_run_and_remotecache_entries");
+        let steam_root = workspace.join("Steam");
+        let game_dir = steam_root
+            .join("steamapps")
+            .join("common")
+            .join("Slay the Spire 2");
+        let account_id = 1_u64;
+        let steam_id = STEAM_ID64_ACCOUNT_BASE + account_id;
+        let save_dir = workspace.join(steam_id.to_string());
+        let remote_dir = steam_root
+            .join("userdata")
+            .join(account_id.to_string())
+            .join(STEAM_APP_ID);
+        let remote_save = remote_dir
+            .join("remote")
+            .join("profile1")
+            .join("saves")
+            .join("current_run.save");
+        let remote_backup = remote_save.with_file_name("current_run.save.backup");
+        let remote_modded_save = remote_dir
+            .join("remote")
+            .join("modded")
+            .join("profile1")
+            .join("saves")
+            .join("current_run.save");
+        let remote_cache = remote_dir.join("remotecache.vdf");
+        fs::create_dir_all(save_dir.join("profile1/saves")).expect("local profile");
+        fs::create_dir_all(remote_save.parent().expect("remote parent")).expect("remote profile");
+        fs::create_dir_all(remote_modded_save.parent().expect("remote modded parent"))
+            .expect("remote modded profile");
+        fs::create_dir_all(&game_dir).expect("game dir");
+        fs::write(&remote_save, "remote current run").expect("write remote current run");
+        fs::write(&remote_backup, "remote current run backup").expect("write remote backup");
+        fs::write(&remote_modded_save, "remote modded current run")
+            .expect("write remote modded current run");
+        fs::write(
+            &remote_cache,
+            "\"2868840\"\n{\n\t\"profile1/saves/current_run.save\"\n\t{\n\t\t\"root\"\t\t\"0\"\n\t\t\"size\"\t\t\"42\"\n\t}\n\t\"modded/profile1/saves/current_run.save\"\n\t{\n\t\t\"root\"\t\t\"0\"\n\t\t\"size\"\t\t\"42\"\n\t}\n\t\"profile1/saves/slot.save\"\n\t{\n\t\t\"root\"\t\t\"0\"\n\t}\n}\n",
+        )
+        .expect("write remote cache");
+        let mut config = test_config(&workspace, &save_dir);
+        config.game_dir = game_dir;
+
+        let report = clear_current_runs_for_mode_switch(&config).expect("clear current runs");
+
+        assert_eq!(report.cleared_files.len(), 3);
+        assert_eq!(report.cleaned_cloud_caches, vec![remote_cache.clone()]);
+        assert!(report.remaining_files.is_empty());
+        assert!(!remote_save.exists());
+        assert!(!remote_backup.exists());
+        assert!(!remote_modded_save.exists());
+        let cache = fs::read_to_string(remote_cache).expect("read remote cache");
+        assert!(!cache.contains("current_run.save"));
+        assert!(cache.contains("slot.save"));
     }
 
     #[test]

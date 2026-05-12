@@ -54,33 +54,7 @@ pub(crate) fn restore_deleted_mod(id: String) -> Result<ActionDto, String> {
             entry.backup_path.display()
         ));
     }
-    if let Some(parent) = entry.original_path.parent() {
-        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-    }
-    let target = if entry.original_path.exists() {
-        let parent = entry.original_path.parent().ok_or_else(|| {
-            format!(
-                "복원 위치를 계산하지 못했습니다: {}",
-                entry.original_path.display()
-            )
-        })?;
-        let file_name = entry.original_path.file_name().ok_or_else(|| {
-            format!(
-                "복원 이름을 계산하지 못했습니다: {}",
-                entry.original_path.display()
-            )
-        })?;
-        unique_backup_path(parent, file_name)
-    } else {
-        entry.original_path.clone()
-    };
-    move_path_or_copy(&entry.backup_path, &target).map_err(|error| {
-        format!(
-            "삭제된 모드 복원 실패: {} -> {} ({error})",
-            entry.backup_path.display(),
-            target.display()
-        )
-    })?;
+    let target = restore_deleted_mod_entry(&entry, config)?;
     cleanup_deleted_backup_parent(&entry.backup_path);
     remove_deleted_mod_entry(config, &entry.id)?;
     remove_deleted_mod_tombstone(config, &entry.key)?;
@@ -89,6 +63,78 @@ pub(crate) fn restore_deleted_mod(id: String) -> Result<ActionDto, String> {
         message: format!("{} 복원 완료: {}", entry.name, target.display()),
         dashboard: dashboard().map_err(|error| error.to_string())?,
     })
+}
+
+fn restore_deleted_mod_entry(entry: &DeletedModEntry, config: &AppConfig) -> Result<PathBuf, String> {
+    if should_expand_restored_archive(entry, config) {
+        return restore_deleted_archive_entry(entry, config);
+    }
+    if let Some(parent) = entry.original_path.parent() {
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    let target = unique_restore_target(&entry.original_path)?;
+    move_path_or_copy(&entry.backup_path, &target).map_err(|error| {
+        format!(
+            "삭제된 모드 복원 실패: {} -> {} ({error})",
+            entry.backup_path.display(),
+            target.display()
+        )
+    })?;
+    Ok(target)
+}
+
+fn should_expand_restored_archive(entry: &DeletedModEntry, config: &AppConfig) -> bool {
+    entry.original_path.starts_with(&config.game_mods_dir)
+        && entry.backup_path.is_file()
+        && is_supported_archive_path(&entry.backup_path)
+}
+
+fn restore_deleted_archive_entry(
+    entry: &DeletedModEntry,
+    config: &AppConfig,
+) -> Result<PathBuf, String> {
+    let target = restored_archive_install_dir(&entry.original_path, config)
+        .ok_or_else(|| format!("복원 위치를 계산하지 못했습니다: {}", entry.original_path.display()))?;
+    let target = unique_restore_target(&target)?;
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    if !expand_archive(&entry.backup_path, &target, &config.vendor_dir) {
+        let _ = remove_path_if_exists(&target);
+        return Err(format!(
+            "삭제된 압축 모드 복원 실패: {}",
+            entry.backup_path.display()
+        ));
+    }
+    if target.is_dir() {
+        repair_nested_mod_folder(&target)?;
+    }
+    remove_path_if_exists(&entry.backup_path).map_err(|error| error.to_string())?;
+    Ok(target)
+}
+
+fn restored_archive_install_dir(original_path: &Path, config: &AppConfig) -> Option<PathBuf> {
+    let relative = original_path.strip_prefix(&config.game_mods_dir).ok()?;
+    let mut components = relative.components();
+    let first = components.next()?.as_os_str();
+    if components.next().is_some() {
+        return Some(config.game_mods_dir.join(first));
+    }
+    let stem = Path::new(first).file_stem()?.to_os_string();
+    Some(config.game_mods_dir.join(stem))
+}
+
+fn unique_restore_target(path: &Path) -> Result<PathBuf, String> {
+    if !path.exists() {
+        return Ok(path.to_path_buf());
+    }
+    let parent = path
+        .parent()
+        .ok_or_else(|| format!("복원 위치를 계산하지 못했습니다: {}", path.display()))?;
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| format!("복원 이름을 계산하지 못했습니다: {}", path.display()))?;
+    Ok(unique_backup_path(parent, file_name))
 }
 
 pub(crate) fn empty_deleted_mods() -> Result<ActionDto, String> {
@@ -207,13 +253,44 @@ fn move_mod_to_deleted_backup(
     Ok(backup_path)
 }
 
+fn quarantine_reappeared_deleted_mods(config: &AppConfig) -> Result<usize, String> {
+    let entries = read_deleted_mod_entries(config).map_err(|error| error.to_string())?;
+    let mut moved = 0usize;
+    for entry in entries {
+        if !entry.original_path.starts_with(&config.game_mods_dir) || !entry.original_path.exists()
+        {
+            continue;
+        }
+        let parent = entry
+            .backup_path
+            .parent()
+            .ok_or_else(|| format!("삭제 백업 위치를 계산하지 못했습니다: {}", entry.backup_path.display()))?;
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+        let file_name = entry
+            .original_path
+            .file_name()
+            .ok_or_else(|| format!("격리할 모드 이름을 계산하지 못했습니다: {}", entry.original_path.display()))?;
+        let target = unique_backup_path(parent, file_name);
+        move_path_or_copy(&entry.original_path, &target).map_err(|error| {
+            format!(
+                "삭제된 모드 재등장 격리 실패: {} -> {} ({error})",
+                entry.original_path.display(),
+                target.display()
+            )
+        })?;
+        moved += 1;
+    }
+    Ok(moved)
+}
+
 fn repair_archive_mod(path: &Path, config: &AppConfig) -> Result<bool, String> {
     let stem = path
         .file_stem()
         .ok_or_else(|| format!("압축 파일 이름을 계산하지 못했습니다: {}", path.display()))?;
     let target = config.game_mods_dir.join(stem);
     if target.exists() {
-        return Ok(false);
+        remove_repaired_archive(path)?;
+        return Ok(true);
     }
     if !expand_archive(path, &target, &config.vendor_dir) {
         let _ = remove_path_if_exists(&target);
@@ -221,24 +298,16 @@ fn repair_archive_mod(path: &Path, config: &AppConfig) -> Result<bool, String> {
             "압축 해제에 실패했습니다. 7-Zip 내장 도구와 파일 손상 여부를 확인하세요.".to_string(),
         );
     }
+    repair_nested_mod_folder(&target)?;
 
-    let backup_dir = config
-        .state_dir
-        .join("install_fix_backups")
-        .join(timestamp_string());
-    fs::create_dir_all(&backup_dir).map_err(|error| error.to_string())?;
-    let file_name = path
-        .file_name()
-        .ok_or_else(|| format!("백업할 압축 파일 이름이 없습니다: {}", path.display()))?;
-    let backup_path = unique_backup_path(&backup_dir, file_name);
-    move_path_or_copy(path, &backup_path).map_err(|error| {
-        format!(
-            "원본 압축 백업 실패: {} -> {} ({error})",
-            path.display(),
-            backup_path.display()
-        )
-    })?;
+    remove_repaired_archive(path)?;
     Ok(true)
+}
+
+fn remove_repaired_archive(path: &Path) -> Result<(), String> {
+    remove_path_if_exists(path)
+        .map_err(|error| format!("원본 압축 제거 실패: {} ({error})", path.display()))?;
+    Ok(())
 }
 
 fn repair_nested_mod_folder(path: &Path) -> Result<bool, String> {
@@ -435,6 +504,26 @@ fn deleted_mod_keys_for_summary(config: &AppConfig, summary: &ScanSummary) -> BT
             .filter(|key| !connected_keys.contains(key)),
     );
     keys
+}
+
+fn prune_deleted_desired_mod_keys(
+    config: &AppConfig,
+    summary: &ScanSummary,
+) -> Result<usize, String> {
+    let deleted = deleted_mod_keys_for_summary(config, summary);
+    if deleted.is_empty() {
+        return Ok(0);
+    }
+    let mut desired = desired_active_mod_keys(summary, &config.state_dir)
+        .map_err(|error| error.to_string())?;
+    let before = desired.len();
+    desired.retain(|key| !deleted.contains(key));
+    let removed = before.saturating_sub(desired.len());
+    if removed > 0 {
+        write_desired_active_mod_keys(&desired, &config.state_dir)
+            .map_err(|error| error.to_string())?;
+    }
+    Ok(removed)
 }
 
 fn forget_revived_deleted_mod_tombstones(

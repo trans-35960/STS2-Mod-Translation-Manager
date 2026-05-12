@@ -906,14 +906,14 @@ select {
 .compact-action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px;
+  gap: 4px;
+  padding: 8px;
 }
 
 .compact-action-row .toolbar-icon-button {
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
 }
 
 .whitespace-marker {

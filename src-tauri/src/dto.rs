@@ -12,6 +12,7 @@ pub(crate) struct DashboardDto {
     pub(crate) translations: Vec<TranslationWorkspaceDto>,
     pub(crate) deleted_mods: Vec<DeletedModDto>,
     pub(crate) save_backups: Vec<SaveBackupDto>,
+    pub(crate) cache_usage: CacheUsageDto,
     pub(crate) tools: Vec<ToolDto>,
     pub(crate) launch: LaunchStatusDto,
 }
@@ -94,6 +95,7 @@ pub(crate) struct ModRowDto {
     pub(crate) registered_epoch: Option<u64>,
     pub(crate) updated_epoch: Option<u64>,
     pub(crate) path: String,
+    pub(crate) download_state: Option<String>,
     pub(crate) update_state: String,
     pub(crate) change_reasons: Vec<String>,
     pub(crate) translation_state: String,
@@ -220,6 +222,13 @@ pub(crate) struct SaveBackupDto {
     pub(crate) bytes: u64,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct CacheUsageDto {
+    pub(crate) bytes: u64,
+    pub(crate) files: usize,
+    pub(crate) dirs: usize,
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct ActionDto {
     pub(crate) message: String,
@@ -257,6 +266,8 @@ pub(crate) struct PresetApplyDto {
 pub(crate) struct JsonEntryDto {
     pub(crate) key: String,
     pub(crate) slot_id: Option<String>,
+    #[serde(default)]
+    pub(crate) previous_source_value: Option<String>,
     pub(crate) source_value: String,
     pub(crate) translated_value: String,
     pub(crate) status: String,
@@ -360,6 +371,7 @@ pub(crate) struct NodeTranslationDto {
     pub(crate) mod_author: String,
     pub(crate) mod_description: String,
     pub(crate) available_languages: Vec<LanguagePreviewDto>,
+    pub(crate) can_export_patch_mod: bool,
 }
 
 #[derive(Debug, Serialize)]

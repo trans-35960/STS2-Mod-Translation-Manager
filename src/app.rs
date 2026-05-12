@@ -40,8 +40,7 @@ impl App {
     pub fn scan(&self) -> AppResult<ScanSummary> {
         vault::migrate_legacy_disabled_mods(&self.config.vault_dir, &self.config.game_mods_dir)?;
         let game_mods = scan_mod_directory(&self.config.game_mods_dir, ModSource::GameMods)?;
-        let mut vault_mods = vault::list_vault_records(&self.config.vault_dir)?;
-        vault_mods.extend(vault::list_disabled_game_mods(&self.config.game_mods_dir)?);
+        let vault_mods = vault::list_disabled_game_mods(&self.config.game_mods_dir)?;
         let mut external_manager_mods = Vec::new();
 
         for path in existing_paths(&self.config.external_manager_dirs) {
@@ -70,21 +69,26 @@ impl App {
 
     pub fn import_mod(&self, path: &Path) -> AppResult<VaultAction> {
         self.ensure_workspace_dirs()?;
-        vault::import_mod(path, &self.config.vault_dir)
+        vault::import_mod_to_disabled(path, &self.config.game_mods_dir)
     }
 
     pub fn import_mod_as_new(&self, path: &Path) -> AppResult<VaultAction> {
         self.ensure_workspace_dirs()?;
-        vault::import_mod_as_new(path, &self.config.vault_dir)
+        vault::import_mod_to_disabled_as_new(path, &self.config.game_mods_dir)
     }
 
     pub fn list_vault(&self) -> AppResult<Vec<VaultEntry>> {
-        vault::list_vault(&self.config.vault_dir)
+        vault::list_disabled_game_entries(&self.config.game_mods_dir)
     }
 
     pub fn enable_mod(&self, key: &str) -> AppResult<VaultAction> {
         self.ensure_workspace_dirs()?;
-        vault::enable_mod(key, &self.config.vault_dir, &self.config.game_mods_dir)
+        vault::enable_mod(
+            key,
+            &self.config.vault_dir,
+            &self.config.game_mods_dir,
+            &self.config.vendor_dir,
+        )
     }
 
     pub fn disable_mod(&self, key: &str) -> AppResult<VaultAction> {
@@ -143,6 +147,7 @@ impl App {
             &self.config.presets_dir,
             &self.config.vault_dir,
             &self.config.game_mods_dir,
+            &self.config.vendor_dir,
         )
     }
 
@@ -151,7 +156,7 @@ impl App {
         preset::export_preset_archive(
             name,
             &self.config.presets_dir,
-            &self.config.vault_dir,
+            &self.config.game_mods_dir,
             archive_path,
         )
     }
@@ -161,7 +166,7 @@ impl App {
         preset::import_preset_archive(
             archive_path,
             &self.config.presets_dir,
-            &self.config.vault_dir,
+            &self.config.game_mods_dir,
         )
     }
 
@@ -193,6 +198,7 @@ impl App {
     pub fn launch_current(&self) -> AppResult<LaunchReport> {
         self.ensure_workspace_dirs()?;
         self.ensure_launch_settings_ready()?;
+        self.ensure_game_not_running()?;
         self.sync_desired_mods_for_launch()?;
         let save_backup = save_backup::backup_before_launch(&self.config, true)?;
         let bridged_current_runs =
@@ -208,6 +214,7 @@ impl App {
     pub fn launch_vanilla(&self) -> AppResult<LaunchReport> {
         self.ensure_workspace_dirs()?;
         self.ensure_launch_settings_ready()?;
+        self.ensure_game_not_running()?;
         vault::migrate_legacy_disabled_mods(&self.config.vault_dir, &self.config.game_mods_dir)?;
         let save_backup = save_backup::backup_before_launch(&self.config, false)?;
         let quarantined_current_runs =
@@ -253,6 +260,15 @@ impl App {
             )));
         }
 
+        Ok(())
+    }
+
+    fn ensure_game_not_running(&self) -> AppResult<()> {
+        if self.launch_status().running {
+            return Err(AppError::InvalidCommand(
+                "게임이 이미 실행 중입니다. 게임을 종료한 뒤 다시 실행하세요.".to_string(),
+            ));
+        }
         Ok(())
     }
 
@@ -303,14 +319,18 @@ impl App {
                         "활성화할 모드를 찾을 수 없습니다: {key}"
                     )));
                 };
-                actions.push(vault::import_mod(
+                actions.push(vault::import_mod_to_disabled(
                     &external_record.path,
-                    &self.config.vault_dir,
+                    &self.config.game_mods_dir,
                 )?);
             }
 
-            let action =
-                vault::enable_mod(&key, &self.config.vault_dir, &self.config.game_mods_dir)?;
+            let action = vault::enable_mod(
+                &key,
+                &self.config.vault_dir,
+                &self.config.game_mods_dir,
+                &self.config.vendor_dir,
+            )?;
             actions.push(action);
             active_keys.insert(key);
             summary = self.scan()?;
@@ -318,6 +338,7 @@ impl App {
 
         actions.extend(vault::normalize_active_archives(
             &self.config.game_mods_dir,
+            &self.config.vendor_dir,
         )?);
         Ok(actions)
     }
@@ -498,9 +519,9 @@ mod tests {
     }
 
     #[test]
-    fn external_desired_mod_imports_to_vault_only_when_syncing_for_launch() {
+    fn external_desired_mod_imports_to_disabled_only_when_syncing_for_launch() {
         let workspace =
-            test_workspace("external_desired_mod_imports_to_vault_only_when_syncing_for_launch");
+            test_workspace("external_desired_mod_imports_to_disabled_only_when_syncing_for_launch");
         let external_dir = workspace.join("external");
         let config = AppConfig {
             workspace_dir: workspace.clone(),
@@ -532,13 +553,7 @@ mod tests {
 
         app.sync_desired_mods_for_launch().expect("sync desired");
 
-        assert!(
-            config
-                .vault_dir
-                .join("external-v1")
-                .join("External-v1.jar")
-                .exists()
-        );
+        assert!(!config.vault_dir.exists());
         assert!(config.game_mods_dir.join("External-v1.jar").exists());
     }
 

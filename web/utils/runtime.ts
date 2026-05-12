@@ -1,3 +1,12 @@
+import { isTauri } from "@tauri-apps/api/core";
+
+type TauriWindow = Window & {
+  __TAURI_INTERNALS__?: {
+    metadata?: unknown;
+  };
+};
+
 export function isPreviewRuntime() {
-  return !("__TAURI_INTERNALS__" in window);
+  const tauriInternals = (window as TauriWindow).__TAURI_INTERNALS__;
+  return !isTauri() || !tauriInternals?.metadata;
 }

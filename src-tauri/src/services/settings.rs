@@ -67,11 +67,7 @@ fn read_ui_settings(config: &AppConfig) -> sts2_mod_manager::error::AppResult<Ui
     let defaults = UiSettingsDto {
         translation_work_dir: display_path(&config.translation_work_dir),
         target_language: "kor".to_string(),
-        game_exe_path: config
-            .game_exe_path
-            .as_deref()
-            .map(display_path)
-            .unwrap_or_default(),
+        game_exe_path: default_game_exe_path(config),
         game_log_path: default_sts2_game_log_path()
             .map(|path| display_path(&path))
             .unwrap_or_default(),
@@ -105,7 +101,7 @@ fn read_ui_settings(config: &AppConfig) -> sts2_mod_manager::error::AppResult<Ui
             "target_language" if !value.trim().is_empty() => {
                 settings.target_language = normalize_target_language(value.trim()).to_string();
             }
-            "game_exe_path" => {
+            "game_exe_path" if !value.trim().is_empty() => {
                 settings.game_exe_path = value.trim().to_string();
             }
             "game_log_path" => {
@@ -142,6 +138,13 @@ fn read_ui_settings(config: &AppConfig) -> sts2_mod_manager::error::AppResult<Ui
         settings.save_backup_max_entries = 14;
     }
     Ok(settings)
+}
+
+fn default_game_exe_path(config: &AppConfig) -> String {
+    sts2_mod_manager::launcher::resolve_game_exe(config)
+        .as_deref()
+        .map(display_path)
+        .unwrap_or_default()
 }
 
 fn write_ui_settings(

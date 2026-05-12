@@ -49,7 +49,12 @@ export function writeStoredTranslationSession(session: TranslationSessionState |
 }
 
 export function isCompletedPckApplyResult(result: ApplyResultState | null | undefined): boolean {
-  return Boolean(result && !result.error && result.applied_entries > 0 && result.installed_mod_path);
+  return Boolean(
+    result &&
+    !result.error &&
+    result.applied_entries > 0 &&
+    (result.installed_mod_path || result.packed_pck_path || result.language_output_path),
+  );
 }
 
 export function readStoredModViewMode(): boolean {

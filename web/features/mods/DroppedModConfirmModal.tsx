@@ -33,7 +33,7 @@ function DroppedModConfirmModal(props: {
   React.useEffect(() => {
     const next: Record<string, DecisionValue> = {};
     for (const row of rows) {
-      next[row.item.path] = row.exactMatches[0]?.path ? `replace:${row.exactMatches[0].path}` : "new";
+      next[row.item.path] = row.replaceableMatches[0] ? `replace:${row.replaceableMatches[0].path}` : "new";
     }
     setDecisions(next);
   }, [rows]);
@@ -129,10 +129,10 @@ function DroppedModConfirmModal(props: {
 
 function buildDroppedRow(item: DroppedModPreview, mods: ModRow[]) {
   const previewRow = previewAsModRow(item);
-  const groupName = modGroupName(previewRow).toLowerCase();
+  const itemTokens = droppedMatchTokens(previewRow);
   const exactMatches = mods.filter((mod) => mod.key === item.key && isReplaceable(mod));
   const relatedMatches = mods.filter(
-    (mod) => mod.key === item.key || modGroupName(mod).toLowerCase() === groupName,
+    (mod) => mod.key === item.key || hasSharedDroppedMatchToken(itemTokens, droppedMatchTokens(mod)),
   );
   const replaceableMatches = [
     ...exactMatches,
@@ -147,10 +147,49 @@ function buildDroppedRow(item: DroppedModPreview, mods: ModRow[]) {
   };
 }
 
+function hasSharedDroppedMatchToken(left: Set<string>, right: Set<string>): boolean {
+  for (const token of left) {
+    if (right.has(token)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function droppedMatchTokens(mod: ModRow): Set<string> {
+  return new Set(
+    [
+      mod.key,
+      mod.name,
+      mod.group_name ?? "",
+      mod.manifest_id ?? "",
+      modGroupName(mod),
+    ].flatMap(droppedTokenVariants).filter(Boolean),
+  );
+}
+
+function droppedTokenVariants(value: string): string[] {
+  const withoutArchive = value.replace(/\.(zip|rar|7z|pck|pak|jar)$/i, "");
+  const withoutTranslation = withoutArchive.replace(/\s+korean\s+translation$/i, "").replace(/[_\-\s]?tr$/i, "");
+  const withoutVersionSuffix = withoutTranslation
+    .replace(/\s+v?\d[\w.\- ]*$/i, "")
+    .replace(/[-_]+v?\d[\w.\-]*$/i, "");
+  const leadingName = withoutTranslation.match(/^(.+?)[\s_-]+v?\d/i)?.[1] ?? withoutVersionSuffix;
+  return [value, withoutArchive, withoutTranslation, withoutVersionSuffix, leadingName].map(normalizeDroppedToken);
+}
+
+function normalizeDroppedToken(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣\u3400-\u9fff]/g, "");
+}
+
 function previewAsModRow(item: DroppedModPreview): ModRow {
   return {
     key: item.key,
     name: item.name,
+    manifest_id: null,
     group_name: null,
     active: false,
     managed: false,

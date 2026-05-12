@@ -138,6 +138,7 @@ function ModsPage(props: {
 
   return (
     <>
+      <div className={modChangesLocked ? "mod-lock-frame locked" : "mod-lock-frame"}>
       <div className="toolbar mod-toolbar">
         <div className="search-field">
           <Search size={16} />
@@ -216,14 +217,13 @@ function ModsPage(props: {
         >
           <List size={16} />
         </button>
-        <button className="toolbar-icon-button" aria-label={t.vanilla} data-tooltip={t.vanilla} onClick={props.onVanilla} disabled={Boolean(props.busy)}>
+        <button className="toolbar-icon-button" aria-label={t.vanilla} data-tooltip={t.vanilla} onClick={props.onVanilla} disabled={Boolean(props.busy) || props.launchRunning}>
           <Gamepad2 size={16} />
         </button>
-        <button className="toolbar-icon-button primary" aria-label={t.launch} data-tooltip={t.launch} onClick={props.onLaunch} disabled={Boolean(props.busy)}>
+        <button className="toolbar-icon-button primary" aria-label={t.launch} data-tooltip={t.launch} onClick={props.onLaunch} disabled={Boolean(props.busy) || props.launchRunning}>
           <Play size={16} fill="currentColor" />
         </button>
       </div>
-      <div className={modChangesLocked ? "mod-lock-frame locked" : "mod-lock-frame"}>
       <div className="table">
         {simpleView ? (
           <div className="table-head mod-simple-grid">

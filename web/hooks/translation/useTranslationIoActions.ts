@@ -17,6 +17,7 @@ import { isPreviewRuntime } from "../../utils/runtime";
 import type { TranslationActionsParams } from "./types";
 
 type ShortJsonExportOptions = boolean | {
+  changeOnly?: boolean;
   onlyEmpty?: boolean;
   scopePath?: string;
   warningOnly?: boolean;
@@ -27,6 +28,7 @@ export function useTranslationIoActions({
   dashboard,
   jsonExistingSheet,
   jsonOutputSheet,
+  jsonPckTargetPath,
   jsonSheet,
   jsonTargetLanguage,
   jsonValidation,
@@ -48,7 +50,7 @@ export function useTranslationIoActions({
     return false;
   }
 
-  async function saveEditedTranslationSheet() {
+  async function saveEditedTranslationSheet(options?: { finalizeStatuses?: boolean }) {
     if (!jsonSheet) {
       return false;
     }
@@ -66,9 +68,10 @@ export function useTranslationIoActions({
         appendLog("Preview action: save_json_translation_sheet");
         return true;
       }
+      const sheetToSave = options?.finalizeStatuses ? finalizeTranslationStatuses(jsonSheet) : jsonSheet;
       const result = await invokeCommand<JsonSheetAction>("save_json_translation_sheet", {
         sheetPath,
-        sheet: jsonSheet,
+        sheet: sheetToSave,
       });
       setJsonSheet(result.sheet);
       setJsonReport(result.report);
@@ -145,12 +148,19 @@ export function useTranslationIoActions({
       appendLog("검증 오류 항목이 없어 오류 JSON을 내보내지 않았습니다. 먼저 검증을 실행해 주세요.");
       return;
     }
+    if (normalizedOptions.changeOnly && !jsonSheet.entries.some((entry) => entry.status === "new" || entry.status === "updated")) {
+      appendLog("신규/변경 항목이 없어 JSON을 내보내지 않았습니다.");
+      return;
+    }
     const includeKeys = jsonSheet.entries
       .filter((entry) => {
         if (normalizedOptions.scopePath && !pathMatchesProjectNode(splitSheetKey(entry.key).file, normalizedOptions.scopePath)) {
           return false;
         }
         if (normalizedOptions.warningOnly && !warningKeys.has(entry.key)) {
+          return false;
+        }
+        if (normalizedOptions.changeOnly && entry.status !== "new" && entry.status !== "updated") {
           return false;
         }
         return true;
@@ -164,14 +174,16 @@ export function useTranslationIoActions({
     const suffix = [
       normalizedOptions.scopePath ? safeExportName(normalizedOptions.scopePath) : "",
       normalizedOptions.warningOnly ? "warning" : "",
+      normalizedOptions.changeOnly ? "change" : "",
       onlyEmpty ? "empty" : "",
     ].filter(Boolean).join(".");
     const defaultName = `${translationProject?.modName || "translation"}.${jsonSheet.target_language || "kor"}${suffix ? `.${suffix}` : ""}.short.json`;
+    const title = normalizedOptions.warningOnly ? "검증 오류 JSON 내보내기" : normalizedOptions.changeOnly ? "신규/변경 JSON 내보내기" : "번역용 JSON 내보내기";
     try {
       const outputPath = isPreviewRuntime()
         ? `${dashboard?.paths.translation_work ?? "translation_work"}/${defaultName}`
         : await saveDialog({
-            title: normalizedOptions.warningOnly ? "검증 오류 JSON 내보내기" : "번역용 JSON 내보내기",
+            title,
             defaultPath: defaultName,
             filters: [{ name: "JSON", extensions: ["json"] }],
           });
@@ -180,7 +192,7 @@ export function useTranslationIoActions({
       }
       setBusy("export_json_translation_short_json");
       if (isPreviewRuntime()) {
-        appendLog(normalizedOptions.warningOnly ? `Preview warning JSON export: ${outputPath}` : `Preview short JSON export: ${outputPath}`);
+        appendLog(`${title}: ${outputPath}`);
         return;
       }
       const result = normalizedOptions.warningOnly
@@ -189,13 +201,19 @@ export function useTranslationIoActions({
             sheet: jsonSheet,
             includeKeys: shouldLimitKeys ? includeKeys : undefined,
           })
+        : normalizedOptions.changeOnly
+          ? await invokeCommand<ShortJsonExport>("export_json_translation_change_json", {
+              outputPath,
+              sheet: jsonSheet,
+              includeKeys: includeKeys,
+            })
         : await invokeCommand<ShortJsonExport>("export_json_translation_short_json", {
             outputPath,
             sheet: jsonSheet,
             onlyEmpty,
             includeKeys: shouldLimitKeys ? includeKeys : undefined,
           });
-      appendLog(`${normalizedOptions.warningOnly ? "검증 오류 JSON" : "번역용 JSON"} 내보내기 완료: ${result.rows}행 (${result.output_path})`);
+      appendLog(`${normalizedOptions.warningOnly ? "검증 오류 JSON" : normalizedOptions.changeOnly ? "신규/변경 JSON" : "번역용 JSON"} 내보내기 완료: ${result.rows}행 (${result.output_path})`);
     } catch (error) {
       appendLog(String(error));
     } finally {
@@ -235,7 +253,7 @@ export function useTranslationIoActions({
         inputPath,
         sheet: jsonSheet,
       });
-      setJsonSheet(result.sheet);
+      setJsonSheet(preservePendingTranslationStatuses(jsonSheet, result.sheet));
       setJsonReport(result.report);
       setJsonValidation(null);
       setJsonApplyResult(null);
@@ -248,22 +266,27 @@ export function useTranslationIoActions({
     }
   }
 
-  async function exportTranslationPatchMod(options?: { skipSave?: boolean }) {
+  async function exportTranslationPatchMod(options?: { skipSave?: boolean }): Promise<boolean> {
     if (!jsonSheet) {
-      return;
+      return false;
+    }
+    const canExportPatchMod = translationProject?.canExportPatchMod ?? Boolean(jsonPckTargetPath);
+    if (!canExportPatchMod) {
+      appendLog("PCK 기반 작업이 아니어서 번역 모드로 내보낼 수 없습니다. 번역 저장/적용을 사용하세요.");
+      return false;
     }
     if (!ensureCurrentSheetLanguage("내보내기")) {
-      return;
+      return false;
     }
     const sheetPath = jsonOutputSheet || jsonExistingSheet;
     if (!sheetPath) {
       appendLog("내보낼 번역 시트 경로가 없습니다.");
-      return;
+      return false;
     }
     if (!options?.skipSave) {
       const saved = await saveEditedTranslationSheet();
       if (!saved) {
-        return;
+        return false;
       }
     }
     try {
@@ -276,12 +299,12 @@ export function useTranslationIoActions({
             defaultPath: dashboard?.paths.game_mods || dashboard?.paths.translation_work,
           });
       if (!outputDir || Array.isArray(outputDir)) {
-        return;
+        return false;
       }
       setBusy("export_translation_patch_mod");
       if (isPreviewRuntime()) {
         appendLog(`Preview translation patch export: ${outputDir}`);
-        return;
+        return true;
       }
       const result = await invokeCommand<TranslationPatchExport>("export_translation_patch_mod", {
         sheetPath,
@@ -298,8 +321,10 @@ export function useTranslationIoActions({
       appendLog(
         `번역 모드 내보내기 완료: ${result.package_id} / ${result.files}개 JSON / 언어 ${result.languages.join(", ") || "-"} (${result.output_dir})`,
       );
+      return true;
     } catch (error) {
       appendLog(String(error));
+      return false;
     } finally {
       setBusy(null);
     }
@@ -311,6 +336,44 @@ export function useTranslationIoActions({
     exportTranslationShortJson,
     importTranslationValues,
     saveEditedTranslationSheet,
+  };
+}
+
+function finalizeTranslationStatuses(sheet: NonNullable<TranslationActionsParams["jsonSheet"]>) {
+  return {
+    ...sheet,
+    entries: sheet.entries.map((entry) => {
+      if (entry.status !== "new" && entry.status !== "updated") {
+        return entry;
+      }
+      return {
+        ...entry,
+        status: hasTranslationValue(entry.translated_value) ? "ready" : "missing",
+      };
+    }),
+  };
+}
+
+function preservePendingTranslationStatuses(
+  previous: NonNullable<TranslationActionsParams["jsonSheet"]>,
+  next: NonNullable<TranslationActionsParams["jsonSheet"]>,
+) {
+  const previousByKey = new Map(previous.entries.map((entry) => [entry.key, entry]));
+  return {
+    ...next,
+    entries: next.entries.map((entry) => {
+      const previousEntry = previousByKey.get(entry.key);
+      if (!previousEntry || (previousEntry.status !== "new" && previousEntry.status !== "updated")) {
+        return entry;
+      }
+      if (!hasTranslationValue(entry.translated_value)) {
+        return entry;
+      }
+      return {
+        ...entry,
+        status: previousEntry.status,
+      };
+    }),
   };
 }
 

@@ -152,6 +152,7 @@ fn should_require_pck_pack(sheet: &JsonTranslationSheet) -> bool {
             .map(|context| {
                 context.input_pck_path.is_some()
                     || context.pck_stem.is_some()
+                    || context.translation_patch_source_path.is_some()
                     || context
                         .extraction_source_path
                         .as_deref()
@@ -174,6 +175,7 @@ fn build_translated_pck(
         .ok_or_else(|| "GodotPCKExplorer.Console.exe를 찾지 못했습니다.".to_string())?;
     let source_path = PathBuf::from(&sheet.source_path);
     let context = read_translation_context(&source_path).unwrap_or_default();
+    let apply_context = context.direct_apply_context();
     let build_root = sheet_path
         .parent()
         .unwrap_or_else(|| Path::new("."))
@@ -182,7 +184,7 @@ fn build_translated_pck(
     fs::create_dir_all(&build_root).map_err(|error| error.to_string())?;
     let _build_cleanup = TempBuildDir::new(build_root.clone());
 
-    let input_pck = resolve_input_pck(&context, &source_path, &build_root, vendor_dir)?;
+    let input_pck = resolve_input_pck(&apply_context, &source_path, &build_root, vendor_dir)?;
     let version = pck_version(&pck_tool, &input_pck).unwrap_or_else(|_| "2.4.3.0".to_string());
     let full_extract = build_root.join("full_extract");
     run_pck_tool(
@@ -222,7 +224,7 @@ fn build_translated_pck(
     };
     let install_source = output_pck.as_deref().unwrap_or(temp_output.as_path());
     let installed_mod_path = install_patched_archive_mod(
-        &context,
+        &apply_context,
         &build_root.join("archive"),
         &input_pck,
         install_source,
@@ -267,6 +269,11 @@ fn install_patched_archive_mod(
         fs::copy(patched_pck, source).map_err(|error| error.to_string())?;
         return Ok(Some(source.clone()));
     }
+    if source.is_dir() && input_pck.starts_with(source) && input_pck.exists() {
+        backup_existing_path(input_pck, config)?;
+        fs::copy(patched_pck, input_pck).map_err(|error| error.to_string())?;
+        return Ok(Some(source.clone()));
+    }
     if !is_supported_archive_path(source)
         || !archive_dir.is_dir()
         || !input_pck.starts_with(archive_dir)
@@ -285,7 +292,8 @@ fn install_patched_archive_mod(
     if source.parent() == Some(config.game_mods_dir.as_path()) {
         backup_existing_path(source, config)?;
     }
-    copy_dir_all(archive_dir, &target_dir).map_err(|error| error.to_string())?;
+    let payload_root = archive_install_payload_root(archive_dir);
+    copy_dir_all(&payload_root, &target_dir).map_err(|error| error.to_string())?;
     Ok(Some(target_dir))
 }
 
@@ -368,8 +376,9 @@ fn resolve_input_pck(
         .clone()
         .or_else(|| mod_key_from_selected_source(source_path))
     {
-        let vault_root = resolve_workspace_dir().join("vault").join(mod_key);
-        if let Some(source) = preferred_vault_source(&vault_root) {
+        let app = app();
+        if let Ok(record) = find_mod_record(&app, &mod_key) {
+            let source = extraction_source_for_record(&record);
             return pck_from_extractable_source(
                 &source,
                 context.pck_stem.as_deref(),
@@ -387,31 +396,65 @@ fn pck_from_extractable_source(
     build_root: &Path,
     vendor_dir: &Path,
 ) -> Result<PathBuf, String> {
-    if source
-        .extension()
-        .and_then(|value| value.to_str())
-        .map(|extension| extension.eq_ignore_ascii_case("pck"))
-        .unwrap_or(false)
-    {
+    if is_pck_path(source) {
         return Ok(source.to_path_buf());
+    }
+    if source.is_dir() {
+        return preferred_pck_from_directory(source, preferred_stem)
+            .ok_or_else(|| format!("폴더 내부에서 PCK를 찾지 못했습니다: {}", source.display()));
     }
     let archive_dir = build_root.join("archive");
     extract_archive_for_pck(source, &archive_dir, vendor_dir)?;
     let mut pcks = Vec::new();
-    collect_files_with_extension(&archive_dir, "pck", &mut pcks);
-    pcks.sort();
+    collect_supported_pck_files(&archive_dir, &mut pcks);
+    preferred_pck_from_candidates(pcks, preferred_stem)
+        .ok_or_else(|| format!("압축 내부에서 PCK를 찾지 못했습니다: {}", source.display()))
+}
+
+fn preferred_pck_from_directory(source: &Path, preferred_stem: Option<&str>) -> Option<PathBuf> {
+    let mut pcks = Vec::new();
+    collect_supported_pck_files(source, &mut pcks);
+    preferred_pck_from_candidates(pcks, preferred_stem)
+}
+
+fn preferred_pck_from_candidates(
+    mut pcks: Vec<PathBuf>,
+    preferred_stem: Option<&str>,
+) -> Option<PathBuf> {
+    pcks.sort_by(|left, right| {
+        left.components()
+            .count()
+            .cmp(&right.components().count())
+            .then_with(|| left.cmp(right))
+    });
     if let Some(stem) = preferred_stem {
         if let Some(path) = pcks.iter().find(|path| {
             path.file_stem()
                 .map(|value| value.to_string_lossy().eq_ignore_ascii_case(stem))
                 .unwrap_or(false)
         }) {
-            return Ok(path.clone());
+            return Some(path.clone());
         }
     }
-    pcks.into_iter()
-        .next()
-        .ok_or_else(|| format!("압축 내부에서 PCK를 찾지 못했습니다: {}", source.display()))
+    pcks.into_iter().next()
+}
+
+fn collect_supported_pck_files(root: &Path, output: &mut Vec<PathBuf>) {
+    let Ok(metadata) = fs::metadata(root) else {
+        return;
+    };
+    if metadata.is_file() {
+        if is_pck_path(root) {
+            output.push(root.to_path_buf());
+        }
+        return;
+    }
+    let Ok(entries) = fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.filter_map(Result::ok) {
+        collect_supported_pck_files(&entry.path(), output);
+    }
 }
 
 fn extract_archive_for_pck(
@@ -470,48 +513,6 @@ fn source_path_inside_pck(source_path: &Path) -> Option<PathBuf> {
     let stem = name.strip_suffix(".pck.contents")?;
     let pck = root.parent()?.join(format!("{stem}.pck"));
     pck.is_file().then_some(pck)
-}
-
-fn preferred_vault_source(vault_root: &Path) -> Option<PathBuf> {
-    let mut files = Vec::new();
-    collect_preferred_vault_sources(vault_root, &mut files);
-    files.sort();
-    files.into_iter().next()
-}
-
-fn collect_preferred_vault_sources(path: &Path, output: &mut Vec<PathBuf>) {
-    let Ok(metadata) = fs::metadata(path) else {
-        return;
-    };
-    if metadata.is_dir() {
-        if path
-            .file_name()
-            .map(|value| value.to_string_lossy().eq_ignore_ascii_case("disabled"))
-            .unwrap_or(false)
-        {
-            return;
-        }
-        let Ok(entries) = fs::read_dir(path) else {
-            return;
-        };
-        for entry in entries.filter_map(Result::ok) {
-            collect_preferred_vault_sources(&entry.path(), output);
-        }
-        return;
-    }
-    if path
-        .extension()
-        .and_then(|value| value.to_str())
-        .map(|extension| {
-            matches!(
-                extension.to_ascii_lowercase().as_str(),
-                "pck" | "rar" | "zip" | "7z"
-            )
-        })
-        .unwrap_or(false)
-    {
-        output.push(path.to_path_buf());
-    }
 }
 
 fn language_output_relative_to_pck(
@@ -792,12 +793,30 @@ fn sanitize_package_id(value: &str) -> String {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct TranslationContext {
     mod_key: Option<String>,
     extraction_source_path: Option<PathBuf>,
     input_pck_path: Option<PathBuf>,
     pck_stem: Option<String>,
+    translation_patch_source_path: Option<PathBuf>,
+    translation_patch_pck_stem: Option<String>,
+}
+
+impl TranslationContext {
+    fn direct_apply_context(&self) -> Self {
+        let Some(source) = self.translation_patch_source_path.clone() else {
+            return self.clone();
+        };
+        let mut context = self.clone();
+        context.extraction_source_path = Some(source);
+        context.input_pck_path = None;
+        context.pck_stem = context
+            .translation_patch_pck_stem
+            .clone()
+            .or_else(|| context.pck_stem.clone());
+        context
+    }
 }
 
 fn write_translation_context(
@@ -807,6 +826,8 @@ fn write_translation_context(
     extraction_source: &Path,
     pck_contents_root: Option<&Path>,
     pck_stem: &str,
+    translation_patch_source: Option<&Path>,
+    translation_patch_pck_stem: Option<&str>,
 ) -> std::io::Result<()> {
     let path = work_dir.join("translation_context.tsv");
     let mut content = String::new();
@@ -821,6 +842,15 @@ fn write_translation_context(
     }
     if !pck_stem.is_empty() {
         content.push_str(&format!("pck_stem\t{pck_stem}\n"));
+    }
+    if let Some(source) = translation_patch_source {
+        content.push_str(&format!(
+            "translation_patch_source_path\t{}\n",
+            source.display()
+        ));
+    }
+    if let Some(stem) = translation_patch_pck_stem.filter(|value| !value.is_empty()) {
+        content.push_str(&format!("translation_patch_pck_stem\t{stem}\n"));
     }
     fs::write(path, content)
 }
@@ -844,6 +874,12 @@ fn read_translation_context(source_path: &Path) -> Option<TranslationContext> {
                 context.input_pck_path = Some(PathBuf::from(value))
             }
             "pck_stem" if !value.is_empty() => context.pck_stem = Some(value.to_string()),
+            "translation_patch_source_path" if !value.is_empty() => {
+                context.translation_patch_source_path = Some(PathBuf::from(value))
+            }
+            "translation_patch_pck_stem" if !value.is_empty() => {
+                context.translation_patch_pck_stem = Some(value.to_string())
+            }
             _ => {}
         }
     }

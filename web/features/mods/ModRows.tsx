@@ -30,6 +30,7 @@ import {
   formatFullDateTime,
   formatShortDate,
   groupTranslationSummary,
+  isDownloadingMod,
   languageResourceRoot,
   recommendedSourceLanguage,
   representativeLanguage,
@@ -92,6 +93,7 @@ function ModTableRow({
   const rowChangeClass = changed ? ` ${modChangeClass(mod.update_state)}` : "";
   const dependencyWarnings = warningDependencies(mod);
   const translationBusy = isTranslationPreparing(busy, mod.key);
+  const downloading = isDownloadingMod(mod);
   return (
     <div
       className={`${child ? "table-row mod-grid mod-version-row" : "table-row mod-grid"}${mod.active ? "" : " inactive"}${focused ? " focused-mod" : ""}${changed ? " changed-mod" : ""}${rowChangeClass}`}
@@ -103,17 +105,16 @@ function ModTableRow({
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
+          {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
           {mod.needs_recheck && <StatusBadge tone="danger">Recheck</StatusBadge>}
           {mod.translation_review_required && <StatusBadge tone="danger">Translation</StatusBadge>}
           {mod.dependencies.some((dependency) => !dependency.available) && <StatusBadge tone="danger">Missing Dep</StatusBadge>}
           {hasDependencyVersionMismatch(mod) && <StatusBadge tone="danger">Dep Version</StatusBadge>}
-          {mod.safety_warnings.length > 0 && <StatusBadge tone="danger">Save</StatusBadge>}
         </strong>
         <small>{sourcePathLine(mod)}</small>
         {changed && <ChangeReasonList reasons={mod.change_reasons} />}
         {mod.dependencies.length > 0 && <DependencyList dependencies={mod.dependencies} />}
-        {mod.safety_warnings.length > 0 && <SafetyWarningList warnings={mod.safety_warnings} />}
       </div>
       <div className={changeCellClass(mod, "version-source-cell", showChangeDetails, ["파일 크기", "새로 감지"])}>
         <span>{displayModVersion(mod)}</span>
@@ -140,16 +141,16 @@ function ModTableRow({
             {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
         )}
-        <ToggleSwitch active={mod.active} pending={toggling} locked={Boolean(busy) || locked} label={mod.name} onToggle={() => onToggle(mod)} />
+        <ToggleSwitch active={mod.active} pending={toggling} locked={Boolean(busy) || locked || downloading} label={mod.name} onToggle={() => onToggle(mod)} />
         <IconButton
           label={translationBusy ? `${mod.name} 번역 도구 준비 중...` : `${mod.name} 번역 도구에서 열기`}
           icon={translationBusy ? Loader2 : Languages}
           onClick={() => onStartModTranslation(mod, primaryResourcePath)}
-          disabled={Boolean(busy) || locked || (!primaryResourcePath && mod.extraction_tree.length === 0)}
+          disabled={Boolean(busy) || locked || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0)}
           loading={translationBusy}
         />
         <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />
-        <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || locked} />
+        <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || locked || downloading} />
         <IconButton
           label={confirmDelete ? "한 번 더 누르면 삭제합니다" : deleteLabel}
           icon={confirmDelete ? CheckCircle2 : Trash2}
@@ -192,12 +193,19 @@ function ModGroupTableRow({
   const changed = showChangeDetails && group.updateCount > 0;
   const rowChangeClass = changed ? ` ${groupChangeClass(group.mods)}` : "";
   const dependencyWarnings = warningDependenciesForGroup(group.mods);
+  const downloading = group.mods.some(isDownloadingMod);
+  const summaryMods = activeSummaryMods(group.mods);
+  const handleBlankClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (isExpandableRowBlankClick(event)) {
+      onToggleExpand();
+    }
+  };
   return (
     <div
       className={`table-row mod-grid mod-group-row${changed ? " changed-mod" : ""}${rowChangeClass}`}
       role="button"
       tabIndex={0}
-      onClick={onToggleExpand}
+      onClick={handleBlankClick}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -211,28 +219,29 @@ function ModGroupTableRow({
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
+          {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
         </strong>
         <small>{group.mods.length}개 버전 · {activeModSummary(group.mods)} · 변경 {group.updateCount}</small>
       </div>
       <div className="version-source-cell">
-        <span>{compactVersionSummary(group.mods)}</span>
-        <small>{compactSourceSummary(group.mods)}</small>
+        <span>{compactVersionSummary(summaryMods)}</span>
+        <small>{compactSourceSummary(summaryMods)}</small>
         <Pill tone={group.updateCount > 0 ? "warn" : "good"}>{group.updateCount > 0 ? "updated" : "clean"}</Pill>
       </div>
       <div className="date-cell">
-        <span>{compactDateSummary(group.mods)}</span>
-        <small>{compactModifiedSummary(group.mods)}</small>
+        <span>{compactDateSummary(summaryMods)}</span>
+        <small>{compactModifiedSummary(summaryMods)}</small>
       </div>
       <div className="translation-apply-cell">
-        <Pill tone={group.mods.some((mod) => mod.translation_applied) ? "good" : "warn"}>{groupTranslationSummary(group.mods)}</Pill>
-        <small>{compactTranslationApplyDate(group.mods)}</small>
+        <Pill tone={summaryMods.some((mod) => mod.translation_applied) ? "good" : "warn"}>{groupTranslationSummary(summaryMods)}</Pill>
+        <small>{compactTranslationApplyDate(summaryMods)}</small>
       </div>
       <div className="language-cell">
-        <strong>{compactLanguageSummary(group.mods)}</strong>
+        <strong>{compactLanguageSummary(summaryMods)}</strong>
         <small>클릭해서 버전별 항목 보기</small>
       </div>
       <div className="row-actions group-row-actions" onClick={(event) => event.stopPropagation()}>
-        <ToggleSwitch active={group.activeCount > 0} pending={toggling} locked={Boolean(busy) || locked} label={`${group.name} 그룹`} onToggle={onToggleGroup} />
+        <ToggleSwitch active={group.activeCount > 0} pending={toggling} locked={Boolean(busy) || locked || (downloading && group.activeCount === 0)} label={`${group.name} 그룹`} onToggle={onToggleGroup} />
         <button className="icon-only-button" type="button" aria-label={expanded ? "접기" : "열기"} data-tooltip={expanded ? "접기" : "열기"} onClick={onToggleExpand}>
           {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
@@ -265,29 +274,48 @@ function SimpleModGroupRow({
   const changed = showChangeDetails && group.updateCount > 0;
   const rowChangeClass = changed ? ` changed-mod ${groupChangeClass(group.mods)}` : "";
   const dependencyWarnings = warningDependenciesForGroup(group.mods);
+  const downloading = group.mods.some(isDownloadingMod);
+  const summaryMods = activeSummaryMods(group.mods);
+  const handleBlankClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (isExpandableRowBlankClick(event)) {
+      onToggleExpand();
+    }
+  };
   return (
-    <div className={`table-row mod-simple-grid mod-group-row simple${rowChangeClass ? ` ${rowChangeClass}` : ""}`}>
+    <div
+      className={`table-row mod-simple-grid mod-group-row simple${rowChangeClass ? ` ${rowChangeClass}` : ""}`}
+      role="button"
+      tabIndex={0}
+      onClick={handleBlankClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onToggleExpand();
+        }
+      }}
+    >
       <div className="mod-title">
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
+          {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
         </strong>
         <small>{group.mods.length}개 버전 · {activeModSummary(group.mods)}</small>
       </div>
       <div className="version-source-cell">
-        <span>{compactVersionSummary(group.mods)}</span>
+        <span>{compactVersionSummary(summaryMods)}</span>
       </div>
       <div className="language-cell">
         <RepresentativeLanguageBadge
-          languages={uniqueLanguagePreviews(group.mods.flatMap((mod) => mod.language_preview))}
-          fallback={groupTranslationSummary(group.mods)}
+          languages={uniqueLanguagePreviews(summaryMods.flatMap((mod) => mod.language_preview))}
+          fallback={groupTranslationSummary(summaryMods)}
           targetLanguage={targetLanguage}
         />
       </div>
-      <div className="row-actions simple-row-actions">
-        <ToggleSwitch active={group.activeCount > 0} pending={toggling} locked={Boolean(busy) || locked} label={`${group.name} 그룹`} onToggle={onToggleGroup} />
+      <div className="row-actions simple-row-actions" onClick={(event) => event.stopPropagation()}>
+        <ToggleSwitch active={group.activeCount > 0} pending={toggling} locked={Boolean(busy) || locked || (downloading && group.activeCount === 0)} label={`${group.name} 그룹`} onToggle={onToggleGroup} />
         <button className="icon-only-button" type="button" aria-label={expanded ? "접기" : "열기"} data-tooltip={expanded ? "접기" : "열기"} onClick={onToggleExpand}>
           {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
@@ -350,6 +378,7 @@ function SimpleModRow({
   const rowChangeClass = changed ? ` ${modChangeClass(mod.update_state)}` : "";
   const dependencyWarnings = warningDependencies(mod);
   const translationBusy = isTranslationPreparing(busy, mod.key);
+  const downloading = isDownloadingMod(mod);
   return (
     <div
       className={`${child ? "table-row mod-simple-grid mod-version-row simple" : "table-row mod-simple-grid simple"}${mod.active ? "" : " inactive"}${focused ? " focused-mod" : ""}${changed ? " changed-mod" : ""}${rowChangeClass}`}
@@ -361,11 +390,11 @@ function SimpleModRow({
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
+          {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
           {mod.needs_recheck && <StatusBadge tone="danger">Recheck</StatusBadge>}
           {mod.dependencies.some((dependency) => !dependency.available) && <StatusBadge tone="danger">Missing Dep</StatusBadge>}
           {hasDependencyVersionMismatch(mod) && <StatusBadge tone="danger">Dep Version</StatusBadge>}
-          {mod.safety_warnings.length > 0 && <StatusBadge tone="danger">Save</StatusBadge>}
         </strong>
         <small>{sourcePathLine(mod)}</small>
         {changed && <ChangeReasonList reasons={mod.change_reasons} />}
@@ -389,16 +418,16 @@ function SimpleModRow({
             {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
         )}
-        <ToggleSwitch active={mod.active} pending={toggling} locked={Boolean(busy) || locked} label={mod.name} onToggle={() => onToggle(mod)} />
+        <ToggleSwitch active={mod.active} pending={toggling} locked={Boolean(busy) || locked || downloading} label={mod.name} onToggle={() => onToggle(mod)} />
         <IconButton
           label={translationBusy ? `${mod.name} 번역 도구 준비 중...` : `${mod.name} 번역 도구에서 열기`}
           icon={translationBusy ? Loader2 : Languages}
           onClick={() => onStartModTranslation(mod, primaryResourcePath)}
-          disabled={Boolean(busy) || locked || (!primaryResourcePath && mod.extraction_tree.length === 0)}
+          disabled={Boolean(busy) || locked || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0)}
           loading={translationBusy}
         />
         <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />
-        <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || locked} />
+        <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || locked || downloading} />
         <IconButton
           label={confirmDelete ? "한 번 더 누르면 삭제합니다" : `${mod.name} 삭제`}
           icon={confirmDelete ? CheckCircle2 : Trash2}
@@ -454,6 +483,26 @@ function DependencyWarningIcon({ dependencies }: { dependencies: ModDependency[]
 
 function isTranslationPreparing(busy: string | null, modKey: string): boolean {
   return busy === `prepare_translation_node:${modKey}` || busy === "prepare_translation_node";
+}
+
+function activeSummaryMods(mods: ModRow[]): ModRow[] {
+  const activeMods = mods.filter((mod) => mod.active);
+  return activeMods.length === 1 ? activeMods : mods;
+}
+
+function isExpandableRowBlankClick(event: React.MouseEvent<HTMLDivElement>): boolean {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  if (target.closest("button, label, input, select, textarea, a")) {
+    return false;
+  }
+  if (target.closest("strong, small, span, svg, path")) {
+    return false;
+  }
+  const blankTarget = target.closest(".mod-group-row, .mod-title, .version-source-cell, .date-cell, .translation-apply-cell, .language-cell");
+  return blankTarget === event.currentTarget || blankTarget === target;
 }
 
 function ToggleSwitch({
@@ -585,16 +634,6 @@ function DependencyList({ dependencies }: { dependencies: ModDependency[] }) {
           </b>
         );
       })}
-    </div>
-  );
-}
-
-function SafetyWarningList({ warnings }: { warnings: string[] }) {
-  return (
-    <div className="safety-warning-list">
-      {warnings.slice(0, 2).map((warning) => (
-        <span key={warning}>{warning}</span>
-      ))}
     </div>
   );
 }

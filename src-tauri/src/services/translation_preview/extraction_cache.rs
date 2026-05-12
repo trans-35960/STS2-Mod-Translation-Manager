@@ -183,7 +183,7 @@ fn remove_unkept_preview_files(path: &Path, keep_files: &BTreeSet<PathBuf>) {
     };
     if metadata.is_file() {
         if !keep_files.contains(path) {
-            let _ = fs::remove_file(path);
+            let _ = remove_preview_file(path);
         }
         return;
     }
@@ -193,6 +193,17 @@ fn remove_unkept_preview_files(path: &Path, keep_files: &BTreeSet<PathBuf>) {
     for entry in entries.filter_map(Result::ok) {
         remove_unkept_preview_files(&entry.path(), keep_files);
     }
+}
+
+fn remove_preview_file(path: &Path) -> std::io::Result<()> {
+    if let Ok(metadata) = fs::metadata(path) {
+        let mut permissions = metadata.permissions();
+        if permissions.readonly() {
+            permissions.set_readonly(false);
+            let _ = fs::set_permissions(path, permissions);
+        }
+    }
+    fs::remove_file(path)
 }
 
 fn remove_empty_preview_dirs(path: &Path, root: &Path) -> bool {

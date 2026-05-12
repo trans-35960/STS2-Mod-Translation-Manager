@@ -27,8 +27,15 @@ export type Dashboard = {
   translations: TranslationWorkspace[];
   deleted_mods: DeletedMod[];
   save_backups: SaveBackup[];
+  cache_usage: CacheUsage;
   tools: Tool[];
   launch: LaunchStatus;
+};
+
+export type CacheUsage = {
+  bytes: number;
+  files: number;
+  dirs: number;
 };
 
 export type UiSettings = {
@@ -90,6 +97,7 @@ export type TroubleshootDiagnostic = {
 export type ModRow = {
   key: string;
   name: string;
+  manifest_id: string | null;
   group_name: string | null;
   active: boolean;
   managed: boolean;
@@ -102,6 +110,7 @@ export type ModRow = {
   registered_epoch: number | null;
   updated_epoch: number | null;
   path: string;
+  download_state?: string | null;
   update_state: string;
   change_reasons: string[];
   translation_state: string;
@@ -255,6 +264,7 @@ export type NodeTranslationResult = {
   mod_author: string;
   mod_description: string;
   available_languages: LanguagePreview[];
+  can_export_patch_mod: boolean;
 };
 
 export type TranslationProjectInfo = {
@@ -265,6 +275,7 @@ export type TranslationProjectInfo = {
   author: string;
   description: string;
   languages: LanguagePreview[];
+  canExportPatchMod?: boolean;
 };
 
 export type LanguageCompareValue = {
@@ -297,6 +308,7 @@ export type JsonTranslationSheet = {
 export type JsonTranslationEntry = {
   key: string;
   slot_id?: string | null;
+  previous_source_value?: string | null;
   source_value: string;
   translated_value: string;
   status: "new" | "ready" | "updated" | "missing" | "removed";

@@ -41,6 +41,83 @@ pub(crate) fn create_json_translation_sheet(
     })
 }
 
+pub(crate) fn recalculate_json_translation_sheet(
+    source_path: String,
+    current_sheet_path: String,
+    output_path: Option<String>,
+    target_language: Option<String>,
+) -> Result<JsonSheetActionDto, String> {
+    let app = app();
+    app.ensure_workspace_dirs()
+        .map_err(|error| error.to_string())?;
+    let settings = read_ui_settings(app.config()).map_err(|error| error.to_string())?;
+    let source = PathBuf::from(source_path.trim());
+    if source.as_os_str().is_empty() {
+        return Err("원본 JSON 경로를 입력하세요.".to_string());
+    }
+
+    let current_path = PathBuf::from(current_sheet_path.trim());
+    if current_path.as_os_str().is_empty() {
+        return Err("재계산할 번역 시트 경로가 없습니다.".to_string());
+    }
+    let output = output_path
+        .filter(|value| !value.trim().is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| current_path.clone());
+    let language = target_language
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or(settings.target_language);
+
+    let current_sheet = read_sheet(&current_path).map_err(|error| error.to_string())?;
+    let baseline = find_recalculation_baseline_sheet(app.config(), &current_path, &current_sheet)
+        .or_else(|| previous_source_baseline_sheet(&current_sheet))
+        .unwrap_or_else(|| neutral_current_baseline_sheet(&current_sheet));
+    let temp_root = output
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join(format!(".sheet-recalculate-{}", timestamp_string()));
+    fs::create_dir_all(&temp_root).map_err(|error| error.to_string())?;
+    let baseline_path = {
+        let path = temp_root.join("baseline.translation.json");
+        write_sheet(&path, &baseline.sheet).map_err(|error| error.to_string())?;
+        Some(path)
+    };
+    let generated_path = temp_root.join("generated.translation.json");
+
+    let report_result = create_or_update_sheet(
+        &source,
+        &language,
+        baseline_path.as_deref(),
+        &generated_path,
+    );
+    let mut recalculated = match report_result {
+        Ok(_) => read_sheet(&generated_path).map_err(|error| error.to_string())?,
+        Err(error) => {
+            let _ = fs::remove_dir_all(&temp_root);
+            return Err(error.to_string());
+        }
+    };
+    preserve_current_translations(&current_sheet, &mut recalculated);
+    write_sheet(&output, &recalculated).map_err(|error| error.to_string())?;
+    let _ = fs::remove_dir_all(&temp_root);
+
+    let saved = read_sheet(&output).map_err(|error| error.to_string())?;
+    let report = create_report_for_saved_sheet(&output, &saved);
+    let baseline_label = baseline.label.as_str();
+    Ok(JsonSheetActionDto {
+        message: format!(
+            "번역 시트 재계산 완료: {}개 항목, 신규 {}개, 업데이트 {}개, 삭제 {}개 / 기준: {}",
+            report.entries,
+            report.new_entries,
+            report.updated_entries,
+            report.removed_entries,
+            baseline_label
+        ),
+        report: json_report_dto(report),
+        sheet: json_sheet_dto(saved),
+    })
+}
+
 pub(crate) fn load_json_translation_sheet(sheet_path: String) -> Result<JsonSheetDto, String> {
     let path = PathBuf::from(sheet_path.trim());
     let sheet = read_sheet(&path).map_err(|error| error.to_string())?;
@@ -174,6 +251,53 @@ pub(crate) fn export_json_translation_warning_json(
     })
 }
 
+pub(crate) fn export_json_translation_change_json(
+    output_path: String,
+    sheet: JsonSheetDto,
+    include_keys: Option<Vec<String>>,
+) -> Result<ShortJsonExportDto, String> {
+    let path = PathBuf::from(output_path.trim());
+    if path.as_os_str().is_empty() {
+        return Err("신규/변경 JSON 출력 경로를 선택하세요.".to_string());
+    }
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    let domain = json_sheet_from_dto(sheet)?;
+    let include_keys = include_keys.map(|keys| keys.into_iter().collect::<BTreeSet<_>>());
+    let mut output = BTreeMap::<String, BTreeMap<String, serde_json::Value>>::new();
+    for slot in translation_slot_entries(&domain) {
+        if include_keys
+            .as_ref()
+            .is_some_and(|keys| !keys.contains(&slot.entry.key))
+        {
+            continue;
+        }
+        if !matches!(
+            slot.entry.status,
+            JsonTranslationStatus::New | JsonTranslationStatus::Updated
+        ) {
+            continue;
+        }
+        output.entry(slot.compact_file).or_default().insert(
+            slot.id,
+            serde_json::json!({
+                "status": status_label(slot.entry.status),
+                "original_source": slot.entry.previous_source_value.clone().unwrap_or_default(),
+                "source": slot.entry.source_value,
+                "translation": slot.entry.translated_value,
+            }),
+        );
+    }
+    let rows = output.values().map(BTreeMap::len).sum();
+    let content = serde_json::to_string_pretty(&output).map_err(|error| error.to_string())?;
+    fs::write(&path, content).map_err(|error| error.to_string())?;
+    Ok(ShortJsonExportDto {
+        output_path: display_path(&path),
+        rows,
+    })
+}
+
 pub(crate) fn import_json_translation_values(
     input_path: String,
     sheet: JsonSheetDto,
@@ -209,6 +333,28 @@ pub(crate) fn compare_translation_language(
         .ok_or_else(|| "비교 언어 폴더를 찾지 못했습니다.".to_string())?;
     let scan_root = compare_scan_root(&sheet)
         .ok_or_else(|| "비교할 원본 모드 파일을 찾지 못했습니다.".to_string())?;
+    let compare_source = compare_language_source_path(&sheet, &scan_root, &sample_relative);
+    if compare_source.exists() {
+        let temp_path = sheet_path
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join(format!(".compare-language-{}.json", timestamp_string()));
+        let generated = create_or_update_sheet(&compare_source, &sheet.target_language, None, &temp_path)
+            .and_then(|_| read_sheet(&temp_path));
+        let _ = fs::remove_file(&temp_path);
+        if let Ok(compare_sheet) = generated {
+            return Ok(compare_values_from_sheet(&sheet, &compare_sheet));
+        }
+    }
+
+    compare_translation_language_by_files(&sheet, &scan_root, &compare_language)
+}
+
+fn compare_translation_language_by_files(
+    sheet: &JsonTranslationSheet,
+    scan_root: &Path,
+    compare_language: &str,
+) -> Result<Vec<LanguageCompareValueDto>, String> {
     let mut json_cache = BTreeMap::<PathBuf, serde_json::Value>::new();
     let mut values = Vec::new();
     for entry in &sheet.entries {
@@ -244,6 +390,93 @@ pub(crate) fn compare_translation_language(
         }
     }
     Ok(values)
+}
+
+fn compare_language_source_path(
+    sheet: &JsonTranslationSheet,
+    scan_root: &Path,
+    sample_relative: &Path,
+) -> PathBuf {
+    if sheet_uses_directory_entry_keys(sheet) {
+        if let Some(language_root) = localization_language_root(sample_relative) {
+            return scan_root.join(language_root);
+        }
+    }
+    scan_root.join(sample_relative)
+}
+
+fn sheet_uses_directory_entry_keys(sheet: &JsonTranslationSheet) -> bool {
+    sheet
+        .entries
+        .iter()
+        .any(|entry| entry.key.starts_with("file://"))
+}
+
+fn localization_language_root(path: &Path) -> Option<PathBuf> {
+    let parts = path_components(path);
+    let localization = parts
+        .iter()
+        .position(|part| part.eq_ignore_ascii_case("localization"))?;
+    if localization + 1 >= parts.len() {
+        return None;
+    }
+    Some(parts.iter().take(localization + 2).collect())
+}
+
+fn compare_values_from_sheet(
+    sheet: &JsonTranslationSheet,
+    compare_sheet: &JsonTranslationSheet,
+) -> Vec<LanguageCompareValueDto> {
+    let mut values_by_slot = BTreeMap::<(String, String), String>::new();
+    let mut values_by_stable_key = BTreeMap::<String, String>::new();
+    for slot in translation_slot_entries(compare_sheet) {
+        values_by_slot.insert(
+            (slot.compact_file.clone(), slot.id.clone()),
+            slot.entry.source_value.clone(),
+        );
+        values_by_stable_key.insert(
+            compare_stable_entry_key(&slot.entry.key),
+            slot.entry.source_value.clone(),
+        );
+    }
+
+    let mut values = Vec::new();
+    for slot in translation_slot_entries(sheet) {
+        let slot_key = (slot.compact_file.clone(), slot.id.clone());
+        let value = values_by_slot
+            .get(&slot_key)
+            .or_else(|| values_by_stable_key.get(&compare_stable_entry_key(&slot.entry.key)));
+        if let Some(value) = value {
+            values.push(LanguageCompareValueDto {
+                key: slot.entry.key.clone(),
+                value: value.clone(),
+            });
+        }
+    }
+    values
+}
+
+fn compare_stable_entry_key(key: &str) -> String {
+    let (file, pointer) = split_translation_key(key);
+    format!("{}#{pointer}", compare_compact_translation_file(&file))
+}
+
+fn compare_compact_translation_file(file: &str) -> String {
+    let normalized = file.replace('\\', "/");
+    let parts = normalized
+        .split('/')
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+    let Some(index) = parts
+        .iter()
+        .position(|part| part.eq_ignore_ascii_case("localization"))
+    else {
+        return normalized;
+    };
+    if index + 2 >= parts.len() {
+        return normalized;
+    }
+    parts[index + 2..].join("/")
 }
 
 pub(crate) fn apply_json_translation_sheet(
@@ -395,6 +628,7 @@ fn apply_folder_translation_output(
     else {
         return Ok(None);
     };
+    prepare_folder_translation_install_root(&context, &install_root, config)?;
     if let Some(parent) = target_path.parent() {
         fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     }
@@ -432,7 +666,8 @@ fn folder_translation_install_root(
         .clone()
         .or_else(|| mod_key_from_selected_source(source_path));
     if let Some(mod_key) = mod_key {
-        if let Ok(record) = find_mod_record(&app(), &mod_key) {
+        let app = App::new(config.clone());
+        if let Ok(record) = find_mod_record(&app, &mod_key) {
             let extraction_source = extraction_source_for_record(&record);
             if extraction_source.is_dir() {
                 return Some(extraction_source);
@@ -455,6 +690,85 @@ fn folder_translation_install_root(
         });
     }
     None
+}
+
+fn prepare_folder_translation_install_root(
+    context: &TranslationContext,
+    install_root: &Path,
+    config: &AppConfig,
+) -> Result<(), String> {
+    let Some(source) = context.extraction_source_path.as_ref() else {
+        return Ok(());
+    };
+    if !source.is_file() || !is_supported_archive_path(source) {
+        return Ok(());
+    }
+    if folder_install_root_has_runtime_payload(install_root) {
+        return Ok(());
+    }
+
+    let build_root = config
+        .translation_work_dir
+        .join("archive_install")
+        .join(timestamp_string());
+    fs::create_dir_all(&build_root).map_err(|error| error.to_string())?;
+    let _build_cleanup = TempBuildDir::new(build_root.clone());
+    let extracted_root = build_root.join("extracted");
+    if !expand_source(source, &extracted_root, &config.vendor_dir) {
+        return Err(format!("원본 모드 압축 해제 실패: {}", source.display()));
+    }
+    let payload_root = archive_install_payload_root(&extracted_root);
+    if !folder_install_root_has_runtime_payload(&payload_root) {
+        return Err(format!(
+            "원본 모드 구성 파일을 찾지 못했습니다: {}",
+            source.display()
+        ));
+    }
+
+    backup_existing_path(install_root, config)?;
+    copy_dir_all(&payload_root, install_root).map_err(|error| error.to_string())?;
+    Ok(())
+}
+
+fn archive_install_payload_root(extracted_root: &Path) -> PathBuf {
+    let Ok(entries) = fs::read_dir(extracted_root) else {
+        return extracted_root.to_path_buf();
+    };
+    let children = entries
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .collect::<Vec<_>>();
+    let directory_children = children
+        .iter()
+        .filter(|path| path.is_dir())
+        .cloned()
+        .collect::<Vec<_>>();
+    let file_children = children.iter().filter(|path| path.is_file()).count();
+    if file_children == 0 && directory_children.len() == 1 {
+        return directory_children[0].clone();
+    }
+    extracted_root.to_path_buf()
+}
+
+fn folder_install_root_has_runtime_payload(path: &Path) -> bool {
+    let Ok(entries) = fs::read_dir(path) else {
+        return false;
+    };
+    entries.filter_map(Result::ok).any(|entry| {
+        let path = entry.path();
+        if !path.is_file() {
+            return false;
+        }
+        path.extension()
+            .and_then(|value| value.to_str())
+            .map(|extension| {
+                matches!(
+                    extension.to_ascii_lowercase().as_str(),
+                    "dll" | "pck" | "pak" | "json"
+                )
+            })
+            .unwrap_or(false)
+    })
 }
 
 fn record_translation_apply(
@@ -583,7 +897,7 @@ fn translation_apply_history_path(config: &AppConfig) -> PathBuf {
 
 fn remember_applied_language_preview(
     sheet: &JsonTranslationSheet,
-    language_output_path: &Path,
+    _language_output_path: &Path,
     config: &AppConfig,
 ) -> Result<(), String> {
     let source_path = PathBuf::from(&sheet.source_path);
@@ -595,7 +909,8 @@ fn remember_applied_language_preview(
     else {
         return Ok(());
     };
-    let summary = app()
+    let app = App::new(config.clone());
+    let summary = app
         .scan_preview_report()
         .map_err(|error| error.to_string())?
         .summary;
@@ -611,24 +926,7 @@ fn remember_applied_language_preview(
     let extraction_source = extraction_source_for_record(&record);
     let cache_key = language_cache_key(&record, &extraction_source, &config.vendor_dir);
     let mut cache = read_language_preview_cache(config).map_err(|error| error.to_string())?;
-    let mut detected = language_preview(&extraction_source, &cache_key, &config.vendor_dir);
-    let files = count_files_with_extension(language_output_path, "json").max(1);
-    let preview = LanguagePreviewDto {
-        code: sheet.target_language.clone(),
-        label: language_label(&sheet.target_language).to_string(),
-        files,
-        keys: count_json_translation_keys(language_output_path),
-        sample_path: language_output_relative_to_pck(&source_path, language_output_path)
-            .map(|relative| format!("res://{}", slash_path(&relative)))
-            .unwrap_or_else(|_| display_path(language_output_path)),
-    };
-    if let Some(existing) = detected.iter_mut().find(|item| item.code == preview.code) {
-        *existing = preview;
-    } else {
-        detected.push(preview);
-    }
-    sort_language_previews(&mut detected);
-    detected.dedup_by(|left, right| left.code == right.code);
+    let detected = language_preview(&extraction_source, &cache_key, &config.vendor_dir);
     cache.entries.insert(cache_key, detected);
     cache.dirty = true;
     write_language_preview_cache(config, &cache).map_err(|error| error.to_string())
@@ -713,6 +1011,222 @@ fn json_entry_is_translatable(entry: &JsonTranslationEntry) -> bool {
     entry.status != JsonTranslationStatus::Removed && !entry.source_value.trim().is_empty()
 }
 
+fn previous_source_baseline_sheet(sheet: &JsonTranslationSheet) -> Option<RecalculationBaseline> {
+    let mut baseline = sheet.clone();
+    let mut changed = false;
+    let mut changed_entries = 0usize;
+    let translatable_entries = sheet
+        .entries
+        .iter()
+        .filter(|entry| json_entry_is_translatable(entry))
+        .count();
+    for entry in &mut baseline.entries {
+        let Some(previous_source) = entry.previous_source_value.take() else {
+            continue;
+        };
+        changed_entries += 1;
+        entry.source_value = previous_source;
+        entry.status = if entry.translated_value.trim().is_empty() {
+            JsonTranslationStatus::Missing
+        } else {
+            JsonTranslationStatus::Ready
+        };
+        changed = true;
+    }
+    if !changed || changed_entries > translatable_entries.saturating_mul(2) / 3 {
+        return None;
+    }
+    Some(RecalculationBaseline {
+        label: format!("현재 시트의 이전 원문 {}개", changed_entries),
+        score: changed_entries,
+        sheet: baseline,
+    })
+}
+
+fn neutral_current_baseline_sheet(sheet: &JsonTranslationSheet) -> RecalculationBaseline {
+    let mut baseline = sheet.clone();
+    for entry in &mut baseline.entries {
+        entry.previous_source_value = None;
+        entry.status = if entry.translated_value.trim().is_empty() {
+            JsonTranslationStatus::Missing
+        } else {
+            JsonTranslationStatus::Ready
+        };
+    }
+    RecalculationBaseline {
+        label: "기준 없음: 같은 원본 언어의 이전 시트를 찾지 못해 현재 시트 원문을 기준으로 정리".to_string(),
+        score: 0,
+        sheet: baseline,
+    }
+}
+
+fn find_recalculation_baseline_sheet(
+    config: &AppConfig,
+    current_path: &Path,
+    current_sheet: &JsonTranslationSheet,
+) -> Option<RecalculationBaseline> {
+    let memory_root = config.translation_work_dir.join("translation_memory");
+    let mut candidates = Vec::new();
+    collect_recalculation_baseline_candidates(
+        &memory_root,
+        current_path,
+        current_sheet,
+        &mut candidates,
+    )
+    .ok()?;
+    candidates
+        .into_iter()
+        .max_by_key(|candidate| (candidate.baseline.score, candidate.updated_epoch))
+        .map(|candidate| candidate.baseline)
+}
+
+struct RecalculationBaseline {
+    label: String,
+    score: usize,
+    sheet: JsonTranslationSheet,
+}
+
+struct RecalculationBaselineCandidate {
+    baseline: RecalculationBaseline,
+    updated_epoch: u64,
+}
+
+fn collect_recalculation_baseline_candidates(
+    root: &Path,
+    current_path: &Path,
+    current_sheet: &JsonTranslationSheet,
+    candidates: &mut Vec<RecalculationBaselineCandidate>,
+) -> Result<(), String> {
+    if !root.is_dir() {
+        return Ok(());
+    }
+    for entry in fs::read_dir(root).map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        let path = entry.path();
+        if path.is_dir() {
+            collect_recalculation_baseline_candidates(
+                &path,
+                current_path,
+                current_sheet,
+                candidates,
+            )?;
+            continue;
+        }
+        if path == current_path || path.extension().and_then(|value| value.to_str()) != Some("json")
+        {
+            continue;
+        }
+        let Ok(sheet) = read_sheet(&path) else {
+            continue;
+        };
+        if !sheet
+            .target_language
+            .eq_ignore_ascii_case(&current_sheet.target_language)
+        {
+            continue;
+        }
+        let current_language = sheet_source_language(current_sheet);
+        let candidate_language = sheet_source_language(&sheet);
+        if let Some(current_language) = current_language.as_ref() {
+            match candidate_language.as_ref() {
+                Some(candidate_language)
+                    if candidate_language.eq_ignore_ascii_case(current_language) => {}
+                _ => continue,
+            }
+        }
+        let Some(score) = recalculation_baseline_score(current_sheet, &sheet) else {
+            continue;
+        };
+        let updated_epoch = sheet.updated_epoch;
+        candidates.push(RecalculationBaselineCandidate {
+            baseline: RecalculationBaseline {
+                label: format!("{} (겹침 점수 {})", display_path(&path), score),
+                score,
+                sheet,
+            },
+            updated_epoch,
+        });
+    }
+    Ok(())
+}
+
+fn recalculation_baseline_score(
+    current: &JsonTranslationSheet,
+    candidate: &JsonTranslationSheet,
+) -> Option<usize> {
+    let current_entries = current
+        .entries
+        .iter()
+        .map(|entry| (entry.key.as_str(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let candidate_entries = candidate
+        .entries
+        .iter()
+        .map(|entry| (entry.key.as_str(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let mut overlap = 0usize;
+    let mut source_delta = 0usize;
+
+    for (key, current_entry) in &current_entries {
+        match candidate_entries.get(key) {
+            Some(candidate_entry) => {
+                overlap += 1;
+                if candidate_entry.source_value != current_entry.source_value {
+                    source_delta += 1;
+                }
+            }
+            None => source_delta += 1,
+        }
+    }
+    for key in candidate_entries.keys() {
+        if !current_entries.contains_key(key) {
+            source_delta += 1;
+        }
+    }
+    if overlap == 0 || source_delta == 0 {
+        return None;
+    }
+    Some(overlap * 10 + source_delta)
+}
+
+fn sheet_source_language(sheet: &JsonTranslationSheet) -> Option<String> {
+    localization_language_component(Path::new(&sheet.source_path))
+}
+
+fn preserve_current_translations(
+    current: &JsonTranslationSheet,
+    recalculated: &mut JsonTranslationSheet,
+) {
+    let current_by_key = current
+        .entries
+        .iter()
+        .map(|entry| (entry.key.as_str(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let current_by_slot = current
+        .entries
+        .iter()
+        .filter_map(|entry| entry.slot_id.as_deref().map(|slot_id| (slot_id, entry)))
+        .collect::<BTreeMap<_, _>>();
+    for entry in &mut recalculated.entries {
+        let current_entry = current_by_key.get(entry.key.as_str()).copied().or_else(|| {
+            entry
+                .slot_id
+                .as_deref()
+                .and_then(|slot_id| current_by_slot.get(slot_id).copied())
+        });
+        let Some(current_entry) = current_entry else {
+            continue;
+        };
+        if current_entry.translated_value.trim().is_empty() {
+            continue;
+        }
+        entry.translated_value = current_entry.translated_value.clone();
+        if entry.status == JsonTranslationStatus::Missing {
+            entry.status = JsonTranslationStatus::Ready;
+        }
+    }
+}
+
 fn json_sheet_from_dto(sheet: JsonSheetDto) -> Result<JsonTranslationSheet, String> {
     Ok(JsonTranslationSheet {
         source_path: sheet.source_path,
@@ -730,6 +1244,7 @@ fn json_entry_from_dto(entry: JsonEntryDto) -> Result<JsonTranslationEntry, Stri
     Ok(JsonTranslationEntry {
         key: entry.key,
         slot_id: entry.slot_id,
+        previous_source_value: entry.previous_source_value,
         source_value: entry.source_value,
         translated_value: entry.translated_value,
         status: match entry.status.as_str() {
@@ -756,6 +1271,7 @@ fn json_entry_dto(entry: JsonTranslationEntry) -> JsonEntryDto {
     JsonEntryDto {
         key: entry.key,
         slot_id: entry.slot_id,
+        previous_source_value: entry.previous_source_value,
         source_value: entry.source_value,
         translated_value: entry.translated_value,
         status: status_label(entry.status).to_string(),

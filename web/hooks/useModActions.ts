@@ -2,6 +2,7 @@ import React from "react";
 import { openDialog } from "../api/tauri";
 import {
   activeSiblingMods,
+  isDownloadingMod,
   modGroupName,
   presetPreviewSummary,
 } from "../features/mods/modUtils";
@@ -60,6 +61,10 @@ export function useModActions({
   }
 
   async function launchWithSetupCheck(command: "launch_current" | "launch_vanilla") {
+    if (dashboard?.launch.running) {
+      window.alert("게임이 이미 실행 중입니다. 게임을 종료한 뒤 다시 실행하세요.");
+      return;
+    }
     const issues = blockingSetupIssues(dashboard);
     if (issues.length > 0) {
       setPage("settings");
@@ -68,13 +73,11 @@ export function useModActions({
     }
     if (command === "launch_current") {
       const backupCount = dashboard?.save_backups.length ?? 0;
-      const safetyWarnings = (dashboard?.mods ?? []).filter((mod) => mod.active && mod.safety_warnings.length > 0);
-      if (backupCount === 0 || safetyWarnings.length > 0) {
+      if (backupCount === 0) {
         const confirmed = window.confirm(
           [
             "현재 모드로 실행하기 전에 안전 상태를 확인하세요.",
             backupCount === 0 ? "아직 복원 가능한 세이브 백업이 없습니다." : `복원 가능한 세이브 백업 ${backupCount}개가 있습니다.`,
-            safetyWarnings.length > 0 ? `세이브/멀티 주의 모드: ${safetyWarnings.map((mod) => mod.name).join(", ")}` : "",
             "",
             "계속 실행할까요?",
           ].filter(Boolean).join("\n"),
@@ -85,12 +88,17 @@ export function useModActions({
         }
       }
     }
+    setPage("mods");
     await runAction(command);
   }
 
   async function toggleModWithDependencies(mod: ModRow) {
     const mods = dashboard?.mods ?? [];
     if (togglingModKeys.has(mod.key)) {
+      return;
+    }
+    if (!mod.active && isDownloadingMod(mod)) {
+      window.alert("Vortex 다운로드가 완료된 뒤 활성화할 수 있습니다.");
       return;
     }
     if (mod.active) {

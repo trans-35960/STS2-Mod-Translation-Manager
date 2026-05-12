@@ -48,7 +48,7 @@ export function useTranslationSheetActions({
         return {
           ...entry,
           translated_value: value,
-          status: hasTranslationValue(value) ? "ready" : "missing",
+          status: editedTranslationStatus(entry, value),
         } satisfies JsonTranslationEntry;
       });
       return { ...current, entries };
@@ -78,7 +78,7 @@ export function useTranslationSheetActions({
         return {
           ...entry,
           translated_value: value,
-          status: hasTranslationValue(value) ? "ready" : "missing",
+          status: editedTranslationStatus(entry, value),
         } satisfies JsonTranslationEntry;
       });
       return { ...current, entries };
@@ -139,7 +139,7 @@ export function useTranslationSheetActions({
         return {
           ...entry,
           translated_value: pasted,
-          status: hasTranslationValue(pasted) ? "ready" : "missing",
+          status: editedTranslationStatus(entry, pasted),
         } satisfies JsonTranslationEntry;
       });
       return { ...current, entries };
@@ -273,7 +273,7 @@ export function useTranslationSheetActions({
         return {
           ...entry,
           translated_value: value,
-          status: hasTranslationValue(value) ? "ready" : "missing",
+          status: editedTranslationStatus(entry, value),
         } satisfies JsonTranslationEntry;
       });
       return { ...current, entries: updatedEntries };
@@ -338,7 +338,7 @@ export function useTranslationSheetActions({
           return {
             ...entry,
             translated_value: candidate.value,
-            status: hasTranslationValue(candidate.value) ? "ready" : "missing",
+            status: editedTranslationStatus(entry, candidate.value),
           };
         }),
       };
@@ -435,4 +435,17 @@ export function useTranslationSheetActions({
     selectTranslationRow,
     updateTranslationEntry,
   };
+}
+
+function editedTranslationStatus(entry: JsonTranslationEntry, value: string): JsonTranslationEntry["status"] {
+  if (entry.status === "removed") {
+    return "removed";
+  }
+  if (!hasTranslationValue(value)) {
+    return "missing";
+  }
+  if (entry.status === "new" || entry.status === "updated") {
+    return entry.status;
+  }
+  return "ready";
 }

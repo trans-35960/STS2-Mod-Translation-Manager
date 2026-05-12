@@ -31,6 +31,50 @@ pub fn import_mod_as_new(source_path: &Path, vault_dir: &Path) -> AppResult<Vaul
     import_mod_with_key_mode(source_path, vault_dir, true)
 }
 
+pub fn import_mod_to_disabled(source_path: &Path, game_mods_dir: &Path) -> AppResult<VaultAction> {
+    import_mod_to_disabled_with_mode(source_path, game_mods_dir, false)
+}
+
+pub fn import_mod_to_disabled_as_new(
+    source_path: &Path,
+    game_mods_dir: &Path,
+) -> AppResult<VaultAction> {
+    import_mod_to_disabled_with_mode(source_path, game_mods_dir, true)
+}
+
+fn import_mod_to_disabled_with_mode(
+    source_path: &Path,
+    game_mods_dir: &Path,
+    force_unique_name: bool,
+) -> AppResult<VaultAction> {
+    if !source_path.exists() {
+        return Err(AppError::InvalidCommand(format!(
+            "mod path does not exist: {}",
+            source_path.display()
+        )));
+    }
+
+    let disabled_dir = game_disabled_dir(game_mods_dir);
+    fs::create_dir_all(&disabled_dir).map_err(|source| AppError::io(&disabled_dir, source))?;
+    let record = record_for_path(source_path, ModSource::Vault)?;
+    let file_name = source_path.file_name().ok_or_else(|| {
+        AppError::InvalidCommand(format!(
+            "cannot import unnamed path: {}",
+            source_path.display()
+        ))
+    })?;
+    let mut target_path = disabled_dir.join(file_name);
+    if force_unique_name || target_path.exists() {
+        target_path = unique_child_path(&disabled_dir, &PathBuf::from(file_name));
+    }
+    copy_path(source_path, &target_path)?;
+    Ok(VaultAction {
+        key: record.stable_key(),
+        from: source_path.to_path_buf(),
+        to: target_path,
+    })
+}
+
 fn import_mod_with_key_mode(
     source_path: &Path,
     vault_dir: &Path,
@@ -122,6 +166,20 @@ pub fn list_vault_records(vault_dir: &Path) -> AppResult<Vec<ModRecord>> {
     Ok(records)
 }
 
+pub fn list_disabled_game_entries(game_mods_dir: &Path) -> AppResult<Vec<VaultEntry>> {
+    let mut entries = list_disabled_game_mods(game_mods_dir)?
+        .into_iter()
+        .map(|record| VaultEntry {
+            key: record.stable_key(),
+            display_name: record.name,
+            payload_path: record.path,
+            kind: record.kind,
+        })
+        .collect::<Vec<_>>();
+    entries.sort_by(|left, right| left.key.cmp(&right.key));
+    Ok(entries)
+}
+
 pub fn migrate_legacy_disabled_mods(
     vault_dir: &Path,
     game_mods_dir: &Path,
@@ -171,11 +229,53 @@ pub fn migrate_legacy_disabled_mods(
         remove_empty_dir(&mod_dir).map_err(|source| AppError::io(&mod_dir, source))?;
     }
 
+    actions.extend(migrate_vault_mods_to_disabled(vault_dir, game_mods_dir)?);
     Ok(actions)
 }
 
-pub fn enable_mod(key: &str, vault_dir: &Path, game_mods_dir: &Path) -> AppResult<VaultAction> {
+pub fn migrate_vault_mods_to_disabled(
+    vault_dir: &Path,
+    game_mods_dir: &Path,
+) -> AppResult<Vec<VaultAction>> {
+    if !vault_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let disabled_dir = game_disabled_dir(game_mods_dir);
+    fs::create_dir_all(&disabled_dir).map_err(|source| AppError::io(&disabled_dir, source))?;
+    let entries = list_vault(vault_dir)?;
+    let mut actions = Vec::new();
+
+    for entry in entries {
+        if !entry.payload_path.exists() {
+            continue;
+        }
+        let Some(file_name) = entry.payload_path.file_name() else {
+            continue;
+        };
+        let target_path = unique_child_path(&disabled_dir, &PathBuf::from(file_name));
+        move_path(&entry.payload_path, &target_path)?;
+        actions.push(VaultAction {
+            key: entry.key.clone(),
+            from: entry.payload_path.clone(),
+            to: target_path,
+        });
+        let legacy_root = vault_dir.join(entry.key);
+        let _ = remove_empty_dir(&legacy_root);
+    }
+    let _ = remove_empty_dir(vault_dir);
+
+    Ok(actions)
+}
+
+pub fn enable_mod(
+    key: &str,
+    vault_dir: &Path,
+    game_mods_dir: &Path,
+    vendor_dir: &Path,
+) -> AppResult<VaultAction> {
     fs::create_dir_all(game_mods_dir).map_err(|source| AppError::io(game_mods_dir, source))?;
+    migrate_vault_mods_to_disabled(vault_dir, game_mods_dir)?;
     if let Some(record) = find_disabled_game_record(key, game_mods_dir)? {
         let target_path = activation_target_path(&record.path, game_mods_dir)?;
         if target_path.exists() {
@@ -184,8 +284,8 @@ pub fn enable_mod(key: &str, vault_dir: &Path, game_mods_dir: &Path) -> AppResul
                 target_path.display()
             )));
         }
-        if is_zip_archive(&record.path) {
-            expand_zip_archive(&record.path, &target_path)?;
+        if is_supported_archive(&record.path) {
+            expand_mod_archive(&record.path, &target_path, vendor_dir)?;
         } else {
             move_path(&record.path, &target_path)?;
         }
@@ -196,34 +296,26 @@ pub fn enable_mod(key: &str, vault_dir: &Path, game_mods_dir: &Path) -> AppResul
         });
     }
 
-    let entry = find_vault_entry(key, vault_dir)?;
-    let target_path = activation_target_path(&entry.payload_path, game_mods_dir)?;
-
-    if is_zip_archive(&entry.payload_path) {
-        expand_zip_archive(&entry.payload_path, &target_path)?;
-    } else {
-        copy_path(&entry.payload_path, &target_path)?;
-    }
-
-    Ok(VaultAction {
-        key: entry.key,
-        from: entry.payload_path,
-        to: target_path,
-    })
+    Err(AppError::InvalidCommand(format!(
+        "disabled mod not found: {key}"
+    )))
 }
 
-pub fn normalize_active_archives(game_mods_dir: &Path) -> AppResult<Vec<VaultAction>> {
+pub fn normalize_active_archives(
+    game_mods_dir: &Path,
+    vendor_dir: &Path,
+) -> AppResult<Vec<VaultAction>> {
     fs::create_dir_all(game_mods_dir).map_err(|source| AppError::io(game_mods_dir, source))?;
     let records = scan_mod_directory(game_mods_dir, ModSource::GameMods)?;
     let mut actions = Vec::new();
 
     for record in records
         .into_iter()
-        .filter(|record| is_zip_archive(&record.path))
+        .filter(|record| is_supported_archive(&record.path))
     {
         let target_path = activation_target_path(&record.path, game_mods_dir)?;
         if !target_path.exists() {
-            expand_zip_archive(&record.path, &target_path)?;
+            expand_mod_archive(&record.path, &target_path, vendor_dir)?;
         }
         remove_path_if_exists(&record.path).map_err(|source| AppError::io(&record.path, source))?;
         actions.push(VaultAction {
@@ -237,7 +329,7 @@ pub fn normalize_active_archives(game_mods_dir: &Path) -> AppResult<Vec<VaultAct
 }
 
 fn activation_target_path(source: &Path, game_mods_dir: &Path) -> AppResult<PathBuf> {
-    if is_zip_archive(source) {
+    if is_supported_archive(source) {
         let stem = source.file_stem().ok_or_else(|| {
             AppError::InvalidCommand(format!("archive mod has no filename: {}", source.display()))
         })?;
@@ -446,13 +538,6 @@ fn remove_path_if_exists(path: &Path) -> std::io::Result<()> {
     }
 }
 
-fn find_vault_entry(key: &str, vault_dir: &Path) -> AppResult<VaultEntry> {
-    list_vault(vault_dir)?
-        .into_iter()
-        .find(|entry| entry.key == key)
-        .ok_or_else(|| AppError::InvalidCommand(format!("vault mod not found: {key}")))
-}
-
 fn vault_entry_record(entry: VaultEntry) -> AppResult<ModRecord> {
     Ok(ModRecord {
         name: entry.key,
@@ -644,8 +729,62 @@ fn expand_zip_archive(source: &Path, target: &Path) -> AppResult<()> {
     }
 }
 
+fn expand_mod_archive(source: &Path, target: &Path, vendor_dir: &Path) -> AppResult<()> {
+    if is_zip_archive(source) {
+        return expand_zip_archive(source, target);
+    }
+
+    let seven_zip = vendor_dir.join("7zip").join("7z.exe");
+    if !seven_zip.is_file() {
+        return Err(AppError::InvalidCommand(format!(
+            "압축 모드를 풀 수 없습니다. 내장 7-Zip 도구를 찾지 못했습니다: {}",
+            seven_zip.display()
+        )));
+    }
+    expand_with_7z(&seven_zip, source, target)
+}
+
+fn expand_with_7z(seven_zip: &Path, source: &Path, target: &Path) -> AppResult<()> {
+    if target.exists() {
+        return Err(AppError::InvalidCommand(format!(
+            "enabled mod target already exists: {}",
+            target.display()
+        )));
+    }
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|source| AppError::io(parent, source))?;
+    }
+    fs::create_dir_all(target).map_err(|source| AppError::io(target, source))?;
+
+    let status = hidden_command(seven_zip)
+        .arg("x")
+        .arg("-y")
+        .arg(format!("-o{}", target.to_string_lossy()))
+        .arg(source)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map_err(|source_error| AppError::io(seven_zip, source_error))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        let _ = fs::remove_dir_all(target);
+        Err(AppError::InvalidCommand(format!(
+            "archive mod extraction failed: {}",
+            source.display()
+        )))
+    }
+}
+
 fn powershell_quote(path: &Path) -> String {
     format!("'{}'", path.to_string_lossy().replace('\'', "''"))
+}
+
+fn is_supported_archive(path: &Path) -> bool {
+    path.extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| matches!(value.to_ascii_lowercase().as_str(), "zip" | "7z" | "rar"))
 }
 
 fn is_zip_archive(path: &Path) -> bool {
@@ -714,6 +853,7 @@ mod tests {
             &imported.key,
             &fixture.vault_dir(),
             &fixture.game_mods_dir(),
+            &fixture.vendor_dir(),
         )
         .expect("enable");
 
@@ -765,8 +905,13 @@ mod tests {
         let fixture = TestWorkspace::create("enables_disabled_game_mod_by_renaming_back");
         fixture.write_file("game/mods.disabled/Example-v1.jar", "mod bytes");
 
-        let enabled = enable_mod("example-v1", &fixture.vault_dir(), &fixture.game_mods_dir())
-            .expect("enable");
+        let enabled = enable_mod(
+            "example-v1",
+            &fixture.vault_dir(),
+            &fixture.game_mods_dir(),
+            &fixture.vendor_dir(),
+        )
+        .expect("enable");
 
         assert_eq!(enabled.to, fixture.path.join("game/mods/Example-v1.jar"));
         assert!(enabled.to.exists());
@@ -876,6 +1021,17 @@ mod tests {
         );
     }
 
+    #[test]
+    fn rar_archives_activate_to_extracted_folder_name() {
+        let fixture = TestWorkspace::create("rar_archives_activate_to_extracted_folder_name");
+        let source = fixture.write_file("vault/akisister/AkiSister-654.rar", "archive bytes");
+
+        let target =
+            activation_target_path(&source, &fixture.game_mods_dir()).expect("target path");
+
+        assert_eq!(target, fixture.path.join("game/mods/AkiSister-654"));
+    }
+
     struct TestWorkspace {
         path: PathBuf,
     }
@@ -903,6 +1059,10 @@ mod tests {
 
         fn game_mods_dir(&self) -> PathBuf {
             self.path.join("game").join("mods")
+        }
+
+        fn vendor_dir(&self) -> PathBuf {
+            self.path.join("vendor")
         }
 
         fn write_file(&self, child: &str, content: &str) -> PathBuf {

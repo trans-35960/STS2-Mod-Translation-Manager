@@ -112,6 +112,7 @@ pub(crate) fn import_dropped_mod(
     let source = PathBuf::from(path.trim());
     let record = dropped_mod_record(&source)?;
     let app = app();
+    let drop_import_root = drop_import_root_for_path(&source, app.config());
 
     if let Some(replace_path) = replace_path
         .as_deref()
@@ -120,6 +121,7 @@ pub(crate) fn import_dropped_mod(
     {
         let target = PathBuf::from(replace_path);
         replace_existing_mod_path(&source, &target, app.config())?;
+        cleanup_drop_import_root(drop_import_root.as_deref());
         return Ok(ActionDto {
             message: format!("{} 덮어쓰기 완료", record.name),
             dashboard: dashboard().map_err(|error| error.to_string())?,
@@ -129,6 +131,7 @@ pub(crate) fn import_dropped_mod(
     let action = app
         .import_mod_as_new(&source)
         .map_err(|error| error.to_string())?;
+    cleanup_drop_import_root(drop_import_root.as_deref());
     Ok(ActionDto {
         message: format!("{} 새 모드 등록 완료: {}", record.name, action.to.display()),
         dashboard: dashboard().map_err(|error| error.to_string())?,
@@ -284,6 +287,13 @@ fn dropped_mod_candidates(path: &Path, config: &AppConfig) -> Result<Vec<Dropped
                     })
                     .collect());
             }
+            if nested.len() == 1 {
+                let record = dropped_mod_record(path)?;
+                return Ok(vec![DroppedModCandidate {
+                    display_path: display_path(&record.path),
+                    record,
+                }]);
+            }
         }
     }
 
@@ -395,6 +405,9 @@ fn infer_dropped_version_hint(name: &str) -> Option<String> {
 fn split_dropped_directory(path: &Path) -> Result<Vec<ModRecord>, String> {
     let mut current = path.to_path_buf();
     for _ in 0..3 {
+        if dropped_directory_is_mod_root(&current) {
+            return Ok(vec![dropped_mod_record(&current)?]);
+        }
         let records = supported_records_in_directory(&current)?;
         if records.len() > 1 {
             return Ok(records);
@@ -409,6 +422,43 @@ fn split_dropped_directory(path: &Path) -> Result<Vec<ModRecord>, String> {
     }
 
     supported_records_in_directory(&current)
+}
+
+fn dropped_directory_is_mod_root(path: &Path) -> bool {
+    if !path.is_dir() {
+        return false;
+    }
+    let Ok(entries) = fs::read_dir(path) else {
+        return false;
+    };
+    entries.filter_map(Result::ok).any(|entry| {
+        let path = entry.path();
+        if !path.is_file() {
+            return false;
+        }
+        let extension = path
+            .extension()
+            .and_then(|value| value.to_str())
+            .map(|value| value.to_ascii_lowercase());
+        if matches!(extension.as_deref(), Some("dll" | "pck" | "pak" | "jar")) {
+            return true;
+        }
+        if extension.as_deref() != Some("json") {
+            return false;
+        }
+        path.file_stem()
+            .and_then(|value| value.to_str())
+            .map(|name| {
+                let lower = name.to_ascii_lowercase();
+                matches!(lower.as_str(), "manifest" | "mod" | "plugin")
+                    || path
+                        .parent()
+                        .and_then(|parent| parent.file_name())
+                        .and_then(|value| value.to_str())
+                        .is_some_and(|folder| folder.eq_ignore_ascii_case(name))
+            })
+            .unwrap_or(false)
+    })
 }
 
 fn supported_records_in_directory(path: &Path) -> Result<Vec<ModRecord>, String> {
@@ -488,6 +538,20 @@ fn drop_import_extract_dir(path: &Path, config: &AppConfig) -> PathBuf {
         .state_dir
         .join("drop_imports")
         .join(format!("drop-{:016x}", drop_stable_hash(&cache_key)))
+}
+
+fn drop_import_root_for_path(path: &Path, config: &AppConfig) -> Option<PathBuf> {
+    let root = config.state_dir.join("drop_imports");
+    let relative = path.strip_prefix(&root).ok()?;
+    let first = relative.components().next()?;
+    Some(root.join(first.as_os_str()))
+}
+
+fn cleanup_drop_import_root(path: Option<&Path>) {
+    let Some(path) = path else {
+        return;
+    };
+    let _ = remove_path_if_exists(path);
 }
 
 fn drop_embedded_7z_path(vendor_dir: &Path) -> Option<PathBuf> {
@@ -785,6 +849,42 @@ pub(crate) fn create_save_backup() -> Result<ActionDto, String> {
     })
 }
 
+pub(crate) fn clear_current_runs() -> Result<ActionDto, String> {
+    let config = configured_config();
+    let report = save_backup::clear_current_runs_for_mode_switch(&config)
+        .map_err(|error| current_run_cleanup_error_message(&error.to_string()))?;
+    let message = if !report.remaining_files.is_empty() {
+        format!(
+            "진행 중 런 정리를 시도했지만 아직 파일이 남아 있습니다. Steam Cloud 동기화가 다시 내려받았거나 파일이 잠겨 있을 수 있습니다. Steam 동기화가 끝난 뒤 다시 시도하고, 계속 남으면 Steam을 잠깐 종료해 주세요. 이후 Steam에 '동기화 불가'가 남으면 게임을 한 번 정상 종료하거나 Steam을 재시작한 뒤, 충돌 창에서는 로컬 파일을 선택하세요. 남은 경로: {}",
+            report
+                .remaining_files
+                .iter()
+                .take(3)
+                .map(|path| path.display().to_string())
+                .collect::<Vec<_>>()
+                .join(" / ")
+        )
+    } else if report.cleared_files.is_empty() && report.cleaned_cloud_caches.is_empty() {
+        "정리할 진행 중 런(current_run.save)을 찾지 못했습니다.".to_string()
+    } else {
+        format!(
+            "진행 중 런 정리 완료: 파일 {}개 백업 후 제거, Steam Cloud 캐시 {}개 정리. Steam에 '동기화 불가'가 남으면 게임을 한 번 정상 종료하거나 Steam을 재시작한 뒤, 충돌 창에서는 로컬 파일을 선택하세요.",
+            report.cleared_files.len(),
+            report.cleaned_cloud_caches.len()
+        )
+    };
+    Ok(ActionDto {
+        message,
+        dashboard: dashboard().map_err(|error| error.to_string())?,
+    })
+}
+
+fn current_run_cleanup_error_message(error: &str) -> String {
+    format!(
+        "진행 중 런 정리에 실패했습니다. Steam Cloud가 current_run.save 또는 remotecache.vdf를 동기화 중이거나 잠그고 있을 수 있습니다. Steam의 클라우드 동기화가 끝날 때까지 기다린 뒤 다시 시도해 주세요. 계속 실패하면 Steam을 잠깐 종료한 뒤 다시 정리해 주세요. 정리 후 Steam에 '동기화 불가'가 남으면 게임을 한 번 정상 종료하거나 Steam을 재시작하고, 충돌 창에서는 로컬 파일을 선택하세요.\n원인: {error}"
+    )
+}
+
 pub(crate) fn restore_save_backup(id: String) -> Result<ActionDto, String> {
     let config = configured_config();
     let restored =
@@ -829,17 +929,24 @@ pub(crate) fn delete_save_backups(ids: Vec<String>) -> Result<ActionDto, String>
 fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
     let app = app();
     app.ensure_workspace_dirs()?;
-    let report = app.scan_preview_report()?;
+    let settings = read_ui_settings(app.config())?;
+    prune_expired_deleted_mods(app.config(), settings.deleted_retention_days)
+        .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
+    quarantine_reappeared_deleted_mods(app.config())
+        .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
+    let mut report = app.scan_preview_report()?;
+    if auto_repair_active_mod_installations(app.config(), &report.summary) {
+        report = app.scan_preview_report()?;
+    }
     let presets = app.list_presets()?;
     let translations = app.list_translation_workspaces()?;
     let tools = app.vendor_tools();
     let launch = app.launch_status();
-    let settings = read_ui_settings(app.config())?;
     let setup_issues = setup_issues(app.config(), &settings, &launch);
     let game_updated_epoch = game_updated_epoch(&launch, app.config());
-    prune_expired_deleted_mods(app.config(), settings.deleted_retention_days)
-        .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
     forget_revived_deleted_mod_tombstones(app.config(), &report.summary)
+        .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
+    prune_deleted_desired_mod_keys(app.config(), &report.summary)
         .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
     let deleted_keys = deleted_mod_keys_for_summary(app.config(), &report.summary);
     let mods = mod_rows(&report, app.config(), &deleted_keys, game_updated_epoch)?;
@@ -879,6 +986,7 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         .into_iter()
         .map(save_backup_dto)
         .collect();
+    let cache_usage = work_cache_usage(app.config());
 
     Ok(DashboardDto {
         paths: paths_dto(app.config()),
@@ -891,7 +999,34 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         translations: translations.into_iter().map(translation_dto).collect(),
         deleted_mods,
         save_backups,
+        cache_usage,
         tools: tools.into_iter().map(tool_dto).collect(),
         launch: launch_dto(launch),
     })
+}
+
+fn auto_repair_active_mod_installations(config: &AppConfig, summary: &ScanSummary) -> bool {
+    let mut changed = false;
+    for record in &summary.game_mods {
+        if record.kind == ModKind::Archive && is_supported_archive_path(&record.path) {
+            match repair_archive_mod(&record.path, config) {
+                Ok(true) => changed = true,
+                Ok(false) => {}
+                Err(error) => {
+                    eprintln!("active archive repair skipped: {} ({error})", record.path.display())
+                }
+            }
+            continue;
+        }
+        if record.kind == ModKind::Directory && !is_vortex_nested_mod_layout(&record.path) {
+            match repair_nested_mod_folder(&record.path) {
+                Ok(true) => changed = true,
+                Ok(false) => {}
+                Err(error) => {
+                    eprintln!("nested mod repair skipped: {} ({error})", record.path.display())
+                }
+            }
+        }
+    }
+    changed
 }

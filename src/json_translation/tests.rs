@@ -36,12 +36,12 @@ fn carries_unchanged_values_and_marks_updates() {
             && entry.translated_value == "안녕"
             && entry.status == JsonTranslationStatus::Ready
     }));
-    assert!(
-        updated
-            .entries
-            .iter()
-            .any(|entry| { entry.key == "/b" && entry.status == JsonTranslationStatus::Updated })
-    );
+    assert!(updated.entries.iter().any(|entry| {
+        entry.key == "/b"
+            && entry.status == JsonTranslationStatus::Updated
+            && entry.previous_source_value.as_deref() == Some("Old")
+            && entry.source_value == "New"
+    }));
     assert!(
         updated
             .entries
@@ -108,6 +108,7 @@ fn drops_removed_hardcoded_candidates_when_updating_sheet() {
         entries: vec![JsonTranslationEntry {
             key: "dll://2:16".to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: stale_value.to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::Ready,
@@ -694,6 +695,7 @@ fn imports_exported_csv_values_into_sheet() {
         entries: vec![JsonTranslationEntry {
             key: "file://cards.json#/name".to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: "Strike".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
@@ -723,6 +725,7 @@ fn imports_csv_values_by_translation_slot_id() {
         entries: vec![JsonTranslationEntry {
             key: "file://cards.json#/name".to_string(),
             slot_id: Some("k001-aa".to_string()),
+            previous_source_value: None,
             source_value: "Strike".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
@@ -752,6 +755,7 @@ fn imports_short_translation_json_values_into_sheet() {
         entries: vec![JsonTranslationEntry {
             key: key.to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: "Deal damage.".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
@@ -788,6 +792,7 @@ fn exports_compact_translation_json_grouped_by_file() {
         entries: vec![JsonTranslationEntry {
             key: key.to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
@@ -820,6 +825,7 @@ fn exports_compact_validation_issue_json_with_context() {
         entries: vec![JsonTranslationEntry {
             key: "file://BaseLib/localization/zhs/cards.json#/desc".to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: "[orange]标记[/orange]\n获得 {Block:diff()} 格挡。".to_string(),
             translated_value: "표식을 얻습니다. {Block:diff()} 방어도.".to_string(),
             status: JsonTranslationStatus::Ready,
@@ -865,6 +871,7 @@ fn imports_grouped_compact_translation_json_values_into_sheet() {
         entries: vec![JsonTranslationEntry {
             key: key.to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
@@ -899,6 +906,7 @@ fn imports_source_identical_grouped_compact_values() {
         entries: vec![JsonTranslationEntry {
             key: key.to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
@@ -932,6 +940,7 @@ fn compact_translation_json_uses_document_slot_ids() {
             JsonTranslationEntry {
                 key: "file://cards.json#/a".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "A".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
@@ -939,6 +948,7 @@ fn compact_translation_json_uses_document_slot_ids() {
             JsonTranslationEntry {
                 key: "file://cards.json#/b".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "B".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
@@ -965,6 +975,7 @@ fn compact_translation_json_keeps_full_document_slots_when_exporting_empty_only(
             JsonTranslationEntry {
                 key: "file://cards.json#/a".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "A".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
@@ -972,6 +983,7 @@ fn compact_translation_json_keeps_full_document_slots_when_exporting_empty_only(
             JsonTranslationEntry {
                 key: "file://cards.json#/b".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "B".to_string(),
                 translated_value: "번역됨".to_string(),
                 status: JsonTranslationStatus::Ready,
@@ -979,6 +991,7 @@ fn compact_translation_json_keeps_full_document_slots_when_exporting_empty_only(
             JsonTranslationEntry {
                 key: "file://cards.json#/c".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "C".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
@@ -1008,6 +1021,7 @@ fn compact_translation_json_keeps_full_document_slots_when_filtering_keys() {
             JsonTranslationEntry {
                 key: "file://cards.json#/a".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "A".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
@@ -1015,6 +1029,7 @@ fn compact_translation_json_keeps_full_document_slots_when_filtering_keys() {
             JsonTranslationEntry {
                 key: "file://cards.json#/b".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "B".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
@@ -1022,6 +1037,7 @@ fn compact_translation_json_keeps_full_document_slots_when_filtering_keys() {
             JsonTranslationEntry {
                 key: "file://cards.json#/c".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "C".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
@@ -1047,6 +1063,7 @@ fn compact_validation_json_keeps_full_document_slots_when_filtering_keys() {
             JsonTranslationEntry {
                 key: "file://cards.json#/a".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "[orange]A[/orange]".to_string(),
                 translated_value: "[orange]A[/orange]".to_string(),
                 status: JsonTranslationStatus::Ready,
@@ -1054,6 +1071,7 @@ fn compact_validation_json_keeps_full_document_slots_when_filtering_keys() {
             JsonTranslationEntry {
                 key: "file://cards.json#/b".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "[orange]B[/orange]".to_string(),
                 translated_value: "[orange]B[/orange]".to_string(),
                 status: JsonTranslationStatus::Ready,
@@ -1061,6 +1079,7 @@ fn compact_validation_json_keeps_full_document_slots_when_filtering_keys() {
             JsonTranslationEntry {
                 key: "file://cards.json#/c".to_string(),
                 slot_id: None,
+                previous_source_value: None,
                 source_value: "[orange]C[/orange]".to_string(),
                 translated_value: "C".to_string(),
                 status: JsonTranslationStatus::Ready,
@@ -1087,6 +1106,7 @@ fn compact_translation_json_expands_padding_after_999_entries() {
         .map(|index| JsonTranslationEntry {
             key: format!("file://cards.json#/{index:04}"),
             slot_id: None,
+            previous_source_value: None,
             source_value: format!("Source {index}"),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
@@ -1119,6 +1139,7 @@ fn rejects_legacy_compact_short_id_json() {
         entries: vec![JsonTranslationEntry {
             key: key.to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
@@ -1146,6 +1167,7 @@ fn rejects_unknown_or_empty_slot_ids() {
         entries: vec![JsonTranslationEntry {
             key: key.to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
@@ -1196,6 +1218,7 @@ fn imports_tree_translation_json_without_source_values() {
         entries: vec![JsonTranslationEntry {
             key: key.to_string(),
             slot_id: None,
+            previous_source_value: None,
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,

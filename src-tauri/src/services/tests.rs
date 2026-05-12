@@ -47,6 +47,47 @@ mod tests {
     }
 
     #[test]
+    fn compare_language_uses_scan_root_before_localization_folder() {
+        let root = std::env::temp_dir().join(format!("sts2-compare-lang-{}", timestamp_string()));
+        let source_root = root.join("source");
+        let eng_dir = source_root.join("localization").join("eng");
+        let zhs_dir = source_root.join("localization").join("zhs");
+        fs::create_dir_all(&eng_dir).expect("create eng");
+        fs::create_dir_all(&zhs_dir).expect("create zhs");
+        fs::write(eng_dir.join("all.loc"), "{\n  \"title\": \"Name\"\n}").expect("write eng");
+        fs::write(zhs_dir.join("all.loc"), "{\n  \"title\": \"名称\"\n}").expect("write zhs");
+
+        let sheet_path = root.join("sheet.translation.json");
+        write_sheet(
+            &sheet_path,
+            &JsonTranslationSheet {
+                source_path: zhs_dir.to_string_lossy().to_string(),
+                target_language: "kor".to_string(),
+                updated_epoch: 1,
+                entries: vec![JsonTranslationEntry {
+                    key: "file://all.loc#/title".to_string(),
+                    slot_id: None,
+                    previous_source_value: None,
+                    source_value: "名称".to_string(),
+                    translated_value: "이름".to_string(),
+                    status: JsonTranslationStatus::Ready,
+                }],
+            },
+        )
+        .expect("write sheet");
+
+        let values = compare_translation_language(
+            sheet_path.to_string_lossy().to_string(),
+            "res://localization/eng/all.loc".to_string(),
+        )
+        .expect("compare language");
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].key, "file://all.loc#/title");
+        assert_eq!(values[0].value, "Name");
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn patch_mod_export_uses_translated_workspace_root() {
         let source_path = Path::new(
             r"Z:\game\sts2\modmanager\translation_work\selected\mod\workspace\source\AkiSister\localization\eng",
@@ -72,6 +113,31 @@ mod tests {
     #[test]
     fn kor_language_label_is_korean() {
         assert_eq!(language_label("kor"), "한국어");
+    }
+
+    #[test]
+    fn language_preview_does_not_inherit_parent_kor_path() {
+        let root = std::env::temp_dir()
+            .join(format!("sts2-preview-parent-kor-{}", timestamp_string()))
+            .join("kor")
+            .join("blight");
+        for language in ["eng", "rus", "zhs"] {
+            let dir = root.join("localization").join(language);
+            fs::create_dir_all(&dir).expect("create localization");
+            fs::write(dir.join("all.loc"), r#"{"title":"Name"}"#).expect("write loc");
+        }
+
+        let previews = language_preview_from_scan_root(&root);
+        let codes = previews
+            .iter()
+            .map(|language| language.code.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(codes.contains(&"en"));
+        assert!(codes.contains(&"ru"));
+        assert!(codes.contains(&"zh-cn"));
+        assert!(!codes.contains(&"kor"));
+        let _ = fs::remove_dir_all(root.parent().and_then(Path::parent).unwrap_or(&root));
     }
 
     #[test]
@@ -236,6 +302,51 @@ mod tests {
     }
 
     #[test]
+    fn archive_install_flattens_single_payload_directory() {
+        let root = std::env::temp_dir().join(format!("sts2-archive-payload-{}", timestamp_string()));
+        let extracted = root.join("extracted");
+        let payload = extracted.join("blight");
+        fs::create_dir_all(payload.join("localization").join("zhs")).expect("create loc dir");
+        fs::write(payload.join("blight.dll"), "dll").expect("write dll");
+        fs::write(payload.join("blight.json"), "{}").expect("write json");
+        fs::write(payload.join("localization").join("zhs").join("all.loc"), "loc")
+            .expect("write loc");
+
+        assert_eq!(archive_install_payload_root(&extracted), payload);
+        assert!(folder_install_root_has_runtime_payload(
+            &extracted.join("blight")
+        ));
+        assert!(!folder_install_root_has_runtime_payload(
+            &extracted.join("blight").join("localization")
+        ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn dropped_archive_preview_keeps_localization_folders_inside_mod_root() {
+        let root = std::env::temp_dir().join(format!("sts2-drop-localization-{}", timestamp_string()));
+        let mod_root = root.join("blight");
+        fs::create_dir_all(mod_root.join("localization").join("eng")).expect("create eng");
+        fs::create_dir_all(mod_root.join("localization").join("rus")).expect("create rus");
+        fs::create_dir_all(mod_root.join("localization").join("zhs")).expect("create zhs");
+        fs::write(mod_root.join("blight.dll"), "dll").expect("write dll");
+        fs::write(mod_root.join("blight.json"), "{}").expect("write json");
+        fs::write(mod_root.join("localization").join("eng").join("all.loc"), "eng")
+            .expect("write eng loc");
+        fs::write(mod_root.join("localization").join("rus").join("all.loc"), "rus")
+            .expect("write rus loc");
+        fs::write(mod_root.join("localization").join("zhs").join("all.loc"), "zhs")
+            .expect("write zhs loc");
+
+        let records = split_dropped_directory(&root).expect("split dropped directory");
+
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].name, "blight");
+        assert_eq!(records[0].path, mod_root);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn folder_mods_with_hardcoded_dll_keep_directory_for_preview() {
         let root = std::env::temp_dir().join(format!("sts2-dll-preview-{}", timestamp_string()));
         let mod_dir = root.join("AscensionUnlockMod");
@@ -376,6 +487,66 @@ mod tests {
     }
 
     #[test]
+    fn work_cache_cleanup_removes_all_reported_cache_usage() {
+        let root = std::env::temp_dir().join(format!("sts2-work-cache-cleanup-{}", timestamp_string()));
+        let config = test_config(&root);
+        fs::create_dir_all(config.state_dir.join("language_preview_extract").join("scan-1"))
+            .expect("create preview cache");
+        fs::write(
+            config
+                .state_dir
+                .join("language_preview_extract")
+                .join("scan-1")
+                .join("payload.bin"),
+            "cache",
+        )
+        .expect("write preview cache");
+        fs::create_dir_all(config.state_dir.join("drop_imports").join("drop-1"))
+            .expect("create drop cache");
+        fs::write(
+            config
+                .state_dir
+                .join("drop_imports")
+                .join("drop-1")
+                .join("mod.zip"),
+            "zip",
+        )
+        .expect("write drop cache");
+        fs::write(config.state_dir.join("language_preview_cache.tsv"), "cache")
+            .expect("write language cache");
+
+        let memory_root = config
+            .translation_work_dir
+            .join("translation_memory")
+            .join("blight");
+        fs::create_dir_all(&memory_root).expect("create memory");
+        let sheet = memory_root.join("all.kor.translation.json");
+        fs::write(&sheet, "{}").expect("write sheet");
+        fs::write(memory_root.join("patched.pck"), "pck").expect("write pck");
+        let selected_root = config
+            .translation_work_dir
+            .join("selected")
+            .join("blight")
+            .join("source");
+        fs::create_dir_all(&selected_root).expect("create selected");
+        fs::write(selected_root.join("source.pck"), "pck").expect("write selected pck");
+
+        assert!(work_cache_usage(&config).bytes > 0);
+        let mut removed_dirs = 0;
+        let mut removed_files = 0;
+        cleanup_work_caches(&config, &mut removed_dirs, &mut removed_files).expect("cleanup");
+
+        let usage = work_cache_usage(&config);
+        assert_eq!(usage.bytes, 0);
+        assert_eq!(usage.files, 0);
+        assert_eq!(usage.dirs, 0);
+        assert!(removed_dirs > 0);
+        assert!(removed_files > 0);
+        assert!(sheet.exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn connected_mod_keys_skip_disabled_game_versions() {
         let active = ModRecord {
             name: "The Reaper For Main Branch-412-0-43-1777465658".to_string(),
@@ -469,6 +640,120 @@ mod tests {
         assert!(deleted_mod_keys(&config).contains("deleted-mod"));
         remove_deleted_mod_entry(&config, "entry").expect("remove entry");
         assert!(!deleted_mod_keys(&config).contains("deleted-mod"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn restored_game_archive_is_marked_for_extraction() {
+        let root =
+            std::env::temp_dir().join(format!("sts2-deleted-archive-{}", timestamp_string()));
+        let config = test_config(&root);
+        let backup = root
+            .join("state")
+            .join("deleted_mods")
+            .join("entry")
+            .join("Mod.rar");
+        fs::create_dir_all(backup.parent().expect("backup parent"))
+            .expect("create backup parent");
+        fs::write(&backup, "archive").expect("write backup");
+        let entry = DeletedModEntry {
+            id: "entry".to_string(),
+            key: "mod".to_string(),
+            name: "Mod".to_string(),
+            original_path: config.game_mods_dir.join("Mod.rar"),
+            backup_path: backup,
+            deleted_epoch: 100,
+            bytes: 7,
+        };
+
+        assert!(should_expand_restored_archive(&entry, &config));
+        assert_eq!(
+            restored_archive_install_dir(&entry.original_path, &config),
+            Some(config.game_mods_dir.join("Mod"))
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn reappeared_deleted_game_mods_are_quarantined() {
+        let root =
+            std::env::temp_dir().join(format!("sts2-deleted-quarantine-{}", timestamp_string()));
+        let config = test_config(&root);
+        let active = config.game_mods_dir.join("DeletedMod");
+        let backup = config
+            .state_dir
+            .join("deleted_mods")
+            .join("entry")
+            .join("DeletedMod");
+        fs::create_dir_all(&active).expect("create active");
+        fs::create_dir_all(&backup).expect("create backup");
+        fs::create_dir_all(&config.state_dir).expect("create state");
+        fs::write(active.join("mod.json"), "{}").expect("write active");
+        fs::write(backup.join("mod.json"), "{}").expect("write backup");
+        upsert_deleted_mod_entry(
+            &config,
+            DeletedModEntry {
+                id: "entry".to_string(),
+                key: "deleted-mod".to_string(),
+                name: "Deleted Mod".to_string(),
+                original_path: active.clone(),
+                backup_path: backup.clone(),
+                deleted_epoch: 100,
+                bytes: 2,
+            },
+        )
+        .expect("write deleted entry");
+
+        let moved = quarantine_reappeared_deleted_mods(&config).expect("quarantine");
+
+        assert_eq!(moved, 1);
+        assert!(!active.exists());
+        assert!(backup.exists());
+        assert!(backup.with_file_name("DeletedMod-1").exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn deleted_mods_are_removed_from_desired_active_keys() {
+        let root =
+            std::env::temp_dir().join(format!("sts2-deleted-desired-{}", timestamp_string()));
+        let config = test_config(&root);
+        fs::create_dir_all(&config.state_dir).expect("create state");
+        let mut desired = BTreeSet::new();
+        desired.insert("deleted-mod".to_string());
+        desired.insert("kept-mod".to_string());
+        write_desired_active_mod_keys(&desired, &config.state_dir).expect("write desired");
+        let backup = config
+            .state_dir
+            .join("deleted_mods")
+            .join("entry")
+            .join("Deleted Mod");
+        fs::create_dir_all(&backup).expect("create backup");
+        upsert_deleted_mod_entry(
+            &config,
+            DeletedModEntry {
+                id: "entry".to_string(),
+                key: "deleted-mod".to_string(),
+                name: "Deleted Mod".to_string(),
+                original_path: config.game_mods_dir.join("Deleted Mod"),
+                backup_path: backup,
+                deleted_epoch: 100,
+                bytes: 2,
+            },
+        )
+        .expect("write deleted entry");
+        let summary = ScanSummary {
+            game_mods: Vec::new(),
+            vault_mods: Vec::new(),
+            external_manager_mods: Vec::new(),
+        };
+
+        let removed = prune_deleted_desired_mod_keys(&config, &summary).expect("prune desired");
+        let desired = desired_active_mod_keys(&summary, &config.state_dir).expect("read desired");
+
+        assert_eq!(removed, 1);
+        assert!(!desired.contains("deleted-mod"));
+        assert!(desired.contains("kept-mod"));
         let _ = fs::remove_dir_all(root);
     }
 
@@ -593,6 +878,7 @@ mod tests {
             entries: vec![JsonTranslationEntry {
                 key: "file://cards.json#/name".to_string(),
                 slot_id: Some("k001-aa".to_string()),
+                previous_source_value: None,
                 source_value: "Strike".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
@@ -613,6 +899,65 @@ mod tests {
     }
 
     #[test]
+    fn change_json_export_includes_new_and_updated_sources() {
+        let root = std::env::temp_dir().join(format!("sts2-change-export-{}", timestamp_string()));
+        fs::create_dir_all(&root).expect("create root");
+        let sheet = JsonTranslationSheet {
+            source_path: root.join("source").display().to_string(),
+            target_language: "kor".to_string(),
+            updated_epoch: 1,
+            entries: vec![
+                JsonTranslationEntry {
+                    key: "file://cards.json#/updated".to_string(),
+                    slot_id: Some("k001-aa".to_string()),
+                    previous_source_value: Some("Old source".to_string()),
+                    source_value: "New source".to_string(),
+                    translated_value: "기존 번역".to_string(),
+                    status: JsonTranslationStatus::Updated,
+                },
+                JsonTranslationEntry {
+                    key: "file://cards.json#/new".to_string(),
+                    slot_id: Some("k002-bb".to_string()),
+                    previous_source_value: None,
+                    source_value: "Brand new".to_string(),
+                    translated_value: String::new(),
+                    status: JsonTranslationStatus::New,
+                },
+                JsonTranslationEntry {
+                    key: "file://cards.json#/ready".to_string(),
+                    slot_id: Some("k003-cc".to_string()),
+                    previous_source_value: None,
+                    source_value: "Ready".to_string(),
+                    translated_value: "완료".to_string(),
+                    status: JsonTranslationStatus::Ready,
+                },
+            ],
+        };
+        let output = root.join("changes.json");
+
+        let report = export_json_translation_change_json(
+            output.display().to_string(),
+            json_sheet_dto(sheet),
+            None,
+        )
+        .expect("export change json");
+        let json: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&output).expect("read output"))
+                .expect("parse output");
+
+        assert_eq!(report.rows, 2);
+        assert_eq!(
+            json["cards.json"]["k001-aa"]["original_source"],
+            "Old source"
+        );
+        assert_eq!(json["cards.json"]["k001-aa"]["source"], "New source");
+        assert_eq!(json["cards.json"]["k001-aa"]["translation"], "기존 번역");
+        assert_eq!(json["cards.json"]["k002-bb"]["original_source"], "");
+        assert!(json["cards.json"].get("k003-cc").is_none());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn pck_source_install_replaces_active_pck() {
         let root = std::env::temp_dir().join(format!("sts2-pck-install-{}", timestamp_string()));
         let config = test_config(&root);
@@ -628,6 +973,8 @@ mod tests {
             extraction_source_path: Some(active_pck.clone()),
             input_pck_path: Some(active_pck.clone()),
             pck_stem: Some("Mod".to_string()),
+            translation_patch_source_path: None,
+            translation_patch_pck_stem: None,
         };
 
         let installed = install_patched_archive_mod(
@@ -645,6 +992,109 @@ mod tests {
             "patched pck"
         );
         assert!(config.state_dir.join("applied_backups").exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn directory_source_resolves_nested_pck_without_archive_extract() {
+        let root = std::env::temp_dir().join(format!("sts2-dir-pck-resolve-{}", timestamp_string()));
+        let source_dir = root.join("mods.disabled").join("AkiSister");
+        let nested = source_dir.join("payload").join("AkiSister.pck");
+        fs::create_dir_all(nested.parent().expect("nested parent")).expect("create nested");
+        fs::write(&nested, "pck").expect("write pck");
+
+        let resolved = pck_from_extractable_source(
+            &source_dir,
+            Some("AkiSister"),
+            &root.join("build"),
+            &root.join("missing-vendor"),
+        )
+        .expect("resolve nested pck");
+
+        assert_eq!(resolved, nested);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn directory_source_install_replaces_nested_pck() {
+        let root = std::env::temp_dir().join(format!("sts2-dir-pck-install-{}", timestamp_string()));
+        let config = test_config(&root);
+        let source_dir = root.join("mods.disabled").join("AkiSister");
+        let source_pck = source_dir.join("AkiSister.pck");
+        let patched_pck = root.join("patched.pck");
+        fs::create_dir_all(&source_dir).expect("create source");
+        fs::create_dir_all(&config.state_dir).expect("create state");
+        fs::write(&source_pck, "old pck").expect("write source pck");
+        fs::write(&patched_pck, "patched pck").expect("write patched");
+        let context = TranslationContext {
+            mod_key: Some("akisister".to_string()),
+            extraction_source_path: Some(source_dir.clone()),
+            input_pck_path: None,
+            pck_stem: Some("AkiSister".to_string()),
+            translation_patch_source_path: None,
+            translation_patch_pck_stem: None,
+        };
+
+        let installed = install_patched_archive_mod(
+            &context,
+            &root.join("missing-archive"),
+            &source_pck,
+            &patched_pck,
+            &config,
+        )
+        .expect("install nested pck");
+
+        assert_eq!(installed, Some(source_dir));
+        assert_eq!(
+            fs::read_to_string(&source_pck).expect("read source pck"),
+            "patched pck"
+        );
+        assert!(config.state_dir.join("applied_backups").exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn translation_context_routes_direct_apply_to_connected_patch() {
+        let root =
+            std::env::temp_dir().join(format!("sts2-patch-context-{}", timestamp_string()));
+        let work_root = root
+            .join("translation_work")
+            .join("selected")
+            .join("BaseMod")
+            .join("localization-eng");
+        let source_file = work_root
+            .join("source")
+            .join("BaseMod.pck.contents")
+            .join("BaseMod")
+            .join("localization")
+            .join("eng")
+            .join("cards.json");
+        let base_source = root.join("mods").join("BaseMod").join("BaseMod.pck");
+        let patch_source = root.join("mods").join("BaseMod_tr").join("BaseMod_tr.pck");
+        fs::create_dir_all(source_file.parent().expect("source parent")).expect("create source");
+        write_translation_context(
+            &work_root,
+            "BaseMod",
+            "res://BaseMod/localization/eng",
+            &base_source,
+            Some(&work_root.join("source").join("BaseMod.pck.contents")),
+            "BaseMod",
+            Some(&patch_source),
+            Some("BaseMod_tr"),
+        )
+        .expect("write context");
+
+        let context = read_translation_context(&source_file).expect("read context");
+        let direct = context.direct_apply_context();
+
+        assert_eq!(context.extraction_source_path, Some(base_source));
+        assert_eq!(
+            context.translation_patch_source_path,
+            Some(patch_source.clone())
+        );
+        assert_eq!(direct.extraction_source_path, Some(patch_source));
+        assert_eq!(direct.input_pck_path, None);
+        assert_eq!(direct.pck_stem.as_deref(), Some("BaseMod_tr"));
         let _ = fs::remove_dir_all(root);
     }
 
@@ -671,6 +1121,8 @@ mod tests {
             extraction_source_path: Some(source_archive),
             input_pck_path: None,
             pck_stem: Some("Herta".to_string()),
+            translation_patch_source_path: None,
+            translation_patch_pck_stem: None,
         };
 
         let installed = install_patched_archive_mod(
@@ -684,7 +1136,8 @@ mod tests {
 
         assert_eq!(installed, Some(active_root.clone()));
         assert!(!active_root.join("marker.txt").exists());
-        assert!(active_root.join("inner").join("Herta.pck").exists());
+        assert!(active_root.join("Herta.pck").exists());
+        assert!(!active_root.join("inner").exists());
         assert!(!config.game_mods_dir.join("HertaV1.42").exists());
         let _ = fs::remove_dir_all(root);
     }
@@ -719,6 +1172,8 @@ mod tests {
             &install_root,
             None,
             "",
+            None,
+            None,
         )
         .expect("write context");
 
@@ -737,6 +1192,7 @@ mod tests {
                 entries: vec![JsonTranslationEntry {
                     key: "/title".to_string(),
                     slot_id: Some("k001-aa".to_string()),
+                    previous_source_value: None,
                     source_value: "荒疫".to_string(),
                     translated_value: "황역".to_string(),
                     status: JsonTranslationStatus::New,
@@ -788,6 +1244,7 @@ mod tests {
                 entries: vec![JsonTranslationEntry {
                     key: "file://cards.json#/name".to_string(),
                     slot_id: None,
+                    previous_source_value: None,
                     source_value: "Name".to_string(),
                     translated_value: "이름".to_string(),
                     status: JsonTranslationStatus::Ready,
@@ -809,20 +1266,160 @@ mod tests {
                     .to_string(),
                 target_language: "kor".to_string(),
                 updated_epoch: 1,
-                entries: Vec::new(),
+                entries: vec![JsonTranslationEntry {
+                    key: "file://cards.json#/name".to_string(),
+                    slot_id: None,
+                    previous_source_value: None,
+                    source_value: "名称".to_string(),
+                    translated_value: "이름".to_string(),
+                    status: JsonTranslationStatus::Ready,
+                }],
             },
         )
         .expect("write zhs");
 
         assert_eq!(
             fallback_translation_memory_sheet(&root, "mod", "kor", "res://localization/zhs"),
-            Some(zhs_sheet)
+            Some(zhs_sheet.clone())
         );
         assert!(!translation_sheet_matches_resource(
             &eng_sheet,
             "res://localization/zhs"
         ));
+        write_sheet(
+            &zhs_sheet,
+            &JsonTranslationSheet {
+                source_path: root
+                    .join("selected")
+                    .join("mod")
+                    .join("zhs")
+                    .join("source")
+                    .join("blight")
+                    .join("localization")
+                    .join("zhs")
+                    .join("all.loc")
+                    .to_string_lossy()
+                    .to_string(),
+                target_language: "kor".to_string(),
+                updated_epoch: 3,
+                entries: vec![JsonTranslationEntry {
+                    key: "/title".to_string(),
+                    slot_id: None,
+                    previous_source_value: None,
+                    source_value: "Name".to_string(),
+                    translated_value: "이름".to_string(),
+                    status: JsonTranslationStatus::Ready,
+                }],
+            },
+        )
+        .expect("write nested zhs loc");
+        assert!(translation_sheet_matches_resource(
+            &zhs_sheet,
+            "res://localization/zhs"
+        ));
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn translation_memory_fallback_prefers_translated_sibling_version_over_empty_current_sheet() {
+        let root =
+            std::env::temp_dir().join(format!("sts2-memory-sibling-{}", timestamp_string()));
+        let memory_root = root.join("translation_memory");
+        let current_memory = memory_root.join("blight-0-3-8");
+        let sibling_memory = memory_root.join("blight-1-0");
+        fs::create_dir_all(&current_memory).expect("create current memory");
+        fs::create_dir_all(&sibling_memory).expect("create sibling memory");
+        let current_sheet = current_memory.join("localization-zhs.kor.translation.json");
+        let sibling_sheet = sibling_memory.join("localization-zhs.kor.translation.json");
+        write_sheet(
+            &current_sheet,
+            &JsonTranslationSheet {
+                source_path: root
+                    .join("selected")
+                    .join("blight-0-3-8")
+                    .join("zhs")
+                    .join("source")
+                    .join("localization")
+                    .join("zhs")
+                    .to_string_lossy()
+                    .to_string(),
+                target_language: "kor".to_string(),
+                updated_epoch: 1,
+                entries: vec![JsonTranslationEntry {
+                    key: "file://all.loc#/title".to_string(),
+                    slot_id: None,
+                    previous_source_value: None,
+                    source_value: "荒疫".to_string(),
+                    translated_value: String::new(),
+                    status: JsonTranslationStatus::Missing,
+                }],
+            },
+        )
+        .expect("write empty current sheet");
+        write_sheet(
+            &sibling_sheet,
+            &JsonTranslationSheet {
+                source_path: root
+                    .join("selected")
+                    .join("blight-1-0")
+                    .join("zhs")
+                    .join("source")
+                    .join("localization")
+                    .join("zhs")
+                    .to_string_lossy()
+                    .to_string(),
+                target_language: "kor".to_string(),
+                updated_epoch: 2,
+                entries: vec![JsonTranslationEntry {
+                    key: "file://all.loc#/title".to_string(),
+                    slot_id: None,
+                    previous_source_value: None,
+                    source_value: "荒疫".to_string(),
+                    translated_value: "황역".to_string(),
+                    status: JsonTranslationStatus::Ready,
+                }],
+            },
+        )
+        .expect("write sibling sheet");
+
+        assert_eq!(
+            select_translation_memory_sheet(
+                &root,
+                Some(current_sheet),
+                &["blight-0-3-8".to_string(), "blight-1-0".to_string()],
+                "kor",
+                "res://localization/zhs",
+            ),
+            Some(sibling_sheet)
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn translation_memory_family_tokens_use_manifest_name_for_version_only_rows() {
+        let record = ModRecord {
+            name: "0.3.8".to_string(),
+            path: PathBuf::from(r"Z:\game\Slay the Spire 2\mods\Blight.zip"),
+            source: ModSource::ExternalManager,
+            kind: ModKind::Archive,
+            version_hint: Some("0.3.8".to_string()),
+            fingerprint: sts2_mod_manager::domain::ModFingerprint {
+                bytes: 1,
+                modified: None,
+            },
+        };
+        let manifest = ModManifestInfo {
+            id: Some("Blight".to_string()),
+            name: Some("荒疫".to_string()),
+            version: Some("0.3.8".to_string()),
+            ..ModManifestInfo::default()
+        };
+
+        let tokens = translation_memory_family_tokens(&record, &manifest);
+
+        assert!(tokens.contains("blight"));
+        assert!(tokens.contains("荒疫"));
+        assert!(!tokens.contains("038"));
     }
 
     #[test]
@@ -871,6 +1468,28 @@ mod tests {
     }
 
     #[test]
+    fn recent_vortex_download_archive_is_marked_downloading() {
+        let record = ModRecord {
+            name: "AkiSister".to_string(),
+            path: PathBuf::from(
+                r"C:\Users\angel\AppData\Roaming\Vortex\downloads\slaythespire2\AkiSister.rar",
+            ),
+            source: ModSource::ExternalManager,
+            kind: ModKind::Archive,
+            version_hint: None,
+            fingerprint: ModFingerprint {
+                bytes: 1024,
+                modified: Some(SystemTime::now()),
+            },
+        };
+
+        assert_eq!(
+            download_state_for_record(&record).as_deref(),
+            Some("downloading")
+        );
+    }
+
+    #[test]
     fn log_classifier_categorizes_pck_and_lock_failures() {
         let pck = classify_game_log_line("[Error] failed to load mod payload.pck").expect("pck");
         let locked = classify_game_log_line("Access is denied while moving mod file").expect("lock");
@@ -880,7 +1499,18 @@ mod tests {
     }
 
     #[test]
-    fn mod_safety_warnings_detect_multiplayer_manifest_text() {
+    fn log_classifier_marks_model_not_found_as_current_run_conflict() {
+        let current_run = classify_game_log_line(
+            "ERROR: MegaCrit.Sts2.Core.Models.Exceptions.ModelNotFoundException: Model id=CHARACTER.MIYU_CHARACTER not found",
+        )
+        .expect("current-run conflict");
+
+        assert_eq!(current_run.0, "current-run");
+        assert!(current_run.1.contains("진행 중 런"));
+    }
+
+    #[test]
+    fn mod_safety_warnings_ignore_manifest_keywords() {
         let manifest = ModManifestInfo {
             id: None,
             name: Some("Co-op Sync".to_string()),
@@ -895,7 +1525,7 @@ mod tests {
             is_translation_patch: false,
         };
 
-        assert!(!mod_safety_warnings(&manifest).is_empty());
+        assert!(mod_safety_warnings(&manifest).is_empty());
     }
 
     #[test]
@@ -988,6 +1618,121 @@ mod tests {
             selected_translation_files(&root, "Blight/localization/zhs").len(),
             1
         );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn ui_settings_prefills_detected_game_exe() {
+        let root = std::env::temp_dir().join(format!("sts2-settings-game-exe-{}", timestamp_string()));
+        let config = test_config(&root);
+        let exe = config.game_dir.join("SlayTheSpire2.exe");
+        fs::create_dir_all(&config.game_dir).expect("create game dir");
+        fs::write(&exe, "fake exe").expect("write exe");
+
+        let settings = read_ui_settings(&config).expect("read settings");
+
+        assert_eq!(settings.game_exe_path, display_path(&exe));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn ui_settings_empty_game_exe_keeps_detected_default() {
+        let root = std::env::temp_dir().join(format!("sts2-settings-empty-game-exe-{}", timestamp_string()));
+        let config = test_config(&root);
+        let exe = config.game_dir.join("SlayTheSpire2.exe");
+        fs::create_dir_all(&config.game_dir).expect("create game dir");
+        fs::create_dir_all(&config.state_dir).expect("create state dir");
+        fs::write(&exe, "fake exe").expect("write exe");
+        fs::write(
+            config.state_dir.join("tauri_settings.tsv"),
+            "target_language\tkor\ngame_exe_path\t\n",
+        )
+        .expect("write settings");
+
+        let settings = read_ui_settings(&config).expect("read settings");
+
+        assert_eq!(settings.game_exe_path, display_path(&exe));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn setup_issues_warn_when_work_paths_overlap() {
+        let root = std::env::temp_dir().join(format!("sts2-settings-overlap-{}", timestamp_string()));
+        let config = test_config(&root);
+        let settings = UiSettingsDto {
+            translation_work_dir: root.join("shared").join("translation").display().to_string(),
+            target_language: "kor".to_string(),
+            game_exe_path: String::new(),
+            game_log_path: String::new(),
+            save_dir: root.join("saves").display().to_string(),
+            save_backup_dir: root.join("shared").display().to_string(),
+            save_backup_retention_days: 7,
+            save_backup_max_entries: 14,
+            deleted_retention_days: 30,
+            mod_view_mode: "detail".to_string(),
+        };
+        let launch = LaunchStatus {
+            ready: true,
+            game_exe: Some(config.game_dir.join("SlayTheSpire2.exe")),
+            steam_exe: None,
+            running: false,
+        };
+
+        let issues = setup_issues(&config, &settings, &launch);
+
+        assert!(issues.iter().any(|issue| {
+            !issue.blocking
+                && issue.message.contains("세이브 백업 경로")
+                && issue.message.contains("번역/추출 작업 경로")
+                && issue.message.contains("포함 관계")
+        }));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn current_run_log_warning_requires_existing_modded_current_run() {
+        let root = std::env::temp_dir().join(format!("sts2-current-run-log-{}", timestamp_string()));
+        let config = test_config(&root);
+        fs::create_dir_all(&config.logs_dir).expect("logs");
+        let log = config.logs_dir.join("godot.log");
+        fs::write(
+            &log,
+            "ERROR: MegaCrit.Sts2.Core.Models.Exceptions.ModelNotFoundException: Model id=CHARACTER.MIYU_CHARACTER not found\n",
+        )
+        .expect("write log");
+        let settings = UiSettingsDto {
+            translation_work_dir: config.translation_work_dir.display().to_string(),
+            target_language: "kor".to_string(),
+            game_exe_path: String::new(),
+            game_log_path: log.display().to_string(),
+            save_dir: config.save_dir.as_ref().unwrap().display().to_string(),
+            save_backup_dir: config.save_backup_dir.display().to_string(),
+            save_backup_retention_days: 7,
+            save_backup_max_entries: 14,
+            deleted_retention_days: 30,
+            mod_view_mode: "detail".to_string(),
+        };
+
+        assert!(log_diagnostics(&config, &settings, &[]).is_empty());
+
+        let current_run = config
+            .save_dir
+            .as_ref()
+            .unwrap()
+            .join("modded")
+            .join("profile1")
+            .join("saves")
+            .join("current_run.save");
+        fs::create_dir_all(current_run.parent().unwrap()).expect("current run parent");
+        fs::write(
+            &current_run,
+            r#"{ "players": [{ "character_id": "CHARACTER.MIYU_CHARACTER" }] }"#,
+        )
+        .expect("write current run");
+
+        let diagnostics = log_diagnostics(&config, &settings, &[]);
+        assert_eq!(diagnostics.len(), 1);
+        assert!(diagnostics[0].detail.contains("modded"));
         let _ = fs::remove_dir_all(root);
     }
 

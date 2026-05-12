@@ -132,6 +132,7 @@ function App() {
     chooseSaveDir,
     chooseSaveBackupDir,
     repairInstallations,
+    clearCurrentRuns,
     restoreDeletedMod,
     emptyDeletedMods,
   } = useSettingsActions({
@@ -189,6 +190,7 @@ function App() {
     openTreeNodeInTranslationTools,
     pasteStructuredTranslationJson,
     pasteTranslationValues,
+    recalculateTranslationSheet,
     replaceTranslationEntries,
     saveEditedTranslationSheet,
     selectTranslationRow,
@@ -307,6 +309,7 @@ function App() {
         applied += 1;
       }
     }
+    void cleanupDroppedPreviewCache();
     setDropBusyMessage(null);
     if (applied === 0) {
       appendLog("드롭한 모드 추가를 건너뛰었습니다.");
@@ -317,6 +320,17 @@ function App() {
     setChangeFilter("all");
     setTranslationApplyFilter("all");
     setSort("registered");
+  }
+
+  async function cleanupDroppedPreviewCache() {
+    if (isPreviewRuntime()) {
+      return;
+    }
+    try {
+      await invokeCommand("cleanup_dropped_mod_preview_cache");
+    } catch (error) {
+      appendLog(String(error));
+    }
   }
 
   async function clearPendingExtractCache(mod: ModRow) {
@@ -459,6 +473,7 @@ function App() {
               onOpenPath={(path) => void openPath(path)}
               onCloseSession={closeTranslationSession}
               onCreate={() => void createTranslationSheet()}
+              onRecalculate={() => void recalculateTranslationSheet()}
               onLoad={() => void loadTranslationSheet()}
               onValidate={validateTranslationSheet}
               onApply={() => {
@@ -498,6 +513,7 @@ function App() {
               onRefreshGameLogs={() => void loadGameLogs()}
               onOpenPath={(path) => void openPath(path)}
               onRepairInstallations={() => void repairInstallations()}
+              onClearCurrentRuns={() => void clearCurrentRuns()}
               onCleanupCaches={() => runAction("cleanup_orphan_caches")}
               onRestoreDeleted={(item) => void restoreDeletedMod(item)}
               onEmptyDeleted={() => void emptyDeletedMods()}
@@ -540,7 +556,10 @@ function App() {
           items={droppedModPreviews}
           mods={dashboard.mods}
           busy={busy}
-          onCancel={() => setDroppedModPreviews(null)}
+          onCancel={() => {
+            setDroppedModPreviews(null);
+            void cleanupDroppedPreviewCache();
+          }}
           onConfirm={(decisions) => void confirmDroppedMods(decisions)}
         />
       )}

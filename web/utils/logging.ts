@@ -52,6 +52,14 @@ export function logTone(log: string): LogTone {
 }
 
 export function shouldToastLog(log: string): boolean {
+  if (
+    log.includes("진행 중 런 정리를 시작")
+    || log.includes("진행 중 런 정리 완료")
+    || log.includes("진행 중 런 정리를 시도")
+    || log.includes("정리할 진행 중 런")
+  ) {
+    return true;
+  }
   return logTone(log) !== "info";
 }
 
@@ -59,6 +67,8 @@ export function jsonCommandLabel(command: string): string {
   switch (command) {
     case "create_json_translation_sheet":
       return "번역 시트 생성";
+    case "recalculate_json_translation_sheet":
+      return "번역 시트 재계산";
     case "load_json_translation_sheet":
       return "번역 시트 불러오기";
     case "validate_json_translation_sheet":

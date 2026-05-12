@@ -109,19 +109,34 @@ impl ModRowBuilder {
             .expect("row has at least one source");
         let sources = source_labels(&self);
         let extraction_source = extraction_source_for_record(record);
+        let download_state = download_state_for_record(record);
+        let is_downloading = download_state.as_deref() == Some("downloading");
         let cache_key = language_cache_key(record, &extraction_source, vendor_dir);
-        let language_preview = cached_language_preview(
-            &cache_key,
-            &extraction_source,
-            cache,
-            current_cache_keys,
-            vendor_dir,
-        );
-        let extraction_tree = extraction_tree(&extraction_source, &cache_key, vendor_dir);
-        let translation = translation_state(&extraction_source, &language_preview);
-        let scan_root = extraction_scan_root(&extraction_source, &cache_key, vendor_dir)
-            .unwrap_or_else(|| extraction_source.clone());
-        let manifest = read_mod_manifest_for_record(&record.path, &scan_root);
+        let (language_preview, extraction_tree, translation, manifest) = if is_downloading {
+            (
+                Vec::new(),
+                Vec::new(),
+                (
+                    "다운로드 중".to_string(),
+                    "Vortex 다운로드가 완료되면 다시 인식됩니다".to_string(),
+                ),
+                ModManifestInfo::default(),
+            )
+        } else {
+            let language_preview = cached_language_preview(
+                &cache_key,
+                &extraction_source,
+                cache,
+                current_cache_keys,
+                vendor_dir,
+            );
+            let extraction_tree = extraction_tree(&extraction_source, &cache_key, vendor_dir);
+            let translation = translation_state(&extraction_source, &language_preview);
+            let scan_root = extraction_scan_root(&extraction_source, &cache_key, vendor_dir)
+                .unwrap_or_else(|| extraction_source.clone());
+            let manifest = read_mod_manifest_for_record(&record.path, &scan_root);
+            (language_preview, extraction_tree, translation, manifest)
+        };
         let manifest_id = manifest.id.clone();
         let group_name = manifest.name.clone();
         let is_translation_patch = manifest.is_translation_patch
@@ -200,6 +215,7 @@ impl ModRowBuilder {
             registered_epoch,
             updated_epoch,
             path: display_path(&record.path),
+            download_state,
             update_state: update_state.unwrap_or_else(|| "clean".to_string()),
             change_reasons,
             translation_state: translation.0,
@@ -318,6 +334,71 @@ fn resolve_mod_dependencies(rows: &mut [ModRowDto]) {
     }
 }
 
+fn download_state_for_record(record: &ModRecord) -> Option<String> {
+    if record.source != ModSource::ExternalManager
+        || record.kind != ModKind::Archive
+        || !is_vortex_download_path(&record.path)
+    {
+        return None;
+    }
+    if record.fingerprint.bytes == 0
+        || has_vortex_download_marker(&record.path)
+        || record_recently_modified(record, 180)
+    {
+        return Some("downloading".to_string());
+    }
+    None
+}
+
+fn is_vortex_download_path(path: &Path) -> bool {
+    let normalized = path.to_string_lossy().replace('/', "\\").to_ascii_lowercase();
+    normalized.contains("\\vortex\\downloads\\")
+}
+
+fn has_vortex_download_marker(path: &Path) -> bool {
+    let Some(parent) = path.parent() else {
+        return false;
+    };
+    let file_name = path
+        .file_name()
+        .map(|value| value.to_string_lossy().to_ascii_lowercase())
+        .unwrap_or_default();
+    let stem = path
+        .file_stem()
+        .map(|value| value.to_string_lossy().to_ascii_lowercase())
+        .unwrap_or_default();
+    let Ok(entries) = fs::read_dir(parent) else {
+        return false;
+    };
+    entries.flatten().any(|entry| {
+        let name = entry.file_name().to_string_lossy().to_ascii_lowercase();
+        if name == file_name {
+            return false;
+        }
+        let extension = entry
+            .path()
+            .extension()
+            .and_then(|value| value.to_str())
+            .map(|value| value.to_ascii_lowercase())
+            .unwrap_or_default();
+        (name.starts_with(&file_name) || name.starts_with(&stem))
+            && matches!(
+                extension.as_str(),
+                "part" | "partial" | "tmp" | "download" | "crdownload"
+            )
+    })
+}
+
+fn record_recently_modified(record: &ModRecord, seconds: u64) -> bool {
+    let Some(modified) = record.fingerprint.modified else {
+        return false;
+    };
+    SystemTime::now()
+        .duration_since(modified)
+        .map(|elapsed| elapsed <= std::time::Duration::from_secs(seconds))
+        .unwrap_or(false)
+}
+
 fn resolve_translation_patch_summaries(rows: &mut [ModRowDto]) {
     let patches = rows
         .iter()
@@ -401,7 +482,7 @@ fn dependency_match_tokens(
 fn normalize_dependency_token(value: &str) -> String {
     value
         .chars()
-        .filter(|character| character.is_ascii_alphanumeric())
+        .filter(|character| character.is_alphanumeric())
         .flat_map(char::to_lowercase)
         .collect()
 }

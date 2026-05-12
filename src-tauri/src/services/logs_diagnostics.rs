@@ -159,19 +159,6 @@ fn troubleshoot_diagnostics(
                 can_auto_fix: false,
             });
         }
-        for warning in &mod_row.safety_warnings {
-            diagnostics.push(TroubleshootDiagnosticDto {
-                id: format!("safety-{}-{}", mod_row.key, stable_hash(warning)),
-                category: "safety".to_string(),
-                severity: "warn".to_string(),
-                title: "세이브/멀티 주의".to_string(),
-                detail: format!("{}: {warning}", mod_row.name),
-                action_label: "세이브 백업 확인".to_string(),
-                related_path: display_path(&config.save_backup_dir),
-                mod_key: Some(mod_row.key.clone()),
-                can_auto_fix: false,
-            });
-        }
     }
 
     diagnostics.extend(log_diagnostics(config, settings, mods));
@@ -223,8 +210,22 @@ fn log_diagnostics(
     let Ok(lines) = read_tail_lines(&log) else {
         return output;
     };
+    let current_run_paths =
+        save_backup::modded_current_run_paths_for_mode_switch(config).unwrap_or_default();
     for line in lines.iter().rev().take(180) {
         if let Some((category, title, detail)) = classify_game_log_line(line) {
+            let save_fix = category == "current-run";
+            if save_fix && current_run_paths.is_empty() {
+                continue;
+            }
+            let detail = if save_fix {
+                current_run_paths
+                    .first()
+                    .map(|path| format!("남은 진행 런: {}", path.display()))
+                    .unwrap_or(detail)
+            } else {
+                detail
+            };
             let mod_key = mods
                 .iter()
                 .find(|row| {
@@ -235,14 +236,18 @@ fn log_diagnostics(
                 .map(|row| row.key.clone());
             output.push(TroubleshootDiagnosticDto {
                 id: format!("log-{}-{:016x}", category, stable_hash(line)),
-                category: "log".to_string(),
+                category: if save_fix { "safety" } else { "log" }.to_string(),
                 severity: "error".to_string(),
                 title,
                 detail,
-                action_label: "로그 위치 열기".to_string(),
+                action_label: if save_fix {
+                    "current_run 정리".to_string()
+                } else {
+                    "로그 위치 열기".to_string()
+                },
                 related_path: display_path(&log),
                 mod_key,
-                can_auto_fix: false,
+                can_auto_fix: save_fix,
             });
         }
     }
@@ -252,6 +257,15 @@ fn log_diagnostics(
 
 fn classify_game_log_line(line: &str) -> Option<(&'static str, String, String)> {
     let lower = line.to_ascii_lowercase();
+    if lower.contains("modelnotfoundexception")
+        || (lower.contains("model id=") && lower.contains(" not found"))
+    {
+        return Some((
+            "current-run",
+            "진행 중 런이 현재 모드 구성과 충돌할 수 있습니다".to_string(),
+            line.trim().to_string(),
+        ));
+    }
     if lower.contains("pck") && any_keyword(&lower, &["error", "failed", "invalid", "corrupt"]) {
         return Some((
             "pck",

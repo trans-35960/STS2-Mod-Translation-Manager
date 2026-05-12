@@ -75,6 +75,22 @@ function busyProgress(busy: string | null): { title: string; detail: string; ste
       activeStep: 1,
     };
   }
+  if (busy === "clear_current_runs") {
+    return {
+      title: "진행 중 런 정리 중",
+      detail: "current_run.save를 백업 후 제거하고 Steam Cloud 캐시 기록을 정리합니다.",
+      steps: ["로컬 current_run 확인", "Steam remote 파일 확인", "remotecache.vdf 정리", "문제 해결 목록 새로고침"],
+      activeStep: 2,
+    };
+  }
+  if (busy === "repair_mod_installations") {
+    return {
+      title: "모드 설치 정리 중",
+      detail: "압축 파일과 잘못 배치된 모드 항목을 정리하고 목록을 다시 읽습니다.",
+      steps: ["모드 경로 확인", "복구/정리 적용", "모드 목록 새로고침"],
+      activeStep: 1,
+    };
+  }
   if (busy === "extract_translation") {
     return {
       title: "파일 추출 중",

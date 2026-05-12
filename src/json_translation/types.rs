@@ -20,6 +20,8 @@ pub struct JsonTranslationEntry {
     pub key: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub slot_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub previous_source_value: Option<String>,
     pub source_value: String,
     pub translated_value: String,
     pub status: JsonTranslationStatus,

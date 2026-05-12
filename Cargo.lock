@@ -77,7 +77,7 @@ dependencies = [
 
 [[package]]
 name = "sts2_mod_manager"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",

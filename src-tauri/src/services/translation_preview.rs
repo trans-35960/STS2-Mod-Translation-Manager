@@ -121,6 +121,19 @@ fn full_extract_scan_root(source: &Path, work_dir: &Path, vendor_dir: &Path) -> 
     Ok(source.to_path_buf())
 }
 
+#[derive(Clone)]
+struct TranslationPatchApplyTarget {
+    source_path: PathBuf,
+    pck_stem: Option<String>,
+}
+
+#[derive(Default)]
+struct ConnectedTranslationPatchCopy {
+    files: usize,
+    patch_label: Option<String>,
+    apply_target: Option<TranslationPatchApplyTarget>,
+}
+
 fn copy_connected_translation_patch_files(
     app: &App,
     base_record: &ModRecord,
@@ -130,12 +143,12 @@ fn copy_connected_translation_patch_files(
     translated_root: &Path,
     target_language: &str,
     vendor_dir: &Path,
-) -> Result<usize, String> {
+) -> Result<ConnectedTranslationPatchCopy, String> {
     let summary = app
         .scan_preview_report()
         .map_err(|error| error.to_string())?
         .summary;
-    let mut copied = 0usize;
+    let mut report = ConnectedTranslationPatchCopy::default();
     for candidate in summary
         .game_mods
         .into_iter()
@@ -160,18 +173,80 @@ fn copy_connected_translation_patch_files(
         if !translation_patch_targets_base(&candidate, &patch_manifest, base_record, base_manifest) {
             continue;
         }
+        let mut target_relatives = Vec::new();
         for source_file in source_files {
             let Some(target_relative) =
                 target_language_relative_path(source_scan_root, source_file, target_language)
             else {
                 continue;
             };
-            if copy_resource_relative_if_exists(&patch_scan_root, &target_relative, translated_root)? {
-                copied += 1;
+            if find_resource_file_by_relative(&patch_scan_root, &target_relative).is_some() {
+                target_relatives.push(target_relative);
             }
         }
+        if target_relatives.is_empty() {
+            continue;
+        }
+        let patch_label = translation_patch_label(&candidate, &patch_manifest);
+        if report.files > 0 {
+            return Err(format!(
+                "연결된 번역 모드가 여러 개라 자동 적용 대상을 정할 수 없습니다: {}, {}. 하나만 남기거나 번역 모드로 내보내기를 사용해 주세요.",
+                report
+                    .patch_label
+                    .as_deref()
+                    .unwrap_or("이전 번역 모드"),
+                patch_label
+            ));
+        }
+        for target_relative in target_relatives {
+            if copy_resource_relative_if_exists(&patch_scan_root, &target_relative, translated_root)? {
+                report.files += 1;
+                report.apply_target = Some(translation_patch_apply_target(
+                    &patch_source,
+                    &patch_scan_root,
+                ));
+            }
+        }
+        if report.files > 0 {
+            report.patch_label = Some(patch_label);
+        }
     }
-    Ok(copied)
+    Ok(report)
+}
+
+fn translation_patch_label(record: &ModRecord, manifest: &ModManifestInfo) -> String {
+    manifest
+        .name
+        .clone()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| record.stable_key())
+}
+
+fn translation_patch_apply_target(
+    patch_source: &Path,
+    patch_scan_root: &Path,
+) -> TranslationPatchApplyTarget {
+    TranslationPatchApplyTarget {
+        source_path: patch_source.to_path_buf(),
+        pck_stem: pck_stem_from_source_or_scan_root(patch_source, patch_scan_root),
+    }
+}
+
+fn pck_stem_from_source_or_scan_root(source: &Path, scan_root: &Path) -> Option<String> {
+    if is_pck_path(source) {
+        return source
+            .file_stem()
+            .map(|value| value.to_string_lossy().to_string());
+    }
+    pck_resource_roots(scan_root)
+        .into_iter()
+        .filter_map(|path| {
+            path.file_name()
+                .and_then(|value| value.to_str())
+                .and_then(|name| name.strip_suffix(".pck.contents"))
+                .map(str::to_string)
+        })
+        .next()
 }
 
 fn is_translation_patch_manifest(manifest: &ModManifestInfo) -> bool {
@@ -442,16 +517,14 @@ pub(crate) fn prepare_translation_node(
         .join("translation_memory")
         .join(record.stable_key())
         .join(format!("{selection_id}.{target_language}.translation.json"));
-    let existing_sheet_path = if sheet_path.exists() {
-        Some(sheet_path.clone())
-    } else {
-        fallback_translation_memory_sheet(
-            &app.config().translation_work_dir,
-            &record.stable_key(),
-            &target_language,
-            &selected_resource_path,
-        )
-    };
+    let memory_keys = translation_memory_candidate_keys(&app, &record, &manifest);
+    let existing_sheet_path = select_translation_memory_sheet(
+        &app.config().translation_work_dir,
+        sheet_path.exists().then(|| sheet_path.clone()),
+        &memory_keys,
+        &target_language,
+        &selected_resource_path,
+    );
 
     if source_root.exists() {
         fs::remove_dir_all(&source_root).map_err(|error| error.to_string())?;
@@ -476,7 +549,7 @@ pub(crate) fn prepare_translation_node(
         copied.push(target);
     }
     copy_existing_target_language_files(&scan_root, &selected, &translated_root, &target_language)?;
-    copy_connected_translation_patch_files(
+    let connected_patch = copy_connected_translation_patch_files(
         &app,
         &record,
         &manifest,
@@ -503,6 +576,12 @@ pub(crate) fn prepare_translation_node(
         .and_then(|name| name.strip_suffix(".pck.contents"))
         .unwrap_or_default()
         .to_string();
+    let can_export_patch_mod = !pck_stem.is_empty()
+        || connected_patch
+            .apply_target
+            .as_ref()
+            .and_then(|target| target.pck_stem.as_deref())
+            .is_some_and(|target_pck_stem| !target_pck_stem.is_empty());
     write_translation_context(
         source_root.parent().unwrap_or(source_root.as_path()),
         &record.stable_key(),
@@ -510,6 +589,14 @@ pub(crate) fn prepare_translation_node(
         &extraction_source,
         pck_contents_root.as_deref(),
         &pck_stem,
+        connected_patch
+            .apply_target
+            .as_ref()
+            .map(|target| target.source_path.as_path()),
+        connected_patch
+            .apply_target
+            .as_ref()
+            .and_then(|target| target.pck_stem.as_deref()),
     )
     .map_err(|error| error.to_string())?;
     let first_source = copied
@@ -556,6 +643,7 @@ pub(crate) fn prepare_translation_node(
         mod_author: manifest.author.unwrap_or_default(),
         mod_description: manifest.description.unwrap_or_default(),
         available_languages,
+        can_export_patch_mod,
     })
 }
 
