@@ -17,8 +17,11 @@ pub(crate) fn cleanup_orphan_caches() -> Result<ActionDto, String> {
 
 pub(crate) fn cleanup_dropped_mod_preview_cache() -> Result<(), String> {
     let app = app();
-    remove_path_if_exists(&app.config().state_dir.join("drop_imports"))
-        .map_err(|error| error.to_string())
+    let path = app.config().state_dir.join("drop_imports");
+    if path.exists() {
+        ensure_existing_state_path(&path, app.config(), "드롭 모드 미리보기 캐시")?;
+    }
+    remove_path_if_exists(&path).map_err(|error| error.to_string())
 }
 
 fn work_cache_usage(config: &AppConfig) -> CacheUsageDto {
@@ -89,26 +92,36 @@ fn cleanup_work_caches(
     removed_dirs: &mut usize,
     removed_files: &mut usize,
 ) -> Result<(), String> {
+    let cache_roots = vec![config.state_dir.clone(), config.translation_work_dir.clone()];
     cleanup_translation_memory_payloads(
         &config.translation_work_dir.join("translation_memory"),
         removed_dirs,
         removed_files,
+        &cache_roots,
     )?;
-    cleanup_translation_work_payloads(&config.translation_work_dir, removed_dirs, removed_files)?;
+    cleanup_translation_work_payloads(
+        &config.translation_work_dir,
+        removed_dirs,
+        removed_files,
+        &cache_roots,
+    )?;
     remove_cache_path_if_exists(
         &config.state_dir.join("language_preview_extract"),
         removed_dirs,
         removed_files,
+        &cache_roots,
     )?;
     remove_cache_path_if_exists(
         &config.state_dir.join("drop_imports"),
         removed_dirs,
         removed_files,
+        &cache_roots,
     )?;
     remove_cache_path_if_exists(
         &config.state_dir.join("language_preview_cache.tsv"),
         removed_dirs,
         removed_files,
+        &cache_roots,
     )?;
     Ok(())
 }
@@ -117,6 +130,7 @@ fn cleanup_translation_memory_payloads(
     root: &Path,
     removed_dirs: &mut usize,
     removed_files: &mut usize,
+    cache_roots: &[PathBuf],
 ) -> Result<(), String> {
     if !root.is_dir() {
         return Ok(());
@@ -124,7 +138,7 @@ fn cleanup_translation_memory_payloads(
     let mut payloads = Vec::new();
     collect_translation_memory_payloads(root, &mut payloads)?;
     for path in payloads {
-        remove_cache_path(&path, removed_dirs, removed_files)?;
+        remove_cache_path(&path, removed_dirs, removed_files, cache_roots)?;
     }
     Ok(())
 }
@@ -159,8 +173,9 @@ fn cleanup_translation_work_payloads(
     root: &Path,
     removed_dirs: &mut usize,
     removed_files: &mut usize,
+    cache_roots: &[PathBuf],
 ) -> Result<(), String> {
-    cleanup_translation_work_payloads_inner(root, root, removed_dirs, removed_files)
+    cleanup_translation_work_payloads_inner(root, root, removed_dirs, removed_files, cache_roots)
 }
 
 fn cleanup_translation_work_payloads_inner(
@@ -168,6 +183,7 @@ fn cleanup_translation_work_payloads_inner(
     root: &Path,
     removed_dirs: &mut usize,
     removed_files: &mut usize,
+    cache_roots: &[PathBuf],
 ) -> Result<(), String> {
     if !root.is_dir() {
         return Ok(());
@@ -179,14 +195,20 @@ fn cleanup_translation_work_payloads_inner(
             let name = entry.file_name().to_string_lossy().to_ascii_lowercase();
             if name == "expanded_archive" || name == "pck_build" || name.ends_with(".pck.contents")
             {
-                remove_cache_path(&path, removed_dirs, removed_files)?;
+                remove_cache_path(&path, removed_dirs, removed_files, cache_roots)?;
                 continue;
             }
-            cleanup_translation_work_payloads_inner(base, &path, removed_dirs, removed_files)?;
+            cleanup_translation_work_payloads_inner(
+                base,
+                &path,
+                removed_dirs,
+                removed_files,
+                cache_roots,
+            )?;
             continue;
         }
         if is_selected_translation_payload_file(base, &path) {
-            remove_cache_path(&path, removed_dirs, removed_files)?;
+            remove_cache_path(&path, removed_dirs, removed_files, cache_roots)?;
         }
     }
     Ok(())
@@ -222,7 +244,9 @@ fn remove_cache_path(
     path: &Path,
     removed_dirs: &mut usize,
     removed_files: &mut usize,
+    cache_roots: &[PathBuf],
 ) -> Result<(), String> {
+    ensure_existing_path_in_roots(path, cache_roots, "캐시 경로")?;
     let (dirs, files) = count_path_items(path);
     if path.is_dir() {
         fs::remove_dir_all(path).map_err(|error| error.to_string())?;
@@ -240,11 +264,12 @@ fn remove_cache_path_if_exists(
     path: &Path,
     removed_dirs: &mut usize,
     removed_files: &mut usize,
+    cache_roots: &[PathBuf],
 ) -> Result<(), String> {
     if !path.exists() {
         return Ok(());
     }
-    remove_cache_path(path, removed_dirs, removed_files)
+    remove_cache_path(path, removed_dirs, removed_files, cache_roots)
 }
 
 fn count_path_items(path: &Path) -> (usize, usize) {

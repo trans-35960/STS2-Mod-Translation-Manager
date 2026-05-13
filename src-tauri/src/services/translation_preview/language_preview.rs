@@ -10,7 +10,7 @@ fn cached_language_preview(
         return cached.clone();
     }
 
-    let detected = language_preview(extraction_source, &cache_key, vendor_dir);
+    let detected = language_preview(extraction_source, cache_key, vendor_dir);
     cache
         .entries
         .insert(cache_key.to_string(), detected.clone());
@@ -32,7 +32,7 @@ fn source_labels(builder: &ModRowBuilder) -> String {
 fn is_game_disabled_record(record: &ModRecord) -> bool {
     record.path.components().any(|component| {
         let value = component.as_os_str().to_string_lossy();
-        value.eq_ignore_ascii_case(".disabled") || value.eq_ignore_ascii_case("mods.disabled")
+        value.eq_ignore_ascii_case("mods.disabled")
     })
 }
 
@@ -94,7 +94,7 @@ fn language_preview(source: &Path, cache_key: &str, vendor_dir: &Path) -> Vec<La
 }
 
 fn language_preview_from_scan_root(scan_root: &Path) -> Vec<LanguagePreviewDto> {
-    let Ok(candidates) = scan_translation_candidates(&scan_root) else {
+    let Ok(candidates) = scan_translation_candidates(scan_root) else {
         return Vec::new();
     };
 
@@ -135,6 +135,13 @@ fn language_preview_from_scan_root(scan_root: &Path) -> Vec<LanguagePreviewDto> 
 fn compare_scan_root(sheet: &JsonTranslationSheet) -> Option<PathBuf> {
     let source_path = PathBuf::from(&sheet.source_path);
     let context = read_translation_context(&source_path).unwrap_or_default();
+    if let Some(root) = context
+        .pck_contents_root
+        .as_ref()
+        .filter(|path| path.exists())
+    {
+        return Some(root.clone());
+    }
     if let Some(mod_key) = context.mod_key.as_deref() {
         let app = app();
         if let Ok(record) = find_mod_record(&app, mod_key) {

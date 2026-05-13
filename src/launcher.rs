@@ -102,10 +102,10 @@ pub fn launch(config: &AppConfig, vanilla_mode: bool) -> AppResult<LaunchReport>
 
 fn ensure_steam_app_id_file(working_dir: &Path) -> AppResult<()> {
     let app_id_path = working_dir.join(STEAM_APP_ID_FILE);
-    if let Ok(existing) = fs::read_to_string(&app_id_path) {
-        if existing.trim() == STEAM_APP_ID {
-            return Ok(());
-        }
+    if let Ok(existing) = fs::read_to_string(&app_id_path)
+        && existing.trim() == STEAM_APP_ID
+    {
+        return Ok(());
     }
 
     fs::write(&app_id_path, format!("{STEAM_APP_ID}\n"))
@@ -113,13 +113,13 @@ fn ensure_steam_app_id_file(working_dir: &Path) -> AppResult<()> {
 }
 
 pub fn resolve_game_exe(config: &AppConfig) -> Option<PathBuf> {
-    if let Some(path) = &config.game_exe_path {
-        if path.exists() {
-            return Some(path.clone());
-        }
+    if let Some(path) = &config.game_exe_path
+        && path.exists()
+    {
+        return Some(path.clone());
     }
 
-    find_known_exe(&config.game_dir).or_else(|| find_steam_game_exe())
+    find_known_exe(&config.game_dir).or_else(find_steam_game_exe)
 }
 
 fn find_known_exe(game_dir: &Path) -> Option<PathBuf> {
@@ -218,10 +218,10 @@ fn find_known_exe_recursive(root: &Path, names: &[&str], max_depth: usize) -> Op
         let entries = fs::read_dir(dir).ok()?;
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_dir() {
-                if let Some(found) = visit(&path, names, depth + 1, max_depth) {
-                    return Some(found);
-                }
+            if path.is_dir()
+                && let Some(found) = visit(&path, names, depth + 1, max_depth)
+            {
+                return Some(found);
             }
         }
         None
@@ -354,7 +354,6 @@ mod tests {
             save_backup_dir: root.join("modmanager/backups"),
             save_backup_retention_days: 7,
             save_backup_max_entries: 14,
-            vault_dir: root.join("modmanager/vault"),
             presets_dir: root.join("modmanager/presets"),
             translation_work_dir: root.join("modmanager/translation_work"),
             logs_dir: root.join("modmanager/logs"),
@@ -382,7 +381,6 @@ mod tests {
             save_backup_dir: root.join("modmanager/backups"),
             save_backup_retention_days: 7,
             save_backup_max_entries: 14,
-            vault_dir: root.join("modmanager/vault"),
             presets_dir: root.join("modmanager/presets"),
             translation_work_dir: root.join("modmanager/translation_work"),
             logs_dir: root.join("modmanager/logs"),

@@ -134,16 +134,30 @@ struct ConnectedTranslationPatchCopy {
     apply_target: Option<TranslationPatchApplyTarget>,
 }
 
+struct ConnectedTranslationPatchRequest<'a> {
+    app: &'a App,
+    base_record: &'a ModRecord,
+    base_manifest: &'a ModManifestInfo,
+    source_scan_root: &'a Path,
+    source_files: &'a [PathBuf],
+    translated_root: &'a Path,
+    target_language: &'a str,
+    vendor_dir: &'a Path,
+}
+
 fn copy_connected_translation_patch_files(
-    app: &App,
-    base_record: &ModRecord,
-    base_manifest: &ModManifestInfo,
-    source_scan_root: &Path,
-    source_files: &[PathBuf],
-    translated_root: &Path,
-    target_language: &str,
-    vendor_dir: &Path,
+    request: ConnectedTranslationPatchRequest<'_>,
 ) -> Result<ConnectedTranslationPatchCopy, String> {
+    let ConnectedTranslationPatchRequest {
+        app,
+        base_record,
+        base_manifest,
+        source_scan_root,
+        source_files,
+        translated_root,
+        target_language,
+        vendor_dir,
+    } = request;
     let summary = app
         .scan_preview_report()
         .map_err(|error| error.to_string())?
@@ -152,7 +166,7 @@ fn copy_connected_translation_patch_files(
     for candidate in summary
         .game_mods
         .into_iter()
-        .chain(summary.vault_mods)
+        .chain(summary.disabled_mods)
         .chain(summary.external_manager_mods)
     {
         if candidate.stable_key() == base_record.stable_key() {
@@ -430,7 +444,7 @@ fn extract_display_path(scan_root: &Path, path: &Path) -> String {
         .or_else(|| {
             path.strip_prefix(scan_root)
                 .ok()
-                .map(|relative| slash_path(relative))
+                .map(slash_path)
         })
         .filter(|value| !value.is_empty())
         .unwrap_or_else(|| display_path(path))
@@ -476,12 +490,13 @@ pub(crate) fn prepare_translation_node(
         resource_path.clone()
     };
     let mut selected = selected_translation_files(&scan_root, &selected_resource_path);
-    if selected.is_empty() && !resource_path.trim().is_empty() {
-        if let Some(fallback_path) = default_translation_resource_path(&scan_root, &target_language) {
-            selected = selected_translation_files(&scan_root, &fallback_path);
-            if !selected.is_empty() {
-                selected_resource_path = fallback_path;
-            }
+    if selected.is_empty()
+        && !resource_path.trim().is_empty()
+        && let Some(fallback_path) = default_translation_resource_path(&scan_root, &target_language)
+    {
+        selected = selected_translation_files(&scan_root, &fallback_path);
+        if !selected.is_empty() {
+            selected_resource_path = fallback_path;
         }
     }
     if selected.is_empty() {
@@ -550,14 +565,16 @@ pub(crate) fn prepare_translation_node(
     }
     copy_existing_target_language_files(&scan_root, &selected, &translated_root, &target_language)?;
     let connected_patch = copy_connected_translation_patch_files(
-        &app,
-        &record,
-        &manifest,
-        &scan_root,
-        &selected,
-        &translated_root,
-        &target_language,
-        &vendor_dir,
+        ConnectedTranslationPatchRequest {
+            app: &app,
+            base_record: &record,
+            base_manifest: &manifest,
+            source_scan_root: &scan_root,
+            source_files: &selected,
+            translated_root: &translated_root,
+            target_language: &target_language,
+            vendor_dir: &vendor_dir,
+        },
     )?;
     copied.sort();
     let pck_contents_root = copied
@@ -582,22 +599,23 @@ pub(crate) fn prepare_translation_node(
             .as_ref()
             .and_then(|target| target.pck_stem.as_deref())
             .is_some_and(|target_pck_stem| !target_pck_stem.is_empty());
-    write_translation_context(
-        source_root.parent().unwrap_or(source_root.as_path()),
-        &record.stable_key(),
-        &selected_resource_path,
-        &extraction_source,
-        pck_contents_root.as_deref(),
-        &pck_stem,
-        connected_patch
+    let record_key = record.stable_key();
+    write_translation_context(TranslationContextWriteRequest {
+        work_dir: source_root.parent().unwrap_or(source_root.as_path()),
+        mod_key: &record_key,
+        resource_path: &selected_resource_path,
+        extraction_source: &extraction_source,
+        pck_contents_root: pck_contents_root.as_deref(),
+        pck_stem: &pck_stem,
+        translation_patch_source: connected_patch
             .apply_target
             .as_ref()
             .map(|target| target.source_path.as_path()),
-        connected_patch
+        translation_patch_pck_stem: connected_patch
             .apply_target
             .as_ref()
             .and_then(|target| target.pck_stem.as_deref()),
-    )
+    })
     .map_err(|error| error.to_string())?;
     let first_source = copied
         .first()

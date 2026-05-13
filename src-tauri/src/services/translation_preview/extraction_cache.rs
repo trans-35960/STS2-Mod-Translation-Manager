@@ -199,6 +199,7 @@ fn remove_preview_file(path: &Path) -> std::io::Result<()> {
     if let Ok(metadata) = fs::metadata(path) {
         let mut permissions = metadata.permissions();
         if permissions.readonly() {
+            #[allow(clippy::permissions_set_readonly_false)]
             permissions.set_readonly(false);
             let _ = fs::set_permissions(path, permissions);
         }
@@ -463,23 +464,9 @@ fn expand_zip_archive(source: &Path, destination: &Path) -> bool {
     if fs::create_dir_all(destination).is_err() {
         return false;
     }
-    let command = format!(
-        "Expand-Archive -LiteralPath {} -DestinationPath {} -Force",
-        powershell_quote(source),
-        powershell_quote(destination)
-    );
-    hidden_command("powershell")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"])
-        .arg(command)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
+    powershell_expand_archive(source, destination)
         .map(|status| status.success())
         .unwrap_or(false)
-}
-
-fn powershell_quote(path: &Path) -> String {
-    format!("'{}'", path.to_string_lossy().replace('\'', "''"))
 }
 
 fn language_preview_extract_dir(cache_key: &str) -> PathBuf {

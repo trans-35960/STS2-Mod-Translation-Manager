@@ -71,6 +71,13 @@ fn resolve_workspace_dir() -> PathBuf {
         return PathBuf::from(path);
     }
 
+    if let Ok(exe_path) = env::current_exe()
+        && let Some(exe_dir) = exe_path.parent()
+        && exe_dir.join(".sts2-mod-manager-portable").is_file()
+    {
+        return exe_dir.to_path_buf();
+    }
+
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .map(Path::to_path_buf)
@@ -88,10 +95,65 @@ fn save_backup_dto(entry: SaveBackupEntry) -> SaveBackupDto {
     }
 }
 
-fn is_managed_mod_path(path: &Path, config: &AppConfig) -> bool {
-    path.starts_with(&config.game_mods_dir)
-        || path.starts_with(game_disabled_dir(&config.game_mods_dir))
-        || path.starts_with(&config.vault_dir)
+fn is_replaceable_mod_path(path: &Path, config: &AppConfig) -> bool {
+    replaceable_mod_roots(config)
+        .iter()
+        .any(|root| path.starts_with(root))
+}
+
+fn managed_mod_roots(config: &AppConfig) -> Vec<PathBuf> {
+    let mut roots = vec![
+        config.game_mods_dir.clone(),
+        game_disabled_dir(&config.game_mods_dir),
+    ];
+    push_unique_path(&mut roots, config.workspace_dir.join("mods.disabled"));
+    roots
+}
+
+fn replaceable_mod_roots(config: &AppConfig) -> Vec<PathBuf> {
+    let mut roots = managed_mod_roots(config);
+    roots.extend(config.external_manager_dirs.iter().cloned());
+    roots
+}
+
+fn deletable_mod_roots(config: &AppConfig) -> Vec<PathBuf> {
+    replaceable_mod_roots(config)
+}
+
+fn ensure_existing_replaceable_mod_path(path: &Path, config: &AppConfig) -> Result<(), String> {
+    ensure_existing_path_in_roots(path, &replaceable_mod_roots(config), "교체할 모드 경로")
+}
+
+fn ensure_existing_deletable_mod_path(path: &Path, config: &AppConfig) -> Result<(), String> {
+    ensure_existing_path_in_roots(path, &deletable_mod_roots(config), "삭제할 모드 경로")
+}
+
+fn ensure_deletable_mod_path(path: &Path, config: &AppConfig) -> Result<(), String> {
+    ensure_path_in_roots(path, &deletable_mod_roots(config), "모드 경로")
+}
+
+fn ensure_state_path(path: &Path, config: &AppConfig, description: &str) -> Result<(), String> {
+    ensure_path_in_roots(path, std::slice::from_ref(&config.state_dir), description)
+}
+
+fn ensure_existing_state_path(
+    path: &Path,
+    config: &AppConfig,
+    description: &str,
+) -> Result<(), String> {
+    ensure_existing_path_in_roots(path, std::slice::from_ref(&config.state_dir), description)
+}
+
+fn ensure_translation_work_path(
+    path: &Path,
+    config: &AppConfig,
+    description: &str,
+) -> Result<(), String> {
+    ensure_path_in_roots(
+        path,
+        std::slice::from_ref(&config.translation_work_dir),
+        description,
+    )
 }
 
 fn game_disabled_dir(game_mods_dir: &Path) -> PathBuf {
@@ -116,7 +178,7 @@ fn connected_mod_keys(summary: &ScanSummary) -> BTreeSet<String> {
         .filter(|record| !is_game_disabled_record(record))
         .chain(
             summary
-                .vault_mods
+                .disabled_mods
                 .iter()
                 .filter(|record| !is_game_disabled_record(record)),
         )

@@ -227,10 +227,19 @@ export function TranslationActionsPanel({
               <button
                 type="button"
                 className={props.compareViewEnabled ? "language-toggle active compact" : "language-toggle compact"}
-                onClick={props.onToggleCompareView}
-                disabled={selectedCompareLanguages.length === 0 || Boolean(props.busy)}
+                onClick={() => {
+                  if (selectedCompareLanguages.length === 0) {
+                    const defaultLanguage = compareLanguageOptions[0];
+                    if (defaultLanguage) {
+                      props.onToggleCompareLanguage(defaultLanguage.sample_path);
+                    }
+                    return;
+                  }
+                  props.onToggleCompareView();
+                }}
+                disabled={Boolean(props.busy)}
               >
-                비교 보기
+                {props.compareViewEnabled ? "비교 끄기" : "비교 보기"}
               </button>
             </div>
             <div className="language-toggle-group">

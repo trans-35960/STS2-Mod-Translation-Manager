@@ -1,7 +1,6 @@
 use super::sheet::{epoch_now, is_translatable_entry};
 use super::slots::{
-    compact_translation_file, is_legacy_translation_short_id, is_translation_slot_id,
-    short_id_key_map, single_translatable_file, slot_key_map,
+    compact_translation_file, is_translation_slot_id, single_translatable_file, slot_key_map,
 };
 use super::source_json::{
     directory_entry_key, flatten_source_values, flatten_string_values, json_text,
@@ -79,20 +78,20 @@ fn imported_translation_values(
             input_path.display()
         )));
     }
-    if let Ok(sheet) = serde_json::from_str::<JsonTranslationSheet>(&content) {
+    if let Ok(sheet) = serde_json::from_str::<JsonTranslationSheet>(content) {
         return Ok(sheet
             .entries
             .into_iter()
             .map(|entry| (entry.key, entry.translated_value))
             .collect());
     }
-    let json = serde_json::from_str::<Value>(&content).map_err(|source| {
+    let json = serde_json::from_str::<Value>(content).map_err(|source| {
         AppError::InvalidCommand(format!(
             "invalid translated json: {} ({source})",
             input_path.display()
         ))
     })?;
-    if let Some(values) = read_short_translation_json(sheet, &json)? {
+    if let Some(values) = read_slot_translation_json(sheet, &json)? {
         return Ok(values);
     }
     let raw_values = flatten_string_values(&json);
@@ -130,7 +129,6 @@ fn read_translation_csv(
         .or_else(|| column("translation"))
         .or_else(|| column("translated"))
         .unwrap_or_else(|| header.len().saturating_sub(1));
-    let short_id_map = short_id_key_map(sheet);
     let slot_map = slot_key_map(sheet);
     let single_file = single_translatable_file(sheet);
     let mut values = BTreeMap::new();
@@ -138,14 +136,7 @@ fn read_translation_csv(
         if let Some(index) = id_index {
             let id = row.get(index).map(String::as_str).unwrap_or_default();
             let value = row.get(translated_index).cloned().unwrap_or_default();
-            if let Some(key) = csv_id_key(
-                id,
-                &row,
-                file_index,
-                &short_id_map,
-                &slot_map,
-                single_file.as_ref(),
-            ) {
+            if let Some(key) = csv_id_key(id, &row, file_index, &slot_map, single_file.as_ref()) {
                 if !value.is_empty() {
                     values.insert(key, value);
                 }
@@ -178,7 +169,6 @@ fn csv_id_key(
     id: &str,
     row: &[String],
     file_index: Option<usize>,
-    short_id_map: &BTreeMap<String, String>,
     slot_map: &BTreeMap<(String, String), String>,
     single_file: Option<&String>,
 ) -> Option<String> {
@@ -190,10 +180,10 @@ fn csv_id_key(
             .or_else(|| single_file.cloned())?;
         return slot_map.get(&(file, id.to_string())).cloned();
     }
-    short_id_map.get(id).cloned()
+    None
 }
 
-fn read_short_translation_json(
+fn read_slot_translation_json(
     sheet: &JsonTranslationSheet,
     json: &Value,
 ) -> AppResult<Option<BTreeMap<String, String>>> {
@@ -208,9 +198,6 @@ fn read_short_translation_json(
     let mut values = BTreeMap::new();
     for entry in entries {
         let id = entry.get("id").and_then(Value::as_str).unwrap_or_default();
-        if is_legacy_translation_short_id(id) {
-            return Err(legacy_short_id_error());
-        }
         if !is_translation_slot_id(id) {
             continue;
         }
@@ -276,9 +263,6 @@ fn read_grouped_compact_translation_json(
             continue;
         };
         for (id, value) in group {
-            if is_legacy_translation_short_id(id) {
-                return Err(legacy_short_id_error());
-            }
             if !is_translation_slot_id(id) {
                 continue;
             }
@@ -318,18 +302,12 @@ fn read_flat_compact_translation_json(
                 "flat translation slot JSON is only supported for single-file sheets; group entries by file path".to_string(),
             ));
         }
-        if object.keys().any(|id| is_legacy_translation_short_id(id)) {
-            return Err(legacy_short_id_error());
-        }
         return Ok(None);
     };
     let slot_map = slot_key_map(sheet);
     let mut values = BTreeMap::new();
     let mut matched_ids = 0;
     for (id, value) in object {
-        if is_legacy_translation_short_id(id) {
-            return Err(legacy_short_id_error());
-        }
         if !is_translation_slot_id(id) {
             continue;
         }
@@ -351,13 +329,6 @@ fn read_flat_compact_translation_json(
         values.insert(key.clone(), translated.to_string());
     }
     Ok((matched_ids > 0).then_some(values))
-}
-
-fn legacy_short_id_error() -> AppError {
-    AppError::InvalidCommand(
-        "이전 short-id JSON은 새 slot-id 검증을 지원하지 않습니다. 번역용 JSON을 다시 내보내세요."
-            .to_string(),
-    )
 }
 
 fn parse_csv(content: &str) -> Vec<Vec<String>> {

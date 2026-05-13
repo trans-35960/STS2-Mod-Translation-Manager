@@ -7,12 +7,7 @@ import {
   splitSheetKey,
   translationLanguagesMatch,
 } from "../../features/translation/translationUtils";
-import type {
-  JsonCsvExport,
-  JsonSheetAction,
-  ShortJsonExport,
-  TranslationPatchExport,
-} from "../../types";
+import type { ShortJsonExport } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
 import type { TranslationActionsParams } from "./types";
 
@@ -69,7 +64,7 @@ export function useTranslationIoActions({
         return true;
       }
       const sheetToSave = options?.finalizeStatuses ? finalizeTranslationStatuses(jsonSheet) : jsonSheet;
-      const result = await invokeCommand<JsonSheetAction>("save_json_translation_sheet", {
+      const result = await invokeCommand("save_json_translation_sheet", {
         sheetPath,
         sheet: sheetToSave,
       });
@@ -114,7 +109,7 @@ export function useTranslationIoActions({
         appendLog(`Preview CSV export: ${outputPath}`);
         return;
       }
-      const result = await invokeCommand<JsonCsvExport>("export_json_translation_csv", {
+      const result = await invokeCommand("export_json_translation_csv", {
         outputPath,
         sheet: jsonSheet,
       });
@@ -196,24 +191,24 @@ export function useTranslationIoActions({
         return;
       }
       const result = normalizedOptions.warningOnly
-        ? await invokeCommand<ShortJsonExport>("export_json_translation_warning_json", {
+        ? await invokeCommand("export_json_translation_warning_json", {
             outputPath,
             sheet: jsonSheet,
             includeKeys: shouldLimitKeys ? includeKeys : undefined,
           })
         : normalizedOptions.changeOnly
-          ? await invokeCommand<ShortJsonExport>("export_json_translation_change_json", {
+          ? await invokeCommand("export_json_translation_change_json", {
               outputPath,
               sheet: jsonSheet,
               includeKeys: includeKeys,
             })
-        : await invokeCommand<ShortJsonExport>("export_json_translation_short_json", {
+        : await invokeCommand("export_json_translation_short_json", {
             outputPath,
             sheet: jsonSheet,
             onlyEmpty,
             includeKeys: shouldLimitKeys ? includeKeys : undefined,
           });
-      appendLog(`${normalizedOptions.warningOnly ? "검증 오류 JSON" : normalizedOptions.changeOnly ? "신규/변경 JSON" : "번역용 JSON"} 내보내기 완료: ${result.rows}행 (${result.output_path})`);
+      appendLog(`${normalizedOptions.warningOnly ? "검증 경고 JSON" : normalizedOptions.changeOnly ? "신규/변경 JSON" : "번역용 JSON"} 내보내기 완료: ${result.rows}행 (${result.output_path})`);
     } catch (error) {
       appendLog(String(error));
     } finally {
@@ -249,7 +244,7 @@ export function useTranslationIoActions({
         appendLog(`Preview translation import: ${inputPath}`);
         return;
       }
-      const result = await invokeCommand<JsonSheetAction>("import_json_translation_values", {
+      const result = await invokeCommand("import_json_translation_values", {
         inputPath,
         sheet: jsonSheet,
       });
@@ -306,7 +301,7 @@ export function useTranslationIoActions({
         appendLog(`Preview translation patch export: ${outputDir}`);
         return true;
       }
-      const result = await invokeCommand<TranslationPatchExport>("export_translation_patch_mod", {
+      const result = await invokeCommand("export_translation_patch_mod", {
         sheetPath,
         outputDir,
       });
@@ -339,7 +334,9 @@ export function useTranslationIoActions({
   };
 }
 
-function finalizeTranslationStatuses(sheet: NonNullable<TranslationActionsParams["jsonSheet"]>) {
+function finalizeTranslationStatuses(
+  sheet: NonNullable<TranslationActionsParams["jsonSheet"]>,
+): NonNullable<TranslationActionsParams["jsonSheet"]> {
   return {
     ...sheet,
     entries: sheet.entries.map((entry) => {
@@ -348,7 +345,7 @@ function finalizeTranslationStatuses(sheet: NonNullable<TranslationActionsParams
       }
       return {
         ...entry,
-        status: hasTranslationValue(entry.translated_value) ? "ready" : "missing",
+        status: hasTranslationValue(entry.translated_value) ? "ready" as const : "missing" as const,
       };
     }),
   };

@@ -21,8 +21,14 @@ import type {
   TranslationApplyFilter,
 } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
-import { readStoredModViewMode, writeStoredModViewMode } from "../../utils/storage";
+import {
+  readStoredModTableColumns,
+  readStoredModViewMode,
+  writeStoredModTableColumns,
+  writeStoredModViewMode,
+} from "../../utils/storage";
 import { ExtractConfirmModal } from "./ExtractModal";
+import { ImportMenu } from "./ImportMenu";
 import { ModGroupTableRow, ModTableRow, SimpleModGroupRow, SimpleModRow } from "./ModRows";
 import { PresetMenu } from "./PresetMenu";
 import {
@@ -30,6 +36,43 @@ import {
   languageLabel,
   preferredGroupActivationTarget,
 } from "./modUtils";
+
+type DetailModColumnKey = "name" | "version" | "date" | "translation" | "language" | "actions";
+type SimpleModColumnKey = "name" | "version" | "language" | "actions";
+type DetailModColumns = Record<DetailModColumnKey, number>;
+type SimpleModColumns = Record<SimpleModColumnKey, number>;
+
+const defaultDetailModColumns: DetailModColumns = {
+  name: 420,
+  version: 132,
+  date: 118,
+  translation: 96,
+  language: 176,
+  actions: 220,
+};
+
+const defaultSimpleModColumns: SimpleModColumns = {
+  name: 420,
+  version: 104,
+  language: 104,
+  actions: 220,
+};
+
+const minDetailModColumns: DetailModColumns = {
+  name: 260,
+  version: 88,
+  date: 92,
+  translation: 82,
+  language: 120,
+  actions: 212,
+};
+
+const minSimpleModColumns: SimpleModColumns = {
+  name: 260,
+  version: 78,
+  language: 84,
+  actions: 176,
+};
 
 function ModsPage(props: {
   labels: typeof labels.ko;
@@ -69,6 +112,9 @@ function ModsPage(props: {
   onApplyPreset: () => void;
   onExportPreset: () => void;
   onImportPreset: () => void;
+  onImportFolder: () => void;
+  onImportArchive: () => void;
+  onImportVortexDownloads: () => void;
   onLaunch: () => void;
   onVanilla: () => void;
 }) {
@@ -76,11 +122,21 @@ function ModsPage(props: {
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({});
   const [forceModChanges, setForceModChanges] = React.useState(false);
   const [simpleView, setSimpleView] = React.useState(() => props.initialSimpleView || readStoredModViewMode());
+  const [detailColumns, setDetailColumns] = React.useState(() =>
+    clampModColumns(readStoredModTableColumns("detail", defaultDetailModColumns), minDetailModColumns),
+  );
+  const [simpleColumns, setSimpleColumns] = React.useState(() =>
+    clampModColumns(readStoredModTableColumns("simple", defaultSimpleModColumns), minSimpleModColumns),
+  );
   const groups = React.useMemo(
     () => buildModGroups(props.mods, props.search, props.statFilter, props.activeFilter, props.changeFilter, props.translationApplyFilter, props.sort),
     [props.mods, props.search, props.statFilter, props.activeFilter, props.changeFilter, props.translationApplyFilter, props.sort],
   );
   const showChangeDetails = props.statFilter === "changed";
+  const vortexDownloadCount = React.useMemo(
+    () => props.mods.filter((mod) => isVortexDownloadMod(mod) && mod.download_state !== "downloading").length,
+    [props.mods],
+  );
 
   function toggleGroup(groupId: string) {
     setExpandedGroups((current) => ({ ...current, [groupId]: !current[groupId] }));
@@ -91,6 +147,14 @@ function ModsPage(props: {
       setForceModChanges(false);
     }
   }, [props.launchRunning]);
+
+  React.useEffect(() => {
+    writeStoredModTableColumns("detail", detailColumns);
+  }, [detailColumns]);
+
+  React.useEffect(() => {
+    writeStoredModTableColumns("simple", simpleColumns);
+  }, [simpleColumns]);
 
   const modChangesLocked = props.launchRunning && !forceModChanges;
 
@@ -121,6 +185,34 @@ function ModsPage(props: {
       void invokeCommand("save_mod_view_mode", { modViewMode: value ? "simple" : "detail" });
     }
   }
+
+  function startDetailColumnResize(column: DetailModColumnKey, event: React.MouseEvent) {
+    startColumnResize(event, detailColumns[column], minDetailModColumns[column], (width) => {
+      setDetailColumns((current) => ({ ...current, [column]: width }));
+    });
+  }
+
+  function startSimpleColumnResize(column: SimpleModColumnKey, event: React.MouseEvent) {
+    startColumnResize(event, simpleColumns[column], minSimpleModColumns[column], (width) => {
+      setSimpleColumns((current) => ({ ...current, [column]: width }));
+    });
+  }
+
+  const tableStyle = React.useMemo(
+    () => ({
+      "--mod-name-col": `${detailColumns.name}px`,
+      "--mod-version-col": `${detailColumns.version}px`,
+      "--mod-date-col": `${detailColumns.date}px`,
+      "--mod-translation-col": `${detailColumns.translation}px`,
+      "--mod-language-col": `${detailColumns.language}px`,
+      "--mod-actions-col": `${detailColumns.actions}px`,
+      "--mod-simple-name-col": `${simpleColumns.name}px`,
+      "--mod-simple-version-col": `${simpleColumns.version}px`,
+      "--mod-simple-language-col": `${simpleColumns.language}px`,
+      "--mod-simple-actions-col": `${simpleColumns.actions}px`,
+    }) as React.CSSProperties,
+    [detailColumns, simpleColumns],
+  );
 
   async function toggleGroupEnabled(group: ModGroup) {
     const activeMods = group.mods.filter((mod) => mod.active);
@@ -185,6 +277,13 @@ function ModsPage(props: {
           <Languages size={15} />
           <span>{props.targetLanguage}</span>
         </span>
+        <ImportMenu
+          busy={props.busy}
+          vortexDownloadCount={vortexDownloadCount}
+          onImportFolder={props.onImportFolder}
+          onImportArchive={props.onImportArchive}
+          onImportVortexDownloads={props.onImportVortexDownloads}
+        />
         <PresetMenu
           labels={t}
           presets={props.presets}
@@ -224,22 +323,22 @@ function ModsPage(props: {
           <Play size={16} fill="currentColor" />
         </button>
       </div>
-      <div className="table">
+      <div className={simpleView ? "table mod-table simple" : "table mod-table detail"} style={tableStyle}>
         {simpleView ? (
           <div className="table-head mod-simple-grid">
-            <span>모드 이름</span>
-            <span>버전</span>
-            <span>언어</span>
-            <span className="table-action-head">액션</span>
+            <ModResizableHead label="모드 이름" />
+            <ModResizableHead label="버전" handleEdge="start" onMouseDown={(event) => startSimpleColumnResize("version", event)} />
+            <ModResizableHead label="언어" handleEdge="start" onMouseDown={(event) => startSimpleColumnResize("language", event)} />
+            <ModResizableHead className="table-action-head" label="액션" handleEdge="start" onMouseDown={(event) => startSimpleColumnResize("actions", event)} />
           </div>
         ) : (
           <div className="table-head mod-grid">
-            <span>{t.mods}</span>
-            <span>버전 & 출처</span>
-            <span>날짜</span>
-            <span>번역</span>
-            <span>{t.languagePreview}</span>
-            <span className="table-action-head">액션</span>
+            <ModResizableHead label={t.mods} onMouseDown={(event) => startDetailColumnResize("name", event)} />
+            <ModResizableHead label="버전 & 출처" onMouseDown={(event) => startDetailColumnResize("version", event)} />
+            <ModResizableHead label="날짜" onMouseDown={(event) => startDetailColumnResize("date", event)} />
+            <ModResizableHead label="번역" onMouseDown={(event) => startDetailColumnResize("translation", event)} />
+            <ModResizableHead label={t.languagePreview} onMouseDown={(event) => startDetailColumnResize("language", event)} />
+            <ModResizableHead className="table-action-head" label="액션" onMouseDown={(event) => startDetailColumnResize("actions", event)} />
           </div>
         )}
         {groups.map((group) => {
@@ -453,10 +552,74 @@ function ModsPage(props: {
   );
 }
 
+function ModResizableHead({
+  className = "",
+  handleEdge = "end",
+  label,
+  onMouseDown,
+}: {
+  className?: string;
+  handleEdge?: "start" | "end";
+  label: string;
+  onMouseDown?: (event: React.MouseEvent) => void;
+}) {
+  return (
+    <span className={["mod-resizable-head", className].filter(Boolean).join(" ")}>
+      {label}
+      {onMouseDown && (
+        <button
+          className={`resize-handle ${handleEdge}`}
+          type="button"
+          aria-label={`${label} 컬럼 너비 조절`}
+          onMouseDown={onMouseDown}
+        />
+      )}
+    </span>
+  );
+}
+
+function startColumnResize(
+  event: React.MouseEvent,
+  startWidth: number,
+  minWidth: number,
+  setWidth: (width: number) => void,
+) {
+  event.preventDefault();
+  event.stopPropagation();
+  const startX = event.clientX;
+  const previousCursor = document.body.style.cursor;
+  const previousUserSelect = document.body.style.userSelect;
+  document.body.style.cursor = "col-resize";
+  document.body.style.userSelect = "none";
+  const onMove = (moveEvent: MouseEvent) => {
+    setWidth(Math.max(minWidth, Math.min(920, startWidth + moveEvent.clientX - startX)));
+  };
+  const onUp = () => {
+    document.body.style.cursor = previousCursor;
+    document.body.style.userSelect = previousUserSelect;
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+  };
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+}
+
+function clampModColumns<T extends Record<string, number>>(columns: T, minimums: T): T {
+  const next = { ...columns };
+  for (const key of Object.keys(minimums) as Array<keyof T>) {
+    next[key] = Math.max(minimums[key], columns[key]) as T[keyof T];
+  }
+  return next;
+}
+
 export {
   ModsPage,
   ExtractConfirmModal,
 };
+
+function isVortexDownloadMod(mod: ModRow): boolean {
+  return mod.external && mod.path.replace(/\\/g, "/").toLowerCase().includes("/vortex/downloads/");
+}
 
 function attachedTranslationMods(group: ModGroup): { parent: ModRow; children: ModRow[] } | null {
   const originals = group.mods.filter((mod) => !mod.is_translation_patch);

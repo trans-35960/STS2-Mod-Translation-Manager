@@ -1,6 +1,7 @@
 import React from "react";
 import { invokeCommand } from "../api/tauri";
-import type { ActionResult, ApplyResultState, Dashboard, Page, UiSettings } from "../types";
+import type { ActionCommand, CommandArgs } from "../api/tauri";
+import type { Dashboard, Page, UiSettings } from "../types";
 import { isPreviewRuntime } from "../utils/runtime";
 
 export function useAppActions({
@@ -11,7 +12,6 @@ export function useAppActions({
   setDashboard,
   setSettingsDraft,
   setSelectedPreset,
-  setJsonApplyResult,
   setBusy,
 }: {
   appendLog: (message: string) => void;
@@ -21,10 +21,9 @@ export function useAppActions({
   setDashboard: React.Dispatch<React.SetStateAction<Dashboard | null>>;
   setSettingsDraft: React.Dispatch<React.SetStateAction<UiSettings | null>>;
   setSelectedPreset: React.Dispatch<React.SetStateAction<string>>;
-  setJsonApplyResult: React.Dispatch<React.SetStateAction<ApplyResultState | null>>;
   setBusy: React.Dispatch<React.SetStateAction<string | null>>;
 }) {
-  async function runAction(command: string, args?: Record<string, unknown>) {
+  async function runAction(command: ActionCommand, args?: CommandArgs[ActionCommand]) {
     const restoreScrollTop = page === "mods" ? contentRef.current?.scrollTop : undefined;
     const usesGlobalBusy = command !== "toggle_mod" && command !== "toggle_mods";
     if (usesGlobalBusy) {
@@ -35,7 +34,7 @@ export function useAppActions({
         appendLog(`Preview action: ${command} ${args ? JSON.stringify(args) : ""}`);
         return null;
       }
-      const result = await invokeCommand<ActionResult>(command, args);
+      const result = await invokeCommand(command, args);
       setDashboard(result.dashboard);
       setSettingsDraft(result.dashboard.settings);
       if (restoreScrollTop !== undefined) {
@@ -51,14 +50,6 @@ export function useAppActions({
       }
       return result;
     } catch (error) {
-      if (command === "apply_json_translation_sheet") {
-        setJsonApplyResult({
-          output_path: "",
-          applied_entries: 0,
-          message: String(error),
-          error: true,
-        });
-      }
       appendLog(String(error));
       return null;
     } finally {

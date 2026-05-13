@@ -12,10 +12,11 @@ pub(crate) fn delete_mod(key: String, path: String) -> Result<ActionDto, String>
         .summary
         .game_mods
         .into_iter()
-        .chain(report.summary.vault_mods)
+        .chain(report.summary.disabled_mods)
         .chain(report.summary.external_manager_mods)
         .find(|record| record.stable_key() == key && same_path(&record.path, &requested_path))
         .ok_or_else(|| format!("{key} 모드를 현재 목록에서 찾지 못했습니다."))?;
+    ensure_existing_deletable_mod_path(&record.path, config)?;
     let deleted_epoch = epoch_seconds(Some(SystemTime::now())).unwrap_or(0);
     let backup_path = move_mod_to_deleted_backup(&record.path, &key, deleted_epoch, config)?;
     let entry = DeletedModEntry {
@@ -54,6 +55,8 @@ pub(crate) fn restore_deleted_mod(id: String) -> Result<ActionDto, String> {
             entry.backup_path.display()
         ));
     }
+    ensure_existing_state_path(&entry.backup_path, config, "삭제 백업 경로")?;
+    ensure_deletable_mod_path(&entry.original_path, config)?;
     let target = restore_deleted_mod_entry(&entry, config)?;
     cleanup_deleted_backup_parent(&entry.backup_path);
     remove_deleted_mod_entry(config, &entry.id)?;
@@ -66,6 +69,8 @@ pub(crate) fn restore_deleted_mod(id: String) -> Result<ActionDto, String> {
 }
 
 fn restore_deleted_mod_entry(entry: &DeletedModEntry, config: &AppConfig) -> Result<PathBuf, String> {
+    ensure_existing_state_path(&entry.backup_path, config, "삭제 백업 경로")?;
+    ensure_deletable_mod_path(&entry.original_path, config)?;
     if should_expand_restored_archive(entry, config) {
         return restore_deleted_archive_entry(entry, config);
     }
@@ -146,6 +151,7 @@ pub(crate) fn empty_deleted_mods() -> Result<ActionDto, String> {
     }
     let deleted_root = deleted_mods_dir(config);
     if deleted_root.exists() {
+        ensure_existing_state_path(&deleted_root, config, "삭제 모드 저장소")?;
         fs::remove_dir_all(&deleted_root).map_err(|error| error.to_string())?;
     }
     write_deleted_mod_entries(config, &[]).map_err(|error| error.to_string())?;
@@ -241,6 +247,7 @@ fn move_mod_to_deleted_backup(
         .state_dir
         .join("deleted_mods")
         .join(deleted_mod_id(deleted_epoch, key));
+    ensure_state_path(&backup_dir, config, "삭제 백업 경로")?;
     fs::create_dir_all(&backup_dir).map_err(|error| error.to_string())?;
     let backup_path = unique_backup_path(&backup_dir, file_name);
     move_path_or_copy(path, &backup_path).map_err(|error| {
@@ -465,7 +472,9 @@ fn upsert_deleted_mod_entry(config: &AppConfig, entry: DeletedModEntry) -> Resul
     remove_deleted_mod_tombstone(config, &entry.key)?;
     entries.retain(|existing| {
         let replace = existing.id == entry.id || existing.key == entry.key;
-        if replace {
+        if replace
+            && ensure_existing_state_path(&existing.backup_path, config, "삭제 백업 경로").is_ok()
+        {
             let _ = remove_path_if_exists(&existing.backup_path);
             cleanup_deleted_backup_parent(&existing.backup_path);
         }
@@ -481,6 +490,7 @@ fn remove_deleted_mod_entry(config: &AppConfig, id: &str) -> Result<(), String> 
     write_deleted_mod_entries(config, &entries).map_err(|error| error.to_string())
 }
 
+#[cfg(test)]
 fn deleted_mod_keys(config: &AppConfig) -> BTreeSet<String> {
     let mut keys = read_deleted_mod_entries(config)
         .unwrap_or_default()
@@ -592,6 +602,7 @@ fn prune_expired_deleted_mods(config: &AppConfig, retention_days: u32) -> Result
     for entry in entries {
         if entry.deleted_epoch.saturating_add(retention_secs) <= now {
             remember_deleted_mod_tombstone(config, &entry.key)?;
+            ensure_existing_state_path(&entry.backup_path, config, "삭제 백업 경로")?;
             remove_path_if_exists(&entry.backup_path).map_err(|error| error.to_string())?;
             cleanup_deleted_backup_parent(&entry.backup_path);
         } else {

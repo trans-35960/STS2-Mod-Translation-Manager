@@ -1,7 +1,7 @@
 use crate::discovery::scan_mod_directory;
 use crate::domain::{ModKind, ModRecord, ModSource};
 use crate::error::{AppError, AppResult};
-use crate::process::hidden_command;
+use crate::process::{hidden_command, powershell_expand_archive};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -9,7 +9,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VaultEntry {
+pub struct DisabledModEntry {
     pub key: String,
     pub display_name: String,
     pub payload_path: PathBuf,
@@ -17,28 +17,23 @@ pub struct VaultEntry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct VaultAction {
+pub struct DisabledModAction {
     pub key: String,
     pub from: PathBuf,
     pub to: PathBuf,
 }
 
-pub fn import_mod(source_path: &Path, vault_dir: &Path) -> AppResult<VaultAction> {
-    import_mod_with_key_mode(source_path, vault_dir, false)
-}
-
-pub fn import_mod_as_new(source_path: &Path, vault_dir: &Path) -> AppResult<VaultAction> {
-    import_mod_with_key_mode(source_path, vault_dir, true)
-}
-
-pub fn import_mod_to_disabled(source_path: &Path, game_mods_dir: &Path) -> AppResult<VaultAction> {
+pub fn import_mod_to_disabled(
+    source_path: &Path,
+    game_mods_dir: &Path,
+) -> AppResult<DisabledModAction> {
     import_mod_to_disabled_with_mode(source_path, game_mods_dir, false)
 }
 
 pub fn import_mod_to_disabled_as_new(
     source_path: &Path,
     game_mods_dir: &Path,
-) -> AppResult<VaultAction> {
+) -> AppResult<DisabledModAction> {
     import_mod_to_disabled_with_mode(source_path, game_mods_dir, true)
 }
 
@@ -46,7 +41,7 @@ fn import_mod_to_disabled_with_mode(
     source_path: &Path,
     game_mods_dir: &Path,
     force_unique_name: bool,
-) -> AppResult<VaultAction> {
+) -> AppResult<DisabledModAction> {
     if !source_path.exists() {
         return Err(AppError::InvalidCommand(format!(
             "mod path does not exist: {}",
@@ -56,7 +51,7 @@ fn import_mod_to_disabled_with_mode(
 
     let disabled_dir = game_disabled_dir(game_mods_dir);
     fs::create_dir_all(&disabled_dir).map_err(|source| AppError::io(&disabled_dir, source))?;
-    let record = record_for_path(source_path, ModSource::Vault)?;
+    let record = record_for_path(source_path, ModSource::Disabled)?;
     let file_name = source_path.file_name().ok_or_else(|| {
         AppError::InvalidCommand(format!(
             "cannot import unnamed path: {}",
@@ -68,108 +63,17 @@ fn import_mod_to_disabled_with_mode(
         target_path = unique_child_path(&disabled_dir, &PathBuf::from(file_name));
     }
     copy_path(source_path, &target_path)?;
-    Ok(VaultAction {
+    Ok(DisabledModAction {
         key: record.stable_key(),
         from: source_path.to_path_buf(),
         to: target_path,
     })
 }
 
-fn import_mod_with_key_mode(
-    source_path: &Path,
-    vault_dir: &Path,
-    force_unique_key: bool,
-) -> AppResult<VaultAction> {
-    if !source_path.exists() {
-        return Err(AppError::InvalidCommand(format!(
-            "mod path does not exist: {}",
-            source_path.display()
-        )));
-    }
-
-    fs::create_dir_all(vault_dir).map_err(|source| AppError::io(vault_dir, source))?;
-
-    let record = record_for_path(source_path, ModSource::Vault)?;
-    let key = record.stable_key();
-    let mod_dir = if force_unique_key {
-        unique_key_dir(vault_dir, &key)
-    } else {
-        vault_dir.join(&key)
-    };
-    fs::create_dir_all(&mod_dir).map_err(|source| AppError::io(&mod_dir, source))?;
-
-    let file_name = source_path
-        .file_name()
-        .ok_or_else(|| {
-            AppError::InvalidCommand(format!(
-                "cannot import unnamed path: {}",
-                source_path.display()
-            ))
-        })?
-        .to_owned();
-    let target_path = unique_child_path(&mod_dir, &PathBuf::from(file_name));
-
-    copy_path(source_path, &target_path)?;
-
-    Ok(VaultAction {
-        key: mod_dir
-            .file_name()
-            .map(|value| value.to_string_lossy().to_string())
-            .unwrap_or(key),
-        from: source_path.to_path_buf(),
-        to: target_path,
-    })
-}
-
-pub fn list_vault(vault_dir: &Path) -> AppResult<Vec<VaultEntry>> {
-    if !vault_dir.exists() {
-        return Ok(Vec::new());
-    }
-
-    let mut entries = Vec::new();
-    for entry in fs::read_dir(vault_dir).map_err(|source| AppError::io(vault_dir, source))? {
-        let entry = entry.map_err(|source| AppError::io(vault_dir, source))?;
-        let mod_dir = entry.path();
-        if !mod_dir.is_dir() {
-            continue;
-        }
-
-        if let Some(payload_path) = first_payload_path(&mod_dir)? {
-            let display_name = payload_path
-                .file_name()
-                .map(|value| value.to_string_lossy().to_string())
-                .unwrap_or_else(|| entry.file_name().to_string_lossy().to_string());
-            let kind = if payload_path.is_dir() {
-                ModKind::Directory
-            } else {
-                classify_payload(&payload_path)
-            };
-
-            entries.push(VaultEntry {
-                key: entry.file_name().to_string_lossy().to_string(),
-                display_name,
-                payload_path,
-                kind,
-            });
-        }
-    }
-
-    entries.sort_by(|left, right| left.key.cmp(&right.key));
-    Ok(entries)
-}
-
-pub fn list_vault_records(vault_dir: &Path) -> AppResult<Vec<ModRecord>> {
-    let mut records = Vec::new();
-    for entry in list_vault(vault_dir)? {
-        records.push(vault_entry_record(entry)?);
-    }
-    Ok(records)
-}
-
-pub fn list_disabled_game_entries(game_mods_dir: &Path) -> AppResult<Vec<VaultEntry>> {
+pub fn list_disabled_game_entries(game_mods_dir: &Path) -> AppResult<Vec<DisabledModEntry>> {
     let mut entries = list_disabled_game_mods(game_mods_dir)?
         .into_iter()
-        .map(|record| VaultEntry {
+        .map(|record| DisabledModEntry {
             key: record.stable_key(),
             display_name: record.name,
             payload_path: record.path,
@@ -180,102 +84,12 @@ pub fn list_disabled_game_entries(game_mods_dir: &Path) -> AppResult<Vec<VaultEn
     Ok(entries)
 }
 
-pub fn migrate_legacy_disabled_mods(
-    vault_dir: &Path,
-    game_mods_dir: &Path,
-) -> AppResult<Vec<VaultAction>> {
-    let mut actions = migrate_nested_game_disabled_mods(game_mods_dir)?;
-    if !vault_dir.exists() {
-        return Ok(actions);
-    }
-
-    let disabled_dir = game_disabled_dir(game_mods_dir);
-    fs::create_dir_all(&disabled_dir).map_err(|source| AppError::io(&disabled_dir, source))?;
-
-    for entry in fs::read_dir(vault_dir).map_err(|source| AppError::io(vault_dir, source))? {
-        let entry = entry.map_err(|source| AppError::io(vault_dir, source))?;
-        let mod_dir = entry.path();
-        if !mod_dir.is_dir() {
-            continue;
-        }
-
-        let legacy_disabled_dir = mod_dir.join("disabled");
-        if !legacy_disabled_dir.is_dir() {
-            continue;
-        }
-
-        for payload in fs::read_dir(&legacy_disabled_dir)
-            .map_err(|source| AppError::io(&legacy_disabled_dir, source))?
-        {
-            let payload = payload.map_err(|source| AppError::io(&legacy_disabled_dir, source))?;
-            let source_path = payload.path();
-            let Some(file_name) = source_path.file_name() else {
-                continue;
-            };
-            let target_path = unique_child_path(&disabled_dir, &PathBuf::from(file_name));
-            move_path(&source_path, &target_path)?;
-            let key = record_for_path(&target_path, ModSource::Vault)
-                .map(|record| record.stable_key())
-                .unwrap_or_else(|_| entry.file_name().to_string_lossy().to_string());
-            actions.push(VaultAction {
-                key,
-                from: source_path,
-                to: target_path,
-            });
-        }
-
-        remove_empty_dir(&legacy_disabled_dir)
-            .map_err(|source| AppError::io(&legacy_disabled_dir, source))?;
-        remove_empty_dir(&mod_dir).map_err(|source| AppError::io(&mod_dir, source))?;
-    }
-
-    actions.extend(migrate_vault_mods_to_disabled(vault_dir, game_mods_dir)?);
-    Ok(actions)
-}
-
-pub fn migrate_vault_mods_to_disabled(
-    vault_dir: &Path,
-    game_mods_dir: &Path,
-) -> AppResult<Vec<VaultAction>> {
-    if !vault_dir.exists() {
-        return Ok(Vec::new());
-    }
-
-    let disabled_dir = game_disabled_dir(game_mods_dir);
-    fs::create_dir_all(&disabled_dir).map_err(|source| AppError::io(&disabled_dir, source))?;
-    let entries = list_vault(vault_dir)?;
-    let mut actions = Vec::new();
-
-    for entry in entries {
-        if !entry.payload_path.exists() {
-            continue;
-        }
-        let Some(file_name) = entry.payload_path.file_name() else {
-            continue;
-        };
-        let target_path = unique_child_path(&disabled_dir, &PathBuf::from(file_name));
-        move_path(&entry.payload_path, &target_path)?;
-        actions.push(VaultAction {
-            key: entry.key.clone(),
-            from: entry.payload_path.clone(),
-            to: target_path,
-        });
-        let legacy_root = vault_dir.join(entry.key);
-        let _ = remove_empty_dir(&legacy_root);
-    }
-    let _ = remove_empty_dir(vault_dir);
-
-    Ok(actions)
-}
-
 pub fn enable_mod(
     key: &str,
-    vault_dir: &Path,
     game_mods_dir: &Path,
     vendor_dir: &Path,
-) -> AppResult<VaultAction> {
+) -> AppResult<DisabledModAction> {
     fs::create_dir_all(game_mods_dir).map_err(|source| AppError::io(game_mods_dir, source))?;
-    migrate_vault_mods_to_disabled(vault_dir, game_mods_dir)?;
     if let Some(record) = find_disabled_game_record(key, game_mods_dir)? {
         let target_path = activation_target_path(&record.path, game_mods_dir)?;
         if target_path.exists() {
@@ -289,7 +103,7 @@ pub fn enable_mod(
         } else {
             move_path(&record.path, &target_path)?;
         }
-        return Ok(VaultAction {
+        return Ok(DisabledModAction {
             key: record.stable_key(),
             from: record.path,
             to: target_path,
@@ -304,7 +118,7 @@ pub fn enable_mod(
 pub fn normalize_active_archives(
     game_mods_dir: &Path,
     vendor_dir: &Path,
-) -> AppResult<Vec<VaultAction>> {
+) -> AppResult<Vec<DisabledModAction>> {
     fs::create_dir_all(game_mods_dir).map_err(|source| AppError::io(game_mods_dir, source))?;
     let records = scan_mod_directory(game_mods_dir, ModSource::GameMods)?;
     let mut actions = Vec::new();
@@ -318,7 +132,7 @@ pub fn normalize_active_archives(
             expand_mod_archive(&record.path, &target_path, vendor_dir)?;
         }
         remove_path_if_exists(&record.path).map_err(|source| AppError::io(&record.path, source))?;
-        actions.push(VaultAction {
+        actions.push(DisabledModAction {
             key: record.stable_key(),
             from: record.path,
             to: target_path,
@@ -342,7 +156,7 @@ fn activation_target_path(source: &Path, game_mods_dir: &Path) -> AppResult<Path
     Ok(game_mods_dir.join(file_name))
 }
 
-pub fn disable_mod(key: &str, game_mods_dir: &Path, _vault_dir: &Path) -> AppResult<VaultAction> {
+pub fn disable_mod(key: &str, game_mods_dir: &Path) -> AppResult<DisabledModAction> {
     let records = scan_mod_directory(game_mods_dir, ModSource::GameMods)?;
     let record = records
         .into_iter()
@@ -362,26 +176,26 @@ pub fn disable_mod(key: &str, game_mods_dir: &Path, _vault_dir: &Path) -> AppRes
     remove_path_if_exists(&target_path).map_err(|source| AppError::io(&target_path, source))?;
     move_path(&record.path, &target_path)?;
 
-    Ok(VaultAction {
+    Ok(DisabledModAction {
         key: record.stable_key(),
         from: record.path,
         to: target_path,
     })
 }
 
-pub fn disable_all(game_mods_dir: &Path, vault_dir: &Path) -> AppResult<Vec<VaultAction>> {
+pub fn disable_all(game_mods_dir: &Path) -> AppResult<Vec<DisabledModAction>> {
     let records = scan_mod_directory(game_mods_dir, ModSource::GameMods)?;
     let mut actions = Vec::new();
 
     for record in records {
-        actions.push(disable_mod(&record.stable_key(), game_mods_dir, vault_dir)?);
+        actions.push(disable_mod(&record.stable_key(), game_mods_dir)?);
     }
     actions.extend(disable_game_mod_metadata(game_mods_dir)?);
 
     Ok(actions)
 }
 
-fn disable_game_mod_metadata(game_mods_dir: &Path) -> AppResult<Vec<VaultAction>> {
+fn disable_game_mod_metadata(game_mods_dir: &Path) -> AppResult<Vec<DisabledModAction>> {
     if !game_mods_dir.exists() {
         return Ok(Vec::new());
     }
@@ -403,7 +217,7 @@ fn disable_game_mod_metadata(game_mods_dir: &Path) -> AppResult<Vec<VaultAction>
         let target = disabled_dir.join(file_name);
         remove_path_if_exists(&target).map_err(|source| AppError::io(&target, source))?;
         move_path(&path, &target)?;
-        actions.push(VaultAction {
+        actions.push(DisabledModAction {
             key: file_name.to_string_lossy().to_string(),
             from: path,
             to: target,
@@ -469,7 +283,7 @@ fn is_transient_windows_move_error(error: &std::io::Error) -> bool {
 }
 
 pub fn list_disabled_game_mods(game_mods_dir: &Path) -> AppResult<Vec<ModRecord>> {
-    scan_mod_directory(&game_disabled_dir(game_mods_dir), ModSource::Vault)
+    scan_mod_directory(&game_disabled_dir(game_mods_dir), ModSource::Disabled)
 }
 
 fn find_disabled_game_record(key: &str, game_mods_dir: &Path) -> AppResult<Option<ModRecord>> {
@@ -491,42 +305,6 @@ fn game_disabled_dir(game_mods_dir: &Path) -> PathBuf {
         .unwrap_or_else(|| game_mods_dir.with_file_name("mods.disabled"))
 }
 
-fn legacy_nested_disabled_dir(game_mods_dir: &Path) -> PathBuf {
-    game_mods_dir.join(".disabled")
-}
-
-fn migrate_nested_game_disabled_mods(game_mods_dir: &Path) -> AppResult<Vec<VaultAction>> {
-    let legacy_dir = legacy_nested_disabled_dir(game_mods_dir);
-    if !legacy_dir.is_dir() {
-        return Ok(Vec::new());
-    }
-
-    let disabled_dir = game_disabled_dir(game_mods_dir);
-    fs::create_dir_all(&disabled_dir).map_err(|source| AppError::io(&disabled_dir, source))?;
-
-    let mut actions = Vec::new();
-    for entry in fs::read_dir(&legacy_dir).map_err(|source| AppError::io(&legacy_dir, source))? {
-        let entry = entry.map_err(|source| AppError::io(&legacy_dir, source))?;
-        let source_path = entry.path();
-        let Some(file_name) = source_path.file_name() else {
-            continue;
-        };
-        let target_path = unique_child_path(&disabled_dir, &PathBuf::from(file_name));
-        move_path(&source_path, &target_path)?;
-        let key = record_for_path(&target_path, ModSource::Vault)
-            .map(|record| record.stable_key())
-            .unwrap_or_else(|_| file_name.to_string_lossy().to_string());
-        actions.push(VaultAction {
-            key,
-            from: source_path,
-            to: target_path,
-        });
-    }
-
-    remove_empty_dir(&legacy_dir).map_err(|source| AppError::io(&legacy_dir, source))?;
-    Ok(actions)
-}
-
 fn remove_path_if_exists(path: &Path) -> std::io::Result<()> {
     if !path.exists() {
         return Ok(());
@@ -536,99 +314,6 @@ fn remove_path_if_exists(path: &Path) -> std::io::Result<()> {
     } else {
         fs::remove_file(path)
     }
-}
-
-fn vault_entry_record(entry: VaultEntry) -> AppResult<ModRecord> {
-    Ok(ModRecord {
-        name: entry.key,
-        version_hint: infer_version_hint(&entry.display_name),
-        fingerprint: fingerprint_path(&entry.payload_path)?,
-        path: entry.payload_path,
-        source: ModSource::Vault,
-        kind: entry.kind,
-    })
-}
-
-fn fingerprint_path(path: &Path) -> AppResult<crate::domain::ModFingerprint> {
-    let metadata = fs::metadata(path).map_err(|source| AppError::io(path, source))?;
-    if metadata.is_dir() {
-        fingerprint_directory(path)
-    } else {
-        Ok(crate::domain::ModFingerprint {
-            bytes: metadata.len(),
-            modified: metadata.modified().ok(),
-        })
-    }
-}
-
-fn fingerprint_directory(path: &Path) -> AppResult<crate::domain::ModFingerprint> {
-    let mut bytes = 0;
-    let mut modified = None;
-    collect_directory_fingerprint(path, &mut bytes, &mut modified)?;
-    Ok(crate::domain::ModFingerprint { bytes, modified })
-}
-
-fn collect_directory_fingerprint(
-    path: &Path,
-    bytes: &mut u64,
-    modified: &mut Option<SystemTime>,
-) -> AppResult<()> {
-    for entry in fs::read_dir(path).map_err(|source| AppError::io(path, source))? {
-        let entry = entry.map_err(|source| AppError::io(path, source))?;
-        let entry_path = entry.path();
-        let metadata = entry
-            .metadata()
-            .map_err(|source| AppError::io(&entry_path, source))?;
-        if metadata.is_dir() {
-            collect_directory_fingerprint(&entry_path, bytes, modified)?;
-        } else {
-            *bytes += metadata.len();
-            if let Ok(entry_modified) = metadata.modified() {
-                if modified.is_none_or(|current| entry_modified > current) {
-                    *modified = Some(entry_modified);
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
-fn infer_version_hint(name: &str) -> Option<String> {
-    name.split(['-', '_', ' ', '[', ']'])
-        .find(|part| {
-            let lower = part.to_ascii_lowercase();
-            lower.starts_with('v')
-                && lower
-                    .chars()
-                    .skip(1)
-                    .any(|character| character.is_ascii_digit())
-        })
-        .map(|part| part.trim().to_string())
-}
-
-fn remove_empty_dir(path: &Path) -> std::io::Result<()> {
-    match fs::remove_dir(path) {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::DirectoryNotEmpty => Ok(()),
-        Err(error) => Err(error),
-    }
-}
-
-fn first_payload_path(mod_dir: &Path) -> AppResult<Option<PathBuf>> {
-    let mut children = fs::read_dir(mod_dir)
-        .map_err(|source| AppError::io(mod_dir, source))?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| {
-            path.file_name()
-                .map(|name| !name.to_string_lossy().eq_ignore_ascii_case("disabled"))
-                .unwrap_or(true)
-        })
-        .collect::<Vec<_>>();
-
-    children.sort();
-    Ok(children.into_iter().next())
 }
 
 fn record_for_path(path: &Path, source: ModSource) -> AppResult<ModRecord> {
@@ -643,19 +328,6 @@ fn record_for_path(path: &Path, source: ModSource) -> AppResult<ModRecord> {
         .into_iter()
         .find(|record| record.path.file_name() == Some(name))
         .ok_or_else(|| AppError::InvalidCommand(format!("cannot classify {}", path.display())))
-}
-
-fn classify_payload(path: &Path) -> ModKind {
-    match path
-        .extension()
-        .and_then(|value| value.to_str())
-        .map(|value| value.to_ascii_lowercase())
-        .as_deref()
-    {
-        Some("zip" | "7z" | "rar") => ModKind::Archive,
-        Some("jar" | "pck" | "pak") => ModKind::Package,
-        _ => ModKind::UnknownFile,
-    }
 }
 
 fn copy_path(source: &Path, target: &Path) -> AppResult<()> {
@@ -705,17 +377,7 @@ fn expand_zip_archive(source: &Path, target: &Path) -> AppResult<()> {
         fs::create_dir_all(parent).map_err(|source| AppError::io(parent, source))?;
     }
     fs::create_dir_all(target).map_err(|source| AppError::io(target, source))?;
-    let command = format!(
-        "Expand-Archive -LiteralPath {} -DestinationPath {} -Force",
-        powershell_quote(source),
-        powershell_quote(target)
-    );
-    let status = hidden_command("powershell")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"])
-        .arg(command)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
+    let status = powershell_expand_archive(source, target)
         .map_err(|source_error| AppError::io(source, source_error))?;
 
     if status.success() {
@@ -777,10 +439,6 @@ fn expand_with_7z(seven_zip: &Path, source: &Path, target: &Path) -> AppResult<(
     }
 }
 
-fn powershell_quote(path: &Path) -> String {
-    format!("'{}'", path.to_string_lossy().replace('\'', "''"))
-}
-
 fn is_supported_archive(path: &Path) -> bool {
     path.extension()
         .and_then(|value| value.to_str())
@@ -810,25 +468,6 @@ fn unique_child_path(parent: &Path, child: &Path) -> PathBuf {
     parent.join(format!("{stamp}-{name}"))
 }
 
-fn unique_key_dir(vault_dir: &Path, key: &str) -> PathBuf {
-    let target = vault_dir.join(key);
-    if !target.exists() {
-        return target;
-    }
-
-    let stamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_secs())
-        .unwrap_or(0);
-    for index in 1..1000 {
-        let candidate = vault_dir.join(format!("{key}-{stamp}-{index}"));
-        if !candidate.exists() {
-            return candidate;
-        }
-    }
-    vault_dir.join(format!("{key}-{stamp}"))
-}
-
 fn source_path_for_error(source: &Path, target: &Path) -> PathBuf {
     if source.exists() {
         source.to_path_buf()
@@ -843,51 +482,12 @@ mod tests {
     use std::io::Write;
 
     #[test]
-    fn imports_and_enables_file_mod() {
-        let fixture = TestWorkspace::create("imports_and_enables_file_mod");
-        let source = fixture.write_file("downloads/Example-v1.jar", "mod bytes");
-
-        let imported = import_mod(&source, &fixture.vault_dir()).expect("import");
-        let entries = list_vault(&fixture.vault_dir()).expect("list vault");
-        let enabled = enable_mod(
-            &imported.key,
-            &fixture.vault_dir(),
-            &fixture.game_mods_dir(),
-            &fixture.vendor_dir(),
-        )
-        .expect("enable");
-
-        assert_eq!(entries.len(), 1);
-        assert!(enabled.to.exists());
-        assert_eq!(
-            fs::read_to_string(enabled.to).expect("enabled content"),
-            "mod bytes"
-        );
-    }
-
-    #[test]
-    fn imports_same_key_as_new_visible_vault_entry() {
-        let fixture = TestWorkspace::create("imports_same_key_as_new_visible_vault_entry");
-        let source = fixture.write_file("downloads/Example-v1.jar", "mod bytes");
-
-        let first = import_mod_as_new(&source, &fixture.vault_dir()).expect("first import");
-        let second = import_mod_as_new(&source, &fixture.vault_dir()).expect("second import");
-        let entries = list_vault(&fixture.vault_dir()).expect("list vault");
-
-        assert_ne!(first.key, second.key);
-        assert_eq!(entries.len(), 2);
-        assert!(entries.iter().any(|entry| entry.key == first.key));
-        assert!(entries.iter().any(|entry| entry.key == second.key));
-    }
-
-    #[test]
     fn disables_enabled_mod_by_moving_to_game_disabled_folder() {
         let fixture =
             TestWorkspace::create("disables_enabled_mod_by_moving_to_game_disabled_folder");
         fixture.write_file("game/mods/Example-v1.zip", "mod bytes");
 
-        let disabled = disable_mod("example-v1", &fixture.game_mods_dir(), &fixture.vault_dir())
-            .expect("disable");
+        let disabled = disable_mod("example-v1", &fixture.game_mods_dir()).expect("disable");
 
         assert!(disabled.to.exists());
         assert_eq!(
@@ -907,7 +507,6 @@ mod tests {
 
         let enabled = enable_mod(
             "example-v1",
-            &fixture.vault_dir(),
             &fixture.game_mods_dir(),
             &fixture.vendor_dir(),
         )
@@ -924,65 +523,15 @@ mod tests {
     }
 
     #[test]
-    fn disabled_game_mods_are_listed_separately_from_vault() {
-        let fixture = TestWorkspace::create("disabled_game_mods_are_listed_separately_from_vault");
+    fn disabled_game_mods_are_listed_from_game_disabled_folder() {
+        let fixture =
+            TestWorkspace::create("disabled_game_mods_are_listed_from_game_disabled_folder");
         fixture.write_file("game/mods.disabled/Example-v1.zip", "mod bytes");
 
         let disabled = list_disabled_game_mods(&fixture.game_mods_dir()).expect("list disabled");
 
         assert_eq!(disabled.len(), 1);
         assert_eq!(disabled[0].stable_key(), "example-v1");
-        assert!(
-            list_vault(&fixture.vault_dir())
-                .expect("list vault")
-                .is_empty()
-        );
-    }
-
-    #[test]
-    fn vault_records_skip_legacy_disabled_only_shells() {
-        let fixture = TestWorkspace::create("vault_records_skip_legacy_disabled_only_shells");
-        fixture.write_file("vault/example/disabled/Example-v1.zip", "mod bytes");
-
-        let records = list_vault_records(&fixture.vault_dir()).expect("list records");
-
-        assert!(records.is_empty());
-    }
-
-    #[test]
-    fn legacy_disabled_vault_mods_migrate_to_game_disabled_folder() {
-        let fixture =
-            TestWorkspace::create("legacy_disabled_vault_mods_migrate_to_game_disabled_folder");
-        fixture.write_file("vault/example/disabled/Example-v1.zip", "mod bytes");
-
-        let actions = migrate_legacy_disabled_mods(&fixture.vault_dir(), &fixture.game_mods_dir())
-            .expect("migrate");
-
-        assert_eq!(actions.len(), 1);
-        assert_eq!(
-            actions[0].to,
-            fixture.path.join("game/mods.disabled/Example-v1.zip")
-        );
-        assert!(actions[0].to.exists());
-        assert!(!fixture.path.join("vault/example").exists());
-    }
-
-    #[test]
-    fn nested_game_disabled_mods_migrate_outside_mods_folder() {
-        let fixture =
-            TestWorkspace::create("nested_game_disabled_mods_migrate_outside_mods_folder");
-        fixture.write_file("game/mods/.disabled/Example-v1.zip", "mod bytes");
-
-        let actions = migrate_legacy_disabled_mods(&fixture.vault_dir(), &fixture.game_mods_dir())
-            .expect("migrate");
-
-        assert_eq!(actions.len(), 1);
-        assert_eq!(
-            actions[0].to,
-            fixture.path.join("game/mods.disabled/Example-v1.zip")
-        );
-        assert!(actions[0].to.exists());
-        assert!(!fixture.path.join("game/mods/.disabled").exists());
     }
 
     #[test]
@@ -991,8 +540,7 @@ mod tests {
         fixture.write_file("game/mods/vortex.deployment.slaythespire2-mod.json", "{}");
         fixture.write_file("game/mods/__vortex_staging_folder/staged.txt", "staged");
 
-        let actions = disable_all(&fixture.game_mods_dir(), &fixture.vault_dir())
-            .expect("disable all metadata");
+        let actions = disable_all(&fixture.game_mods_dir()).expect("disable all metadata");
 
         assert_eq!(actions.len(), 2);
         assert!(
@@ -1024,7 +572,7 @@ mod tests {
     #[test]
     fn rar_archives_activate_to_extracted_folder_name() {
         let fixture = TestWorkspace::create("rar_archives_activate_to_extracted_folder_name");
-        let source = fixture.write_file("vault/akisister/AkiSister-654.rar", "archive bytes");
+        let source = fixture.write_file("downloads/AkiSister-654.rar", "archive bytes");
 
         let target =
             activation_target_path(&source, &fixture.game_mods_dir()).expect("target path");
@@ -1051,10 +599,6 @@ mod tests {
             ));
             fs::create_dir_all(&path).expect("create workspace");
             Self { path }
-        }
-
-        fn vault_dir(&self) -> PathBuf {
-            self.path.join("vault")
         }
 
         fn game_mods_dir(&self) -> PathBuf {

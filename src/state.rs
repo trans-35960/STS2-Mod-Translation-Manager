@@ -29,7 +29,7 @@ pub fn detect_changes(summary: &ScanSummary, state_path: &Path) -> AppResult<Vec
     for record in summary
         .game_mods
         .iter()
-        .chain(summary.vault_mods.iter())
+        .chain(summary.disabled_mods.iter())
         .chain(summary.external_manager_mods.iter())
     {
         let key = record_state_key(record);
@@ -74,7 +74,7 @@ pub fn write_state(summary: &ScanSummary, state_path: &Path) -> AppResult<()> {
     for record in summary
         .game_mods
         .iter()
-        .chain(summary.vault_mods.iter())
+        .chain(summary.disabled_mods.iter())
         .chain(summary.external_manager_mods.iter())
     {
         let key = record_state_key(record);
@@ -185,7 +185,7 @@ fn read_state(path: &Path) -> AppResult<Vec<ModStateEntry>> {
         }
 
         let parts = line.split('\t').collect::<Vec<_>>();
-        if parts.len() != 5 && parts.len() != 7 {
+        if parts.len() != 7 {
             continue;
         }
 
@@ -201,17 +201,10 @@ fn read_state(path: &Path) -> AppResult<Vec<ModStateEntry>> {
             parts[3].parse::<u64>().ok()
         };
         let fallback_epoch = modified_epoch.unwrap_or_else(epoch_now);
-        let (registered_epoch, updated_epoch, path_index) = if parts.len() == 7 {
-            (
-                parts[4].parse::<u64>().unwrap_or(fallback_epoch),
-                parts[5].parse::<u64>().unwrap_or(fallback_epoch),
-                6,
-            )
-        } else {
-            (fallback_epoch, fallback_epoch, 4)
-        };
+        let registered_epoch = parts[4].parse::<u64>().unwrap_or(fallback_epoch);
+        let updated_epoch = parts[5].parse::<u64>().unwrap_or(fallback_epoch);
 
-        let path = PathBuf::from(parts[path_index]);
+        let path = PathBuf::from(parts[6]);
         records.push(ModStateEntry {
             source: normalized_state_source(source, &path),
             key: parts[1].to_string(),
@@ -234,7 +227,7 @@ fn record_state_key(record: &ModRecord) -> String {
 }
 
 fn normalized_state_source(source: ModSource, path: &Path) -> ModSource {
-    if source == ModSource::Vault && is_game_disabled_path(path) {
+    if source == ModSource::Disabled && is_game_disabled_path(path) {
         ModSource::GameMods
     } else {
         source
@@ -247,7 +240,7 @@ fn is_game_disabled_path(path: &Path) -> bool {
             .file_name()
             .map(|name| {
                 let name = name.to_string_lossy();
-                name.eq_ignore_ascii_case("mods.disabled") || name.eq_ignore_ascii_case(".disabled")
+                name.eq_ignore_ascii_case("mods.disabled")
             })
             .unwrap_or(false)
     })
@@ -285,14 +278,14 @@ mod tests {
         let state_path = test_state_path("detects_new_and_updated_records");
         let first = ScanSummary {
             game_mods: Vec::new(),
-            vault_mods: Vec::new(),
+            disabled_mods: Vec::new(),
             external_manager_mods: vec![record("Alpha-v1", 10)],
         };
         write_state(&first, &state_path).expect("write first state");
 
         let second = ScanSummary {
             game_mods: Vec::new(),
-            vault_mods: Vec::new(),
+            disabled_mods: Vec::new(),
             external_manager_mods: vec![record("Alpha-v1", 20), record("Beta-v1", 5)],
         };
 
@@ -312,25 +305,6 @@ mod tests {
     }
 
     #[test]
-    fn reads_legacy_state_without_lifecycle_columns() {
-        let state_path = test_state_path("reads_legacy_state_without_lifecycle_columns");
-        if let Some(parent) = state_path.parent() {
-            fs::create_dir_all(parent).expect("create parent");
-        }
-        fs::write(
-            &state_path,
-            "source\tkey\tbytes\tmodified_epoch\tpath\nexternal\talpha\t10\t123\tC:/mods/alpha.zip\n",
-        )
-        .expect("write legacy state");
-
-        let records = read_state(&state_path).expect("read state");
-
-        assert_eq!(records.len(), 1);
-        assert_eq!(records[0].registered_epoch, 123);
-        assert_eq!(records[0].updated_epoch, 123);
-    }
-
-    #[test]
     fn preserves_registered_epoch_and_updates_changed_records() {
         let state_path = test_state_path("preserves_registered_epoch_and_updates_changed_records");
         if let Some(parent) = state_path.parent() {
@@ -343,7 +317,7 @@ mod tests {
         .expect("write state");
         let summary = ScanSummary {
             game_mods: Vec::new(),
-            vault_mods: Vec::new(),
+            disabled_mods: Vec::new(),
             external_manager_mods: vec![record("Alpha-v1", 20)],
         };
 
@@ -367,17 +341,17 @@ mod tests {
                 ModSource::GameMods,
                 "C:/game/mods/Alpha-v1.zip",
             )],
-            vault_mods: Vec::new(),
+            disabled_mods: Vec::new(),
             external_manager_mods: Vec::new(),
         };
         write_state(&first, &state_path).expect("write first state");
 
         let second = ScanSummary {
             game_mods: Vec::new(),
-            vault_mods: vec![record_at(
+            disabled_mods: vec![record_at(
                 "Alpha-v1",
                 10,
-                ModSource::Vault,
+                ModSource::Disabled,
                 "C:/game/mods.disabled/Alpha-v1.zip",
             )],
             external_manager_mods: Vec::new(),

@@ -13,6 +13,7 @@ export type DroppedModDecision =
   | { path: string; mode: "new" }
   | { path: string; mode: "skip" }
   | { path: string; mode: "replace"; replacePath: string };
+export type DroppedModSource = "drop" | "external";
 
 type DecisionValue = "new" | "skip" | `replace:${string}`;
 
@@ -20,6 +21,7 @@ function DroppedModConfirmModal(props: {
   items: DroppedModPreview[];
   mods: ModRow[];
   busy: string | null;
+  source: DroppedModSource;
   onCancel: () => void;
   onConfirm: (decisions: DroppedModDecision[]) => void;
 }) {
@@ -65,8 +67,12 @@ function DroppedModConfirmModal(props: {
     <div className="modal-backdrop">
       <div className="modal dropped-mod-modal">
         <header>
-          <h2>드롭한 모드 추가</h2>
-          <p>기존 모드와 이름/버전이 비슷한 항목을 찾았습니다. 각 모드를 어떻게 처리할지 선택하세요.</p>
+          <h2>{props.source === "external" ? "새 다운로드 모드 감지" : "드롭한 모드 추가"}</h2>
+          <p>
+            {props.source === "external"
+              ? "Nexus/Vortex 다운로드에서 기존 모드와 비슷한 항목을 찾았습니다. 각 모드를 어떻게 처리할지 선택하세요."
+              : "기존 모드와 이름/버전이 비슷한 항목을 찾았습니다. 각 모드를 어떻게 처리할지 선택하세요."}
+          </p>
         </header>
         <div className="dropped-mod-list">
           {rows.map((row) => (
@@ -87,13 +93,13 @@ function DroppedModConfirmModal(props: {
                   value={decisions[row.item.path] ?? "new"}
                   onChange={(event) => setDecision(row.item.path, event.target.value as DecisionValue)}
                 >
-                  <option value="new">새 모드로 등록</option>
+                  <option value="new">별개 모드로 등록</option>
                   {row.replaceableMatches.map((mod) => (
                     <option key={mod.path} value={`replace:${mod.path}`}>
-                      덮어쓰기: {modGroupName(mod)} / {displayModVersion(mod)} / {sourceLabel(mod)}
+                      기존 모드 대체: {modGroupName(mod)} / {displayModVersion(mod)}
                     </option>
                   ))}
-                  <option value="skip">건너뛰기</option>
+                  <option value="skip">취소</option>
                 </select>
               </label>
               {row.relatedMatches.length > 0 ? (
@@ -130,8 +136,9 @@ function DroppedModConfirmModal(props: {
 function buildDroppedRow(item: DroppedModPreview, mods: ModRow[]) {
   const previewRow = previewAsModRow(item);
   const itemTokens = droppedMatchTokens(previewRow);
-  const exactMatches = mods.filter((mod) => mod.key === item.key && isReplaceable(mod));
-  const relatedMatches = mods.filter(
+  const matchableMods = mods.filter((mod) => !sameDisplayPath(mod.path, item.path));
+  const exactMatches = matchableMods.filter((mod) => mod.key === item.key && isReplaceable(mod));
+  const relatedMatches = matchableMods.filter(
     (mod) => mod.key === item.key || hasSharedDroppedMatchToken(itemTokens, droppedMatchTokens(mod)),
   );
   const replaceableMatches = [
@@ -144,6 +151,23 @@ function buildDroppedRow(item: DroppedModPreview, mods: ModRow[]) {
     exactMatches,
     relatedMatches,
     replaceableMatches,
+  };
+}
+
+export function droppedModPreviewHasRelatedMatch(item: DroppedModPreview, mods: ModRow[]): boolean {
+  return buildDroppedRow(item, mods).relatedMatches.length > 0;
+}
+
+export function modRowAsDroppedModPreview(mod: ModRow): DroppedModPreview {
+  return {
+    path: mod.path,
+    display_path: mod.path,
+    key: mod.key,
+    name: mod.name,
+    kind: mod.kind,
+    version_hint: mod.version_hint,
+    bytes: mod.bytes,
+    modified_epoch: mod.modified_epoch,
   };
 }
 
@@ -183,6 +207,10 @@ function normalizeDroppedToken(value: string): string {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9가-힣\u3400-\u9fff]/g, "");
+}
+
+function sameDisplayPath(left: string, right: string): boolean {
+  return left.replace(/\\/g, "/").toLowerCase() === right.replace(/\\/g, "/").toLowerCase();
 }
 
 function previewAsModRow(item: DroppedModPreview): ModRow {
@@ -228,13 +256,13 @@ function previewAsModRow(item: DroppedModPreview): ModRow {
 }
 
 function isReplaceable(mod: ModRow): boolean {
-  return mod.active || mod.managed;
+  return mod.active || mod.managed || mod.external;
 }
 
 function sourceLabel(mod: ModRow): string {
-  if (mod.active) return "활성";
+  if (mod.active) return "현재 활성 모드";
+  if (mod.managed) return "비활성 보관 모드";
   if (mod.source_label) return mod.source_label;
-  if (mod.managed) return "기존 등록";
   return "기존 모드";
 }
 

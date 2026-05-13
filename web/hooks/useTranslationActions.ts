@@ -41,7 +41,7 @@ export function useTranslationActions(params: TranslationActionsParams) {
       params.setJsonToolError("");
     }
     try {
-      const result = await invokeCommand<JsonValidation>("validate_json_translation_sheet_data", {
+      const result = await invokeCommand("validate_json_translation_sheet_data", {
         sheet: params.jsonSheet,
       });
       if (requestId === validationRequestId.current) {
@@ -151,7 +151,7 @@ export function useTranslationActions(params: TranslationActionsParams) {
     params.setBusy("validate_json_translation_sheet");
     params.setJsonToolError("");
     try {
-      const result = await invokeCommand<JsonValidation>("validate_json_translation_sheet", {
+      const result = await invokeCommand("validate_json_translation_sheet", {
         sheetPath,
       });
       params.setJsonValidation(result);

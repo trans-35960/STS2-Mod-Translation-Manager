@@ -1,6 +1,6 @@
 use crate::app::App;
 use crate::error::{AppError, AppResult};
-use crate::vault::VaultAction;
+use crate::vault::DisabledModAction;
 use std::io::{self, Write};
 use std::path::Path;
 
@@ -12,7 +12,7 @@ pub fn run(app: &App) -> AppResult<()> {
         println!();
         println!("Choose an action:");
         println!("  1. Scan mods and update change state");
-        println!("  2. Vault: list/import/enable/disable");
+        println!("  2. Disabled mods: list/import/enable/disable");
         println!("  3. Presets: list/save/apply");
         println!("  4. Translation: list/extract/merge");
         println!("  5. Vanilla-safe mode: disable all game mods");
@@ -62,7 +62,7 @@ fn print_dashboard(app: &App) -> AppResult<()> {
     println!("Slay the Spire 2 Mod Manager");
     println!("================================");
     println!("Game mods:      {}", scan.game_mods.len());
-    println!("Vault mods:     {}", app.list_vault()?.len());
+    println!("Disabled mods:  {}", app.list_vault()?.len());
     println!("External mods:  {}", scan.external_manager_mods.len());
     println!("Presets:        {}", app.list_presets()?.len());
     println!(
@@ -85,18 +85,18 @@ fn print_dashboard(app: &App) -> AppResult<()> {
 
 fn vault_menu(app: &App) -> AppResult<()> {
     println!();
-    println!("Vault");
+    println!("Disabled mods");
     println!("  1. List");
     println!("  2. Import path");
     println!("  3. Enable key");
     println!("  4. Disable key");
     println!("  b. Back");
 
-    match prompt("Vault action")?.as_str() {
+    match prompt("Disabled mod action")?.as_str() {
         "1" => {
             let entries = app.list_vault()?;
             if entries.is_empty() {
-                println!("Vault is empty.");
+                println!("Disabled mod storage is empty.");
             } else {
                 for entry in entries {
                     println!("  - {}: {} [{}]", entry.key, entry.display_name, entry.kind);
@@ -109,7 +109,7 @@ fn vault_menu(app: &App) -> AppResult<()> {
             print_action("Imported", &action);
         }
         "3" => {
-            let key = prompt("Vault key to enable")?;
+            let key = prompt("Disabled mod key to enable")?;
             let action = app.enable_mod(&key)?;
             print_action("Enabled", &action);
         }
@@ -119,7 +119,7 @@ fn vault_menu(app: &App) -> AppResult<()> {
             print_action("Disabled", &action);
         }
         "b" | "B" => return Ok(()),
-        other => println!("Unknown vault action: {other}"),
+        other => println!("Unknown disabled mod action: {other}"),
     }
     pause()
 }
@@ -307,7 +307,7 @@ fn pause() -> AppResult<()> {
     Ok(())
 }
 
-fn print_action(label: &str, action: &VaultAction) {
+fn print_action(label: &str, action: &DisabledModAction) {
     println!("{label}: {}", action.key);
     println!("  from: {}", action.from.display());
     println!("  to:   {}", action.to.display());

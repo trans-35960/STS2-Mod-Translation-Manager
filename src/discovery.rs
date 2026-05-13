@@ -44,7 +44,7 @@ pub fn scan_mod_directory(path: &Path, source: ModSource) -> AppResult<Vec<ModRe
         });
     }
 
-    mods.sort_by(|left, right| left.stable_key().cmp(&right.stable_key()));
+    mods.sort_by_key(|record| record.stable_key());
     Ok(mods)
 }
 
@@ -117,10 +117,10 @@ fn collect_directory_fingerprint(
             collect_directory_fingerprint(&entry_path, bytes, modified)?;
         } else {
             *bytes += metadata.len();
-            if let Ok(entry_modified) = metadata.modified() {
-                if modified.is_none_or(|current| entry_modified > current) {
-                    *modified = Some(entry_modified);
-                }
+            if let Ok(entry_modified) = metadata.modified()
+                && modified.is_none_or(|current| entry_modified > current)
+            {
+                *modified = Some(entry_modified);
             }
         }
     }

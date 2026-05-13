@@ -57,10 +57,10 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            if std::env::var_os("STS2_E2E_NO_FOCUS").is_some() {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
-                }
+            if std::env::var_os("STS2_E2E_NO_FOCUS").is_some()
+                && let Some(window) = app.get_webview_window("main")
+            {
+                let _ = window.hide();
             }
             Ok(())
         })

@@ -1114,7 +1114,6 @@ mod tests {
             save_backup_dir: workspace.join("backups"),
             save_backup_retention_days: 7,
             save_backup_max_entries: 14,
-            vault_dir: workspace.join("vault"),
             presets_dir: workspace.join("presets"),
             translation_work_dir: workspace.join("translation_work"),
             logs_dir: workspace.join("logs"),

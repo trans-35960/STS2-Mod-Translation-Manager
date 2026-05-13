@@ -569,18 +569,21 @@
 
 .resizable-head button {
   position: absolute;
-  top: -2px;
-  right: -4px;
-  width: 10px;
-  height: calc(100% + 4px);
+  top: 0;
+  right: -7px;
+  width: 16px;
+  height: 100%;
   border: 0;
   border-radius: 0;
   background: transparent;
   cursor: col-resize;
 }
 
-.resizable-head button:hover {
-  background: #cfe0db;
+.resizable-head button:hover,
+.resizable-head button:focus-visible {
+  background: rgba(15, 118, 110, 0.12);
+  box-shadow: inset 2px 0 0 var(--accent);
+  outline: none;
 }
 
 .json-entry-row:last-child {
@@ -732,6 +735,15 @@
 }
 
 .source-value-cell.warning-source {
+  overflow: visible;
+  max-height: none;
+  line-height: 1.45;
+  text-overflow: clip;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.source-value-cell.wrapped-source {
   overflow: visible;
   max-height: none;
   line-height: 1.45;

@@ -9,7 +9,7 @@ use crate::translation::{
     TranslationExtractReport, TranslationMergeReport, TranslationWorkspace,
     scan_translation_candidates,
 };
-use crate::vault::{VaultAction, VaultEntry};
+use crate::vault::{DisabledModAction, DisabledModEntry};
 use crate::vendor_tools::VendorTool;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -40,7 +40,7 @@ pub fn run(args: impl IntoIterator<Item = String>, current_dir: PathBuf) -> AppR
         Some("paths") => {
             print_paths(app.config());
         }
-        Some("vault") => {
+        Some("disabled") => {
             run_vault_command(&app, &args[1..])?;
         }
         Some("preset") => {
@@ -82,18 +82,18 @@ fn print_help() {
     println!("Slay the Spire 2 Mod Manager");
     println!();
     println!("Commands:");
-    println!("  scan                  scan game mods, vault, and Nexus/Vortex paths");
+    println!("  scan                  scan game mods, disabled mods, and Nexus/Vortex paths");
     println!("  init                  create managed folders");
     println!("  paths                 print resolved workspace paths");
-    println!("  vault list            list managed vault mods");
-    println!("  vault import PATH     copy a mod into the managed vault");
-    println!("  vault enable KEY      copy a vault mod into the game mods folder");
-    println!("  vault disable KEY     move an enabled game mod into the vault disabled area");
-    println!("  vault vanilla         disable all game mods for a clean launch");
+    println!("  disabled list         list disabled mods");
+    println!("  disabled import PATH  copy a mod into mods.disabled");
+    println!("  disabled enable KEY   move a disabled mod into the game mods folder");
+    println!("  disabled disable KEY  move an enabled game mod into mods.disabled");
+    println!("  disabled vanilla      disable all game mods for a clean launch");
     println!("  preset list           list saved presets");
     println!("  preset save NAME      save currently enabled mods as a preset");
     println!("  preset show NAME      show preset mod keys");
-    println!("  preset apply NAME     apply a preset from the vault");
+    println!("  preset apply NAME     apply a preset from disabled mods");
     println!("  preset export NAME ZIP export preset metadata and mod files");
     println!("  preset import ZIP     import a preset archive and register bundled mods");
     println!("  ui                    open the interactive Rust text UI");
@@ -128,17 +128,17 @@ fn run_vault_command(app: &App, args: &[String]) -> AppResult<()> {
     match args.first().map(String::as_str) {
         None | Some("list") => print_vault_entries(&app.list_vault()?),
         Some("import") => {
-            let path = required_arg(args, 1, "vault import PATH")?;
+            let path = required_arg(args, 1, "disabled import PATH")?;
             let action = app.import_mod(Path::new(path))?;
             print_action("Imported", &action);
         }
         Some("enable") => {
-            let key = required_arg(args, 1, "vault enable KEY")?;
+            let key = required_arg(args, 1, "disabled enable KEY")?;
             let action = app.enable_mod(key)?;
             print_action("Enabled", &action);
         }
         Some("disable") => {
-            let key = required_arg(args, 1, "vault disable KEY")?;
+            let key = required_arg(args, 1, "disabled disable KEY")?;
             let action = app.disable_mod(key)?;
             print_action("Disabled", &action);
         }
@@ -158,7 +158,7 @@ fn run_vault_command(app: &App, args: &[String]) -> AppResult<()> {
         }
         Some(command) => {
             return Err(AppError::InvalidCommand(format!(
-                "unknown vault command '{command}'. Run `sts2_mod_manager help`."
+                "unknown disabled mod command '{command}'. Run `sts2_mod_manager help`."
             )));
         }
     }
@@ -286,7 +286,7 @@ fn print_preset(preset: &Preset) {
 fn print_preset_apply_report(report: &PresetApplyReport) {
     println!("Preset applied.");
     println!("  Disabled before apply: {}", report.disabled.len());
-    println!("  Enabled from vault:    {}", report.enabled.len());
+    println!("  Enabled from disabled: {}", report.enabled.len());
     if !report.version_warnings.is_empty() {
         println!("  Version warnings:");
         for warning in &report.version_warnings {
@@ -294,7 +294,7 @@ fn print_preset_apply_report(report: &PresetApplyReport) {
         }
     }
     if !report.missing.is_empty() {
-        println!("  Missing vault mods:");
+        println!("  Missing disabled mods:");
         for key in &report.missing {
             println!("    - {key}");
         }
@@ -306,7 +306,7 @@ fn print_preset_export_report(report: &PresetExportReport) {
     println!("  archive: {}", report.archive_path.display());
     println!("  included mods: {}", report.included_mods);
     if !report.missing.is_empty() {
-        println!("  missing vault mods:");
+        println!("  missing disabled mods:");
         for key in &report.missing {
             println!("    - {key}");
         }
@@ -423,19 +423,19 @@ fn print_vendor_tools(tools: &[VendorTool]) {
     }
 }
 
-fn print_vault_entries(entries: &[VaultEntry]) {
+fn print_vault_entries(entries: &[DisabledModEntry]) {
     if entries.is_empty() {
-        println!("Vault is empty.");
+        println!("Disabled mod storage is empty.");
         return;
     }
 
-    println!("Vault mods: {}", entries.len());
+    println!("Disabled mods: {}", entries.len());
     for entry in entries {
         println!("  - {}: {} [{}]", entry.key, entry.display_name, entry.kind);
     }
 }
 
-fn print_action(label: &str, action: &VaultAction) {
+fn print_action(label: &str, action: &DisabledModAction) {
     println!("{label}: {}", action.key);
     println!("  from: {}", action.from.display());
     println!("  to:   {}", action.to.display());
@@ -445,7 +445,12 @@ fn print_paths(config: &AppConfig) {
     println!("Workspace: {}", config.workspace_dir.display());
     println!("Game:      {}", config.game_dir.display());
     println!("Game mods: {}", config.game_mods_dir.display());
-    println!("Vault:     {}", config.vault_dir.display());
+    let disabled_dir = config
+        .game_mods_dir
+        .parent()
+        .map(|parent| parent.join("mods.disabled"))
+        .unwrap_or_else(|| config.game_mods_dir.with_file_name("mods.disabled"));
+    println!("Disabled:  {}", disabled_dir.display());
     println!("Presets:   {}", config.presets_dir.display());
     println!("Translate: {}", config.translation_work_dir.display());
     println!("Logs:      {}", config.logs_dir.display());
@@ -489,7 +494,7 @@ fn print_scan_summary(summary: &ScanSummary) {
     println!();
 
     print_mods("Game mods", &summary.game_mods);
-    print_mods("Managed vault", &summary.vault_mods);
+    print_mods("Disabled mods", &summary.disabled_mods);
     print_mods("Nexus/Vortex", &summary.external_manager_mods);
 }
 

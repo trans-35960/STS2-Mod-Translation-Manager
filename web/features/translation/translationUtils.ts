@@ -29,6 +29,7 @@ export function createCompareValueMap(values: LanguageCompareValue[]) {
   for (const entry of values) {
     mapped[entry.key] = entry.value;
     mapped[normalizedLocalizationKey(entry.key)] = entry.value;
+    mapped[stableCompareKey(entry.key)] = entry.value;
   }
   return mapped;
 }
@@ -127,6 +128,18 @@ export function normalizedLocalizationKey(key: string): string {
   return `file://${normalizedFile}#${entryKey}`;
 }
 
+export function stableCompareKey(key: string): string {
+  const { file, key: entryKey } = splitSheetKey(key);
+  const normalizedFile = file.replace(/\\/g, "/");
+  const parts = normalizedFile.split("/").filter(Boolean);
+  const localizationIndex = parts.findIndex((part) => part.toLowerCase() === "localization");
+  const compactFile =
+    localizationIndex >= 0 && localizationIndex + 2 < parts.length
+      ? parts.slice(localizationIndex + 2).join("/")
+      : normalizedFile;
+  return `${compactFile}#${entryKey}`;
+}
+
 export function pathMatchesProjectNode(filePath: string, activePath: string): boolean {
   if (!activePath) {
     return true;
@@ -222,31 +235,6 @@ export function compactTranslationEntries(value: unknown): StructuredTranslation
 
 export function isTranslationSlotId(value: string): boolean {
   return /^k\d+-[0-9a-z]{2}$/i.test(value);
-}
-
-export function isLegacyTranslationShortId(value: string): boolean {
-  return /^s[0-9a-z]{10,}$/i.test(value);
-}
-
-export function containsLegacyTranslationShortId(value: unknown): boolean {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  if (Array.isArray(value)) {
-    return value.some(containsLegacyTranslationShortId);
-  }
-  for (const [key, entryValue] of Object.entries(value as Record<string, unknown>)) {
-    if (isLegacyTranslationShortId(key)) {
-      return true;
-    }
-    if (entryValue && typeof entryValue === "object" && containsLegacyTranslationShortId(entryValue)) {
-      return true;
-    }
-    if (key === "id" && typeof entryValue === "string" && isLegacyTranslationShortId(entryValue)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 export function translationSlotEntries(sheet: JsonTranslationSheet): TranslationSlot[] {

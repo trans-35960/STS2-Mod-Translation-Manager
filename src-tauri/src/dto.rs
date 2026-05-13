@@ -24,7 +24,7 @@ pub(crate) struct PathsDto {
     pub(crate) game_mods: String,
     pub(crate) save_dir: String,
     pub(crate) save_backup: String,
-    pub(crate) vault: String,
+    pub(crate) disabled: String,
     pub(crate) presets: String,
     pub(crate) translation_work: String,
     pub(crate) state: String,
@@ -46,11 +46,26 @@ pub(crate) struct UiSettingsDto {
     pub(crate) mod_view_mode: String,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SaveSettingsRequest {
+    pub(crate) translation_work_dir: String,
+    pub(crate) target_language: String,
+    pub(crate) game_exe_path: String,
+    pub(crate) game_log_path: String,
+    pub(crate) save_dir: String,
+    pub(crate) save_backup_dir: String,
+    pub(crate) save_backup_retention_days: u32,
+    pub(crate) save_backup_max_entries: u32,
+    pub(crate) deleted_retention_days: u32,
+    pub(crate) mod_view_mode: String,
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct StatsDto {
     pub(crate) active_mods: usize,
     pub(crate) inactive_mods: usize,
-    pub(crate) vault_mods: usize,
+    pub(crate) disabled_mods: usize,
     pub(crate) external_mods: usize,
     pub(crate) presets: usize,
     pub(crate) translations: usize,

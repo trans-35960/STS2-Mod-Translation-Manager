@@ -6,6 +6,7 @@ pub mod domain;
 pub mod error;
 pub mod json_translation;
 pub mod launcher;
+pub mod path_guard;
 pub mod preset;
 pub mod process;
 pub mod save_backup;

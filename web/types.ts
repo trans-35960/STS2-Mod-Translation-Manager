@@ -51,13 +51,32 @@ export type UiSettings = {
   mod_view_mode: "detail" | "simple";
 };
 
+export type SaveSettingsRequest = {
+  translationWorkDir: string;
+  targetLanguage: string;
+  gameExePath: string;
+  gameLogPath: string;
+  saveDir: string;
+  saveBackupDir: string;
+  saveBackupRetentionDays: number;
+  saveBackupMaxEntries: number;
+  deletedRetentionDays: number;
+  modViewMode: "detail" | "simple";
+};
+
+export type ModToggleRequest = {
+  key: string;
+  active: boolean;
+  force?: boolean | null;
+};
+
 export type Paths = {
   workspace: string;
   game: string;
   game_mods: string;
   save_dir: string;
   save_backup: string;
-  vault: string;
+  disabled: string;
   presets: string;
   translation_work: string;
   state: string;
@@ -68,7 +87,7 @@ export type Paths = {
 export type Stats = {
   active_mods: number;
   inactive_mods: number;
-  vault_mods: number;
+  disabled_mods: number;
   external_mods: number;
   presets: number;
   translations: number;

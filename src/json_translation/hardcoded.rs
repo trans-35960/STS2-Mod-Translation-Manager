@@ -225,7 +225,7 @@ fn scan_dotnet_user_string_heap(heap: &[u8], heap_file_offset: usize) -> Vec<Har
             break;
         }
         let text_len = blob_len.saturating_sub(1);
-        if text_len > 0 && text_len % 2 == 0 {
+        if text_len > 0 && text_len.is_multiple_of(2) {
             let units = heap[cursor..cursor + text_len]
                 .chunks_exact(2)
                 .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))

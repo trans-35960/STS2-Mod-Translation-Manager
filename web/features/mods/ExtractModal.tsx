@@ -27,7 +27,7 @@ function ExtractConfirmModal(props: {
 
   return (
     <div className="modal-backdrop" role="presentation" onClick={() => setContextMenu(null)}>
-      <section className="modal" role="dialog" aria-modal="true" aria-label="Extract language files">
+      <section className="modal extract-modal" role="dialog" aria-modal="true" aria-label="Extract language files">
         <header>
           <h2>파일 추출 확인</h2>
           <p>{props.mod.name}</p>

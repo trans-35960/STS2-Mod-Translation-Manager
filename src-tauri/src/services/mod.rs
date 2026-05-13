@@ -23,8 +23,9 @@ use sts2_mod_manager::json_translation::{
     validate_sheet, validate_translation_sheet, write_sheet,
 };
 use sts2_mod_manager::launcher::{LaunchReport, LaunchStatus};
+use sts2_mod_manager::path_guard::{ensure_existing_path_in_roots, ensure_path_in_roots};
 use sts2_mod_manager::preset::{Preset, PresetApplyReport};
-use sts2_mod_manager::process::hidden_command;
+use sts2_mod_manager::process::{hidden_command, powershell_expand_archive};
 use sts2_mod_manager::save_backup::{self, SaveBackupEntry};
 use sts2_mod_manager::state::{
     ModStateEntry, desired_active_mod_keys, mod_record_state_key, read_mod_state_index,
@@ -50,5 +51,6 @@ include!("deleted_mods.rs");
 include!("cache_cleanup.rs");
 include!("translation_preview.rs");
 include!("json_sheet.rs");
+include!("json_sheet/dto.rs");
 include!("pck.rs");
 include!("tests.rs");

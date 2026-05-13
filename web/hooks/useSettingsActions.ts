@@ -1,11 +1,12 @@
 import React from "react";
 import { invokeCommand, openDialog } from "../api/tauri";
+import type { ActionCommand, CommandArgs } from "../api/tauri";
 import { DEFAULT_UI_SETTINGS } from "../constants";
 import { previewGameLogs } from "../previewData";
 import type { DeletedMod, GameLog, UiSettings } from "../types";
 import { isPreviewRuntime } from "../utils/runtime";
 
-type RunAction = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
+type RunAction = (command: ActionCommand, args?: CommandArgs[ActionCommand]) => Promise<unknown>;
 
 export function useSettingsActions({
   appendLog,
@@ -26,16 +27,18 @@ export function useSettingsActions({
       return;
     }
     await runAction("save_settings", {
-      translationWorkDir: settingsDraft.translation_work_dir,
-      targetLanguage: settingsDraft.target_language,
-      gameExePath: settingsDraft.game_exe_path,
-      gameLogPath: settingsDraft.game_log_path,
-      saveDir: settingsDraft.save_dir,
-      saveBackupDir: settingsDraft.save_backup_dir,
-      saveBackupRetentionDays: settingsDraft.save_backup_retention_days,
-      saveBackupMaxEntries: settingsDraft.save_backup_max_entries,
-      deletedRetentionDays: settingsDraft.deleted_retention_days,
-      modViewMode: settingsDraft.mod_view_mode,
+      request: {
+        translationWorkDir: settingsDraft.translation_work_dir,
+        targetLanguage: settingsDraft.target_language,
+        gameExePath: settingsDraft.game_exe_path,
+        gameLogPath: settingsDraft.game_log_path,
+        saveDir: settingsDraft.save_dir,
+        saveBackupDir: settingsDraft.save_backup_dir,
+        saveBackupRetentionDays: settingsDraft.save_backup_retention_days,
+        saveBackupMaxEntries: settingsDraft.save_backup_max_entries,
+        deletedRetentionDays: settingsDraft.deleted_retention_days,
+        modViewMode: settingsDraft.mod_view_mode,
+      },
     });
   }
 
@@ -49,7 +52,7 @@ export function useSettingsActions({
         }
         return;
       }
-      const result = await invokeCommand<GameLog[]>("read_game_logs");
+      const result = await invokeCommand("read_game_logs");
       setGameLogs(result);
       if (showToast) {
         const existing = result.filter((log) => log.exists).length;

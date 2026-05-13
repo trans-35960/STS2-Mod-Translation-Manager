@@ -279,4 +279,15 @@
   margin-top: 18px;
 }
 
+.extract-modal footer {
+  position: sticky;
+  bottom: -18px;
+  z-index: 2;
+  flex-wrap: wrap;
+  margin: 18px -18px -18px;
+  border-top: 1px solid #e2e8f0;
+  background: var(--surface);
+  padding: 12px 18px;
+}
+
 /* 2026 compact desktop refresh based on the accepted mod manager reference. */

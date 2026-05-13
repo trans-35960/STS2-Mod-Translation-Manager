@@ -6,30 +6,8 @@ pub(crate) fn load_dashboard() -> Result<DashboardDto, String> {
 }
 
 #[tauri::command]
-pub(crate) fn save_settings(
-    translation_work_dir: String,
-    target_language: String,
-    game_exe_path: String,
-    game_log_path: String,
-    save_dir: String,
-    save_backup_dir: String,
-    save_backup_retention_days: u32,
-    save_backup_max_entries: u32,
-    deleted_retention_days: u32,
-    mod_view_mode: String,
-) -> Result<ActionDto, String> {
-    crate::services::save_settings(
-        translation_work_dir,
-        target_language,
-        game_exe_path,
-        game_log_path,
-        save_dir,
-        save_backup_dir,
-        save_backup_retention_days,
-        save_backup_max_entries,
-        deleted_retention_days,
-        mod_view_mode,
-    )
+pub(crate) fn save_settings(request: SaveSettingsRequest) -> Result<ActionDto, String> {
+    crate::services::save_settings(request)
 }
 
 #[tauri::command]

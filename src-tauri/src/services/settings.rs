@@ -1,31 +1,24 @@
-pub(crate) fn save_settings(
-    translation_work_dir: String,
-    target_language: String,
-    game_exe_path: String,
-    game_log_path: String,
-    save_dir: String,
-    save_backup_dir: String,
-    save_backup_retention_days: u32,
-    save_backup_max_entries: u32,
-    deleted_retention_days: u32,
-    mod_view_mode: String,
-) -> Result<ActionDto, String> {
+pub(crate) fn save_settings(request: SaveSettingsRequest) -> Result<ActionDto, String> {
     let mut config = AppConfig::from_workspace(resolve_workspace_dir());
     if sts2_mod_manager::launcher::status(&config).running {
         return Err("게임 실행 중에는 설정을 변경할 수 없습니다.".to_string());
     }
     fs::create_dir_all(&config.state_dir).map_err(|error| error.to_string())?;
     let settings = UiSettingsDto {
-        translation_work_dir: translation_work_dir.trim().to_string(),
-        target_language: normalize_target_language(target_language.trim()).to_string(),
-        game_exe_path: game_exe_path.trim().to_string(),
-        game_log_path: game_log_path.trim().to_string(),
-        save_dir: save_dir.trim().to_string(),
-        save_backup_dir: save_backup_dir.trim().to_string(),
-        save_backup_retention_days: sanitize_save_backup_retention_days(save_backup_retention_days),
-        save_backup_max_entries: sanitize_save_backup_max_entries(save_backup_max_entries),
-        deleted_retention_days: sanitize_deleted_retention_days(deleted_retention_days),
-        mod_view_mode: normalize_mod_view_mode(&mod_view_mode).to_string(),
+        translation_work_dir: request.translation_work_dir.trim().to_string(),
+        target_language: normalize_target_language(request.target_language.trim()).to_string(),
+        game_exe_path: request.game_exe_path.trim().to_string(),
+        game_log_path: request.game_log_path.trim().to_string(),
+        save_dir: request.save_dir.trim().to_string(),
+        save_backup_dir: request.save_backup_dir.trim().to_string(),
+        save_backup_retention_days: sanitize_save_backup_retention_days(
+            request.save_backup_retention_days,
+        ),
+        save_backup_max_entries: sanitize_save_backup_max_entries(
+            request.save_backup_max_entries,
+        ),
+        deleted_retention_days: sanitize_deleted_retention_days(request.deleted_retention_days),
+        mod_view_mode: normalize_mod_view_mode(&request.mod_view_mode).to_string(),
     };
     if !settings.game_exe_path.is_empty() {
         let path = PathBuf::from(&settings.game_exe_path);

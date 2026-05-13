@@ -15,7 +15,7 @@ pub(crate) fn read_json(path: &Path) -> AppResult<Value> {
             path.display()
         )));
     }
-    serde_json::from_str(&content).map_err(|source| {
+    serde_json::from_str(content).map_err(|source| {
         AppError::InvalidCommand(format!("invalid json: {} ({source})", path.display()))
     })
 }

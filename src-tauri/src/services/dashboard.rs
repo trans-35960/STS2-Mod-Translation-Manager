@@ -1,5 +1,8 @@
 pub(crate) fn load_dashboard() -> Result<DashboardDto, String> {
-    dashboard().map_err(|error| error.to_string())
+    let timing = DashboardTiming::new("load_dashboard");
+    let result = dashboard().map_err(|error| error.to_string());
+    timing.finish();
+    result
 }
 
 
@@ -275,25 +278,25 @@ fn dropped_mod_candidates(path: &Path, config: &AppConfig) -> Result<Vec<Dropped
                 })
                 .collect());
         }
-    } else if is_supported_drop_archive_path(path) {
-        if let Some(extract_dir) = extract_dropped_archive(path, config) {
-            let nested = split_dropped_directory(&extract_dir)?;
-            if nested.len() > 1 {
-                return Ok(nested
-                    .into_iter()
-                    .map(|record| DroppedModCandidate {
-                        display_path: container_child_display_path(path, &record.path),
-                        record,
-                    })
-                    .collect());
-            }
-            if nested.len() == 1 {
-                let record = dropped_mod_record(path)?;
-                return Ok(vec![DroppedModCandidate {
-                    display_path: display_path(&record.path),
+    } else if is_supported_drop_archive_path(path)
+        && let Some(extract_dir) = extract_dropped_archive(path, config)
+    {
+        let nested = split_dropped_directory(&extract_dir)?;
+        if nested.len() > 1 {
+            return Ok(nested
+                .into_iter()
+                .map(|record| DroppedModCandidate {
+                    display_path: container_child_display_path(path, &record.path),
                     record,
-                }]);
-            }
+                })
+                .collect());
+        }
+        if nested.len() == 1 {
+            let record = dropped_mod_record(path)?;
+            return Ok(vec![DroppedModCandidate {
+                display_path: display_path(&record.path),
+                record,
+            }]);
         }
     }
 
@@ -326,7 +329,7 @@ fn dropped_mod_record(path: &Path) -> Result<ModRecord, String> {
         version_hint: infer_dropped_version_hint(&dropped_mod_display_name(path, kind)),
         name: dropped_mod_display_name(path, kind),
         path: path.to_path_buf(),
-        source: ModSource::Vault,
+        source: ModSource::Disabled,
         kind,
         fingerprint,
     })
@@ -383,10 +386,10 @@ fn collect_dropped_directory_fingerprint(
             collect_dropped_directory_fingerprint(&entry_path, bytes, modified)?;
         } else {
             *bytes += metadata.len();
-            if let Ok(entry_modified) = metadata.modified() {
-                if modified.is_none_or(|current| entry_modified > current) {
-                    *modified = Some(entry_modified);
-                }
+            if let Ok(entry_modified) = metadata.modified()
+                && modified.is_none_or(|current| entry_modified > current)
+            {
+                *modified = Some(entry_modified);
             }
         }
     }
@@ -462,7 +465,7 @@ fn dropped_directory_is_mod_root(path: &Path) -> bool {
 }
 
 fn supported_records_in_directory(path: &Path) -> Result<Vec<ModRecord>, String> {
-    Ok(scan_mod_directory(path, ModSource::Vault)
+    Ok(scan_mod_directory(path, ModSource::Disabled)
         .map_err(|error| error.to_string())?
         .into_iter()
         .filter(|record| is_supported_dropped_mod_kind(record.kind))
@@ -573,23 +576,9 @@ fn drop_expand_with_7z(seven_zip: &Path, source: &Path, destination: &Path) -> b
 }
 
 fn expand_zip_archive_for_preview(source: &Path, destination: &Path) -> bool {
-    let command = format!(
-        "Expand-Archive -LiteralPath {} -DestinationPath {} -Force",
-        drop_powershell_quote(source),
-        drop_powershell_quote(destination)
-    );
-    hidden_command("powershell")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"])
-        .arg(command)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
+    powershell_expand_archive(source, destination)
         .map(|status| status.success())
         .unwrap_or(false)
-}
-
-fn drop_powershell_quote(path: &Path) -> String {
-    format!("'{}'", path.to_string_lossy().replace('\'', "''"))
 }
 
 fn container_child_display_path(container: &Path, child: &Path) -> String {
@@ -624,34 +613,18 @@ fn replace_existing_mod_path(
     if same_path(source, target) {
         return Err("같은 경로로는 덮어쓸 수 없습니다.".to_string());
     }
-    if source.starts_with(&config.vault_dir)
-        || source.starts_with(&config.game_mods_dir)
+    if source.starts_with(&config.game_mods_dir)
         || source.starts_with(game_disabled_dir(&config.game_mods_dir))
     {
         return Err("이미 관리 중인 모드는 드래그 등록 대상으로 사용할 수 없습니다.".to_string());
     }
-    if !is_managed_mod_path(target, config) {
+    if !is_replaceable_mod_path(target, config) {
         return Err(format!(
-            "관리 중인 모드만 덮어쓸 수 있습니다: {}",
+            "관리 중이거나 Nexus/Vortex에서 감지된 모드만 덮어쓸 수 있습니다: {}",
             target.display()
         ));
     }
-
-    if let Some(vault_entry_dir) = vault_entry_root_for_path(target, &config.vault_dir) {
-        let action = App::new(config.clone())
-            .import_mod_as_new(source)
-            .map_err(|error| error.to_string())?;
-        if !action.to.exists() {
-            return Err(format!("모드 등록 결과를 확인할 수 없습니다: {}", action.to.display()));
-        }
-        remove_path_if_exists(&vault_entry_dir).map_err(|error| {
-            format!(
-                "기존 vault 모드 제거 실패: {} ({error})",
-                vault_entry_dir.display()
-            )
-        })?;
-        return Ok(());
-    }
+    ensure_existing_replaceable_mod_path(target, config)?;
 
     let target_parent = target
         .parent()
@@ -668,6 +641,7 @@ fn replace_existing_mod_path(
     }
     if same_path(&replacement_target, target) {
         let staged_target = staged_replacement_path(target_parent, file_name);
+        ensure_path_in_roots(&staged_target, &replaceable_mod_roots(config), "모드 임시 교체 경로")?;
         copy_dropped_mod(source, &staged_target).map_err(|error| {
             format!(
                 "모드 임시 복사 실패: {} -> {} ({error})",
@@ -675,6 +649,7 @@ fn replace_existing_mod_path(
                 staged_target.display()
             )
         })?;
+        ensure_existing_replaceable_mod_path(target, config)?;
         remove_path_if_exists(target)
             .map_err(|error| format!("기존 모드 제거 실패: {} ({error})", target.display()))?;
         move_path_or_copy(&staged_target, &replacement_target).map_err(|error| {
@@ -694,14 +669,9 @@ fn replace_existing_mod_path(
             replacement_target.display()
         )
     })?;
+    ensure_existing_replaceable_mod_path(target, config)?;
     remove_path_if_exists(target)
         .map_err(|error| format!("기존 모드 제거 실패: {} ({error})", target.display()))
-}
-
-fn vault_entry_root_for_path(path: &Path, vault_dir: &Path) -> Option<PathBuf> {
-    let relative = path.strip_prefix(vault_dir).ok()?;
-    let first = relative.components().next()?;
-    Some(vault_dir.join(first.as_os_str()))
 }
 
 fn copy_dropped_mod(source: &Path, target: &Path) -> std::io::Result<()> {
@@ -926,22 +896,81 @@ pub(crate) fn delete_save_backups(ids: Vec<String>) -> Result<ActionDto, String>
 }
 
 
-fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
-    let app = app();
-    app.ensure_workspace_dirs()?;
-    let settings = read_ui_settings(app.config())?;
-    prune_expired_deleted_mods(app.config(), settings.deleted_retention_days)
-        .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
-    quarantine_reappeared_deleted_mods(app.config())
-        .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
-    let mut report = app.scan_preview_report()?;
-    if auto_repair_active_mod_installations(app.config(), &report.summary) {
-        report = app.scan_preview_report()?;
+struct DashboardInputs {
+    app: App,
+    settings: UiSettingsDto,
+    report: sts2_mod_manager::domain::ScanReport,
+    presets: Vec<Preset>,
+    translations: Vec<TranslationWorkspace>,
+    tools: Vec<VendorTool>,
+    launch: LaunchStatus,
+}
+
+struct DashboardTiming {
+    name: &'static str,
+    enabled: bool,
+    started: Instant,
+    last: Instant,
+    parts: Vec<(&'static str, u128)>,
+}
+
+impl DashboardTiming {
+    fn new(name: &'static str) -> Self {
+        let now = Instant::now();
+        Self {
+            name,
+            enabled: dashboard_timing_enabled(),
+            started: now,
+            last: now,
+            parts: Vec::new(),
+        }
     }
-    let presets = app.list_presets()?;
-    let translations = app.list_translation_workspaces()?;
-    let tools = app.vendor_tools();
-    let launch = app.launch_status();
+
+    fn mark(&mut self, label: &'static str) {
+        if !self.enabled {
+            return;
+        }
+        let now = Instant::now();
+        self.parts.push((label, now.duration_since(self.last).as_millis()));
+        self.last = now;
+    }
+
+    fn finish(self) {
+        if !self.enabled {
+            return;
+        }
+        let total = self.started.elapsed().as_millis();
+        let parts = self
+            .parts
+            .into_iter()
+            .map(|(label, millis)| format!("{label}={millis}ms"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        if parts.is_empty() {
+            eprintln!("dashboard timing: {} total={}ms", self.name, total);
+        } else {
+            eprintln!("dashboard timing: {} total={}ms {}", self.name, total, parts);
+        }
+    }
+}
+
+fn dashboard_timing_enabled() -> bool {
+    cfg!(debug_assertions) || env::var_os("STS2_DASHBOARD_TIMING").is_some()
+}
+
+fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
+    let mut timing = DashboardTiming::new("dashboard");
+    let inputs = load_dashboard_inputs()?;
+    timing.mark("inputs");
+    let DashboardInputs {
+        app,
+        settings,
+        report,
+        presets,
+        translations,
+        tools,
+        launch,
+    } = inputs;
     let setup_issues = setup_issues(app.config(), &settings, &launch);
     let game_updated_epoch = game_updated_epoch(&launch, app.config());
     forget_revived_deleted_mod_tombstones(app.config(), &report.summary)
@@ -949,7 +978,9 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
     prune_deleted_desired_mod_keys(app.config(), &report.summary)
         .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
     let deleted_keys = deleted_mod_keys_for_summary(app.config(), &report.summary);
+    timing.mark("setup_cleanup");
     let mods = mod_rows(&report, app.config(), &deleted_keys, game_updated_epoch)?;
+    timing.mark("mod_rows");
     let diagnostics = troubleshoot_diagnostics(
         app.config(),
         &settings,
@@ -958,20 +989,9 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         &mods,
         &setup_issues,
     );
-
-    let stats = StatsDto {
-        active_mods: mods.iter().filter(|row| row.active).count(),
-        inactive_mods: mods.iter().filter(|row| !row.active).count(),
-        vault_mods: mods.iter().filter(|row| row.managed).count(),
-        external_mods: mods.iter().filter(|row| row.external).count(),
-        presets: presets.len(),
-        translations: translations.len(),
-        detected_changes: mods
-            .iter()
-            .filter(|row| row.update_state != "clean")
-            .count(),
-        vanilla_safe: !mods.iter().any(|row| row.active),
-    };
+    timing.mark("diagnostics");
+    let stats = dashboard_stats(&mods, presets.len(), translations.len());
+    timing.mark("stats");
     let deleted_mods = read_deleted_mod_entries(app.config())
         .map_err(|source| {
             sts2_mod_manager::error::AppError::io(
@@ -982,13 +1002,16 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         .into_iter()
         .map(|entry| deleted_mod_dto(entry, settings.deleted_retention_days))
         .collect();
+    timing.mark("deleted_mods");
     let save_backups = save_backup::list_backups(app.config())?
         .into_iter()
         .map(save_backup_dto)
         .collect();
+    timing.mark("save_backups");
     let cache_usage = work_cache_usage(app.config());
+    timing.mark("cache_usage");
 
-    Ok(DashboardDto {
+    let output = DashboardDto {
         paths: paths_dto(app.config()),
         settings,
         stats,
@@ -1002,7 +1025,64 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         cache_usage,
         tools: tools.into_iter().map(tool_dto).collect(),
         launch: launch_dto(launch),
+    };
+    timing.mark("dto");
+    timing.finish();
+    Ok(output)
+}
+
+fn load_dashboard_inputs() -> sts2_mod_manager::error::AppResult<DashboardInputs> {
+    let mut timing = DashboardTiming::new("dashboard_inputs");
+    let app = app();
+    app.ensure_workspace_dirs()?;
+    timing.mark("ensure_workspace_dirs");
+    let settings = read_ui_settings(app.config())?;
+    timing.mark("read_ui_settings");
+    prune_expired_deleted_mods(app.config(), settings.deleted_retention_days)
+        .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
+    quarantine_reappeared_deleted_mods(app.config())
+        .map_err(sts2_mod_manager::error::AppError::InvalidCommand)?;
+    timing.mark("deleted_cleanup");
+    let mut report = app.scan_preview_report()?;
+    timing.mark("scan_preview");
+    if auto_repair_active_mod_installations(app.config(), &report.summary) {
+        report = app.scan_preview_report()?;
+    }
+    timing.mark("auto_repair");
+    let presets = app.list_presets()?;
+    timing.mark("presets");
+    let translations = app.list_translation_workspaces()?;
+    timing.mark("translations");
+    let tools = app.vendor_tools();
+    timing.mark("vendor_tools");
+    let launch = app.launch_status();
+    timing.mark("launch_status");
+    timing.finish();
+    Ok(DashboardInputs {
+        app,
+        settings,
+        report,
+        presets,
+        translations,
+        tools,
+        launch,
     })
+}
+
+fn dashboard_stats(mods: &[ModRowDto], presets: usize, translations: usize) -> StatsDto {
+    StatsDto {
+        active_mods: mods.iter().filter(|row| row.active).count(),
+        inactive_mods: mods.iter().filter(|row| !row.active).count(),
+        disabled_mods: mods.iter().filter(|row| row.managed).count(),
+        external_mods: mods.iter().filter(|row| row.external).count(),
+        presets,
+        translations,
+        detected_changes: mods
+            .iter()
+            .filter(|row| row.update_state != "clean")
+            .count(),
+        vanilla_safe: !mods.iter().any(|row| row.active),
+    }
 }
 
 fn auto_repair_active_mod_installations(config: &AppConfig, summary: &ScanSummary) -> bool {

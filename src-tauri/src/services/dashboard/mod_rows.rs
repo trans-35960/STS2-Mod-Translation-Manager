@@ -9,8 +9,8 @@ fn mod_rows(
     for record in &report.summary.game_mods {
         rows.entry(record.stable_key()).or_default().active = Some(record.clone());
     }
-    for record in &report.summary.vault_mods {
-        rows.entry(record.stable_key()).or_default().vault = Some(record.clone());
+    for record in &report.summary.disabled_mods {
+        rows.entry(record.stable_key()).or_default().disabled = Some(record.clone());
     }
     for record in &report.summary.external_manager_mods {
         rows.entry(record.stable_key()).or_default().external = Some(record.clone());
@@ -30,19 +30,19 @@ fn mod_rows(
             let (update_state, change_reasons) = builder.change_summary(&state_index);
             let lifecycle = lifecycle.get(&key);
             let translation_apply = translation_applies.get(&key);
-            builder.into_dto(
+            builder.into_dto(ModRowBuildContext {
                 key,
                 update_state,
                 change_reasons,
-                lifecycle.map(|entry| entry.registered_epoch),
-                lifecycle.map(|entry| entry.updated_epoch),
+                registered_epoch: lifecycle.map(|entry| entry.registered_epoch),
+                updated_epoch: lifecycle.map(|entry| entry.updated_epoch),
                 translation_apply,
                 game_updated_epoch,
                 desired_active,
-                &mut cache,
-                &mut current_cache_keys,
-                &config.vendor_dir,
-            )
+                cache: &mut cache,
+                current_cache_keys: &mut current_cache_keys,
+                vendor_dir: &config.vendor_dir,
+            })
         })
         .collect::<Vec<_>>();
     resolve_mod_dependencies(&mut rows);
@@ -82,36 +82,37 @@ fn lifecycle_summary(entry: &ModStateEntry) -> ModLifecycleSummary {
 #[derive(Default)]
 struct ModRowBuilder {
     active: Option<ModRecord>,
-    vault: Option<ModRecord>,
+    disabled: Option<ModRecord>,
     external: Option<ModRecord>,
 }
 
+struct ModRowBuildContext<'a> {
+    key: String,
+    update_state: Option<String>,
+    change_reasons: Vec<String>,
+    registered_epoch: Option<u64>,
+    updated_epoch: Option<u64>,
+    translation_apply: Option<&'a TranslationApplyRecord>,
+    game_updated_epoch: Option<u64>,
+    desired_active: bool,
+    cache: &'a mut LanguagePreviewCache,
+    current_cache_keys: &'a mut BTreeSet<String>,
+    vendor_dir: &'a Path,
+}
+
 impl ModRowBuilder {
-    fn into_dto(
-        self,
-        key: String,
-        update_state: Option<String>,
-        change_reasons: Vec<String>,
-        registered_epoch: Option<u64>,
-        updated_epoch: Option<u64>,
-        translation_apply: Option<&TranslationApplyRecord>,
-        game_updated_epoch: Option<u64>,
-        desired_active: bool,
-        cache: &mut LanguagePreviewCache,
-        current_cache_keys: &mut BTreeSet<String>,
-        vendor_dir: &Path,
-    ) -> ModRowDto {
+    fn into_dto(self, context: ModRowBuildContext<'_>) -> ModRowDto {
         let record = self
             .active
             .as_ref()
-            .or(self.vault.as_ref())
+            .or(self.disabled.as_ref())
             .or(self.external.as_ref())
             .expect("row has at least one source");
         let sources = source_labels(&self);
         let extraction_source = extraction_source_for_record(record);
         let download_state = download_state_for_record(record);
         let is_downloading = download_state.as_deref() == Some("downloading");
-        let cache_key = language_cache_key(record, &extraction_source, vendor_dir);
+        let cache_key = language_cache_key(record, &extraction_source, context.vendor_dir);
         let (language_preview, extraction_tree, translation, manifest) = if is_downloading {
             (
                 Vec::new(),
@@ -126,13 +127,14 @@ impl ModRowBuilder {
             let language_preview = cached_language_preview(
                 &cache_key,
                 &extraction_source,
-                cache,
-                current_cache_keys,
-                vendor_dir,
+                context.cache,
+                context.current_cache_keys,
+                context.vendor_dir,
             );
-            let extraction_tree = extraction_tree(&extraction_source, &cache_key, vendor_dir);
+            let extraction_tree =
+                extraction_tree(&extraction_source, &cache_key, context.vendor_dir);
             let translation = translation_state(&extraction_source, &language_preview);
-            let scan_root = extraction_scan_root(&extraction_source, &cache_key, vendor_dir)
+            let scan_root = extraction_scan_root(&extraction_source, &cache_key, context.vendor_dir)
                 .unwrap_or_else(|| extraction_source.clone());
             let manifest = read_mod_manifest_for_record(&record.path, &scan_root);
             (language_preview, extraction_tree, translation, manifest)
@@ -170,57 +172,60 @@ impl ModRowBuilder {
                 version_matches: None,
             })
             .collect::<Vec<_>>();
-        if let Some(target_id) = manifest.target_mod_id.clone() {
-            if !dependencies
+        if let Some(target_id) = manifest.target_mod_id.clone()
+            && !dependencies
                 .iter()
                 .any(|dependency| dependency.id.eq_ignore_ascii_case(&target_id))
-            {
-                dependencies.push(ModDependencyDto {
-                    name: manifest
-                        .target_mod_name
-                        .clone()
-                        .unwrap_or_else(|| target_id.clone()),
-                    id: target_id,
-                    key: None,
-                    active: false,
-                    available: false,
-                    version_required: manifest.target_mod_version.clone(),
-                    version_current: None,
-                    version_matches: None,
-                });
-            }
+        {
+            dependencies.push(ModDependencyDto {
+                name: manifest
+                    .target_mod_name
+                    .clone()
+                    .unwrap_or_else(|| target_id.clone()),
+                id: target_id,
+                key: None,
+                active: false,
+                available: false,
+                version_required: manifest.target_mod_version.clone(),
+                version_current: None,
+                version_matches: None,
+            });
         }
-        let latest_mod_epoch = updated_epoch.or_else(|| epoch_seconds(record.fingerprint.modified));
-        let needs_recheck = desired_active
-            && game_updated_epoch
+        let latest_mod_epoch = context
+            .updated_epoch
+            .or_else(|| epoch_seconds(record.fingerprint.modified));
+        let needs_recheck = context.desired_active
+            && context
+                .game_updated_epoch
                 .zip(latest_mod_epoch)
                 .is_some_and(|(game_epoch, mod_epoch)| game_epoch > mod_epoch);
-        let translation_review_required = translation_apply
-            .and_then(|apply| game_updated_epoch.map(|game_epoch| game_epoch > apply.applied_epoch))
+        let translation_review_required = context
+            .translation_apply
+            .and_then(|apply| context.game_updated_epoch.map(|game_epoch| game_epoch > apply.applied_epoch))
             .unwrap_or(false);
 
         ModRowDto {
-            key,
+            key: context.key,
             name: record.name.clone(),
             manifest_id,
             group_name,
-            active: desired_active,
-            managed: self.vault.is_some(),
+            active: context.desired_active,
+            managed: self.disabled.is_some(),
             external: self.external.is_some(),
             source_label: sources,
             kind: kind_label(record.kind).to_string(),
             version_hint,
             bytes: record.fingerprint.bytes,
             modified_epoch: epoch_seconds(record.fingerprint.modified),
-            registered_epoch,
-            updated_epoch,
+            registered_epoch: context.registered_epoch,
+            updated_epoch: context.updated_epoch,
             path: display_path(&record.path),
             download_state,
-            update_state: update_state.unwrap_or_else(|| "clean".to_string()),
-            change_reasons,
+            update_state: context.update_state.unwrap_or_else(|| "clean".to_string()),
+            change_reasons: context.change_reasons,
             translation_state: translation.0,
-            translation_applied: translation_apply.is_some(),
-            translation_applied_epoch: translation_apply.map(|record| record.applied_epoch),
+            translation_applied: context.translation_apply.is_some(),
+            translation_applied_epoch: context.translation_apply.map(|record| record.applied_epoch),
             translation_patch_count: 0,
             translation_patch_active_count: 0,
             translation_patch_names: Vec::new(),
@@ -247,7 +252,7 @@ impl ModRowBuilder {
     ) -> (Option<String>, Vec<String>) {
         let records = [
             self.active.as_ref(),
-            self.vault.as_ref(),
+            self.disabled.as_ref(),
             self.external.as_ref(),
         ];
         let mut state = None;

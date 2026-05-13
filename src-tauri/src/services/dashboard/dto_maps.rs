@@ -9,7 +9,7 @@ fn paths_dto(config: &AppConfig) -> PathsDto {
             .map(display_path)
             .unwrap_or_default(),
         save_backup: display_path(&config.save_backup_dir),
-        vault: display_path(&config.vault_dir),
+        disabled: display_path(&game_disabled_dir(&config.game_mods_dir)),
         presets: display_path(&config.presets_dir),
         translation_work: display_path(&config.translation_work_dir),
         state: display_path(&config.state_dir),

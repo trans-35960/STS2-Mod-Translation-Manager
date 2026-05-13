@@ -195,6 +195,11 @@ fn build_translated_pck(
     let target_relative =
         pck_target_for_language_output(&source_path, language_output_path, requested_pck_target)?;
     let target_in_extract = full_extract.join(&target_relative);
+    ensure_path_in_roots(
+        &target_in_extract,
+        std::slice::from_ref(&full_extract),
+        "PCK 삽입 경로",
+    )?;
     replace_dir_or_file(language_output_path, &target_in_extract)
         .map_err(|error| error.to_string())?;
 
@@ -265,11 +270,14 @@ fn install_patched_archive_mod(
         return Ok(None);
     };
     if is_pck_path(source) && source.exists() {
+        ensure_existing_deletable_mod_path(source, config)?;
         backup_existing_path(source, config)?;
         fs::copy(patched_pck, source).map_err(|error| error.to_string())?;
         return Ok(Some(source.clone()));
     }
     if source.is_dir() && input_pck.starts_with(source) && input_pck.exists() {
+        ensure_existing_deletable_mod_path(source, config)?;
+        ensure_existing_path_in_roots(input_pck, std::slice::from_ref(source), "PCK 원본 경로")?;
         backup_existing_path(input_pck, config)?;
         fs::copy(patched_pck, input_pck).map_err(|error| error.to_string())?;
         return Ok(Some(source.clone()));
@@ -288,8 +296,10 @@ fn install_patched_archive_mod(
             .unwrap_or_else(|| std::ffi::OsStr::new("translated_mod"));
         config.game_mods_dir.join(target_name)
     });
+    ensure_deletable_mod_path(&target_dir, config)?;
     backup_existing_path(&target_dir, config)?;
     if source.parent() == Some(config.game_mods_dir.as_path()) {
+        ensure_existing_deletable_mod_path(source, config)?;
         backup_existing_path(source, config)?;
     }
     let payload_root = archive_install_payload_root(archive_dir);
@@ -427,14 +437,14 @@ fn preferred_pck_from_candidates(
             .cmp(&right.components().count())
             .then_with(|| left.cmp(right))
     });
-    if let Some(stem) = preferred_stem {
-        if let Some(path) = pcks.iter().find(|path| {
+    if let Some(stem) = preferred_stem
+        && let Some(path) = pcks.iter().find(|path| {
             path.file_stem()
                 .map(|value| value.to_string_lossy().eq_ignore_ascii_case(stem))
                 .unwrap_or(false)
-        }) {
-            return Some(path.clone());
-        }
+        })
+    {
+        return Some(path.clone());
     }
     pcks.into_iter().next()
 }
@@ -562,10 +572,10 @@ fn adjust_pck_target_for_language_output(
             .map(Path::to_path_buf)
             .unwrap_or(target_relative);
     }
-    if !output_is_dir && !target_looks_file {
-        if let Some(file_name) = language_output_path.file_name() {
-            return target_relative.join(file_name);
-        }
+    if !output_is_dir && !target_looks_file
+        && let Some(file_name) = language_output_path.file_name()
+    {
+        return target_relative.join(file_name);
     }
     target_relative
 }
@@ -602,16 +612,12 @@ fn relative_after_named_component(path: &Path, component_name: &str) -> Option<P
 }
 
 fn selected_source_root(source_path: &Path) -> Option<&Path> {
-    for ancestor in source_path.ancestors() {
-        if ancestor
+    source_path.ancestors().find(|ancestor| {
+        ancestor
             .file_name()
             .map(|value| value.to_string_lossy().eq_ignore_ascii_case("source"))
             .unwrap_or(false)
-        {
-            return Some(ancestor);
-        }
-    }
-    None
+    })
 }
 
 fn translated_pck_output_path(
@@ -712,16 +718,16 @@ fn patch_source_manifest(
     app: &App,
     vendor_dir: &Path,
 ) -> ModManifestInfo {
-    if let Some(mod_key) = context.mod_key.as_deref() {
-        if let Ok(record) = find_mod_record(app, mod_key) {
-            let extraction_source = extraction_source_for_record(&record);
-            let cache_key = language_cache_key(&record, &extraction_source, vendor_dir);
-            let scan_root = extraction_scan_root(&extraction_source, &cache_key, vendor_dir)
-                .unwrap_or_else(|| extraction_source.clone());
-            let info = read_mod_manifest_for_record(&record.path, &scan_root);
-            if manifest_has_identity(&info) {
-                return info;
-            }
+    if let Some(mod_key) = context.mod_key.as_deref()
+        && let Ok(record) = find_mod_record(app, mod_key)
+    {
+        let extraction_source = extraction_source_for_record(&record);
+        let cache_key = language_cache_key(&record, &extraction_source, vendor_dir);
+        let scan_root = extraction_scan_root(&extraction_source, &cache_key, vendor_dir)
+            .unwrap_or_else(|| extraction_source.clone());
+        let info = read_mod_manifest_for_record(&record.path, &scan_root);
+        if manifest_has_identity(&info) {
+            return info;
         }
     }
     let mut roots = Vec::new();
@@ -798,6 +804,7 @@ struct TranslationContext {
     mod_key: Option<String>,
     extraction_source_path: Option<PathBuf>,
     input_pck_path: Option<PathBuf>,
+    pck_contents_root: Option<PathBuf>,
     pck_stem: Option<String>,
     translation_patch_source_path: Option<PathBuf>,
     translation_patch_pck_stem: Option<String>,
@@ -819,16 +826,28 @@ impl TranslationContext {
     }
 }
 
-fn write_translation_context(
-    work_dir: &Path,
-    mod_key: &str,
-    resource_path: &str,
-    extraction_source: &Path,
-    pck_contents_root: Option<&Path>,
-    pck_stem: &str,
-    translation_patch_source: Option<&Path>,
-    translation_patch_pck_stem: Option<&str>,
-) -> std::io::Result<()> {
+struct TranslationContextWriteRequest<'a> {
+    work_dir: &'a Path,
+    mod_key: &'a str,
+    resource_path: &'a str,
+    extraction_source: &'a Path,
+    pck_contents_root: Option<&'a Path>,
+    pck_stem: &'a str,
+    translation_patch_source: Option<&'a Path>,
+    translation_patch_pck_stem: Option<&'a str>,
+}
+
+fn write_translation_context(request: TranslationContextWriteRequest<'_>) -> std::io::Result<()> {
+    let TranslationContextWriteRequest {
+        work_dir,
+        mod_key,
+        resource_path,
+        extraction_source,
+        pck_contents_root,
+        pck_stem,
+        translation_patch_source,
+        translation_patch_pck_stem,
+    } = request;
     let path = work_dir.join("translation_context.tsv");
     let mut content = String::new();
     content.push_str(&format!("mod_key\t{mod_key}\n"));
@@ -872,6 +891,9 @@ fn read_translation_context(source_path: &Path) -> Option<TranslationContext> {
             }
             "input_pck_path" if !value.is_empty() => {
                 context.input_pck_path = Some(PathBuf::from(value))
+            }
+            "pck_contents_root" if !value.is_empty() => {
+                context.pck_contents_root = Some(PathBuf::from(value))
             }
             "pck_stem" if !value.is_empty() => context.pck_stem = Some(value.to_string()),
             "translation_patch_source_path" if !value.is_empty() => {

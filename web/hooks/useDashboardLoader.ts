@@ -6,6 +6,9 @@ import type { Dashboard, Page, UiSettings } from "../types";
 import { isPreviewRuntime } from "../utils/runtime";
 import { blockingSetupIssues } from "../utils/setup";
 
+const DASHBOARD_POLL_INTERVAL_MS = 30000;
+const DASHBOARD_POLL_WHILE_GAME_RUNNING_MS = 60000;
+
 export function useDashboardLoader({
   appendLog,
   busy,
@@ -26,6 +29,7 @@ export function useDashboardLoader({
   const [loadingStep, setLoadingStep] = React.useState(0);
   const [loadingMessage, setLoadingMessage] = React.useState(LOADING_STEPS[0]);
   const [settingsDraft, setSettingsDraft] = React.useState<UiSettings | null>(null);
+  const pollRunningRef = React.useRef(false);
 
   const load = React.useCallback(async () => {
     const startedAt = window.performance.now();
@@ -42,7 +46,7 @@ export function useDashboardLoader({
         return;
       }
       setLoadingMessage("시스템 경로를 확인하고 있습니다");
-      const data = await invokeCommand<Dashboard>("load_dashboard");
+      const data = await invokeCommand("load_dashboard");
       setLoadingMessage("세이브 백업 경로와 실행 준비 상태를 확인하고 있습니다");
       setDashboard(data);
       setSettingsDraft(data.settings);
@@ -99,20 +103,26 @@ export function useDashboardLoader({
     if (isPreviewRuntime()) {
       return;
     }
+    const pollIntervalMs = dashboard?.launch.running
+      ? DASHBOARD_POLL_WHILE_GAME_RUNNING_MS
+      : DASHBOARD_POLL_INTERVAL_MS;
     const intervalId = window.setInterval(async () => {
-      if (busy) {
+      if (busy || loading || pollRunningRef.current || document.visibilityState !== "visible") {
         return;
       }
+      pollRunningRef.current = true;
       try {
-        const data = await invokeCommand<Dashboard>("load_dashboard");
+        const data = await invokeCommand("load_dashboard");
         setDashboard(data);
         setSettingsDraft((current) => current ?? data.settings);
       } catch {
         // The regular action log already surfaces explicit command failures.
+      } finally {
+        pollRunningRef.current = false;
       }
-    }, 4000);
+    }, pollIntervalMs);
     return () => window.clearInterval(intervalId);
-  }, [busy]);
+  }, [busy, dashboard?.launch.running, loading]);
 
   return {
     dashboard,

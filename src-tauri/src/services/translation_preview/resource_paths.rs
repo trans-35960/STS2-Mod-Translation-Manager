@@ -348,7 +348,7 @@ fn translation_memory_candidate_keys(
     for candidate in summary
         .game_mods
         .into_iter()
-        .chain(summary.vault_mods)
+        .chain(summary.disabled_mods)
         .chain(summary.external_manager_mods)
     {
         let candidate_key = candidate.stable_key();

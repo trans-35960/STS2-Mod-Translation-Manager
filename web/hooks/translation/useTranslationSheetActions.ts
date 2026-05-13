@@ -1,9 +1,7 @@
 import React from "react";
 import {
   compactTranslationFile,
-  containsLegacyTranslationShortId,
   hasTranslationValue,
-  isLegacyTranslationShortId,
   isTabularTranslationPaste,
   isTranslationSlotId,
   looksLikeJsonPaste,
@@ -175,10 +173,6 @@ export function useTranslationSheetActions({
     }
     const entries = structuredTranslationEntries(parsed);
     if (entries.length === 0) {
-      if (containsLegacyTranslationShortId(parsed)) {
-        appendLog("이전 short-id JSON은 새 slot-id 검증을 지원하지 않습니다. 번역용 JSON을 다시 내보내세요.");
-        return true;
-      }
       appendLog("JSON 붙여넣기 실패: 매칭할 번역 slot id(k001-a1 형식)를 찾지 못했습니다. 번역용 JSON 내보내기 파일을 사용하세요.");
       return true;
     }
@@ -191,16 +185,11 @@ export function useTranslationSheetActions({
     const values = new Map<string, string>();
     const candidates: Record<string, PasteCandidate> = {};
     const unmatchedIds: string[] = [];
-    const invalidIds: string[] = [];
     const emptyIds: string[] = [];
     const duplicateIds: string[] = [];
     const seenEntryKeys = new Set<string>();
     for (const entry of entries) {
       if (entry.id && entry.translated_value !== undefined) {
-        if (isLegacyTranslationShortId(entry.id)) {
-          invalidIds.push(entry.id);
-          continue;
-        }
         if (!isTranslationSlotId(entry.id)) {
           unmatchedIds.push(entry.id);
           continue;
@@ -227,10 +216,6 @@ export function useTranslationSheetActions({
         }
         values.set(sheetEntry.key, entry.translated_value);
       }
-    }
-    if (invalidIds.length > 0) {
-      appendLog("이전 short-id JSON은 새 slot-id 검증을 지원하지 않습니다. 번역용 JSON을 다시 내보내세요.");
-      return true;
     }
     if (emptyIds.length > 0) {
       appendLog(`빈 번역값이 있는 slot id: ${emptyIds.slice(0, 8).join(", ")}${emptyIds.length > 8 ? " ..." : ""}`);

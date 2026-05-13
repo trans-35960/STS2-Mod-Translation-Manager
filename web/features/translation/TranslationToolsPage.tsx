@@ -6,11 +6,9 @@ import type { TranslationToolsPageProps } from "./TranslationToolsTypes";
 import { useTranslationToolsUiState } from "./useTranslationToolsUiState";
 import {
   compactTranslationFile,
-  containsLegacyTranslationShortId,
   createCompareValueMap,
   hasTranslationValue,
   inferPckTargetPath,
-  isLegacyTranslationShortId,
   isTabularTranslationPaste,
   isTranslatableEntry,
   isTranslationSlotId,
@@ -120,11 +118,9 @@ export {
   looksLikeJsonPaste,
   isTabularTranslationPaste,
   structuredTranslationEntries,
-  containsLegacyTranslationShortId,
   translationSlotEntries,
   translationSlotKey,
   compactTranslationFile,
-  isLegacyTranslationShortId,
   isTranslationSlotId,
   splitSheetKey,
   languageCodeFromSheetKey,

@@ -282,16 +282,13 @@ fn with_dependency_versions(
     if let (Some(target_id), Some(target_version)) = (
         info.target_mod_id.as_deref(),
         info.target_mod_version.as_ref(),
-    ) {
-        if let Some(dependency) = info
+    ) && let Some(dependency) = info
             .dependencies
             .iter_mut()
             .find(|dependency| dependency.id.eq_ignore_ascii_case(target_id))
-        {
-            if dependency.version.is_none() {
-                dependency.version = Some(target_version.clone());
-            }
-        }
+        && dependency.version.is_none()
+    {
+        dependency.version = Some(target_version.clone());
     }
     info
 }

@@ -1,11 +1,10 @@
 use crate::discovery::scan_mod_directory;
 use crate::domain::{ModRecord, ModSource};
 use crate::error::{AppError, AppResult};
-use crate::process::hidden_command;
-use crate::vault::{self, VaultAction};
+use crate::process::{powershell_compress_directory_contents, powershell_expand_archive};
+use crate::vault::{self, DisabledModAction};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Stdio;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,8 +25,8 @@ pub struct PresetMod {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PresetApplyReport {
-    pub disabled: Vec<VaultAction>,
-    pub enabled: Vec<VaultAction>,
+    pub disabled: Vec<DisabledModAction>,
+    pub enabled: Vec<DisabledModAction>,
     pub missing: Vec<String>,
     pub version_warnings: Vec<String>,
 }
@@ -100,12 +99,11 @@ pub fn load_preset(name: &str, presets_dir: &Path) -> AppResult<Preset> {
 pub fn apply_preset(
     name: &str,
     presets_dir: &Path,
-    vault_dir: &Path,
     game_mods_dir: &Path,
     vendor_dir: &Path,
 ) -> AppResult<PresetApplyReport> {
     let preset = load_preset(name, presets_dir)?;
-    let disabled = vault::disable_all(game_mods_dir, vault_dir)?;
+    let disabled = vault::disable_all(game_mods_dir)?;
     let inactive_records = vault::list_disabled_game_mods(game_mods_dir)?;
 
     let mut enabled = Vec::new();
@@ -117,17 +115,12 @@ pub fn apply_preset(
             .iter()
             .any(|record| record.stable_key() == key)
         {
-            if let Some(expected) = preset.mods.iter().find(|item| item.key == key) {
-                if let Some(warning) = version_warning(expected, game_mods_dir) {
-                    version_warnings.push(warning);
-                }
+            if let Some(expected) = preset.mods.iter().find(|item| item.key == key)
+                && let Some(warning) = version_warning(expected, game_mods_dir)
+            {
+                version_warnings.push(warning);
             }
-            enabled.push(vault::enable_mod(
-                &key,
-                vault_dir,
-                game_mods_dir,
-                vendor_dir,
-            )?);
+            enabled.push(vault::enable_mod(&key, game_mods_dir, vendor_dir)?);
         } else {
             missing.push(key);
         }
@@ -430,31 +423,24 @@ fn copy_dir_recursive(source: &Path, target: &Path) -> AppResult<()> {
 }
 
 fn compress_directory(source_dir: &Path, archive_path: &Path) -> AppResult<()> {
-    let command = format!(
-        "Compress-Archive -Path {} -DestinationPath {} -Force",
-        powershell_quote(&source_dir.join("*")),
-        powershell_quote(archive_path)
-    );
-    run_powershell_archive_command(&command, archive_path)
+    run_powershell_archive_command(
+        powershell_compress_directory_contents(source_dir, archive_path),
+        archive_path,
+    )
 }
 
 fn expand_archive(archive_path: &Path, destination: &Path) -> AppResult<()> {
-    let command = format!(
-        "Expand-Archive -LiteralPath {} -DestinationPath {} -Force",
-        powershell_quote(archive_path),
-        powershell_quote(destination)
-    );
-    run_powershell_archive_command(&command, archive_path)
+    run_powershell_archive_command(
+        powershell_expand_archive(archive_path, destination),
+        archive_path,
+    )
 }
 
-fn run_powershell_archive_command(command: &str, error_path: &Path) -> AppResult<()> {
-    let status = hidden_command("powershell")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"])
-        .arg(command)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|source| AppError::io(error_path, source))?;
+fn run_powershell_archive_command(
+    status: std::io::Result<std::process::ExitStatus>,
+    error_path: &Path,
+) -> AppResult<()> {
+    let status = status.map_err(|source| AppError::io(error_path, source))?;
 
     if status.success() {
         Ok(())
@@ -464,10 +450,6 @@ fn run_powershell_archive_command(command: &str, error_path: &Path) -> AppResult
             error_path.display()
         )))
     }
-}
-
-fn powershell_quote(path: &Path) -> String {
-    format!("'{}'", path.to_string_lossy().replace('\'', "''"))
 }
 
 fn optional_string(value: &str) -> Option<String> {
@@ -545,7 +527,6 @@ mod tests {
         let report = apply_preset(
             "daily",
             &fixture.presets_dir(),
-            &fixture.vault_dir(),
             &fixture.game_mods_dir(),
             &fixture.vendor_dir(),
         )
@@ -616,10 +597,6 @@ mod tests {
 
         fn presets_dir(&self) -> PathBuf {
             self.path.join("presets")
-        }
-
-        fn vault_dir(&self) -> PathBuf {
-            self.path.join("vault")
         }
 
         fn game_mods_dir(&self) -> PathBuf {

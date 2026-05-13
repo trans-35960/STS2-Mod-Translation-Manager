@@ -11,7 +11,7 @@ import {
   retargetTranslationSheetPath,
 } from "../../features/translation/translationUtils";
 import { previewJsonReport, previewJsonSheet } from "../../previewData";
-import type { ExtractionTreeNode, JsonSheetAction, ModRow, NodeTranslationResult } from "../../types";
+import type { ExtractionTreeNode, ModRow } from "../../types";
 import { formatError } from "../../utils/logging";
 import { isPreviewRuntime } from "../../utils/runtime";
 import type { TranslationActionsParams } from "./types";
@@ -91,7 +91,7 @@ export function useTranslationSessionActions({
         can_export_patch_mod: true,
       };
     }
-    return await invokeCommand<NodeTranslationResult>("prepare_translation_node", {
+    return await invokeCommand("prepare_translation_node", {
       key: sourceMod.key,
       resourcePath: node.path || node.name,
       outputDir: outputDir ?? null,
@@ -108,7 +108,7 @@ export function useTranslationSessionActions({
         appendLog("추출 대상 폴더를 먼저 선택하세요.");
         return;
       }
-      const result = await invokeCommand<{ message: string }>("extract_translation", {
+      const result = await invokeCommand("extract_translation", {
         key: sourceMod.key,
         outputDir: selected,
         resourcePath: node.path || node.name,
@@ -162,7 +162,7 @@ export function useTranslationSessionActions({
         setPasteCandidatesByKey({});
         return;
       }
-      const sheet = await invokeCommand<JsonSheetAction>("create_json_translation_sheet", {
+      const sheet = await invokeCommand("create_json_translation_sheet", {
         sourcePath: prepared.source_path,
         existingSheetPath: prepared.existing_sheet_path || prepared.output_sheet_path,
         outputPath: prepared.output_sheet_path,

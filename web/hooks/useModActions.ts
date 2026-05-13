@@ -1,5 +1,6 @@
 import React from "react";
 import { openDialog } from "../api/tauri";
+import type { ActionCommand, CommandArgs } from "../api/tauri";
 import {
   activeSiblingMods,
   isDownloadingMod,
@@ -11,7 +12,7 @@ import { isPreviewRuntime } from "../utils/runtime";
 import { blockingSetupIssues, setupIssueSummary } from "../utils/setup";
 
 type RunActionResult = { dashboard: Dashboard; message: string } | null;
-type RunAction = (command: string, args?: Record<string, unknown>) => Promise<RunActionResult>;
+type RunAction = (command: ActionCommand, args?: CommandArgs[ActionCommand]) => Promise<RunActionResult>;
 type ToggleChange = { key: string; active: boolean; force?: boolean };
 export type ModConfirmAnswer = "cancel" | "secondary" | "confirm";
 export type ModConfirmDialogState = {
@@ -303,9 +304,10 @@ export function useModActions({
     const labels = queuedToggleLabelsRef.current.splice(0);
     toggleFlushRunningRef.current = true;
     try {
-      const command = uniqueChanges.length === 1 ? "toggle_mod" : "toggle_mods";
-      const args = uniqueChanges.length === 1 ? uniqueChanges[0] : { changes: uniqueChanges };
-      const result = await runAction(command, args);
+      const result =
+        uniqueChanges.length === 1
+          ? await runAction("toggle_mod", uniqueChanges[0])
+          : await runAction("toggle_mods", { changes: uniqueChanges });
       if (!result) {
         setDashboard(toggleRollbackDashboardRef.current);
         appendLog(`${labels[labels.length - 1] ?? "모드 전환"} 실패`);

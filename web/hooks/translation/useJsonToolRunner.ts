@@ -1,5 +1,7 @@
 import React from "react";
 import { invokeCommand } from "../../api/tauri";
+import type { CommandArgs, JsonToolCommand } from "../../api/tauri";
+import type { JsonSheetAction } from "../../types";
 import { isAlertApplyResult } from "../../features/translation/LogToasts";
 import { inferPckTargetPath } from "../../features/translation/translationUtils";
 import {
@@ -8,12 +10,6 @@ import {
   previewJsonValidation,
   previewTranslationProject,
 } from "../../previewData";
-import type {
-  JsonApply,
-  JsonSheetAction,
-  JsonTranslationSheet,
-  JsonValidation,
-} from "../../types";
 import { formatError, jsonCommandLabel } from "../../utils/logging";
 import { isPreviewRuntime } from "../../utils/runtime";
 import type { RunJsonTool, TranslationActionsParams } from "./types";
@@ -47,7 +43,10 @@ export function useJsonToolRunner({
     return () => window.clearTimeout(timeoutId);
   }, [jsonApplyResult, setJsonApplyResult]);
 
-  return async function runJsonTool(command: string, args: Record<string, unknown>): Promise<boolean> {
+  return async function runJsonTool(
+    command: JsonToolCommand,
+    args: CommandArgs[JsonToolCommand],
+  ): Promise<boolean> {
     setBusy(command);
     setJsonToolError("");
     try {
@@ -61,7 +60,7 @@ export function useJsonToolRunner({
         return true;
       }
       if (command === "create_json_translation_sheet" || command === "recalculate_json_translation_sheet") {
-        const result = await invokeCommand<JsonSheetAction>(command, args);
+        const result = await invokeCommand(command, args as CommandArgs[typeof command]) as JsonSheetAction;
         setJsonSheet(result.sheet);
         setJsonReport(result.report);
         setJsonOutputSheet(result.report.sheet_path);
@@ -76,7 +75,7 @@ export function useJsonToolRunner({
         setPasteCandidatesByKey({});
         appendLog(result.message);
       } else if (command === "load_json_translation_sheet") {
-        const result = await invokeCommand<JsonTranslationSheet>(command, args);
+        const result = await invokeCommand("load_json_translation_sheet", args as CommandArgs["load_json_translation_sheet"]);
         setJsonSheet(result);
         setJsonPckTargetPath(inferPckTargetPath(result));
         setJsonValidation(null);
@@ -88,11 +87,11 @@ export function useJsonToolRunner({
         setPasteCandidatesByKey({});
         appendLog("번역 시트 불러오기 완료");
       } else if (command === "validate_json_translation_sheet") {
-        const result = await invokeCommand<JsonValidation>(command, args);
+        const result = await invokeCommand("validate_json_translation_sheet", args as CommandArgs["validate_json_translation_sheet"]);
         setJsonValidation(result);
         appendLog(result.valid ? "검증 통과" : `수정 필요한 항목이 있습니다. 구조 경고 ${result.format_issues?.length ?? 0}개`);
       } else if (command === "apply_json_translation_sheet") {
-        const result = await invokeCommand<JsonApply>(command, args);
+        const result = await invokeCommand("apply_json_translation_sheet", args as CommandArgs["apply_json_translation_sheet"]);
         const message = result.installed_mod_path
           ? result.packed_pck_path
             ? `PCK 반영 완료: ${result.applied_entries}개 항목 적용`

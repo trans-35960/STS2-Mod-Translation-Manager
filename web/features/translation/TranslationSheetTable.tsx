@@ -13,10 +13,11 @@ import {
   Replace,
   ReplaceAll,
   Trash2,
+  WrapText,
 } from "lucide-react";
 import { Stat } from "../../components/AppShell";
 import { Pill } from "../../components/Common";
-import type { JsonSheetReport, JsonTranslationEntry, JsonValidationIssue, LanguagePreview } from "../../types";
+import type { JsonSheetReport, JsonTranslationEntry, JsonValidationIssue, LanguagePreview, PasteCandidate } from "../../types";
 import type {
   ReplaceScope,
   TranslationColumnKey,
@@ -36,10 +37,14 @@ import {
   languageCodeFromSheetKey,
   languageFolderCode,
   normalizedLocalizationKey,
+  stableCompareKey,
   splitSheetKey,
   compactTranslationFile,
   whitespaceValueLabel,
 } from "./translationUtils";
+import { normalizeLanguageTag } from "../mods/modUtils";
+
+const EMPTY_VALIDATION_ISSUES: DisplayValidationIssue[] = [];
 
 export function TranslationSheetTable({
   props,
@@ -115,8 +120,10 @@ export function TranslationSheetTable({
   const [copiedIdKey, setCopiedIdKey] = React.useState<string | null>(null);
   const [validationCollapsed, setValidationCollapsed] = React.useState(false);
   const [pasteConflictCollapsed, setPasteConflictCollapsed] = React.useState(false);
+  const [wrapSourceWithTranslation, setWrapSourceWithTranslation] = React.useState(false);
   const searchHighlight = entrySearch.trim();
   const showValidationWarnings = entryFilter === "warning";
+  const selectedRowsSet = React.useMemo(() => new Set(props.selectedRows), [props.selectedRows]);
   const allValidationItems = React.useMemo(
     () => validationRows(props.validation),
     [props.validation],
@@ -475,6 +482,16 @@ export function TranslationSheetTable({
               <button className={showIds ? "active" : ""} type="button" aria-label="id 보기" data-tooltip="id 보기" onClick={() => setShowIds((value) => !value)}>
                 {showIds ? <Eye size={15} /> : <Hash size={15} />}
               </button>
+              <button
+                className={wrapSourceWithTranslation ? "active" : ""}
+                type="button"
+                aria-label="번역 입력 행 원본 줄바꿈"
+                data-tooltip="번역 입력 행 원본 줄바꿈"
+                aria-pressed={wrapSourceWithTranslation}
+                onClick={() => setWrapSourceWithTranslation((value) => !value)}
+              >
+                <WrapText size={15} />
+              </button>
               <button aria-label="선택 복사" data-tooltip="선택 복사" onClick={props.onCopySelected} disabled={props.selectedRows.length === 0}>
                 <Copy size={15} />
               </button>
@@ -504,108 +521,43 @@ export function TranslationSheetTable({
               <ResizableHead label="file" onMouseDown={(event) => startColumnResize("file", event)} />
               <ResizableHead label="key" onMouseDown={(event) => startColumnResize("key", event)} />
             </div>
-            {visibleEntries.map(({ entry, index, parts }) => {
-              const rowIssues = issuesByEntryKey.get(entry.key) ?? [];
-              const visibleRowIssues = showValidationWarnings ? rowIssues : [];
-              const rowIssueKinds = visibleRowIssues.map((issue) => issue.kind);
-              const slotId = slotIdByEntryKey.get(entry.key) ?? "";
-              return (
-                <div
-                  className={[
-                    "json-entry-row",
-                    props.selectedRows.includes(index) ? "selected" : "",
-                    focusEntryKey === entry.key ? "focus-pulse" : "",
-                    visibleRowIssues.length > 0 ? "warning-row" : "",
-                  ].filter(Boolean).join(" ")}
-                  data-entry-key={entry.key}
-                  key={`${entry.status}-${entry.key}`}
-                  onClick={(event) => props.onSelectRow(index, event)}
-                  ref={(element) => {
-                    if (element) {
-                      rowRefs.current.set(entry.key, element);
-                    } else {
-                      rowRefs.current.delete(entry.key);
-                    }
-                  }}
-                >
-                  <Pill tone={entry.status === "updated" || entry.status === "new" || entry.status === "missing" ? "warn" : "good"}>{entry.status}</Pill>
-                  {showIds && (
-                    <code
-                      className={copiedIdKey === entry.key ? "short-id-cell copied" : "short-id-cell"}
-                      title={`${slotId || entry.key} - 더블클릭하면 id를 복사합니다.`}
-                      onClick={(event) => event.stopPropagation()}
-                      onDoubleClick={(event) => copyEntryId(entry.key, slotId, event)}
-                    >
-                      <HighlightedText text={slotId} query={searchHighlight} />
-                      {copiedIdKey === entry.key && <small>복사됨</small>}
-                    </code>
-                  )}
-                  <div className="translation-value-cell">
-                    <AutoGrowTextarea
-                      value={entry.translated_value}
-                      placeholder="-"
-                      onChange={(event) => props.onEditEntry(index, event.target.value)}
-                      onPaste={(event) => {
-                        const text = event.clipboardData.getData("text/plain");
-                        if (props.onPasteStructuredJson(text)) {
-                          event.preventDefault();
-                          return;
-                        }
-                        if (isTabularTranslationPaste(text)) {
-                          event.preventDefault();
-                          props.onPasteEntries(index, text);
-                        }
-                      }}
-                    />
-                    {searchHighlight && includesSearch(entry.translated_value, searchHighlight) && (
-                      <div className="search-match-preview" aria-label="translated_value 검색 결과">
-                        <HighlightedText text={entry.translated_value} query={searchHighlight} />
-                      </div>
-                    )}
-                    {visibleRowIssues.length > 0 && (
-                      <IssueBadges
-                        activeKind={validationIssueKindFilter}
-                        issues={visibleRowIssues}
-                        onSelect={showValidationIssueKind}
-                      />
-                    )}
-                    {visibleRowIssues.length > 0 && (
-                      <div className="issue-match-preview" aria-label="translated_value 구조 경고 강조">
-                        <HighlightedIssueText kinds={rowIssueKinds} text={entry.translated_value || "(빈 번역값)"} query={searchHighlight} />
-                      </div>
-                    )}
-                    {whitespaceValueLabel(entry.translated_value) && (
-                      <small className="whitespace-marker">{whitespaceValueLabel(entry.translated_value)}</small>
-                    )}
-                    {props.pasteCandidatesByKey[entry.key] && (
-                      <PasteCandidateCard
-                        candidate={props.pasteCandidatesByKey[entry.key]}
-                        onApply={() => props.onApplyPasteCandidate(entry.key)}
-                        onDismiss={() => props.onDismissPasteCandidate(entry.key)}
-                      />
-                    )}
-                  </div>
-                  {showCompareColumn && (
-                    <CompareStack
-                      items={selectedCompareLanguages.map((language) => ({
-                        id: `${language.sample_path}-${entry.key}`,
-                        code: languageFolderCode(language),
-                        value: compareValueForEntry(entry, language, props.compareValuesByLanguage),
-                      }))}
-                    />
-                  )}
-                  <span className={visibleRowIssues.length > 0 ? "source-value-cell warning-source" : "source-value-cell"} title={entry.source_value}>
-                    <HighlightedIssueText kinds={rowIssueKinds} text={entry.source_value} query={searchHighlight} />
-                  </span>
-                  <code title={parts.file}>
-                    <HighlightedText text={parts.file} query={searchHighlight} />
-                  </code>
-                  <code title={parts.key}>
-                    <HighlightedText text={parts.key} query={searchHighlight} />
-                  </code>
-                </div>
-              );
-            })}
+            {visibleEntries.map(({ entry, index, parts }) => (
+              <JsonEntryRow
+                compareValuesByLanguage={props.compareValuesByLanguage}
+                copiedIdKey={copiedIdKey}
+                entry={entry}
+                index={index}
+                issues={showValidationWarnings ? issuesByEntryKey.get(entry.key) ?? EMPTY_VALIDATION_ISSUES : EMPTY_VALIDATION_ISSUES}
+                key={`${entry.status}-${entry.key}`}
+                onApplyPasteCandidate={props.onApplyPasteCandidate}
+                onCopyEntryId={copyEntryId}
+                onDismissPasteCandidate={props.onDismissPasteCandidate}
+                onEditEntry={props.onEditEntry}
+                onPasteEntries={props.onPasteEntries}
+                onPasteStructuredJson={props.onPasteStructuredJson}
+                onSelectRow={props.onSelectRow}
+                onSelectValidationIssueKind={showValidationIssueKind}
+                parts={parts}
+                pasteCandidate={props.pasteCandidatesByKey[entry.key]}
+                registerRow={(element) => {
+                  if (element) {
+                    rowRefs.current.set(entry.key, element);
+                  } else {
+                    rowRefs.current.delete(entry.key);
+                  }
+                }}
+                searchHighlight={searchHighlight}
+                selected={selectedRowsSet.has(index)}
+                selectedCompareLanguages={selectedCompareLanguages}
+                sheetSourceLanguage={sheetSourceLanguage}
+                showCompareColumn={showCompareColumn}
+                showIds={showIds}
+                slotId={slotIdByEntryKey.get(entry.key) ?? ""}
+                validationIssueKindFilter={validationIssueKindFilter}
+                focused={focusEntryKey === entry.key}
+                wrapSource={wrapSourceWithTranslation}
+              />
+            ))}
             {visibleEntries.length < filteredEntries.length && (
               <button className="load-more" type="button" onClick={loadMoreVisibleEntries}>
                 더 보기 {visibleEntries.length}/{filteredEntries.length}
@@ -618,6 +570,160 @@ export function TranslationSheetTable({
     </section>
   );
 }
+
+const JsonEntryRow = React.memo(function JsonEntryRow({
+  compareValuesByLanguage,
+  copiedIdKey,
+  entry,
+  focused,
+  index,
+  issues,
+  onApplyPasteCandidate,
+  onCopyEntryId,
+  onDismissPasteCandidate,
+  onEditEntry,
+  onPasteEntries,
+  onPasteStructuredJson,
+  onSelectRow,
+  onSelectValidationIssueKind,
+  parts,
+  pasteCandidate,
+  registerRow,
+  searchHighlight,
+  selected,
+  selectedCompareLanguages,
+  sheetSourceLanguage,
+  showCompareColumn,
+  showIds,
+  slotId,
+  validationIssueKindFilter,
+  wrapSource,
+}: {
+  compareValuesByLanguage: Record<string, Record<string, string>>;
+  copiedIdKey: string | null;
+  entry: JsonTranslationEntry;
+  focused: boolean;
+  index: number;
+  issues: DisplayValidationIssue[];
+  onApplyPasteCandidate: (entryKey: string) => void;
+  onCopyEntryId: (entryKey: string, id: string, event: React.MouseEvent) => void;
+  onDismissPasteCandidate: (entryKey: string) => void;
+  onEditEntry: (index: number, value: string) => void;
+  onPasteEntries: (startIndex: number, text: string) => void;
+  onPasteStructuredJson: (text: string) => boolean;
+  onSelectRow: (index: number, event: React.MouseEvent) => void;
+  onSelectValidationIssueKind: (kind: string | null) => void;
+  parts: TranslationEntryRow["parts"];
+  pasteCandidate: PasteCandidate | undefined;
+  registerRow: (element: HTMLDivElement | null) => void;
+  searchHighlight: string;
+  selected: boolean;
+  selectedCompareLanguages: LanguagePreview[];
+  sheetSourceLanguage: string;
+  showCompareColumn: boolean;
+  showIds: boolean;
+  slotId: string;
+  validationIssueKindFilter: string | null;
+  wrapSource: boolean;
+}) {
+  const issueKinds = React.useMemo(() => issues.map((issue) => issue.kind), [issues]);
+  const whitespaceLabel = whitespaceValueLabel(entry.translated_value);
+  const sourceCellClass = [
+    "source-value-cell",
+    issues.length > 0 ? "warning-source" : "",
+    wrapSource && entry.translated_value.trim() ? "wrapped-source" : "",
+  ].filter(Boolean).join(" ");
+
+  return (
+    <div
+      className={[
+        "json-entry-row",
+        selected ? "selected" : "",
+        focused ? "focus-pulse" : "",
+        issues.length > 0 ? "warning-row" : "",
+      ].filter(Boolean).join(" ")}
+      data-entry-key={entry.key}
+      onClick={(event) => onSelectRow(index, event)}
+      ref={registerRow}
+    >
+      <Pill tone={entry.status === "updated" || entry.status === "new" || entry.status === "missing" ? "warn" : "good"}>{entry.status}</Pill>
+      {showIds && (
+        <code
+          className={copiedIdKey === entry.key ? "short-id-cell copied" : "short-id-cell"}
+          title={`${slotId || entry.key} - 더블클릭하면 id를 복사합니다.`}
+          onClick={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => onCopyEntryId(entry.key, slotId, event)}
+        >
+          <HighlightedText text={slotId} query={searchHighlight} />
+          {copiedIdKey === entry.key && <small>복사됨</small>}
+        </code>
+      )}
+      <div className="translation-value-cell">
+        <AutoGrowTextarea
+          value={entry.translated_value}
+          placeholder="-"
+          onChange={(event) => onEditEntry(index, event.target.value)}
+          onPaste={(event) => {
+            const text = event.clipboardData.getData("text/plain");
+            if (onPasteStructuredJson(text)) {
+              event.preventDefault();
+              return;
+            }
+            if (isTabularTranslationPaste(text)) {
+              event.preventDefault();
+              onPasteEntries(index, text);
+            }
+          }}
+        />
+        {searchHighlight && includesSearch(entry.translated_value, searchHighlight) && (
+          <div className="search-match-preview" aria-label="translated_value 검색 결과">
+            <HighlightedText text={entry.translated_value} query={searchHighlight} />
+          </div>
+        )}
+        {issues.length > 0 && (
+          <IssueBadges
+            activeKind={validationIssueKindFilter}
+            issues={issues}
+            onSelect={onSelectValidationIssueKind}
+          />
+        )}
+        {issues.length > 0 && (
+          <div className="issue-match-preview" aria-label="translated_value 구조 경고 강조">
+            <HighlightedIssueText kinds={issueKinds} text={entry.translated_value || "(빈 번역값)"} query={searchHighlight} />
+          </div>
+        )}
+        {whitespaceLabel && (
+          <small className="whitespace-marker">{whitespaceLabel}</small>
+        )}
+        {pasteCandidate && (
+          <PasteCandidateCard
+            candidate={pasteCandidate}
+            onApply={() => onApplyPasteCandidate(entry.key)}
+            onDismiss={() => onDismissPasteCandidate(entry.key)}
+          />
+        )}
+      </div>
+      {showCompareColumn && (
+        <CompareStack
+          items={selectedCompareLanguages.map((language) => ({
+            id: `${language.sample_path}-${entry.key}`,
+            code: languageFolderCode(language),
+            value: compareValueForEntry(entry, language, compareValuesByLanguage, sheetSourceLanguage),
+          }))}
+        />
+      )}
+      <span className={sourceCellClass} title={entry.source_value}>
+        <HighlightedIssueText kinds={issueKinds} text={entry.source_value} query={searchHighlight} />
+      </span>
+      <code title={parts.file}>
+        <HighlightedText text={parts.file} query={searchHighlight} />
+      </code>
+      <code title={parts.key}>
+        <HighlightedText text={parts.key} query={searchHighlight} />
+      </code>
+    </div>
+  );
+});
 
 function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query) {
@@ -753,17 +859,18 @@ function compareValueForEntry(
   entry: JsonTranslationEntry,
   language: LanguagePreview,
   valuesByLanguage: Record<string, Record<string, string>>,
+  sheetSourceLanguage: string,
 ) {
-  const sourceLanguage = languageCodeFromSheetKey(entry.key);
+  const sourceLanguage = languageCodeFromSheetKey(entry.key) || sheetSourceLanguage;
   const compareLanguage = languageFolderCode(language);
-  if (sourceLanguage && sourceLanguage === compareLanguage) {
+  if (sourceLanguage && normalizeLanguageTag(sourceLanguage) === normalizeLanguageTag(compareLanguage)) {
     return entry.source_value;
   }
   const values = valuesByLanguage[language.sample_path];
   if (!values) {
     return "";
   }
-  return values[entry.key] ?? values[normalizedLocalizationKey(entry.key)] ?? "";
+  return values[entry.key] ?? values[normalizedLocalizationKey(entry.key)] ?? values[stableCompareKey(entry.key)] ?? "";
 }
 
 function ValidationMetric({

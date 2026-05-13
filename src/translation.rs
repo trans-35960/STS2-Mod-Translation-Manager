@@ -1,7 +1,9 @@
 use crate::domain::TranslationCandidate;
 use crate::error::{AppError, AppResult};
 use crate::json_translation::{flatten_hardcoded_values, is_hardcoded_source_file};
-use crate::process::hidden_command;
+#[cfg(test)]
+use crate::process::powershell_compress_directory_contents;
+use crate::process::{hidden_command, powershell_expand_archive};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -330,11 +332,10 @@ fn language_candidate_path_text(path: &Path, root: &Path) -> String {
     let mut parts = Vec::new();
     if relative
         .parent()
-        .map_or(true, |parent| parent.as_os_str().is_empty())
+        .is_none_or(|parent| parent.as_os_str().is_empty())
+        && let Some(root_name) = root.file_name()
     {
-        if let Some(root_name) = root.file_name() {
-            parts.push(root_name.to_string_lossy().to_string());
-        }
+        parts.push(root_name.to_string_lossy().to_string());
     }
     parts.push(relative.to_string_lossy().to_string());
     parts.join("/").to_ascii_lowercase()
@@ -489,24 +490,10 @@ fn expand_zip_archive(source: &Path, destination: &Path) -> AppResult<bool> {
     }
     fs::create_dir_all(destination).map_err(|error| AppError::io(destination, error))?;
 
-    let command = format!(
-        "Expand-Archive -LiteralPath {} -DestinationPath {} -Force",
-        powershell_quote(source),
-        powershell_quote(destination)
-    );
-    let status = hidden_command("powershell")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"])
-        .arg(command)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
+    let status = powershell_expand_archive(source, destination)
         .map_err(|error| AppError::io(source, error))?;
 
     Ok(status.success())
-}
-
-fn powershell_quote(path: &Path) -> String {
-    format!("'{}'", path.to_string_lossy().replace('\'', "''"))
 }
 
 fn write_manifest(
@@ -830,18 +817,9 @@ mod tests {
         fixture.write_file("zip-src/localization/en.json", r#"{"hello":"Hello"}"#);
         let archive_path = fixture.path().join("ArchiveMod.zip");
 
-        let command = format!(
-            "Compress-Archive -Path {} -DestinationPath {} -Force",
-            powershell_quote(&fixture.path().join("zip-src").join("*")),
-            powershell_quote(&archive_path)
-        );
-        let status = hidden_command("powershell")
-            .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"])
-            .arg(command)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .expect("run Compress-Archive");
+        let status =
+            powershell_compress_directory_contents(&fixture.path().join("zip-src"), &archive_path)
+                .expect("run Compress-Archive");
         assert!(status.success());
 
         let report = extract_translation_work(

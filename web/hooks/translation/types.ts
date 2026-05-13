@@ -1,4 +1,5 @@
 import type React from "react";
+import type { CommandArgs, JsonToolCommand } from "../../api/tauri";
 import type {
   ApplyResultState,
   Dashboard,
@@ -61,6 +62,6 @@ export type TranslationActionsParams = {
   setTranslationProject: StateSetter<TranslationProjectInfo | null>;
 };
 
-export type RunJsonTool = (command: string, args: Record<string, unknown>) => Promise<boolean>;
+export type RunJsonTool = (command: JsonToolCommand, args: CommandArgs[JsonToolCommand]) => Promise<boolean>;
 export type CompareValueCache = Record<string, Record<string, string>>;
 export type CompareLanguageValues = Record<string, LanguageCompareValue[]>;

@@ -343,17 +343,21 @@ pub(crate) fn compare_translation_language(
             .and_then(|_| read_sheet(&temp_path));
         let _ = fs::remove_file(&temp_path);
         if let Ok(compare_sheet) = generated {
-            return Ok(compare_values_from_sheet(&sheet, &compare_sheet));
+            let values = compare_values_from_sheet(&sheet, &compare_sheet);
+            if !values.is_empty() {
+                return Ok(values);
+            }
         }
     }
 
-    compare_translation_language_by_files(&sheet, &scan_root, &compare_language)
+    compare_translation_language_by_files(&sheet, &scan_root, &compare_language, &sample_relative)
 }
 
 fn compare_translation_language_by_files(
     sheet: &JsonTranslationSheet,
     scan_root: &Path,
     compare_language: &str,
+    sample_relative: &Path,
 ) -> Result<Vec<LanguageCompareValueDto>, String> {
     let mut json_cache = BTreeMap::<PathBuf, serde_json::Value>::new();
     let mut values = Vec::new();
@@ -362,8 +366,8 @@ fn compare_translation_language_by_files(
         if file.is_empty() || pointer.is_empty() {
             continue;
         }
-        let relative = replace_resource_language(Path::new(&file), &compare_language)
-            .unwrap_or_else(|| PathBuf::from(&file));
+        let relative =
+            compare_entry_relative_path(Path::new(&file), compare_language, sample_relative);
         let file_path = scan_root.join(relative);
         if !json_cache.contains_key(&file_path) {
             let content = match fs::read_to_string(&file_path) {
@@ -392,15 +396,32 @@ fn compare_translation_language_by_files(
     Ok(values)
 }
 
+fn compare_entry_relative_path(
+    entry_file: &Path,
+    compare_language: &str,
+    sample_relative: &Path,
+) -> PathBuf {
+    if let Some(relative) = replace_resource_language(entry_file, compare_language) {
+        return relative;
+    }
+    if entry_file.is_absolute() {
+        return entry_file.to_path_buf();
+    }
+    if let Some(language_root) = localization_language_root(sample_relative) {
+        return language_root.join(entry_file);
+    }
+    entry_file.to_path_buf()
+}
+
 fn compare_language_source_path(
     sheet: &JsonTranslationSheet,
     scan_root: &Path,
     sample_relative: &Path,
 ) -> PathBuf {
-    if sheet_uses_directory_entry_keys(sheet) {
-        if let Some(language_root) = localization_language_root(sample_relative) {
-            return scan_root.join(language_root);
-        }
+    if sheet_uses_directory_entry_keys(sheet)
+        && let Some(language_root) = localization_language_root(sample_relative)
+    {
+        return scan_root.join(language_root);
     }
     scan_root.join(sample_relative)
 }
@@ -556,11 +577,10 @@ fn apply_sheet_and_pack_pck(
             None
         }
     };
-    if build_result.is_some() {
-        if let Err(error) = remember_applied_language_preview(&sheet, &language_output_path, config)
-        {
-            eprintln!("language preview cache update skipped: {error}");
-        }
+    if build_result.is_some()
+        && let Err(error) = remember_applied_language_preview(&sheet, &language_output_path, config)
+    {
+        eprintln!("language preview cache update skipped: {error}");
     }
 
     Ok(PckPatchReport {
@@ -597,6 +617,12 @@ fn apply_hardcoded_translation_output(
     else {
         return Ok(None);
     };
+    ensure_deletable_mod_path(&install_root, config)?;
+    ensure_path_in_roots(
+        &target_path,
+        std::slice::from_ref(&install_root),
+        "하드코딩 번역 적용 경로",
+    )?;
     if let Some(parent) = target_path.parent() {
         fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     }
@@ -628,6 +654,12 @@ fn apply_folder_translation_output(
     else {
         return Ok(None);
     };
+    ensure_deletable_mod_path(&install_root, config)?;
+    ensure_path_in_roots(
+        &target_path,
+        std::slice::from_ref(&install_root),
+        "폴더 번역 적용 경로",
+    )?;
     prepare_folder_translation_install_root(&context, &install_root, config)?;
     if let Some(parent) = target_path.parent() {
         fs::create_dir_all(parent).map_err(|error| error.to_string())?;
@@ -706,11 +738,13 @@ fn prepare_folder_translation_install_root(
     if folder_install_root_has_runtime_payload(install_root) {
         return Ok(());
     }
+    ensure_deletable_mod_path(install_root, config)?;
 
     let build_root = config
         .translation_work_dir
         .join("archive_install")
         .join(timestamp_string());
+    ensure_translation_work_path(&build_root, config, "압축 모드 번역 임시 경로")?;
     fs::create_dir_all(&build_root).map_err(|error| error.to_string())?;
     let _build_cleanup = TempBuildDir::new(build_root.clone());
     let extracted_root = build_root.join("extracted");
@@ -917,7 +951,7 @@ fn remember_applied_language_preview(
     let Some(record) = summary
         .game_mods
         .into_iter()
-        .chain(summary.vault_mods)
+        .chain(summary.disabled_mods)
         .chain(summary.external_manager_mods)
         .find(|record| record.stable_key() == mod_key)
     else {
@@ -965,17 +999,6 @@ fn default_sheet_path(config: &AppConfig, source: &Path, target_language: &str) 
         .translation_work_dir
         .join("json_sheets")
         .join(format!("{stem}.{target_language}.translation.json"))
-}
-
-fn json_report_dto(report: JsonSheetReport) -> JsonSheetReportDto {
-    JsonSheetReportDto {
-        sheet_path: display_path(&report.sheet_path),
-        entries: report.entries,
-        new_entries: report.new_entries,
-        updated_entries: report.updated_entries,
-        missing_entries: report.missing_entries,
-        removed_entries: report.removed_entries,
-    }
 }
 
 fn create_report_for_saved_sheet(path: &Path, sheet: &JsonTranslationSheet) -> JsonSheetReport {
@@ -1227,57 +1250,6 @@ fn preserve_current_translations(
     }
 }
 
-fn json_sheet_from_dto(sheet: JsonSheetDto) -> Result<JsonTranslationSheet, String> {
-    Ok(JsonTranslationSheet {
-        source_path: sheet.source_path,
-        target_language: sheet.target_language,
-        updated_epoch: epoch_seconds(Some(SystemTime::now())).unwrap_or(sheet.updated_epoch),
-        entries: sheet
-            .entries
-            .into_iter()
-            .map(json_entry_from_dto)
-            .collect::<Result<Vec<_>, _>>()?,
-    })
-}
-
-fn json_entry_from_dto(entry: JsonEntryDto) -> Result<JsonTranslationEntry, String> {
-    Ok(JsonTranslationEntry {
-        key: entry.key,
-        slot_id: entry.slot_id,
-        previous_source_value: entry.previous_source_value,
-        source_value: entry.source_value,
-        translated_value: entry.translated_value,
-        status: match entry.status.as_str() {
-            "new" => JsonTranslationStatus::New,
-            "ready" => JsonTranslationStatus::Ready,
-            "updated" => JsonTranslationStatus::Updated,
-            "missing" => JsonTranslationStatus::Missing,
-            "removed" => JsonTranslationStatus::Removed,
-            other => return Err(format!("알 수 없는 번역 상태: {other}")),
-        },
-    })
-}
-
-fn json_sheet_dto(sheet: sts2_mod_manager::json_translation::JsonTranslationSheet) -> JsonSheetDto {
-    JsonSheetDto {
-        source_path: sheet.source_path,
-        target_language: sheet.target_language,
-        updated_epoch: sheet.updated_epoch,
-        entries: sheet.entries.into_iter().map(json_entry_dto).collect(),
-    }
-}
-
-fn json_entry_dto(entry: JsonTranslationEntry) -> JsonEntryDto {
-    JsonEntryDto {
-        key: entry.key,
-        slot_id: entry.slot_id,
-        previous_source_value: entry.previous_source_value,
-        source_value: entry.source_value,
-        translated_value: entry.translated_value,
-        status: status_label(entry.status).to_string(),
-    }
-}
-
 fn split_translation_key(key: &str) -> (String, String) {
     if let Some(rest) = key.strip_prefix("file://") {
         let mut parts = rest.splitn(2, '#');
@@ -1289,69 +1261,10 @@ fn split_translation_key(key: &str) -> (String, String) {
 }
 
 fn csv_field(value: &str) -> String {
-    if value.contains(|character| matches!(character, ',' | '"' | '\n' | '\r')) {
+    if value.contains([',', '"', '\n', '\r']) {
         format!("\"{}\"", value.replace('"', "\"\""))
     } else {
         value.to_string()
-    }
-}
-
-fn status_label(status: JsonTranslationStatus) -> &'static str {
-    match status {
-        JsonTranslationStatus::New => "new",
-        JsonTranslationStatus::Ready => "ready",
-        JsonTranslationStatus::Updated => "updated",
-        JsonTranslationStatus::Missing => "missing",
-        JsonTranslationStatus::Removed => "removed",
-    }
-}
-
-fn json_validation_dto(report: JsonValidationReport) -> JsonValidationDto {
-    JsonValidationDto {
-        valid: report.valid,
-        total_entries: report.total_entries,
-        missing_entries: report.missing_entries,
-        updated_entries: report.updated_entries,
-        removed_entries: report.removed_entries,
-        format_issues: report
-            .format_issues
-            .into_iter()
-            .map(|issue| JsonValidationIssueDto {
-                key: issue.key,
-                kind: issue.kind,
-                message: issue.message,
-            })
-            .collect(),
-    }
-}
-
-fn json_apply_dto(report: PckPatchReport) -> JsonApplyDto {
-    JsonApplyDto {
-        output_path: report
-            .packed_pck_path
-            .as_deref()
-            .map(display_path)
-            .unwrap_or_else(|| display_path(&report.language_output_path)),
-        applied_entries: report.applied_entries,
-        language_output_path: display_path(&report.language_output_path),
-        packed_pck_path: report
-            .packed_pck_path
-            .as_deref()
-            .map(display_path)
-            .unwrap_or_default(),
-        installed_mod_path: report
-            .installed_mod_path
-            .as_deref()
-            .map(display_path)
-            .unwrap_or_default(),
-    }
-}
-
-fn json_import_dto(report: JsonImportReport) -> JsonImportDto {
-    JsonImportDto {
-        input_path: display_path(&report.input_path),
-        matched_entries: report.matched_entries,
-        unmatched_entries: report.unmatched_entries,
     }
 }
 

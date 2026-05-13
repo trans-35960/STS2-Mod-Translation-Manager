@@ -18,7 +18,7 @@ pub(crate) fn open_path_in_system(path: &Path) -> Result<(), String> {
             .arg(path)
             .spawn()
             .map_err(|error| format!("경로 열기 실패: {error}"))?;
-        return Ok(());
+        Ok(())
     }
 
     #[cfg(target_os = "macos")]

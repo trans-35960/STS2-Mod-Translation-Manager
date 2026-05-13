@@ -88,6 +88,138 @@ mod tests {
     }
 
     #[test]
+    fn compare_language_fallback_uses_sample_language_root_for_compact_keys() {
+        let root = std::env::temp_dir().join(format!("sts2-compare-compact-{}", timestamp_string()));
+        let source_root = root.join("source");
+        let eng_dir = source_root.join("localization").join("eng");
+        let zhs_dir = source_root.join("localization").join("zhs");
+        fs::create_dir_all(&eng_dir).expect("create eng");
+        fs::create_dir_all(&zhs_dir).expect("create zhs");
+        fs::write(eng_dir.join("cards.json"), "{\n  \"name\": \"Strike\"\n}")
+            .expect("write eng");
+        fs::write(zhs_dir.join("cards.json"), "{\n  \"name\": \"打击\"\n}")
+            .expect("write zhs");
+
+        let sheet = JsonTranslationSheet {
+            source_path: zhs_dir.to_string_lossy().to_string(),
+            target_language: "kor".to_string(),
+            updated_epoch: 1,
+            entries: vec![JsonTranslationEntry {
+                key: "file://cards.json#/name".to_string(),
+                slot_id: None,
+                previous_source_value: None,
+                source_value: "打击".to_string(),
+                translated_value: "타격".to_string(),
+                status: JsonTranslationStatus::Ready,
+            }],
+        };
+
+        let values = compare_translation_language_by_files(
+            &sheet,
+            &source_root,
+            "eng",
+            Path::new("localization/eng/cards.json"),
+        )
+        .expect("compare language");
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].key, "file://cards.json#/name");
+        assert_eq!(values[0].value, "Strike");
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn compare_language_matches_language_prefixed_entry_keys() {
+        let root = std::env::temp_dir().join(format!("sts2-compare-prefixed-{}", timestamp_string()));
+        let source_root = root.join("source");
+        let eng_dir = source_root.join("NamieFamily").join("localization").join("eng");
+        let zhs_dir = source_root.join("NamieFamily").join("localization").join("zhs");
+        fs::create_dir_all(&eng_dir).expect("create eng");
+        fs::create_dir_all(&zhs_dir).expect("create zhs");
+        fs::write(eng_dir.join("ancients.json"), "{\n  \"next\": \"Continue\"\n}")
+            .expect("write eng");
+        fs::write(zhs_dir.join("ancients.json"), "{\n  \"next\": \"继续\"\n}")
+            .expect("write zhs");
+
+        let sheet = JsonTranslationSheet {
+            source_path: source_root.to_string_lossy().to_string(),
+            target_language: "kor".to_string(),
+            updated_epoch: 1,
+            entries: vec![JsonTranslationEntry {
+                key: "file://NamieFamily/localization/eng/ancients.json#/next".to_string(),
+                slot_id: None,
+                previous_source_value: None,
+                source_value: "Continue".to_string(),
+                translated_value: "계속".to_string(),
+                status: JsonTranslationStatus::Ready,
+            }],
+        };
+
+        let values = compare_translation_language_by_files(
+            &sheet,
+            &source_root,
+            "zhs",
+            Path::new("NamieFamily/localization/zhs/ancients.json"),
+        )
+        .expect("compare language");
+        assert_eq!(values.len(), 1);
+        assert_eq!(
+            values[0].key,
+            "file://NamieFamily/localization/eng/ancients.json#/next"
+        );
+        assert_eq!(values[0].value, "继续");
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn compare_language_uses_context_pck_contents_root() {
+        let root = std::env::temp_dir().join(format!("sts2-compare-context-{}", timestamp_string()));
+        let work_root = root.join("work");
+        let source_dir = work_root.join("source");
+        let pck_root = root.join("cache").join("NamieFamily.pck.contents");
+        let zhs_dir = pck_root.join("NamieFamily").join("localization").join("zhs");
+        fs::create_dir_all(&source_dir).expect("create source");
+        fs::create_dir_all(&zhs_dir).expect("create zhs");
+        fs::write(zhs_dir.join("ancients.json"), "{\n  \"next\": \"继续\"\n}")
+            .expect("write zhs");
+        fs::write(
+            work_root.join("translation_context.tsv"),
+            format!(
+                "mod_key\tnamiefamily\nresource_path\tres://NamieFamily/localization/eng\npck_contents_root\t{}\n",
+                pck_root.display()
+            ),
+        )
+        .expect("write context");
+
+        let sheet_path = root.join("sheet.translation.json");
+        write_sheet(
+            &sheet_path,
+            &JsonTranslationSheet {
+                source_path: source_dir.to_string_lossy().to_string(),
+                target_language: "kor".to_string(),
+                updated_epoch: 1,
+                entries: vec![JsonTranslationEntry {
+                    key: "file://NamieFamily/localization/eng/ancients.json#/next".to_string(),
+                    slot_id: None,
+                    previous_source_value: None,
+                    source_value: "Continue".to_string(),
+                    translated_value: "계속".to_string(),
+                    status: JsonTranslationStatus::Ready,
+                }],
+            },
+        )
+        .expect("write sheet");
+
+        let values = compare_translation_language(
+            sheet_path.to_string_lossy().to_string(),
+            "res://NamieFamily/localization/zhs".to_string(),
+        )
+        .expect("compare language");
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].value, "继续");
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn patch_mod_export_uses_translated_workspace_root() {
         let source_path = Path::new(
             r"Z:\game\sts2\modmanager\translation_work\selected\mod\workspace\source\AkiSister\localization\eng",
@@ -145,7 +277,7 @@ mod tests {
         let base_record = ModRecord {
             name: "Miyu STS2-622-v1-0-2-7-12-9-1777882282".to_string(),
             path: PathBuf::from(r"Z:\game\Slay the Spire 2\mods.disabled\Miyu"),
-            source: ModSource::Vault,
+            source: ModSource::Disabled,
             kind: ModKind::Directory,
             version_hint: None,
             fingerprint: sts2_mod_manager::domain::ModFingerprint {
@@ -156,7 +288,7 @@ mod tests {
         let patch_record = ModRecord {
             name: "Miyu_character_tr".to_string(),
             path: PathBuf::from(r"Z:\game\Slay the Spire 2\mods.disabled\Miyu_character_tr"),
-            source: ModSource::Vault,
+            source: ModSource::Disabled,
             kind: ModKind::Directory,
             version_hint: None,
             fingerprint: sts2_mod_manager::domain::ModFingerprint {
@@ -474,8 +606,13 @@ mod tests {
         let mut removed_dirs = 0;
         let mut removed_files = 0;
 
-        cleanup_translation_memory_payloads(&memory_root, &mut removed_dirs, &mut removed_files)
-            .expect("cleanup payloads");
+        cleanup_translation_memory_payloads(
+            &memory_root,
+            &mut removed_dirs,
+            &mut removed_files,
+            std::slice::from_ref(&root),
+        )
+        .expect("cleanup payloads");
 
         assert!(removed_dirs > 0);
         assert!(removed_files > 0);
@@ -562,7 +699,7 @@ mod tests {
         let disabled = ModRecord {
             name: "The Reaper For Main Branch-412-0-40-1777040399".to_string(),
             path: PathBuf::from(r"Z:\game\Slay the Spire 2\mods.disabled\The Reaper Old.zip"),
-            source: sts2_mod_manager::domain::ModSource::Vault,
+            source: sts2_mod_manager::domain::ModSource::Disabled,
             kind: ModKind::Archive,
             version_hint: None,
             fingerprint: sts2_mod_manager::domain::ModFingerprint {
@@ -572,7 +709,7 @@ mod tests {
         };
         let keys = connected_mod_keys(&ScanSummary {
             game_mods: vec![active],
-            vault_mods: vec![disabled],
+            disabled_mods: vec![disabled],
             external_manager_mods: Vec::new(),
         });
 
@@ -744,7 +881,7 @@ mod tests {
         .expect("write deleted entry");
         let summary = ScanSummary {
             game_mods: Vec::new(),
-            vault_mods: Vec::new(),
+            disabled_mods: Vec::new(),
             external_manager_mods: Vec::new(),
         };
 
@@ -810,7 +947,7 @@ mod tests {
         remember_deleted_mod_tombstone(&config, "new-download").expect("write tombstone");
         let summary = ScanSummary {
             game_mods: Vec::new(),
-            vault_mods: Vec::new(),
+            disabled_mods: Vec::new(),
             external_manager_mods: vec![ModRecord {
                 name: "New Download".to_string(),
                 path: root.join("Vortex").join("downloads").join("New Download.zip"),
@@ -972,6 +1109,7 @@ mod tests {
             mod_key: Some("mod".to_string()),
             extraction_source_path: Some(active_pck.clone()),
             input_pck_path: Some(active_pck.clone()),
+            pck_contents_root: None,
             pck_stem: Some("Mod".to_string()),
             translation_patch_source_path: None,
             translation_patch_pck_stem: None,
@@ -1030,6 +1168,7 @@ mod tests {
             mod_key: Some("akisister".to_string()),
             extraction_source_path: Some(source_dir.clone()),
             input_pck_path: None,
+            pck_contents_root: None,
             pck_stem: Some("AkiSister".to_string()),
             translation_patch_source_path: None,
             translation_patch_pck_stem: None,
@@ -1072,16 +1211,16 @@ mod tests {
         let base_source = root.join("mods").join("BaseMod").join("BaseMod.pck");
         let patch_source = root.join("mods").join("BaseMod_tr").join("BaseMod_tr.pck");
         fs::create_dir_all(source_file.parent().expect("source parent")).expect("create source");
-        write_translation_context(
-            &work_root,
-            "BaseMod",
-            "res://BaseMod/localization/eng",
-            &base_source,
-            Some(&work_root.join("source").join("BaseMod.pck.contents")),
-            "BaseMod",
-            Some(&patch_source),
-            Some("BaseMod_tr"),
-        )
+        write_translation_context(TranslationContextWriteRequest {
+            work_dir: &work_root,
+            mod_key: "BaseMod",
+            resource_path: "res://BaseMod/localization/eng",
+            extraction_source: &base_source,
+            pck_contents_root: Some(&work_root.join("source").join("BaseMod.pck.contents")),
+            pck_stem: "BaseMod",
+            translation_patch_source: Some(&patch_source),
+            translation_patch_pck_stem: Some("BaseMod_tr"),
+        })
         .expect("write context");
 
         let context = read_translation_context(&source_file).expect("read context");
@@ -1120,6 +1259,7 @@ mod tests {
             mod_key: Some("herta".to_string()),
             extraction_source_path: Some(source_archive),
             input_pck_path: None,
+            pck_contents_root: None,
             pck_stem: Some("Herta".to_string()),
             translation_patch_source_path: None,
             translation_patch_pck_stem: None,
@@ -1165,16 +1305,16 @@ mod tests {
             .join("all.loc");
         fs::create_dir_all(source_file.parent().expect("source parent")).expect("create source");
         fs::write(&source_file, r#"{"title":"荒疫"}"#).expect("write source");
-        write_translation_context(
-            &work_root,
-            "blight",
-            &display_path(active_source.as_path()),
-            &install_root,
-            None,
-            "",
-            None,
-            None,
-        )
+        write_translation_context(TranslationContextWriteRequest {
+            work_dir: &work_root,
+            mod_key: "blight",
+            resource_path: &display_path(active_source.as_path()),
+            extraction_source: &install_root,
+            pck_contents_root: None,
+            pck_stem: "",
+            translation_patch_source: None,
+            translation_patch_pck_stem: None,
+        })
         .expect("write context");
 
         let sheet_path = config
@@ -1656,6 +1796,27 @@ mod tests {
     }
 
     #[test]
+    fn save_settings_request_accepts_tauri_camel_case_args() {
+        let request: SaveSettingsRequest = serde_json::from_value(serde_json::json!({
+            "translationWorkDir": "translation_work",
+            "targetLanguage": "kor",
+            "gameExePath": "",
+            "gameLogPath": "",
+            "saveDir": "saves",
+            "saveBackupDir": "backups",
+            "saveBackupRetentionDays": 7,
+            "saveBackupMaxEntries": 14,
+            "deletedRetentionDays": 30,
+            "modViewMode": "detail"
+        }))
+        .expect("deserialize save settings request");
+
+        assert_eq!(request.translation_work_dir, "translation_work");
+        assert_eq!(request.save_backup_max_entries, 14);
+        assert_eq!(request.mod_view_mode, "detail");
+    }
+
+    #[test]
     fn setup_issues_warn_when_work_paths_overlap() {
         let root = std::env::temp_dir().join(format!("sts2-settings-overlap-{}", timestamp_string()));
         let config = test_config(&root);
@@ -1746,7 +1907,6 @@ mod tests {
             save_backup_dir: root.join("backups"),
             save_backup_retention_days: 7,
             save_backup_max_entries: 14,
-            vault_dir: root.join("vault"),
             presets_dir: root.join("presets"),
             translation_work_dir: root.join("translation_work"),
             logs_dir: root.join("logs"),

@@ -11,7 +11,7 @@ use crate::state::{
 use crate::translation::{
     self, TranslationExtractReport, TranslationMergeReport, TranslationWorkspace,
 };
-use crate::vault::{self, VaultAction, VaultEntry};
+use crate::vault::{self, DisabledModAction, DisabledModEntry};
 use crate::vendor_tools::{self, VendorTool};
 use std::collections::BTreeSet;
 use std::fs;
@@ -38,9 +38,8 @@ impl App {
     }
 
     pub fn scan(&self) -> AppResult<ScanSummary> {
-        vault::migrate_legacy_disabled_mods(&self.config.vault_dir, &self.config.game_mods_dir)?;
         let game_mods = scan_mod_directory(&self.config.game_mods_dir, ModSource::GameMods)?;
-        let vault_mods = vault::list_disabled_game_mods(&self.config.game_mods_dir)?;
+        let disabled_mods = vault::list_disabled_game_mods(&self.config.game_mods_dir)?;
         let mut external_manager_mods = Vec::new();
 
         for path in existing_paths(&self.config.external_manager_dirs) {
@@ -49,7 +48,7 @@ impl App {
 
         Ok(ScanSummary {
             game_mods,
-            vault_mods,
+            disabled_mods,
             external_manager_mods,
         })
     }
@@ -67,33 +66,28 @@ impl App {
         Ok(ScanReport { summary, changes })
     }
 
-    pub fn import_mod(&self, path: &Path) -> AppResult<VaultAction> {
+    pub fn import_mod(&self, path: &Path) -> AppResult<DisabledModAction> {
         self.ensure_workspace_dirs()?;
         vault::import_mod_to_disabled(path, &self.config.game_mods_dir)
     }
 
-    pub fn import_mod_as_new(&self, path: &Path) -> AppResult<VaultAction> {
+    pub fn import_mod_as_new(&self, path: &Path) -> AppResult<DisabledModAction> {
         self.ensure_workspace_dirs()?;
         vault::import_mod_to_disabled_as_new(path, &self.config.game_mods_dir)
     }
 
-    pub fn list_vault(&self) -> AppResult<Vec<VaultEntry>> {
+    pub fn list_vault(&self) -> AppResult<Vec<DisabledModEntry>> {
         vault::list_disabled_game_entries(&self.config.game_mods_dir)
     }
 
-    pub fn enable_mod(&self, key: &str) -> AppResult<VaultAction> {
+    pub fn enable_mod(&self, key: &str) -> AppResult<DisabledModAction> {
         self.ensure_workspace_dirs()?;
-        vault::enable_mod(
-            key,
-            &self.config.vault_dir,
-            &self.config.game_mods_dir,
-            &self.config.vendor_dir,
-        )
+        vault::enable_mod(key, &self.config.game_mods_dir, &self.config.vendor_dir)
     }
 
-    pub fn disable_mod(&self, key: &str) -> AppResult<VaultAction> {
+    pub fn disable_mod(&self, key: &str) -> AppResult<DisabledModAction> {
         self.ensure_workspace_dirs()?;
-        vault::disable_mod(key, &self.config.game_mods_dir, &self.config.vault_dir)
+        vault::disable_mod(key, &self.config.game_mods_dir)
     }
 
     pub fn set_mod_desired_active(&self, key: &str, active: bool) -> AppResult<()> {
@@ -114,17 +108,9 @@ impl App {
         write_desired_active_mod_keys(&desired, &self.config.state_dir)
     }
 
-    pub fn disable_all_mods(&self) -> AppResult<Vec<VaultAction>> {
+    pub fn disable_all_mods(&self) -> AppResult<Vec<DisabledModAction>> {
         self.ensure_workspace_dirs()?;
-        let mut actions = vault::migrate_legacy_disabled_mods(
-            &self.config.vault_dir,
-            &self.config.game_mods_dir,
-        )?;
-        actions.extend(vault::disable_all(
-            &self.config.game_mods_dir,
-            &self.config.vault_dir,
-        )?);
-        Ok(actions)
+        vault::disable_all(&self.config.game_mods_dir)
     }
 
     pub fn save_preset(&self, name: &str) -> AppResult<Preset> {
@@ -145,7 +131,6 @@ impl App {
         preset::apply_preset(
             name,
             &self.config.presets_dir,
-            &self.config.vault_dir,
             &self.config.game_mods_dir,
             &self.config.vendor_dir,
         )
@@ -215,11 +200,10 @@ impl App {
         self.ensure_workspace_dirs()?;
         self.ensure_launch_settings_ready()?;
         self.ensure_game_not_running()?;
-        vault::migrate_legacy_disabled_mods(&self.config.vault_dir, &self.config.game_mods_dir)?;
         let save_backup = save_backup::backup_before_launch(&self.config, false)?;
         let quarantined_current_runs =
             save_backup::quarantine_modded_current_runs_for_vanilla(&self.config)?;
-        vault::disable_all(&self.config.game_mods_dir, &self.config.vault_dir)?;
+        vault::disable_all(&self.config.game_mods_dir)?;
         let mut report = launcher::launch(&self.config, true)?;
         report.save_backups_created = save_backup.created.len();
         report.seeded_modded_profiles = save_backup.seeded_modded_profiles;
@@ -272,10 +256,8 @@ impl App {
         Ok(())
     }
 
-    pub fn sync_desired_mods_for_launch(&self) -> AppResult<Vec<VaultAction>> {
+    pub fn sync_desired_mods_for_launch(&self) -> AppResult<Vec<DisabledModAction>> {
         self.ensure_workspace_dirs()?;
-        vault::migrate_legacy_disabled_mods(&self.config.vault_dir, &self.config.game_mods_dir)?;
-
         let mut summary = self.scan()?;
         let mut desired = desired_active_mod_keys(&summary, &self.config.state_dir)?;
         if prune_unavailable_desired_mod_keys(&mut desired, &summary) {
@@ -288,7 +270,6 @@ impl App {
                 actions.push(vault::disable_mod(
                     &record.stable_key(),
                     &self.config.game_mods_dir,
-                    &self.config.vault_dir,
                 )?);
             }
         }
@@ -305,7 +286,7 @@ impl App {
                 continue;
             }
             if !summary
-                .vault_mods
+                .disabled_mods
                 .iter()
                 .any(|record| record.stable_key() == key)
             {
@@ -325,12 +306,8 @@ impl App {
                 )?);
             }
 
-            let action = vault::enable_mod(
-                &key,
-                &self.config.vault_dir,
-                &self.config.game_mods_dir,
-                &self.config.vendor_dir,
-            )?;
+            let action =
+                vault::enable_mod(&key, &self.config.game_mods_dir, &self.config.vendor_dir)?;
             actions.push(action);
             active_keys.insert(key);
             summary = self.scan()?;
@@ -358,7 +335,7 @@ fn available_mod_keys(summary: &ScanSummary) -> BTreeSet<String> {
     summary
         .game_mods
         .iter()
-        .chain(summary.vault_mods.iter())
+        .chain(summary.disabled_mods.iter())
         .chain(summary.external_manager_mods.iter())
         .map(|record| record.stable_key())
         .collect()
@@ -414,7 +391,6 @@ mod tests {
             save_backup_dir: workspace.join("backups"),
             save_backup_retention_days: 7,
             save_backup_max_entries: 14,
-            vault_dir: workspace.join("vault"),
             presets_dir: workspace.join("presets"),
             translation_work_dir: workspace.join("translation_work"),
             logs_dir: workspace.join("logs"),
@@ -444,7 +420,6 @@ mod tests {
             save_backup_dir: workspace.join("backups"),
             save_backup_retention_days: 7,
             save_backup_max_entries: 14,
-            vault_dir: workspace.join("vault"),
             presets_dir: workspace.join("presets"),
             translation_work_dir: workspace.join("translation_work"),
             logs_dir: workspace.join("logs"),
@@ -465,8 +440,8 @@ mod tests {
 
         assert!(scan.is_vanilla_safe());
         assert!(scan.game_mods.is_empty());
-        assert_eq!(scan.vault_mods.len(), 1);
-        assert_eq!(scan.vault_mods[0].stable_key(), "example-v1");
+        assert_eq!(scan.disabled_mods.len(), 1);
+        assert_eq!(scan.disabled_mods[0].stable_key(), "example-v1");
     }
 
     #[test]
@@ -481,7 +456,6 @@ mod tests {
             save_backup_dir: workspace.join("backups"),
             save_backup_retention_days: 7,
             save_backup_max_entries: 14,
-            vault_dir: workspace.join("vault"),
             presets_dir: workspace.join("presets"),
             translation_work_dir: workspace.join("translation_work"),
             logs_dir: workspace.join("logs"),
@@ -491,10 +465,13 @@ mod tests {
             external_manager_dirs: Vec::new(),
         };
         fs::create_dir_all(config.game_mods_dir.as_path()).expect("create game mods");
-        fs::create_dir_all(config.vault_dir.join("beta-v1")).expect("create vault entry");
+        fs::create_dir_all(config.game_dir.join("mods.disabled")).expect("create disabled mods");
         fs::write(config.game_mods_dir.join("Alpha-v1.jar"), "alpha").expect("write active");
-        fs::write(config.vault_dir.join("beta-v1").join("Beta-v1.jar"), "beta")
-            .expect("write vault");
+        fs::write(
+            config.game_dir.join("mods.disabled").join("Beta-v1.jar"),
+            "beta",
+        )
+        .expect("write disabled");
         let app = App::new(config.clone());
 
         app.set_mod_desired_active("beta-v1", true)
@@ -532,7 +509,6 @@ mod tests {
             save_backup_dir: workspace.join("backups"),
             save_backup_retention_days: 7,
             save_backup_max_entries: 14,
-            vault_dir: workspace.join("vault"),
             presets_dir: workspace.join("presets"),
             translation_work_dir: workspace.join("translation_work"),
             logs_dir: workspace.join("logs"),
@@ -548,12 +524,10 @@ mod tests {
         app.set_mod_desired_active("external-v1", true)
             .expect("select external");
 
-        assert!(!config.vault_dir.join("external-v1").exists());
         assert!(!config.game_mods_dir.join("External-v1.jar").exists());
 
         app.sync_desired_mods_for_launch().expect("sync desired");
 
-        assert!(!config.vault_dir.exists());
         assert!(config.game_mods_dir.join("External-v1.jar").exists());
     }
 
@@ -570,7 +544,6 @@ mod tests {
             save_backup_dir: workspace.join("backups"),
             save_backup_retention_days: 7,
             save_backup_max_entries: 14,
-            vault_dir: workspace.join("vault"),
             presets_dir: workspace.join("presets"),
             translation_work_dir: workspace.join("translation_work"),
             logs_dir: workspace.join("logs"),
@@ -579,9 +552,12 @@ mod tests {
             vendor_dir: workspace.join("vendor"),
             external_manager_dirs: Vec::new(),
         };
-        fs::create_dir_all(config.vault_dir.join("beta-v1")).expect("create vault entry");
-        fs::write(config.vault_dir.join("beta-v1").join("Beta-v1.jar"), "beta")
-            .expect("write vault");
+        fs::create_dir_all(config.game_dir.join("mods.disabled")).expect("create disabled mods");
+        fs::write(
+            config.game_dir.join("mods.disabled").join("Beta-v1.jar"),
+            "beta",
+        )
+        .expect("write disabled");
         let app = App::new(config.clone());
 
         app.set_mod_desired_active("missing-v1", true)

@@ -38,11 +38,13 @@
   white-space: nowrap;
 }
 
-.preset-menu {
+.preset-menu,
+.import-menu {
   position: relative;
 }
 
-.preset-popover {
+.preset-popover,
+.import-popover {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -57,6 +59,37 @@
   background: var(--surface);
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
   padding: 12px;
+}
+
+.import-popover {
+  width: min(250px, calc(100vw - 32px));
+}
+
+.import-popover button {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  justify-items: start;
+  min-height: 38px;
+  text-align: left;
+}
+
+.import-popover button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-popover button small {
+  min-width: 22px;
+  border-radius: 999px;
+  background: #e8f4ef;
+  color: var(--accent-strong);
+  padding: 2px 6px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .preset-popover label span {
@@ -140,6 +173,11 @@
   background: var(--surface);
 }
 
+.mod-table {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 .mod-lock-frame {
   position: relative;
 }
@@ -193,9 +231,56 @@
 
 .mod-grid {
   display: grid;
-  grid-template-columns: minmax(210px, 1.35fr) minmax(112px, 0.55fr) minmax(120px, 0.55fr) minmax(112px, 0.45fr) minmax(180px, 1fr) minmax(176px, auto);
+  grid-template-columns: minmax(var(--mod-name-col, 420px), 1fr) var(--mod-version-col, 132px) var(--mod-date-col, 118px) var(--mod-translation-col, 96px) var(--mod-language-col, 176px) var(--mod-actions-col, 220px);
   gap: 8px;
   align-items: center;
+  min-width: calc(
+    var(--mod-name-col, 420px) + var(--mod-version-col, 132px) + var(--mod-date-col, 118px) + var(--mod-translation-col, 96px) + var(--mod-language-col, 176px) + var(--mod-actions-col, 220px) + 70px
+  );
+}
+
+.mod-simple-grid {
+  display: grid;
+  grid-template-columns: minmax(var(--mod-simple-name-col, 420px), 1fr) var(--mod-simple-version-col, 104px) var(--mod-simple-language-col, 104px) var(--mod-simple-actions-col, 220px);
+  gap: 8px;
+  align-items: center;
+  min-width: calc(
+    var(--mod-simple-name-col, 420px) + var(--mod-simple-version-col, 104px) + var(--mod-simple-language-col, 104px) + var(--mod-simple-actions-col, 220px) + 42px
+  );
+}
+
+.mod-resizable-head {
+  position: relative;
+  overflow: hidden;
+  padding-right: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-resizable-head button {
+  position: absolute;
+  top: 0;
+  width: 16px;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: col-resize;
+}
+
+.mod-resizable-head button.end {
+  right: -8px;
+}
+
+.mod-resizable-head button.start {
+  left: -8px;
+}
+
+.mod-resizable-head button:hover,
+.mod-resizable-head button:focus-visible {
+  background: rgba(15, 118, 110, 0.12);
+  box-shadow: inset 2px 0 0 var(--accent);
+  outline: none;
 }
 
 .table-head {

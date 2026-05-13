@@ -1,4 +1,4 @@
-import { MOD_VIEW_MODE_STORAGE_KEY, TRANSLATION_SESSION_STORAGE_KEY } from "../constants";
+import { MOD_TABLE_COLUMNS_STORAGE_KEY, MOD_VIEW_MODE_STORAGE_KEY, TRANSLATION_SESSION_STORAGE_KEY } from "../constants";
 import type { ApplyResultState, TranslationSessionState } from "../types";
 
 export function readStoredTranslationSession(): TranslationSessionState | null {
@@ -71,4 +71,51 @@ export function writeStoredModViewMode(simple: boolean) {
   } catch {
     // Local storage can be unavailable in restricted preview contexts.
   }
+}
+
+export function readStoredModTableColumns<T extends Record<string, number>>(
+  view: "detail" | "simple",
+  defaults: T,
+): T {
+  try {
+    const raw = window.localStorage.getItem(MOD_TABLE_COLUMNS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) as Partial<Record<"detail" | "simple", Record<string, unknown>>> : {};
+    const stored = parsed[view] ?? {};
+    return mergeNumericColumns(defaults, stored);
+  } catch {
+    return defaults;
+  }
+}
+
+export function writeStoredModTableColumns(
+  view: "detail" | "simple",
+  columns: Record<string, number>,
+) {
+  try {
+    const raw = window.localStorage.getItem(MOD_TABLE_COLUMNS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) as Partial<Record<"detail" | "simple", Record<string, number>>> : {};
+    window.localStorage.setItem(
+      MOD_TABLE_COLUMNS_STORAGE_KEY,
+      JSON.stringify({
+        ...parsed,
+        [view]: columns,
+      }),
+    );
+  } catch {
+    // Local storage can be unavailable in restricted preview contexts.
+  }
+}
+
+function mergeNumericColumns<T extends Record<string, number>>(
+  defaults: T,
+  stored: Record<string, unknown>,
+): T {
+  const next = { ...defaults };
+  for (const key of Object.keys(defaults) as Array<keyof T>) {
+    const value = stored[String(key)];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      next[key] = value as T[keyof T];
+    }
+  }
+  return next;
 }

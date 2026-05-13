@@ -5,7 +5,7 @@ use std::time::SystemTime;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModSource {
     GameMods,
-    Vault,
+    Disabled,
     ExternalManager,
 }
 
@@ -13,7 +13,7 @@ impl Display for ModSource {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::GameMods => formatter.write_str("game mods"),
-            Self::Vault => formatter.write_str("managed vault"),
+            Self::Disabled => formatter.write_str("disabled mods"),
             Self::ExternalManager => formatter.write_str("external manager"),
         }
     }
@@ -23,7 +23,7 @@ impl ModSource {
     pub fn as_key(self) -> &'static str {
         match self {
             Self::GameMods => "game",
-            Self::Vault => "vault",
+            Self::Disabled => "disabled",
             Self::ExternalManager => "external",
         }
     }
@@ -31,7 +31,7 @@ impl ModSource {
     pub fn from_key(key: &str) -> Option<Self> {
         match key {
             "game" => Some(Self::GameMods),
-            "vault" => Some(Self::Vault),
+            "disabled" => Some(Self::Disabled),
             "external" => Some(Self::ExternalManager),
             _ => None,
         }
@@ -102,13 +102,13 @@ pub struct TranslationCandidate {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScanSummary {
     pub game_mods: Vec<ModRecord>,
-    pub vault_mods: Vec<ModRecord>,
+    pub disabled_mods: Vec<ModRecord>,
     pub external_manager_mods: Vec<ModRecord>,
 }
 
 impl ScanSummary {
     pub fn total_mods(&self) -> usize {
-        self.game_mods.len() + self.vault_mods.len() + self.external_manager_mods.len()
+        self.game_mods.len() + self.disabled_mods.len() + self.external_manager_mods.len()
     }
 
     pub fn is_vanilla_safe(&self) -> bool {

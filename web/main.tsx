@@ -3,8 +3,14 @@ import ReactDOM from "react-dom/client";
 import "./styles.css";
 import { AppMenuBar, BusyProgressModal, LoadingScreen, StatsGrid } from "./components/AppShell";
 import { TooltipLayer } from "./components/TooltipLayer";
-import { LOADING_STEPS } from "./constants";
-import { DroppedModConfirmModal, type DroppedModDecision } from "./features/mods/DroppedModConfirmModal";
+import { EXTERNAL_MOD_PROMPT_STORAGE_KEY, LOADING_STEPS } from "./constants";
+import {
+  DroppedModConfirmModal,
+  droppedModPreviewHasRelatedMatch,
+  modRowAsDroppedModPreview,
+  type DroppedModDecision,
+  type DroppedModSource,
+} from "./features/mods/DroppedModConfirmModal";
 import { ExtractConfirmModal, ModsPage } from "./features/mods/ModsPage";
 import { ModConfirmModal } from "./features/mods/ModConfirmModal";
 import { SettingsPage } from "./features/settings/SettingsPage";
@@ -29,7 +35,7 @@ import type {
   Page,
   TranslationApplyFilter,
 } from "./types";
-import { getAppWindow, invokeCommand } from "./api/tauri";
+import { getAppWindow, invokeCommand, openDialog } from "./api/tauri";
 import { isPreviewRuntime } from "./utils/runtime";
 
 function App() {
@@ -49,6 +55,8 @@ function App() {
   const [dragActive, setDragActive] = React.useState(false);
   const [dropBusyMessage, setDropBusyMessage] = React.useState<string | null>(null);
   const [droppedModPreviews, setDroppedModPreviews] = React.useState<DroppedModPreview[] | null>(null);
+  const [droppedModSource, setDroppedModSource] = React.useState<DroppedModSource>("drop");
+  const externalPromptedRef = React.useRef<Set<string> | null>(null);
   const { logs, setLogs, appendLog } = useAppLogs();
   const contentRef = React.useRef<HTMLElement | null>(null);
   const t = labels[locale];
@@ -117,7 +125,6 @@ function App() {
     setDashboard,
     setSettingsDraft,
     setSelectedPreset,
-    setJsonApplyResult,
     setBusy,
   });
 
@@ -277,6 +284,26 @@ function App() {
     };
   }, []);
 
+  React.useEffect(() => {
+    if (!dashboard || loading || busy || droppedModPreviews || page !== "mods") {
+      return;
+    }
+    const prompted = externalPromptedRef.current ?? readExternalPromptedSignatures();
+    externalPromptedRef.current = prompted;
+    const previews = dashboard.mods
+      .filter(isPromptableExternalMod)
+      .map(modRowAsDroppedModPreview)
+      .filter((item) => !prompted.has(externalPromptSignature(item)))
+      .filter((item) => droppedModPreviewHasRelatedMatch(item, dashboard.mods))
+      .slice(0, 8);
+    if (previews.length === 0) {
+      return;
+    }
+    setDroppedModSource("external");
+    setDroppedModPreviews(previews);
+    appendLog(`Nexus/Vortex 새 다운로드 ${previews.length}개 확인 필요`);
+  }, [appendLog, busy, dashboard, droppedModPreviews, loading, page]);
+
   async function previewDroppedPaths(paths: string[]) {
     if (paths.length === 0) {
       return;
@@ -284,7 +311,8 @@ function App() {
     setBusy("preview_dropped_mods");
     setDropBusyMessage("드롭한 모드 확인 중...");
     try {
-      const previews = await invokeCommand<DroppedModPreview[]>("preview_dropped_mods", { paths });
+      const previews = await invokeCommand("preview_dropped_mods", { paths });
+      setDroppedModSource("drop");
       setDroppedModPreviews(previews);
       appendLog(`드롭한 모드 ${previews.length}개 확인 완료`);
     } catch (error) {
@@ -295,7 +323,58 @@ function App() {
     }
   }
 
+  async function chooseImportFolder() {
+    if (isPreviewRuntime()) {
+      await previewDroppedPaths(["Z:/downloads/ExampleMod"]);
+      return;
+    }
+    const selected = await openDialog({
+      title: "모드 폴더 불러오기",
+      directory: true,
+      multiple: true,
+    });
+    await previewDroppedPaths(dialogPaths(selected));
+  }
+
+  async function chooseImportArchive() {
+    if (isPreviewRuntime()) {
+      await previewDroppedPaths(["Z:/downloads/ExampleMod.zip"]);
+      return;
+    }
+    const selected = await openDialog({
+      title: "모드 압축파일 불러오기",
+      multiple: true,
+      filters: [
+        {
+          name: "지원 모드 파일",
+          extensions: ["zip", "7z", "rar", "jar", "pck", "pak"],
+        },
+      ],
+    });
+    await previewDroppedPaths(dialogPaths(selected));
+  }
+
+  function importVortexDownloads() {
+    const previews = (dashboard?.mods ?? [])
+      .filter(isImportableVortexDownloadMod)
+      .map(modRowAsDroppedModPreview);
+    if (previews.length === 0) {
+      window.alert("불러올 수 있는 Vortex 다운로드 항목이 없습니다.");
+      return;
+    }
+    setDroppedModSource("external");
+    setDroppedModPreviews(previews);
+    appendLog(`Vortex 다운로드 ${previews.length}개 불러오기 준비`);
+  }
+
   async function confirmDroppedMods(decisions: DroppedModDecision[]) {
+    const source = droppedModSource;
+    const previews = droppedModPreviews ?? [];
+    const handledExternalPaths = new Set(
+      source === "external"
+        ? decisions.filter((decision) => decision.mode === "skip").map((decision) => decision.path)
+        : [],
+    );
     setDroppedModPreviews(null);
     const importDecisions = decisions.filter((decision) => decision.mode !== "skip");
     let applied = 0;
@@ -307,7 +386,14 @@ function App() {
       });
       if (result) {
         applied += 1;
+        handledExternalPaths.add(decision.path);
       }
+    }
+    if (source === "external") {
+      rememberExternalPromptedPreviews(
+        previews.filter((item) => handledExternalPaths.has(item.path)),
+        externalPromptedRef,
+      );
     }
     void cleanupDroppedPreviewCache();
     setDropBusyMessage(null);
@@ -419,6 +505,9 @@ function App() {
                 onApplyPreset={() => void applySelectedPresetWithPreview()}
                 onExportPreset={() => runAction("export_preset", { name: selectedPreset, archivePath })}
                 onImportPreset={() => runAction("import_preset_archive", { archivePath })}
+                onImportFolder={() => void chooseImportFolder()}
+                onImportArchive={() => void chooseImportArchive()}
+                onImportVortexDownloads={() => importVortexDownloads()}
                 onLaunch={() => void launchWithSetupCheck("launch_current")}
                 onVanilla={() => void launchWithSetupCheck("launch_vanilla")}
             />
@@ -556,7 +645,11 @@ function App() {
           items={droppedModPreviews}
           mods={dashboard.mods}
           busy={busy}
+          source={droppedModSource}
           onCancel={() => {
+            if (droppedModSource === "external") {
+              rememberExternalPromptedPreviews(droppedModPreviews, externalPromptedRef);
+            }
             setDroppedModPreviews(null);
             void cleanupDroppedPreviewCache();
           }}
@@ -588,6 +681,58 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+function isPromptableExternalMod(mod: ModRow): boolean {
+  return mod.external && !mod.active && !mod.managed && mod.download_state !== "downloading";
+}
+
+function isImportableVortexDownloadMod(mod: ModRow): boolean {
+  return isPromptableExternalMod(mod) && isVortexDownloadPath(mod.path);
+}
+
+function isVortexDownloadPath(path: string): boolean {
+  return path.replace(/\\/g, "/").toLowerCase().includes("/vortex/downloads/");
+}
+
+function dialogPaths(selected: string | string[] | null): string[] {
+  if (!selected) {
+    return [];
+  }
+  return Array.isArray(selected) ? selected : [selected];
+}
+
+function externalPromptSignature(item: DroppedModPreview): string {
+  return [item.path.replace(/\\/g, "/").toLowerCase(), item.bytes, item.modified_epoch ?? 0].join("|");
+}
+
+function readExternalPromptedSignatures(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(EXTERNAL_MOD_PROMPT_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function rememberExternalPromptedPreviews(
+  previews: DroppedModPreview[],
+  ref: React.MutableRefObject<Set<string> | null>,
+) {
+  if (previews.length === 0) {
+    return;
+  }
+  const prompted = ref.current ?? readExternalPromptedSignatures();
+  for (const item of previews) {
+    prompted.add(externalPromptSignature(item));
+  }
+  ref.current = prompted;
+  try {
+    window.localStorage.setItem(EXTERNAL_MOD_PROMPT_STORAGE_KEY, JSON.stringify(Array.from(prompted).slice(-300)));
+  } catch {
+    // Local storage can be unavailable in restricted preview contexts.
+  }
+}
 
 function baseModForTranslationPatch(mod: ModRow, mods: ModRow[]): ModRow {
   if (!mod.is_translation_patch) {

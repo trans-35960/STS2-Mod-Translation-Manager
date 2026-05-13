@@ -13,12 +13,12 @@
   }
 
   .mod-grid {
-    grid-template-columns: minmax(240px, 1fr) 145px 118px 104px 190px 184px;
+    grid-template-columns: minmax(var(--mod-name-col, 420px), 1fr) var(--mod-version-col, 132px) var(--mod-date-col, 118px) var(--mod-translation-col, 96px) var(--mod-language-col, 176px) var(--mod-actions-col, 220px);
     gap: 7px;
   }
 
   .mod-simple-grid {
-    grid-template-columns: minmax(240px, 1fr) 150px 190px 176px;
+    grid-template-columns: minmax(var(--mod-simple-name-col, 420px), 1fr) var(--mod-simple-version-col, 104px) var(--mod-simple-language-col, 104px) var(--mod-simple-actions-col, 220px);
     gap: 7px;
   }
 

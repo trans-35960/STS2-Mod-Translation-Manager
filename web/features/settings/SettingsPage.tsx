@@ -96,6 +96,7 @@ function SettingsPage({
     ["Workspace", dashboard.paths.workspace],
     ["Game", dashboard.paths.game],
     ["Game Mods", dashboard.paths.game_mods],
+    ["Disabled Mods", dashboard.paths.disabled],
     ["Save", dashboard.paths.save_dir],
     ["Save Backups", dashboard.paths.save_backup],
     ["Presets", dashboard.paths.presets],

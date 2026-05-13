@@ -320,6 +320,67 @@ fn validation_allows_translated_placeholder_variant_text_with_other_tokens() {
 }
 
 #[test]
+fn validation_allows_translated_nested_placeholder_text() {
+    let fixture = TestDir::create("json_translation_nested_placeholder_text");
+    fixture.write_file(
+        "source.json",
+        r#"{"desc":"Gain {Amount:abs()} {TemporaryPowerTitle} {UntilEndOfOtherSideTurn:cond:|until the end of the other side turn}. {Repeat:cond:>0?Repeat {Repeat:diff()} {Repeat:plural:time|times}.|}"}"#,
+    );
+    let sheet_path = fixture.path().join("sheet.json");
+    create_or_update_sheet(
+        &fixture.path().join("source.json"),
+        "kor",
+        None,
+        &sheet_path,
+    )
+    .expect("create sheet");
+    let mut sheet = read_sheet(&sheet_path).expect("read sheet");
+    sheet.entries[0].translated_value =
+        "{TemporaryPowerTitle}을 {Amount:abs()} 얻습니다 {UntilEndOfOtherSideTurn:cond:|상대 턴 종료까지}. {Repeat:cond:>0?{Repeat:diff()}회 {Repeat:plural:반복|반복들}.|}".to_string();
+    sheet.entries[0].status = JsonTranslationStatus::Ready;
+    write_sheet(&sheet_path, &sheet).expect("write sheet");
+
+    let validation = validate_sheet(&sheet_path).expect("validate sheet");
+
+    assert!(
+        validation
+            .format_issues
+            .iter()
+            .all(|issue| issue.kind != "placeholders")
+    );
+}
+
+#[test]
+fn validation_reports_missing_nested_placeholder() {
+    let fixture = TestDir::create("json_translation_missing_nested_placeholder");
+    fixture.write_file(
+        "source.json",
+        r#"{"desc":"{Repeat:cond:>0?Repeat {Repeat:diff()} {Repeat:plural:time|times}.|}"}"#,
+    );
+    let sheet_path = fixture.path().join("sheet.json");
+    create_or_update_sheet(
+        &fixture.path().join("source.json"),
+        "kor",
+        None,
+        &sheet_path,
+    )
+    .expect("create sheet");
+    let mut sheet = read_sheet(&sheet_path).expect("read sheet");
+    sheet.entries[0].translated_value = "{Repeat:cond:>0?반복 {Repeat:plural:번|번}.|}".to_string();
+    sheet.entries[0].status = JsonTranslationStatus::Ready;
+    write_sheet(&sheet_path, &sheet).expect("write sheet");
+
+    let validation = validate_sheet(&sheet_path).expect("validate sheet");
+
+    assert!(
+        validation
+            .format_issues
+            .iter()
+            .any(|issue| issue.kind == "placeholders")
+    );
+}
+
+#[test]
 fn directory_sources_create_one_sheet_and_apply_all_json_files() {
     let fixture = TestDir::create("json_translation_directory");
     fixture.write_file("source/cards.json", r#"{"name":"Strike"}"#);
@@ -686,36 +747,6 @@ fn infers_target_language_file_next_to_source_language_file() {
 }
 
 #[test]
-fn imports_exported_csv_values_into_sheet() {
-    let fixture = TestDir::create("json_translation_import_csv");
-    let sheet = JsonTranslationSheet {
-        source_path: fixture.path().join("source").display().to_string(),
-        target_language: "kor".to_string(),
-        updated_epoch: 1,
-        entries: vec![JsonTranslationEntry {
-            key: "file://cards.json#/name".to_string(),
-            slot_id: None,
-            previous_source_value: None,
-            source_value: "Strike".to_string(),
-            translated_value: String::new(),
-            status: JsonTranslationStatus::New,
-        }],
-    };
-    let id = translation_short_id("file://cards.json#/name");
-    fixture.write_file(
-        "translated.csv",
-        &format!("id,source_value,translated_value\n{id},Strike,타격\n"),
-    );
-
-    let (updated, report) =
-        import_translations(&sheet, &fixture.path().join("translated.csv")).expect("import");
-
-    assert_eq!(report.matched_entries, 1);
-    assert_eq!(updated.entries[0].translated_value, "타격");
-    assert_eq!(updated.entries[0].status, JsonTranslationStatus::Ready);
-}
-
-#[test]
 fn imports_csv_values_by_translation_slot_id() {
     let fixture = TestDir::create("json_translation_import_csv_slot_id");
     let sheet = JsonTranslationSheet {
@@ -745,8 +776,8 @@ fn imports_csv_values_by_translation_slot_id() {
 }
 
 #[test]
-fn imports_short_translation_json_values_into_sheet() {
-    let fixture = TestDir::create("json_translation_import_short_json");
+fn imports_slot_translation_json_values_into_sheet() {
+    let fixture = TestDir::create("json_translation_import_slot_json");
     let key = "file://cards.json#/desc";
     let sheet = JsonTranslationSheet {
         source_path: fixture.path().join("source").display().to_string(),
@@ -1125,35 +1156,6 @@ fn compact_translation_json_expands_padding_after_999_entries() {
     assert_eq!(file.len(), 1000);
     assert!(file.keys().any(|id| id.starts_with("k0001-")));
     assert!(file.keys().any(|id| id.starts_with("k1000-")));
-}
-
-#[test]
-fn rejects_legacy_compact_short_id_json() {
-    let fixture = TestDir::create("json_translation_reject_legacy_compact_json");
-    let key = "file://BaseLib/localization/zhs/cards.json#/desc";
-    let id = translation_short_id(key);
-    let sheet = JsonTranslationSheet {
-        source_path: fixture.path().join("source").display().to_string(),
-        target_language: "kor".to_string(),
-        updated_epoch: 1,
-        entries: vec![JsonTranslationEntry {
-            key: key.to_string(),
-            slot_id: None,
-            previous_source_value: None,
-            source_value: "造成伤害。".to_string(),
-            translated_value: String::new(),
-            status: JsonTranslationStatus::New,
-        }],
-    };
-    fixture.write_file(
-        "translated.json",
-        &format!(r#"{{"BaseLib/localization/zhs/cards.json":{{"{id}":"피해를 줍니다."}}}}"#),
-    );
-
-    let error = import_translations(&sheet, &fixture.path().join("translated.json"))
-        .expect_err("legacy short id should be rejected");
-
-    assert!(error.to_string().contains("이전 short-id JSON"));
 }
 
 #[test]

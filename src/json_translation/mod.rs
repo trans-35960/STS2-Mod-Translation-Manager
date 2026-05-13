@@ -19,7 +19,7 @@ pub use sheet::{
 pub use slots::{
     compact_source_translation_map, compact_source_translation_map_with_keys,
     compact_validation_issue_translation_map, compact_validation_issue_translation_map_with_keys,
-    translation_short_id, translation_slot_entries,
+    translation_slot_entries,
 };
 pub use types::{
     JsonApplyReport, JsonImportReport, JsonSheetReport, JsonTranslationEntry, JsonTranslationSheet,

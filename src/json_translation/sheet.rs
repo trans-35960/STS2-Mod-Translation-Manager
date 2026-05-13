@@ -207,7 +207,7 @@ pub fn read_sheet(path: &Path) -> AppResult<JsonTranslationSheet> {
             path.display()
         )));
     }
-    let mut sheet: JsonTranslationSheet = serde_json::from_str(&content).map_err(|source| {
+    let mut sheet: JsonTranslationSheet = serde_json::from_str(content).map_err(|source| {
         AppError::InvalidCommand(format!(
             "invalid translation sheet json: {} ({source})",
             path.display()
@@ -258,18 +258,18 @@ fn validation_format_issues(entry: &JsonTranslationEntry) -> Vec<JsonValidationI
         return Vec::new();
     }
     let mut issues = Vec::new();
-    if is_hardcoded_entry_key(&entry.key) {
-        if let Some(capacity) = hardcoded_capacity_bytes(&entry.key) {
-            let translated_len = utf16le_byte_len(&entry.translated_value);
-            if translated_len > capacity {
-                issues.push(JsonValidationIssue {
-                    key: entry.key.clone(),
-                    kind: "hardcoded_capacity".to_string(),
-                    message: format!(
-                        "DLL 고정 문자열보다 번역이 깁니다: 번역 {translated_len} bytes / 허용 {capacity} bytes"
-                    ),
-                });
-            }
+    if is_hardcoded_entry_key(&entry.key)
+        && let Some(capacity) = hardcoded_capacity_bytes(&entry.key)
+    {
+        let translated_len = utf16le_byte_len(&entry.translated_value);
+        if translated_len > capacity {
+            issues.push(JsonValidationIssue {
+                key: entry.key.clone(),
+                kind: "hardcoded_capacity".to_string(),
+                message: format!(
+                    "DLL 고정 문자열보다 번역이 깁니다: 번역 {translated_len} bytes / 허용 {capacity} bytes"
+                ),
+            });
         }
     }
     let source_newlines = entry.source_value.matches('\n').count();
@@ -394,27 +394,55 @@ fn placeholder_tokens(value: &str) -> Vec<String> {
 fn placeholder_bracket_tokens(value: &str) -> Vec<String> {
     let chars = value.chars().collect::<Vec<_>>();
     let mut output = Vec::new();
-    let mut index = 0;
-    while index < chars.len() {
+    collect_placeholder_bracket_tokens(&chars, 0, chars.len(), &mut output);
+    output
+}
+
+fn collect_placeholder_bracket_tokens(
+    chars: &[char],
+    start: usize,
+    end: usize,
+    output: &mut Vec<String>,
+) {
+    let mut index = start;
+    while index < end {
         if chars[index] != '{' {
             index += 1;
             continue;
         }
-        let start = index;
-        index += 1;
-        while index < chars.len() && chars[index] != '}' && chars[index] != '\n' {
+
+        let token_start = index;
+        let Some(token_end) = balanced_placeholder_end(chars, token_start, end) else {
             index += 1;
-        }
-        if index >= chars.len() || chars[index] != '}' {
             continue;
-        }
-        let token = chars[start..=index].iter().collect::<String>();
+        };
+
+        collect_placeholder_bracket_tokens(chars, token_start + 1, token_end, output);
+
+        let token = chars[token_start..=token_end].iter().collect::<String>();
         if token.len() <= 120 && token_has_placeholder_shape(&token) {
             output.push(token);
         }
-        index += 1;
+        index = token_end + 1;
     }
-    output
+}
+
+fn balanced_placeholder_end(chars: &[char], start: usize, end: usize) -> Option<usize> {
+    let mut depth = 0usize;
+    for (index, character) in chars.iter().enumerate().take(end).skip(start) {
+        match character {
+            '{' => depth += 1,
+            '}' => {
+                depth = depth.checked_sub(1)?;
+                if depth == 0 {
+                    return Some(index);
+                }
+            }
+            '\n' => return None,
+            _ => {}
+        }
+    }
+    None
 }
 
 fn normalize_placeholder_token(token: String) -> String {
@@ -428,9 +456,10 @@ fn normalize_placeholder_token(token: String) -> String {
         return format!("{{{}:show:<text>}}", &inner[..show_index]);
     }
     if let Some((prefix, variants)) = inner.split_once(':') {
-        if variants.contains('|') {
-            let placeholders = variants
-                .split('|')
+        let variant_parts = split_top_level_placeholder_variants(variants);
+        if variant_parts.len() > 1 {
+            let placeholders = variant_parts
+                .iter()
                 .map(|_| "<text>")
                 .collect::<Vec<_>>()
                 .join("|");
@@ -438,6 +467,25 @@ fn normalize_placeholder_token(token: String) -> String {
         }
     }
     token
+}
+
+fn split_top_level_placeholder_variants(value: &str) -> Vec<&str> {
+    let mut output = Vec::new();
+    let mut depth = 0usize;
+    let mut start = 0usize;
+    for (index, character) in value.char_indices() {
+        match character {
+            '{' => depth += 1,
+            '}' => depth = depth.saturating_sub(1),
+            '|' if depth == 0 => {
+                output.push(&value[start..index]);
+                start = index + character.len_utf8();
+            }
+            _ => {}
+        }
+    }
+    output.push(&value[start..]);
+    output
 }
 
 fn token_has_placeholder_shape(token: &str) -> bool {

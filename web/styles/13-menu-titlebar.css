@@ -224,13 +224,13 @@ body {
 }
 
 .mod-grid {
-  grid-template-columns: minmax(360px, 1fr) 170px 126px 112px 260px 184px;
+  grid-template-columns: minmax(360px, 1fr) 170px 126px 112px 260px 220px;
   gap: 10px;
 }
 
 @media (max-width: 1060px) {
   .mod-grid {
-    grid-template-columns: minmax(240px, 1fr) 145px 118px 104px 190px 184px;
+    grid-template-columns: minmax(240px, 1fr) 145px 118px 104px 190px 220px;
     gap: 7px;
   }
 }

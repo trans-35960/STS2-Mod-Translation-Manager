@@ -16,6 +16,9 @@ export function formatError(error: unknown): string {
 
 export function logTone(log: string): LogTone {
   const text = log.toLowerCase();
+  if (text.includes("완료") && !text.includes("실패") && !text.includes("failed") && !text.includes("error:")) {
+    return "info";
+  }
   if (
     [
       "오류",
@@ -52,6 +55,9 @@ export function logTone(log: string): LogTone {
 }
 
 export function shouldToastLog(log: string): boolean {
+  if (log.includes("내보내기 완료")) {
+    return true;
+  }
   if (
     log.includes("진행 중 런 정리를 시작")
     || log.includes("진행 중 런 정리 완료")

@@ -105,14 +105,6 @@ fn split_translation_key(key: &str) -> (String, String) {
     ("source.json".to_string(), key.to_string())
 }
 
-pub(crate) fn short_id_key_map(sheet: &JsonTranslationSheet) -> BTreeMap<String, String> {
-    sheet
-        .entries
-        .iter()
-        .map(|entry| (translation_short_id(&entry.key), entry.key.clone()))
-        .collect()
-}
-
 #[derive(Debug, Clone)]
 pub struct TranslationSlotEntry<'a> {
     pub compact_file: String,
@@ -318,19 +310,6 @@ pub(crate) fn is_translation_slot_id(value: &str) -> bool {
         && checksum
             .chars()
             .all(|character| character.is_ascii_alphanumeric())
-}
-
-pub(crate) fn is_legacy_translation_short_id(value: &str) -> bool {
-    value.len() >= 11
-        && value.starts_with('s')
-        && value[1..]
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric())
-}
-
-pub fn translation_short_id(key: &str) -> String {
-    let hash = fnv64(key.as_bytes());
-    format!("s{:010}", base36(hash))
 }
 
 const FNV_OFFSET: u64 = 0xcbf29ce484222325;
