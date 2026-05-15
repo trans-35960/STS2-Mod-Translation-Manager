@@ -57,6 +57,10 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
+            crate::services::configure_runtime_paths(
+                app.path().app_data_dir().ok(),
+                app.path().resource_dir().ok(),
+            );
             if std::env::var_os("STS2_E2E_NO_FOCUS").is_some()
                 && let Some(window) = app.get_webview_window("main")
             {

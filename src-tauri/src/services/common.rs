@@ -3,6 +3,23 @@ struct LanguagePreviewCache {
     dirty: bool,
 }
 
+const APP_WORKSPACE_DIR_NAME: &str = "STS2-Mod-Translation-Manager";
+
+static RUNTIME_APP_DATA_DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+static RUNTIME_RESOURCE_DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+
+pub(crate) fn configure_runtime_paths(
+    app_data_dir: Option<PathBuf>,
+    resource_dir: Option<PathBuf>,
+) {
+    if let Some(path) = app_data_dir {
+        let _ = RUNTIME_APP_DATA_DIR.set(path);
+    }
+    if let Some(path) = resource_dir {
+        let _ = RUNTIME_RESOURCE_DIR.set(path);
+    }
+}
+
 #[derive(Debug, Clone)]
 struct DeletedModEntry {
     id: String,
@@ -45,6 +62,9 @@ fn app() -> App {
 
 fn configured_config() -> AppConfig {
     let mut config = AppConfig::from_workspace(resolve_workspace_dir());
+    if let Some(vendor_dir) = bundled_vendor_dir() {
+        config.vendor_dir = vendor_dir;
+    }
     if let Ok(settings) = read_ui_settings(&config) {
         if !settings.translation_work_dir.trim().is_empty() {
             config.translation_work_dir = PathBuf::from(settings.translation_work_dir);
@@ -67,21 +87,92 @@ fn configured_config() -> AppConfig {
 }
 
 fn resolve_workspace_dir() -> PathBuf {
-    if let Some(path) = std::env::var_os("STS2_MOD_MANAGER_WORKSPACE") {
-        return PathBuf::from(path);
+    if let Some(path) = env_path("STS2_MOD_MANAGER_WORKSPACE") {
+        return path;
     }
 
     if let Ok(exe_path) = env::current_exe()
-        && let Some(exe_dir) = exe_path.parent()
-        && exe_dir.join(".sts2-mod-manager-portable").is_file()
+        && let Some(path) = portable_workspace_dir(&exe_path)
     {
-        return exe_dir.to_path_buf();
+        return path;
     }
 
+    #[cfg(debug_assertions)]
+    if let Some(path) = manifest_workspace_dir() {
+        return path;
+    }
+
+    runtime_app_data_workspace_dir()
+}
+
+fn env_path(key: &str) -> Option<PathBuf> {
+    env::var_os(key)
+        .filter(|value| !value.as_os_str().is_empty())
+        .map(PathBuf::from)
+}
+
+fn portable_workspace_dir(exe_path: &Path) -> Option<PathBuf> {
+    let exe_dir = exe_path.parent()?;
+    exe_dir
+        .join(".sts2-mod-manager-portable")
+        .is_file()
+        .then(|| exe_dir.to_path_buf())
+}
+
+#[cfg(debug_assertions)]
+fn manifest_workspace_dir() -> Option<PathBuf> {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .map(Path::to_path_buf)
-        .unwrap_or_else(|| PathBuf::from("."))
+        .filter(|path| path.join("Cargo.toml").is_file())
+}
+
+fn runtime_app_data_workspace_dir() -> PathBuf {
+    RUNTIME_APP_DATA_DIR
+        .get()
+        .cloned()
+        .unwrap_or_else(default_user_workspace_dir)
+}
+
+fn default_user_workspace_dir() -> PathBuf {
+    if let Some(path) = env_path("LOCALAPPDATA") {
+        return path.join(APP_WORKSPACE_DIR_NAME);
+    }
+    if let Some(path) = env_path("APPDATA") {
+        return path.join(APP_WORKSPACE_DIR_NAME);
+    }
+    if let Some(path) = env_path("XDG_DATA_HOME") {
+        return path.join(APP_WORKSPACE_DIR_NAME);
+    }
+    if let Some(path) = env_path("HOME") {
+        return path
+            .join(".local")
+            .join("share")
+            .join(APP_WORKSPACE_DIR_NAME);
+    }
+
+    env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(APP_WORKSPACE_DIR_NAME)
+}
+
+fn bundled_vendor_dir() -> Option<PathBuf> {
+    let resource_dir = RUNTIME_RESOURCE_DIR.get()?;
+    [
+        resource_dir.join("vendor"),
+        resource_dir.clone(),
+        resource_dir.parent()?.join("vendor"),
+    ]
+    .into_iter()
+    .find(|path| looks_like_vendor_dir(path))
+}
+
+fn looks_like_vendor_dir(path: &Path) -> bool {
+    path.join("7zip").join("7z.exe").is_file()
+        || path
+            .join("godot-pck-explorer-dotnet-ui-console-win-linux-mac")
+            .join("GodotPCKExplorer.Console.exe")
+            .is_file()
 }
 
 fn save_backup_dto(entry: SaveBackupEntry) -> SaveBackupDto {
@@ -223,5 +314,36 @@ fn kind_label(kind: ModKind) -> &'static str {
 fn epoch_seconds(time: Option<SystemTime>) -> Option<u64> {
     time.and_then(|value| value.duration_since(UNIX_EPOCH).ok())
         .map(|duration| duration.as_secs())
+}
+
+#[cfg(test)]
+mod runtime_path_tests {
+    use super::*;
+
+    #[test]
+    fn portable_workspace_uses_marker_next_to_exe() {
+        let root = env::temp_dir().join(format!("sts2-portable-{}", timestamp_string()));
+        fs::create_dir_all(&root).expect("create portable dir");
+        fs::write(root.join(".sts2-mod-manager-portable"), "").expect("write marker");
+
+        assert_eq!(
+            portable_workspace_dir(&root.join("STS2 Mod Manager.exe")),
+            Some(root.clone())
+        );
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn bundled_vendor_dir_accepts_resource_vendor_folder() {
+        let root = env::temp_dir().join(format!("sts2-resource-{}", timestamp_string()));
+        let vendor = root.join("vendor").join("7zip");
+        fs::create_dir_all(&vendor).expect("create vendor dir");
+        fs::write(vendor.join("7z.exe"), "").expect("write tool");
+
+        assert!(looks_like_vendor_dir(&root.join("vendor")));
+
+        let _ = fs::remove_dir_all(root);
+    }
 }
 
