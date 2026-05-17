@@ -158,13 +158,21 @@ fn default_user_workspace_dir() -> PathBuf {
 
 fn bundled_vendor_dir() -> Option<PathBuf> {
     let resource_dir = RUNTIME_RESOURCE_DIR.get()?;
-    [
-        resource_dir.join("vendor"),
-        resource_dir.clone(),
-        resource_dir.parent()?.join("vendor"),
-    ]
-    .into_iter()
-    .find(|path| looks_like_vendor_dir(path))
+    bundled_vendor_candidates(resource_dir)
+        .into_iter()
+        .find(|path| looks_like_vendor_dir(path))
+}
+
+fn bundled_vendor_candidates(resource_dir: &Path) -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+    push_unique_path(&mut candidates, resource_dir.join("vendor"));
+    push_unique_path(&mut candidates, resource_dir.to_path_buf());
+    push_unique_path(&mut candidates, resource_dir.join("_up_").join("vendor"));
+    if let Some(parent) = resource_dir.parent() {
+        push_unique_path(&mut candidates, parent.join("vendor"));
+        push_unique_path(&mut candidates, parent.join("_up_").join("vendor"));
+    }
+    candidates
 }
 
 fn looks_like_vendor_dir(path: &Path) -> bool {
@@ -342,6 +350,22 @@ mod runtime_path_tests {
         fs::write(vendor.join("7z.exe"), "").expect("write tool");
 
         assert!(looks_like_vendor_dir(&root.join("vendor")));
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn bundled_vendor_candidates_include_up_vendor_folder() {
+        let root = env::temp_dir().join(format!("sts2-resource-up-{}", timestamp_string()));
+        let vendor = root.join("_up_").join("vendor").join("7zip");
+        fs::create_dir_all(&vendor).expect("create vendor dir");
+        fs::write(vendor.join("7z.exe"), "").expect("write tool");
+
+        let up_vendor = root.join("_up_").join("vendor");
+        let candidates = bundled_vendor_candidates(&root);
+
+        assert!(candidates.contains(&up_vendor));
+        assert!(looks_like_vendor_dir(&up_vendor));
 
         let _ = fs::remove_dir_all(root);
     }
