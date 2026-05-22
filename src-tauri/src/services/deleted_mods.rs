@@ -1,43 +1,102 @@
 pub(crate) fn delete_mod(key: String, path: String) -> Result<ActionDto, String> {
     let app = app();
     let config = app.config();
-    let requested_path = PathBuf::from(path.trim());
-    if requested_path.as_os_str().is_empty() {
-        return Err("삭제할 모드 경로가 없습니다.".to_string());
+    let report = app
+        .scan_preview_report()
+        .map_err(|error| error.to_string())?;
+    let deleted_epoch = epoch_seconds(Some(SystemTime::now())).unwrap_or(0);
+    let deleted = delete_mod_entry(
+        ModDeleteDto { key, path },
+        report.summary,
+        deleted_epoch,
+        config,
+    )?;
+
+    Ok(ActionDto {
+        message: format!(
+            "{} 삭제 완료: 백업 위치 {}",
+            deleted.name,
+            deleted.backup_path.display()
+        ),
+        dashboard: dashboard().map_err(|error| error.to_string())?,
+    })
+}
+
+pub(crate) fn delete_mods(items: Vec<ModDeleteDto>) -> Result<ActionDto, String> {
+    let app = app();
+    let config = app.config();
+    if items.is_empty() {
+        return Err("삭제할 모드를 선택하세요.".to_string());
     }
     let report = app
         .scan_preview_report()
         .map_err(|error| error.to_string())?;
-    let record = report
-        .summary
+    let summary = report.summary;
+    let deleted_epoch = epoch_seconds(Some(SystemTime::now())).unwrap_or(0);
+    let mut deleted = Vec::new();
+    let mut failed = Vec::new();
+
+    for item in items {
+        match delete_mod_entry(item.clone(), summary.clone(), deleted_epoch, config) {
+            Ok(entry) => deleted.push(entry.name),
+            Err(error) => failed.push(format!("{} ({error})", item.key)),
+        }
+    }
+
+    if deleted.is_empty() {
+        return Err(format!("선택한 모드 삭제 실패: {}", failed.join(", ")));
+    }
+
+    Ok(ActionDto {
+        message: if failed.is_empty() {
+            format!("선택 모드 삭제 완료: {}개 ({})", deleted.len(), deleted.join(", "))
+        } else {
+            format!(
+                "선택 모드 일부 삭제 완료: 성공 {}개 ({}) / 실패 {}개 ({})",
+                deleted.len(),
+                deleted.join(", "),
+                failed.len(),
+                failed.join(", ")
+            )
+        },
+        dashboard: dashboard().map_err(|error| error.to_string())?,
+    })
+}
+
+fn delete_mod_entry(
+    item: ModDeleteDto,
+    summary: ScanSummary,
+    deleted_epoch: u64,
+    config: &AppConfig,
+) -> Result<DeletedModEntry, String> {
+    let key = item.key.trim();
+    let requested_path = PathBuf::from(item.path.trim());
+    if key.is_empty() {
+        return Err("삭제할 모드 키가 없습니다.".to_string());
+    }
+    if requested_path.as_os_str().is_empty() {
+        return Err("삭제할 모드 경로가 없습니다.".to_string());
+    }
+    let record = summary
         .game_mods
         .into_iter()
-        .chain(report.summary.disabled_mods)
-        .chain(report.summary.external_manager_mods)
+        .chain(summary.disabled_mods)
+        .chain(summary.external_manager_mods)
         .find(|record| record.stable_key() == key && same_path(&record.path, &requested_path))
         .ok_or_else(|| format!("{key} 모드를 현재 목록에서 찾지 못했습니다."))?;
     ensure_existing_deletable_mod_path(&record.path, config)?;
-    let deleted_epoch = epoch_seconds(Some(SystemTime::now())).unwrap_or(0);
-    let backup_path = move_mod_to_deleted_backup(&record.path, &key, deleted_epoch, config)?;
+    let backup_path = move_mod_to_deleted_backup(&record.path, key, deleted_epoch, config)?;
     let entry = DeletedModEntry {
-        id: deleted_mod_id(deleted_epoch, &key),
-        key: key.clone(),
+        id: deleted_mod_id(deleted_epoch, key),
+        key: key.to_string(),
         name: record.name.clone(),
         original_path: record.path.clone(),
         backup_path: backup_path.clone(),
         deleted_epoch,
         bytes: record.fingerprint.bytes,
     };
-    upsert_deleted_mod_entry(config, entry)?;
-
-    Ok(ActionDto {
-        message: format!(
-            "{} 삭제 완료: 백업 위치 {}",
-            record.name,
-            backup_path.display()
-        ),
-        dashboard: dashboard().map_err(|error| error.to_string())?,
-    })
+    upsert_deleted_mod_entry(config, entry.clone())?;
+    Ok(entry)
 }
 
 pub(crate) fn restore_deleted_mod(id: String) -> Result<ActionDto, String> {

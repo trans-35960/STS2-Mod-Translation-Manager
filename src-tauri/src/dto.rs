@@ -135,6 +135,12 @@ pub(crate) struct ModRowDto {
     pub(crate) extraction_tree: Vec<ExtractionTreeNodeDto>,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub(crate) struct ModDeleteDto {
+    pub(crate) key: String,
+    pub(crate) path: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct ModDependencyDto {
     pub(crate) id: String,

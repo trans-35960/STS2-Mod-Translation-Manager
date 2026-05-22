@@ -79,7 +79,7 @@ function truncate(value: string, maxLength: number): string {
 }
 
 export function logTone(log: string): LogTone {
-  const text = log.toLowerCase();
+  const text = normalizeSuccessCounts(log.toLowerCase());
   if (text.includes("완료") && !text.includes("실패") && !text.includes("failed") && !text.includes("error:")) {
     return "info";
   }
@@ -116,6 +116,13 @@ export function logTone(log: string): LogTone {
     return "warn";
   }
   return "info";
+}
+
+function normalizeSuccessCounts(text: string): string {
+  return text
+    .replace(/실패\s*0\s*개/g, "")
+    .replace(/failed\s*0\b/g, "")
+    .replace(/0\s*failed\b/g, "");
 }
 
 export function shouldToastLog(log: string): boolean {

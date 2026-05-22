@@ -70,6 +70,11 @@ pub(crate) fn delete_mod(key: String, path: String) -> Result<ActionDto, String>
 }
 
 #[tauri::command]
+pub(crate) fn delete_mods(items: Vec<ModDeleteDto>) -> Result<ActionDto, String> {
+    crate::services::delete_mods(items)
+}
+
+#[tauri::command]
 pub(crate) fn restore_deleted_mod(id: String) -> Result<ActionDto, String> {
     crate::services::restore_deleted_mod(id)
 }

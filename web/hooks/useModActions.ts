@@ -192,7 +192,46 @@ export function useModActions({
   }
 
   async function deleteMod(mod: ModRow) {
-    await runAction("delete_mod", { key: mod.key, path: mod.path });
+    const answer = await askModConfirm({
+      title: "모드 삭제",
+      body: [
+        `${mod.name} 모드를 삭제할까요?`,
+        "삭제한 모드는 설정의 최근 삭제에서 복원할 수 있습니다.",
+      ],
+      items: [mod.path],
+      confirmLabel: "삭제",
+      cancelLabel: "취소",
+    });
+    if (answer !== "confirm") {
+      return false;
+    }
+    const result = await runAction("delete_mod", { key: mod.key, path: mod.path });
+    return Boolean(result);
+  }
+
+  async function deleteMods(mods: ModRow[]) {
+    const targets = mods.filter((mod) => mod.path);
+    if (targets.length === 0) {
+      appendLog("삭제할 모드를 선택하세요.");
+      return false;
+    }
+    const answer = await askModConfirm({
+      title: "선택 모드 삭제",
+      body: [
+        `선택한 모드 ${targets.length}개를 삭제할까요?`,
+        "삭제한 모드는 설정의 최근 삭제에서 복원할 수 있습니다.",
+      ],
+      items: targets.slice(0, 12).map((mod) => mod.name).concat(targets.length > 12 ? [`외 ${targets.length - 12}개`] : []),
+      confirmLabel: "선택 삭제",
+      cancelLabel: "취소",
+    });
+    if (answer !== "confirm") {
+      return false;
+    }
+    const result = await runAction("delete_mods", {
+      items: targets.map((mod) => ({ key: mod.key, path: mod.path })),
+    });
+    return Boolean(result);
   }
 
   async function applySelectedPresetWithPreview() {
@@ -236,6 +275,7 @@ export function useModActions({
     launchWithSetupCheck,
     toggleModWithDependencies,
     deleteMod,
+    deleteMods,
     applySelectedPresetWithPreview,
     chooseExtractOutputDir,
     togglingModKeys,

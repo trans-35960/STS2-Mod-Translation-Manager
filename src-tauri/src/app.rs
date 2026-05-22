@@ -18,6 +18,7 @@ pub fn run() {
             commands::toggle_mod,
             commands::toggle_mods,
             commands::delete_mod,
+            commands::delete_mods,
             commands::restore_deleted_mod,
             commands::empty_deleted_mods,
             commands::cleanup_orphan_caches,

@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
   DownloadCloud,
@@ -41,6 +40,7 @@ import {
 function ModTableRow({
   labels: t,
   mod,
+  selected,
   targetLanguage,
   busy,
   toggling,
@@ -48,6 +48,7 @@ function ModTableRow({
   onToggle,
   onOpenPath,
   onDelete,
+  onSelect,
   onExtract,
   onStartModTranslation,
   child = false,
@@ -59,6 +60,7 @@ function ModTableRow({
 }: {
   labels: typeof labels.ko;
   mod: ModRow;
+  selected: boolean;
   targetLanguage: string;
   busy: string | null;
   toggling: boolean;
@@ -66,6 +68,7 @@ function ModTableRow({
   onToggle: (mod: ModRow) => Promise<void> | void;
   onOpenPath: (path: string) => void;
   onDelete: (mod: ModRow) => void;
+  onSelect: (mod: ModRow) => void;
   onExtract: (mod: ModRow) => void;
   onStartModTranslation: (mod: ModRow, resourcePath?: string) => void;
   child?: boolean;
@@ -77,18 +80,6 @@ function ModTableRow({
 }) {
   const primaryLanguage = recommendedSourceLanguage(mod.language_preview);
   const primaryResourcePath = primaryLanguage ? languageResourceRoot(primaryLanguage.sample_path) : defaultTranslatableResourcePath(mod);
-  const [confirmDelete, setConfirmDelete] = React.useState(false);
-  React.useEffect(() => {
-    if (!confirmDelete) {
-      return;
-    }
-    const timeoutId = window.setTimeout(() => setConfirmDelete(false), 3500);
-    return () => window.clearTimeout(timeoutId);
-  }, [confirmDelete]);
-  React.useEffect(() => {
-    setConfirmDelete(false);
-  }, [busy, mod.key]);
-  const deleteLabel = confirmDelete ? `${mod.name} 삭제 확인` : `${mod.name} 삭제`;
   const changed = showChangeDetails && mod.update_state !== "clean";
   const rowChangeClass = changed ? ` ${modChangeClass(mod.update_state)}` : "";
   const dependencyWarnings = warningDependencies(mod);
@@ -101,6 +92,12 @@ function ModTableRow({
       tabIndex={-1}
     >
       <div className="mod-title">
+        <ModSelectionCheckbox
+          checked={selected}
+          disabled={Boolean(busy) || locked || !canDeleteMod(mod)}
+          label={`${mod.name} 선택`}
+          onChange={() => onSelect(mod)}
+        />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           {child ? childModTitle(mod) : mod.name}
@@ -152,19 +149,11 @@ function ModTableRow({
         <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />
         <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || locked || downloading} />
         <IconButton
-          label={confirmDelete ? "한 번 더 누르면 삭제합니다" : deleteLabel}
-          icon={confirmDelete ? CheckCircle2 : Trash2}
-          onClick={() => {
-            if (!confirmDelete) {
-              setConfirmDelete(true);
-              return;
-            }
-            setConfirmDelete(false);
-            onDelete(mod);
-          }}
+          label={`${mod.name} 삭제`}
+          icon={Trash2}
+          onClick={() => onDelete(mod)}
           disabled={Boolean(busy) || locked || !canDeleteMod(mod)}
           danger
-          active={confirmDelete}
         />
       </div>
     </div>
@@ -176,8 +165,11 @@ function ModGroupTableRow({
   busy,
   toggling,
   locked,
+  selectedCount,
+  selectableCount,
   expanded,
   onToggleGroup,
+  onSelectGroup,
   onToggleExpand,
   showChangeDetails = false,
 }: {
@@ -185,8 +177,11 @@ function ModGroupTableRow({
   busy: string | null;
   toggling: boolean;
   locked: boolean;
+  selectedCount: number;
+  selectableCount: number;
   expanded: boolean;
   onToggleGroup: () => void;
+  onSelectGroup: () => void;
   onToggleExpand: () => void;
   showChangeDetails?: boolean;
 }) {
@@ -214,6 +209,12 @@ function ModGroupTableRow({
       }}
     >
       <div className="mod-title">
+        <ModSelectionCheckbox
+          checked={selectableCount > 0 && selectedCount === selectableCount}
+          disabled={Boolean(busy) || locked || selectableCount === 0}
+          label={`${group.name} 그룹 선택`}
+          onChange={onSelectGroup}
+        />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           {group.name}
@@ -256,8 +257,11 @@ function SimpleModGroupRow({
   busy,
   toggling,
   locked,
+  selectedCount,
+  selectableCount,
   expanded,
   onToggleGroup,
+  onSelectGroup,
   onToggleExpand,
   showChangeDetails = false,
 }: {
@@ -266,8 +270,11 @@ function SimpleModGroupRow({
   busy: string | null;
   toggling: boolean;
   locked: boolean;
+  selectedCount: number;
+  selectableCount: number;
   expanded: boolean;
   onToggleGroup: () => void;
+  onSelectGroup: () => void;
   onToggleExpand: () => void;
   showChangeDetails?: boolean;
 }) {
@@ -295,6 +302,12 @@ function SimpleModGroupRow({
       }}
     >
       <div className="mod-title">
+        <ModSelectionCheckbox
+          checked={selectableCount > 0 && selectedCount === selectableCount}
+          disabled={Boolean(busy) || locked || selectableCount === 0}
+          label={`${group.name} 그룹 선택`}
+          onChange={onSelectGroup}
+        />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           {group.name}
@@ -327,6 +340,7 @@ function SimpleModGroupRow({
 function SimpleModRow({
   labels: t,
   mod,
+  selected,
   targetLanguage,
   busy,
   toggling,
@@ -334,6 +348,7 @@ function SimpleModRow({
   onToggle,
   onOpenPath,
   onDelete,
+  onSelect,
   onExtract,
   onStartModTranslation,
   child = false,
@@ -345,6 +360,7 @@ function SimpleModRow({
 }: {
   labels: typeof labels.ko;
   mod: ModRow;
+  selected: boolean;
   targetLanguage: string;
   busy: string | null;
   toggling: boolean;
@@ -352,6 +368,7 @@ function SimpleModRow({
   onToggle: (mod: ModRow) => Promise<void> | void;
   onOpenPath: (path: string) => void;
   onDelete: (mod: ModRow) => void;
+  onSelect: (mod: ModRow) => void;
   onExtract: (mod: ModRow) => void;
   onStartModTranslation: (mod: ModRow, resourcePath?: string) => void;
   child?: boolean;
@@ -363,17 +380,6 @@ function SimpleModRow({
 }) {
   const selectedLanguage = representativeLanguage(mod.language_preview, targetLanguage);
   const primaryResourcePath = selectedLanguage ? languageResourceRoot(selectedLanguage.sample_path) : defaultTranslatableResourcePath(mod);
-  const [confirmDelete, setConfirmDelete] = React.useState(false);
-  React.useEffect(() => {
-    if (!confirmDelete) {
-      return;
-    }
-    const timeoutId = window.setTimeout(() => setConfirmDelete(false), 3500);
-    return () => window.clearTimeout(timeoutId);
-  }, [confirmDelete]);
-  React.useEffect(() => {
-    setConfirmDelete(false);
-  }, [busy, mod.key]);
   const changed = showChangeDetails && mod.update_state !== "clean";
   const rowChangeClass = changed ? ` ${modChangeClass(mod.update_state)}` : "";
   const dependencyWarnings = warningDependencies(mod);
@@ -386,6 +392,12 @@ function SimpleModRow({
       tabIndex={-1}
     >
       <div className="mod-title">
+        <ModSelectionCheckbox
+          checked={selected}
+          disabled={Boolean(busy) || locked || !canDeleteMod(mod)}
+          label={`${mod.name} 선택`}
+          onChange={() => onSelect(mod)}
+        />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           {child ? childModTitle(mod) : mod.name}
@@ -429,22 +441,37 @@ function SimpleModRow({
         <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />
         <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || locked || downloading} />
         <IconButton
-          label={confirmDelete ? "한 번 더 누르면 삭제합니다" : `${mod.name} 삭제`}
-          icon={confirmDelete ? CheckCircle2 : Trash2}
-          onClick={() => {
-            if (!confirmDelete) {
-              setConfirmDelete(true);
-              return;
-            }
-            setConfirmDelete(false);
-            onDelete(mod);
-          }}
+          label={`${mod.name} 삭제`}
+          icon={Trash2}
+          onClick={() => onDelete(mod)}
           disabled={Boolean(busy) || locked || !canDeleteMod(mod)}
           danger
-          active={confirmDelete}
         />
       </div>
     </div>
+  );
+}
+
+function ModSelectionCheckbox({
+  checked,
+  disabled,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  label: string;
+  onChange: () => void;
+}) {
+  return (
+    <label className="mod-row-select" aria-label={label} data-tooltip={label} onClick={(event) => event.stopPropagation()}>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    </label>
   );
 }
 

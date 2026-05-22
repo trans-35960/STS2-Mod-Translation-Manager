@@ -937,6 +937,77 @@ mod tests {
     }
 
     #[test]
+    fn delete_mod_entry_moves_each_selected_mod_to_deleted_backups() {
+        let root =
+            std::env::temp_dir().join(format!("sts2-deleted-bulk-{}", timestamp_string()));
+        let config = test_config(&root);
+        let first = config.game_mods_dir.join("FirstMod");
+        let second = game_disabled_dir(&config.game_mods_dir).join("SecondMod");
+        fs::create_dir_all(&first).expect("create first");
+        fs::create_dir_all(&second).expect("create second");
+        fs::write(first.join("FirstMod.pck"), "first").expect("write first");
+        fs::write(second.join("SecondMod.pck"), "second").expect("write second");
+        let summary = ScanSummary {
+            game_mods: vec![ModRecord {
+                name: "FirstMod".to_string(),
+                path: first.clone(),
+                source: ModSource::GameMods,
+                kind: ModKind::Directory,
+                version_hint: None,
+                fingerprint: sts2_mod_manager::domain::ModFingerprint {
+                    bytes: 5,
+                    modified: None,
+                },
+            }],
+            disabled_mods: vec![ModRecord {
+                name: "SecondMod".to_string(),
+                path: second.clone(),
+                source: ModSource::Disabled,
+                kind: ModKind::Directory,
+                version_hint: None,
+                fingerprint: sts2_mod_manager::domain::ModFingerprint {
+                    bytes: 6,
+                    modified: None,
+                },
+            }],
+            external_manager_mods: Vec::new(),
+        };
+
+        let first_entry = delete_mod_entry(
+            ModDeleteDto {
+                key: "firstmod".to_string(),
+                path: display_path(&first),
+            },
+            summary.clone(),
+            100,
+            &config,
+        )
+        .expect("delete first");
+        let second_entry = delete_mod_entry(
+            ModDeleteDto {
+                key: "secondmod".to_string(),
+                path: display_path(&second),
+            },
+            summary,
+            100,
+            &config,
+        )
+        .expect("delete second");
+
+        assert!(!first.exists());
+        assert!(!second.exists());
+        assert!(first_entry.backup_path.exists());
+        assert!(second_entry.backup_path.exists());
+        assert_eq!(
+            read_deleted_mod_entries(&config)
+                .expect("read deleted")
+                .len(),
+            2
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn expired_deleted_mods_become_tombstones() {
         let root = std::env::temp_dir().join(format!("sts2-deleted-prune-{}", timestamp_string()));
         let config = test_config(&root);

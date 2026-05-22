@@ -160,6 +160,7 @@ function App() {
     launchWithSetupCheck,
     toggleModWithDependencies,
     deleteMod,
+    deleteMods,
     applySelectedPresetWithPreview,
     chooseExtractOutputDir,
     togglingModKeys,
@@ -426,7 +427,9 @@ function App() {
     setChangeFilter("all");
     setTranslationApplyFilter("all");
     setSort("registered");
-    appendLog(`드롭한 모드 등록 완료: 성공 ${applied}개 / 실패 ${failed}개 / 건너뜀 ${skipped}개`);
+    appendLog(
+      `드롭한 모드 등록 완료: 성공 ${applied}개${failed > 0 ? ` / 실패 ${failed}개` : ""}${skipped > 0 ? ` / 건너뜀 ${skipped}개` : ""}`,
+    );
   }
 
   async function cleanupDroppedPreviewCache() {
@@ -520,6 +523,7 @@ function App() {
                 onToggle={(mod) => toggleModWithDependencies(mod)}
                 onOpenPath={(path) => void openPath(path)}
                 onDelete={(mod) => void deleteMod(mod)}
+                onDeleteSelected={deleteMods}
                 onExtract={(mod) => setPendingExtract(baseModForTranslationPatch(mod, dashboard.mods))}
                 onStartModTranslation={(mod, resourcePath) => void openModLanguageInTranslationTools(mod, resourcePath)}
                 onSavePreset={() => runAction("save_preset", { name: presetName })}

@@ -70,6 +70,11 @@ export type ModToggleRequest = {
   force?: boolean | null;
 };
 
+export type ModDeleteRequest = {
+  key: string;
+  path: string;
+};
+
 export type Paths = {
   workspace: string;
   game: string;

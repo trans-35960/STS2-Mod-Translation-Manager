@@ -5,8 +5,11 @@ import {
   List,
   Play,
   Search,
+  CheckSquare,
   ShieldAlert,
   ShieldCheck,
+  Square,
+  Trash2,
 } from "lucide-react";
 import { invokeCommand } from "../../api/tauri";
 import { labels } from "../../i18n";
@@ -33,6 +36,7 @@ import { ModGroupTableRow, ModTableRow, SimpleModGroupRow, SimpleModRow } from "
 import { PresetMenu } from "./PresetMenu";
 import {
   buildModGroups,
+  canDeleteMod,
   languageLabel,
   preferredGroupActivationTarget,
 } from "./modUtils";
@@ -106,6 +110,7 @@ function ModsPage(props: {
   onToggle: (mod: ModRow) => Promise<void> | void;
   onOpenPath: (path: string) => void;
   onDelete: (mod: ModRow) => void;
+  onDeleteSelected: (mods: ModRow[]) => Promise<boolean> | boolean | void;
   onExtract: (mod: ModRow) => void;
   onStartModTranslation: (mod: ModRow, resourcePath?: string) => void;
   onSavePreset: () => void;
@@ -122,6 +127,7 @@ function ModsPage(props: {
   const t = props.labels;
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({});
   const [forceModChanges, setForceModChanges] = React.useState(false);
+  const [selectedModKeys, setSelectedModKeys] = React.useState<Set<string>>(() => new Set());
   const [simpleView, setSimpleView] = React.useState(() => props.initialSimpleView || readStoredModViewMode());
   const [detailColumns, setDetailColumns] = React.useState(() =>
     clampModColumns(readStoredModTableColumns("detail", defaultDetailModColumns), minDetailModColumns),
@@ -138,6 +144,22 @@ function ModsPage(props: {
     () => props.mods.filter((mod) => isVortexDownloadMod(mod) && mod.download_state !== "downloading").length,
     [props.mods],
   );
+  const selectableMods = React.useMemo(() => {
+    const byKey = new Map<string, ModRow>();
+    for (const group of groups) {
+      for (const mod of group.mods) {
+        if (canDeleteMod(mod)) {
+          byKey.set(mod.key, mod);
+        }
+      }
+    }
+    return Array.from(byKey.values());
+  }, [groups]);
+  const selectedMods = React.useMemo(
+    () => selectableMods.filter((mod) => selectedModKeys.has(mod.key)),
+    [selectableMods, selectedModKeys],
+  );
+  const allSelectableSelected = selectableMods.length > 0 && selectableMods.every((mod) => selectedModKeys.has(mod.key));
 
   function toggleGroup(groupId: string) {
     setExpandedGroups((current) => ({ ...current, [groupId]: !current[groupId] }));
@@ -148,6 +170,14 @@ function ModsPage(props: {
       setForceModChanges(false);
     }
   }, [props.launchRunning]);
+
+  React.useEffect(() => {
+    setSelectedModKeys((current) => {
+      const validKeys = new Set(props.mods.filter(canDeleteMod).map((mod) => mod.key));
+      const next = new Set(Array.from(current).filter((key) => validKeys.has(key)));
+      return next.size === current.size ? current : next;
+    });
+  }, [props.mods]);
 
   React.useEffect(() => {
     writeStoredModTableColumns("detail", detailColumns);
@@ -229,6 +259,66 @@ function ModsPage(props: {
     }
   }
 
+  function toggleModSelection(mod: ModRow) {
+    if (!canDeleteMod(mod)) {
+      return;
+    }
+    setSelectedModKeys((current) => {
+      const next = new Set(current);
+      if (next.has(mod.key)) {
+        next.delete(mod.key);
+      } else {
+        next.add(mod.key);
+      }
+      return next;
+    });
+  }
+
+  function toggleGroupSelection(group: ModGroup) {
+    const deletable = group.mods.filter(canDeleteMod);
+    if (deletable.length === 0) {
+      return;
+    }
+    const allSelected = deletable.every((mod) => selectedModKeys.has(mod.key));
+    setSelectedModKeys((current) => {
+      const next = new Set(current);
+      for (const mod of deletable) {
+        if (allSelected) {
+          next.delete(mod.key);
+        } else {
+          next.add(mod.key);
+        }
+      }
+      return next;
+    });
+  }
+
+  function toggleAllVisibleSelection() {
+    setSelectedModKeys((current) => {
+      const next = new Set(current);
+      if (allSelectableSelected) {
+        for (const mod of selectableMods) {
+          next.delete(mod.key);
+        }
+      } else {
+        for (const mod of selectableMods) {
+          next.add(mod.key);
+        }
+      }
+      return next;
+    });
+  }
+
+  async function deleteSelectedMods() {
+    if (selectedMods.length === 0) {
+      return;
+    }
+    const deleted = await props.onDeleteSelected(selectedMods);
+    if (deleted !== false) {
+      setSelectedModKeys(new Set());
+    }
+  }
+
   return (
     <>
       <div className={modChangesLocked ? "mod-lock-frame locked" : "mod-lock-frame"}>
@@ -300,6 +390,28 @@ function ModsPage(props: {
           onImport={props.onImportPreset}
           busy={props.busy}
         />
+        <span className="mod-selection-actions">
+          <button
+            type="button"
+            className="toolbar-icon-button mod-select-all"
+            aria-label={allSelectableSelected ? "현재 표시 모드 선택 해제" : `현재 표시 모드 선택 (${selectedMods.length}개 선택됨)`}
+            data-tooltip={allSelectableSelected ? "현재 표시 모드 선택 해제" : `현재 표시 모드 선택 (${selectedMods.length}개 선택됨)`}
+            onClick={toggleAllVisibleSelection}
+            disabled={Boolean(props.busy) || modChangesLocked || selectableMods.length === 0}
+          >
+            {allSelectableSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+          </button>
+          <button
+            className="toolbar-icon-button danger"
+            type="button"
+            aria-label={`선택 모드 삭제 ${selectedMods.length}개`}
+            data-tooltip={`선택 모드 삭제 ${selectedMods.length}개`}
+            onClick={() => void deleteSelectedMods()}
+            disabled={Boolean(props.busy) || modChangesLocked || selectedMods.length === 0}
+          >
+            <Trash2 size={16} />
+          </button>
+        </span>
         <span
           className={`launch-status-chip ${props.vanillaSafe ? "good" : "warn"}`}
           aria-label={props.vanillaSafe ? t.safe : t.unsafe}
@@ -354,6 +466,7 @@ function ModsPage(props: {
                   <SimpleModRow
                     labels={t}
                     mod={parent}
+                    selected={selectedModKeys.has(parent.key)}
                     targetLanguage={props.targetLanguage}
                     busy={props.busy}
                     toggling={props.togglingModKeys.has(parent.key)}
@@ -361,6 +474,7 @@ function ModsPage(props: {
                     onToggle={props.onToggle}
                     onOpenPath={props.onOpenPath}
                     onDelete={props.onDelete}
+                    onSelect={toggleModSelection}
                     onExtract={props.onExtract}
                     onStartModTranslation={props.onStartModTranslation}
                     attachedChildCount={children.length}
@@ -373,6 +487,7 @@ function ModsPage(props: {
                   <ModTableRow
                     labels={t}
                     mod={parent}
+                    selected={selectedModKeys.has(parent.key)}
                     targetLanguage={props.targetLanguage}
                     busy={props.busy}
                     toggling={props.togglingModKeys.has(parent.key)}
@@ -380,6 +495,7 @@ function ModsPage(props: {
                     onToggle={props.onToggle}
                     onOpenPath={props.onOpenPath}
                     onDelete={props.onDelete}
+                    onSelect={toggleModSelection}
                     onExtract={props.onExtract}
                     onStartModTranslation={props.onStartModTranslation}
                     attachedChildCount={children.length}
@@ -395,6 +511,7 @@ function ModsPage(props: {
                       key={mod.key}
                       labels={t}
                       mod={mod}
+                      selected={selectedModKeys.has(mod.key)}
                       targetLanguage={props.targetLanguage}
                       busy={props.busy}
                       toggling={props.togglingModKeys.has(mod.key)}
@@ -402,6 +519,7 @@ function ModsPage(props: {
                       onToggle={props.onToggle}
                       onOpenPath={props.onOpenPath}
                       onDelete={props.onDelete}
+                      onSelect={toggleModSelection}
                       onExtract={props.onExtract}
                       onStartModTranslation={props.onStartModTranslation}
                       child
@@ -413,6 +531,7 @@ function ModsPage(props: {
                       key={mod.key}
                       labels={t}
                       mod={mod}
+                      selected={selectedModKeys.has(mod.key)}
                       targetLanguage={props.targetLanguage}
                       busy={props.busy}
                       toggling={props.togglingModKeys.has(mod.key)}
@@ -420,6 +539,7 @@ function ModsPage(props: {
                       onToggle={props.onToggle}
                       onOpenPath={props.onOpenPath}
                       onDelete={props.onDelete}
+                      onSelect={toggleModSelection}
                       onExtract={props.onExtract}
                       onStartModTranslation={props.onStartModTranslation}
                       child
@@ -436,6 +556,7 @@ function ModsPage(props: {
                 key={group.mods[0].key}
                 labels={t}
                 mod={group.mods[0]}
+                selected={selectedModKeys.has(group.mods[0].key)}
                 targetLanguage={props.targetLanguage}
                 busy={props.busy}
                 toggling={props.togglingModKeys.has(group.mods[0].key)}
@@ -443,6 +564,7 @@ function ModsPage(props: {
                 onToggle={props.onToggle}
                 onOpenPath={props.onOpenPath}
                 onDelete={props.onDelete}
+                onSelect={toggleModSelection}
                 onExtract={props.onExtract}
                 onStartModTranslation={props.onStartModTranslation}
                 focused={props.focusedModKey === group.mods[0].key}
@@ -453,6 +575,7 @@ function ModsPage(props: {
                 key={group.mods[0].key}
                 labels={t}
                 mod={group.mods[0]}
+                selected={selectedModKeys.has(group.mods[0].key)}
                 targetLanguage={props.targetLanguage}
                 busy={props.busy}
                 toggling={props.togglingModKeys.has(group.mods[0].key)}
@@ -460,6 +583,7 @@ function ModsPage(props: {
                 onToggle={props.onToggle}
                 onOpenPath={props.onOpenPath}
                 onDelete={props.onDelete}
+                onSelect={toggleModSelection}
                 onExtract={props.onExtract}
                 onStartModTranslation={props.onStartModTranslation}
                 focused={props.focusedModKey === group.mods[0].key}
@@ -476,8 +600,11 @@ function ModsPage(props: {
                   busy={props.busy}
                   toggling={group.mods.some((mod) => props.togglingModKeys.has(mod.key))}
                   locked={modChangesLocked}
+                  selectedCount={group.mods.filter((mod) => selectedModKeys.has(mod.key) && canDeleteMod(mod)).length}
+                  selectableCount={group.mods.filter(canDeleteMod).length}
                   expanded={isExpanded}
                   onToggleGroup={() => void toggleGroupEnabled(group)}
+                  onSelectGroup={() => toggleGroupSelection(group)}
                   onToggleExpand={() => toggleGroup(group.id)}
                   showChangeDetails={showChangeDetails}
                 />
@@ -487,8 +614,11 @@ function ModsPage(props: {
                   busy={props.busy}
                   toggling={group.mods.some((mod) => props.togglingModKeys.has(mod.key))}
                   locked={modChangesLocked}
+                  selectedCount={group.mods.filter((mod) => selectedModKeys.has(mod.key) && canDeleteMod(mod)).length}
+                  selectableCount={group.mods.filter(canDeleteMod).length}
                   expanded={isExpanded}
                   onToggleGroup={() => void toggleGroupEnabled(group)}
+                  onSelectGroup={() => toggleGroupSelection(group)}
                   onToggleExpand={() => toggleGroup(group.id)}
                   showChangeDetails={showChangeDetails}
                 />
@@ -499,6 +629,7 @@ function ModsPage(props: {
                     key={mod.key}
                     labels={t}
                     mod={mod}
+                    selected={selectedModKeys.has(mod.key)}
                     targetLanguage={props.targetLanguage}
                     busy={props.busy}
                     toggling={props.togglingModKeys.has(mod.key)}
@@ -506,6 +637,7 @@ function ModsPage(props: {
                     onToggle={props.onToggle}
                     onOpenPath={props.onOpenPath}
                     onDelete={props.onDelete}
+                    onSelect={toggleModSelection}
                     onExtract={props.onExtract}
                     onStartModTranslation={props.onStartModTranslation}
                     child
@@ -517,6 +649,7 @@ function ModsPage(props: {
                     key={mod.key}
                     labels={t}
                     mod={mod}
+                    selected={selectedModKeys.has(mod.key)}
                     targetLanguage={props.targetLanguage}
                     busy={props.busy}
                     toggling={props.togglingModKeys.has(mod.key)}
@@ -524,6 +657,7 @@ function ModsPage(props: {
                     onToggle={props.onToggle}
                     onOpenPath={props.onOpenPath}
                     onDelete={props.onDelete}
+                    onSelect={toggleModSelection}
                     onExtract={props.onExtract}
                     onStartModTranslation={props.onStartModTranslation}
                     child

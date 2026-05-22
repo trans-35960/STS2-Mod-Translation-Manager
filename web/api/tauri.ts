@@ -12,6 +12,7 @@ import type {
   JsonTranslationSheet,
   JsonValidation,
   LanguageCompareValue,
+  ModDeleteRequest,
   ModToggleRequest,
   NodeTranslationResult,
   SaveSettingsRequest,
@@ -32,6 +33,7 @@ export type CommandArgs = {
   toggle_mod: { key: string; active: boolean; force?: boolean | null };
   toggle_mods: { changes: ModToggleRequest[] };
   delete_mod: { key: string; path: string };
+  delete_mods: { items: ModDeleteRequest[] };
   restore_deleted_mod: { id: string };
   empty_deleted_mods: undefined;
   cleanup_orphan_caches: undefined;
@@ -115,6 +117,7 @@ export type CommandResult = {
   toggle_mod: ActionResult;
   toggle_mods: ActionResult;
   delete_mod: ActionResult;
+  delete_mods: ActionResult;
   restore_deleted_mod: ActionResult;
   empty_deleted_mods: ActionResult;
   cleanup_orphan_caches: ActionResult;
