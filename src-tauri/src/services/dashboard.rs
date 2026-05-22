@@ -113,9 +113,11 @@ pub(crate) fn import_dropped_mod(
     replace_path: Option<String>,
 ) -> Result<ActionDto, String> {
     let source = PathBuf::from(path.trim());
-    let record = dropped_mod_record(&source)?;
     let app = app();
-    let drop_import_root = drop_import_root_for_path(&source, app.config());
+    let import_source = dropped_mod_import_source(&source, app.config())?;
+    let record = dropped_mod_record(&import_source)?;
+    let drop_import_root = drop_import_root_for_path(&import_source, app.config())
+        .or_else(|| drop_import_root_for_path(&source, app.config()));
 
     if let Some(replace_path) = replace_path
         .as_deref()
@@ -123,7 +125,7 @@ pub(crate) fn import_dropped_mod(
         .filter(|value| !value.is_empty())
     {
         let target = PathBuf::from(replace_path);
-        replace_existing_mod_path(&source, &target, app.config())?;
+        replace_existing_mod_path(&import_source, &target, app.config())?;
         cleanup_drop_import_root(drop_import_root.as_deref());
         return Ok(ActionDto {
             message: format!("{} 덮어쓰기 완료", record.name),
@@ -132,7 +134,7 @@ pub(crate) fn import_dropped_mod(
     }
 
     let action = app
-        .import_mod_as_new(&source)
+        .import_mod_as_new(&import_source)
         .map_err(|error| error.to_string())?;
     cleanup_drop_import_root(drop_import_root.as_deref());
     Ok(ActionDto {
@@ -282,7 +284,7 @@ fn dropped_mod_candidates(path: &Path, config: &AppConfig) -> Result<Vec<Dropped
         && let Some(extract_dir) = extract_dropped_archive(path, config)
     {
         let nested = split_dropped_directory(&extract_dir)?;
-        if nested.len() > 1 {
+        if !nested.is_empty() {
             return Ok(nested
                 .into_iter()
                 .map(|record| DroppedModCandidate {
@@ -290,13 +292,6 @@ fn dropped_mod_candidates(path: &Path, config: &AppConfig) -> Result<Vec<Dropped
                     record,
                 })
                 .collect());
-        }
-        if nested.len() == 1 {
-            let record = dropped_mod_record(path)?;
-            return Ok(vec![DroppedModCandidate {
-                display_path: display_path(&record.path),
-                record,
-            }]);
         }
     }
 
@@ -406,11 +401,20 @@ fn infer_dropped_version_hint(name: &str) -> Option<String> {
 }
 
 fn split_dropped_directory(path: &Path) -> Result<Vec<ModRecord>, String> {
+    if dropped_directory_is_mod_root(path) {
+        return Ok(vec![dropped_mod_record(path)?]);
+    }
+
+    let nested_roots = nested_dropped_mod_roots(path, 6)?;
+    if !nested_roots.is_empty() {
+        return nested_roots
+            .into_iter()
+            .map(|path| dropped_mod_record(&path))
+            .collect();
+    }
+
     let mut current = path.to_path_buf();
-    for _ in 0..3 {
-        if dropped_directory_is_mod_root(&current) {
-            return Ok(vec![dropped_mod_record(&current)?]);
-        }
+    for _ in 0..6 {
         let records = supported_records_in_directory(&current)?;
         if records.len() > 1 {
             return Ok(records);
@@ -425,6 +429,56 @@ fn split_dropped_directory(path: &Path) -> Result<Vec<ModRecord>, String> {
     }
 
     supported_records_in_directory(&current)
+}
+
+fn nested_dropped_mod_roots(path: &Path, max_depth: usize) -> Result<Vec<PathBuf>, String> {
+    let mut roots = Vec::new();
+    collect_nested_dropped_mod_roots(path, max_depth, 0, &mut roots)?;
+    roots.sort();
+    roots.dedup();
+    Ok(roots)
+}
+
+fn collect_nested_dropped_mod_roots(
+    path: &Path,
+    max_depth: usize,
+    depth: usize,
+    output: &mut Vec<PathBuf>,
+) -> Result<(), String> {
+    if depth >= max_depth || should_skip_dropped_wrapper(path) {
+        return Ok(());
+    }
+    let entries = fs::read_dir(path)
+        .map_err(|error| format!("폴더를 읽을 수 없습니다: {} ({error})", path.display()))?;
+    for entry in entries.filter_map(Result::ok) {
+        let child = entry.path();
+        let Ok(metadata) = entry.metadata() else {
+            continue;
+        };
+        if !metadata.is_dir() || should_skip_dropped_wrapper(&child) {
+            continue;
+        }
+        if dropped_directory_is_mod_root(&child) {
+            output.push(child);
+            continue;
+        }
+        collect_nested_dropped_mod_roots(&child, max_depth, depth + 1, output)?;
+    }
+    Ok(())
+}
+
+fn should_skip_dropped_wrapper(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|value| value.to_str())
+        .map(|name| {
+            let lower = name.to_ascii_lowercase();
+            lower == "__macosx"
+                || lower == ".git"
+                || lower == "node_modules"
+                || lower == "target"
+                || lower.starts_with('.')
+        })
+        .unwrap_or(false)
 }
 
 fn dropped_directory_is_mod_root(path: &Path) -> bool {
@@ -497,6 +551,18 @@ fn is_supported_drop_archive_path(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
+fn dropped_mod_import_source(path: &Path, config: &AppConfig) -> Result<PathBuf, String> {
+    if is_supported_drop_archive_path(path)
+        && let Some(extract_dir) = extract_dropped_archive(path, config)
+    {
+        let nested = split_dropped_directory(&extract_dir)?;
+        if nested.len() == 1 {
+            return Ok(nested[0].path.clone());
+        }
+    }
+    Ok(path.to_path_buf())
+}
+
 fn extract_dropped_archive(path: &Path, config: &AppConfig) -> Option<PathBuf> {
     let extract_dir = drop_import_extract_dir(path, config);
     if extract_dir.exists() {
@@ -541,6 +607,12 @@ fn drop_import_extract_dir(path: &Path, config: &AppConfig) -> PathBuf {
         .state_dir
         .join("drop_imports")
         .join(format!("drop-{:016x}", drop_stable_hash(&cache_key)))
+        .join(
+            path.file_stem()
+                .map(|value| value.to_string_lossy().trim().to_string())
+                .filter(|value| !value.is_empty())
+                .unwrap_or_else(|| "archive".to_string()),
+        )
 }
 
 fn drop_import_root_for_path(path: &Path, config: &AppConfig) -> Option<PathBuf> {

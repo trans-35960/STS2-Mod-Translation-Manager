@@ -1872,6 +1872,92 @@ mod tests {
     }
 
     #[test]
+    fn dropped_archive_preview_uses_extracted_single_mod_root() {
+        let root = std::env::temp_dir().join(format!("sts2-drop-archive-root-{}", timestamp_string()));
+        let config = test_config(&root);
+        let archive = root.join("downloads").join("BaseLib.zip");
+        fs::create_dir_all(archive.parent().expect("archive parent")).expect("create downloads");
+        fs::write(&archive, "archive").expect("write archive");
+        let extract_dir = drop_import_extract_dir(&archive, &config);
+        let mod_root = extract_dir.join("BaseLib");
+        fs::create_dir_all(&mod_root).expect("create extracted mod");
+        fs::write(mod_root.join("BaseLib.pck"), "pck").expect("write pck");
+
+        let candidates = dropped_mod_candidates(&archive, &config).expect("preview archive");
+        let import_source = dropped_mod_import_source(&archive, &config).expect("import source");
+
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].record.name, "BaseLib");
+        assert_eq!(candidates[0].record.path, mod_root);
+        assert_eq!(import_source, candidates[0].record.path);
+        assert!(candidates[0].display_path.contains("BaseLib.zip > BaseLib"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn dropped_archive_root_payload_uses_archive_stem_folder() {
+        let root = std::env::temp_dir().join(format!("sts2-drop-archive-stem-{}", timestamp_string()));
+        let config = test_config(&root);
+        let archive = root.join("downloads").join("AkiSister.rar");
+        fs::create_dir_all(archive.parent().expect("archive parent")).expect("create downloads");
+        fs::write(&archive, "archive").expect("write archive");
+        let extract_dir = drop_import_extract_dir(&archive, &config);
+        fs::create_dir_all(&extract_dir).expect("create extracted root");
+        fs::write(extract_dir.join("AkiSister.pck"), "pck").expect("write pck");
+
+        let candidates = dropped_mod_candidates(&archive, &config).expect("preview archive");
+        let import_source = dropped_mod_import_source(&archive, &config).expect("import source");
+
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].record.name, "AkiSister");
+        assert_eq!(candidates[0].record.path, extract_dir);
+        assert_eq!(import_source, candidates[0].record.path);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn dropped_folder_finds_deep_single_mod_root() {
+        let root = std::env::temp_dir().join(format!("sts2-drop-folder-deep-{}", timestamp_string()));
+        let dropped = root.join("LibraryOfRuina");
+        let mod_root = dropped
+            .join("LibraryOfRuina")
+            .join("disabled")
+            .join("LibraryOfRuina");
+        fs::create_dir_all(&mod_root).expect("create deep mod root");
+        fs::write(mod_root.join("LibraryOfRuina.pck"), "pck").expect("write pck");
+
+        let records = split_dropped_directory(&dropped).expect("split folder");
+
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].name, "LibraryOfRuina");
+        assert_eq!(records[0].path, mod_root);
+        assert_eq!(records[0].kind, ModKind::Directory);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn dropped_folder_finds_multiple_nested_mod_roots() {
+        let root = std::env::temp_dir().join(format!("sts2-drop-folder-multi-{}", timestamp_string()));
+        let dropped = root.join("mods-pack");
+        let first = dropped.join("BaseLib");
+        let second = dropped.join("characters").join("AkiSister");
+        fs::create_dir_all(&first).expect("create first");
+        fs::create_dir_all(&second).expect("create second");
+        fs::write(first.join("BaseLib.pck"), "pck").expect("write first pck");
+        fs::write(second.join("AkiSister.pck"), "pck").expect("write second pck");
+
+        let records = split_dropped_directory(&dropped).expect("split folder");
+        let names = records
+            .iter()
+            .map(|record| record.name.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(names, vec!["BaseLib", "AkiSister"]);
+        assert!(records.iter().all(|record| record.kind == ModKind::Directory));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn setup_issues_warn_when_work_paths_overlap() {
         let root = std::env::temp_dir().join(format!("sts2-settings-overlap-{}", timestamp_string()));
         let config = test_config(&root);
