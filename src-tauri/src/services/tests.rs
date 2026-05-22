@@ -1010,6 +1010,52 @@ mod tests {
     }
 
     #[test]
+    fn reinstalled_local_mods_are_not_hidden_by_deleted_entries() {
+        let root =
+            std::env::temp_dir().join(format!("sts2-deleted-reinstalled-{}", timestamp_string()));
+        let config = test_config(&root);
+        fs::create_dir_all(&config.state_dir).expect("create state");
+        let backup = config
+            .state_dir
+            .join("deleted_mods")
+            .join("entry")
+            .join("BaseLib.3.1.4.zip");
+        fs::create_dir_all(backup.parent().expect("backup parent")).expect("create backup parent");
+        fs::write(&backup, "archive").expect("write backup");
+        upsert_deleted_mod_entry(
+            &config,
+            DeletedModEntry {
+                id: "entry".to_string(),
+                key: "baselib-3-1-4".to_string(),
+                name: "BaseLib.3.1.4".to_string(),
+                original_path: config.game_mods_dir.join("BaseLib.3.1.4.zip"),
+                backup_path: backup,
+                deleted_epoch: 100,
+                bytes: 7,
+            },
+        )
+        .expect("write deleted entry");
+        let summary = ScanSummary {
+            game_mods: Vec::new(),
+            disabled_mods: vec![ModRecord {
+                name: "BaseLib.3.1.4".to_string(),
+                path: config.game_mods_dir.join("..").join("mods.disabled").join("BaseLib.3.1.4"),
+                source: ModSource::Disabled,
+                kind: ModKind::Directory,
+                version_hint: None,
+                fingerprint: sts2_mod_manager::domain::ModFingerprint {
+                    bytes: 3,
+                    modified: None,
+                },
+            }],
+            external_manager_mods: Vec::new(),
+        };
+
+        assert!(!deleted_mod_keys_for_summary(&config, &summary).contains("baselib-3-1-4"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn translation_apply_history_keeps_latest_record_by_mod() {
         let root = std::env::temp_dir().join(format!("sts2-apply-history-{}", timestamp_string()));
         let config = test_config(&root);

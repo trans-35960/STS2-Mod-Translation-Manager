@@ -10,6 +10,7 @@ import {
   stableCompareKey,
 } from "../../features/translation/translationUtils";
 import { normalizeLanguageTag } from "../../features/mods/modUtils";
+import { formatCommandError } from "../../utils/logging";
 import { isPreviewRuntime } from "../../utils/runtime";
 import type { TranslationActionsParams } from "./types";
 
@@ -135,7 +136,7 @@ export function useTranslationCompareActions({
       appendLog(`비교 언어 불러오기 완료: ${result.length}개 값`);
       return true;
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("compare_translation_language", { sheetPath, samplePath }, error));
       return false;
     } finally {
       setBusy(null);

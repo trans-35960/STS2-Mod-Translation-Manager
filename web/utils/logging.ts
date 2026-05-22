@@ -2,16 +2,80 @@ import type { LogTone } from "../types";
 
 export function formatError(error: unknown): string {
   if (error instanceof Error) {
-    return error.message;
+    return [error.message, error.stack].filter(Boolean).join(" | ");
   }
   if (typeof error === "string") {
     return error;
+  }
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const message = [record.message, record.error, record.reason]
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+      .join(" / ");
+    if (message) {
+      return message;
+    }
   }
   try {
     return JSON.stringify(error);
   } catch {
     return String(error);
   }
+}
+
+export function formatCommandError(command: string, args: unknown, error: unknown): string {
+  const details = summarizeCommandArgs(args);
+  return `${command} 실패: ${formatError(error)}${details ? ` (${details})` : ""}`;
+}
+
+export function summarizeCommandArgs(args: unknown): string {
+  if (!args || typeof args !== "object") {
+    return "";
+  }
+  return Object.entries(args as Record<string, unknown>)
+    .map(([key, value]) => summarizeArg(key, value))
+    .filter(Boolean)
+    .join(", ");
+}
+
+function summarizeArg(key: string, value: unknown): string {
+  if (value === undefined || value === null || value === "") {
+    return "";
+  }
+  if (typeof value === "string") {
+    return `${key}=${truncate(value, 180)}`;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return `${key}=${String(value)}`;
+  }
+  if (Array.isArray(value)) {
+    const sample = value
+      .slice(0, 3)
+      .map((item) => (typeof item === "string" ? item : summarizeCompactValue(item)))
+      .filter(Boolean)
+      .join(", ");
+    return `${key}=${value.length}개${sample ? ` [${truncate(sample, 180)}]` : ""}`;
+  }
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (Array.isArray(record.entries)) {
+      return `${key}=entries ${record.entries.length}개`;
+    }
+    return `${key}=${summarizeCompactValue(value)}`;
+  }
+  return "";
+}
+
+function summarizeCompactValue(value: unknown): string {
+  try {
+    return truncate(JSON.stringify(value), 180);
+  } catch {
+    return truncate(String(value), 180);
+  }
+}
+
+function truncate(value: string, maxLength: number): string {
+  return value.length <= maxLength ? value : `${value.slice(0, maxLength - 1)}…`;
 }
 
 export function logTone(log: string): LogTone {

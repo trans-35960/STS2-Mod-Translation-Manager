@@ -3,6 +3,7 @@ import { invokeCommand } from "../api/tauri";
 import { LOADING_STEPS } from "../constants";
 import { previewDashboard } from "../previewData";
 import type { Dashboard, Page, UiSettings } from "../types";
+import { formatCommandError } from "../utils/logging";
 import { isPreviewRuntime } from "../utils/runtime";
 import { blockingSetupIssues } from "../utils/setup";
 
@@ -40,12 +41,12 @@ export function useDashboardLoader({
       const data = await invokeCommand("load_dashboard");
       setDashboard(data);
       setSettingsDraft((current) => current ?? data.settings);
-    } catch {
-      // The regular action log already surfaces explicit command failures.
+    } catch (error) {
+      appendLog(formatCommandError("load_dashboard", undefined, error));
     } finally {
       pollRunningRef.current = false;
     }
-  }, [busy, loading]);
+  }, [appendLog, busy, loading]);
 
   const load = React.useCallback(async () => {
     const startedAt = window.performance.now();
@@ -87,7 +88,7 @@ export function useDashboardLoader({
         setLoadingMessage("브라우저 미리보기 데이터를 준비했습니다");
         appendLog("Browser preview mode: Tauri commands are replaced with sample data.");
       } else {
-        appendLog(String(error));
+        appendLog(formatCommandError("load_dashboard", undefined, error));
       }
     } finally {
       const minimumLoadingMs = isPreviewRuntime() ? 120 : 650;

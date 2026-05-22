@@ -36,6 +36,7 @@ import type {
   TranslationApplyFilter,
 } from "./types";
 import { getAppWindow, invokeCommand, openDialog } from "./api/tauri";
+import { formatCommandError } from "./utils/logging";
 import { isPreviewRuntime } from "./utils/runtime";
 
 function App() {
@@ -311,13 +312,15 @@ function App() {
     }
     setBusy("preview_dropped_mods");
     setDropBusyMessage("드롭한 모드 확인 중...");
+    appendLog(`드롭한 경로 확인 시작: ${paths.length}개`);
     try {
       const previews = await invokeCommand("preview_dropped_mods", { paths });
       setDroppedModSource("drop");
       setDroppedModPreviews(previews);
-      appendLog(`드롭한 모드 ${previews.length}개 확인 완료`);
+      const names = previews.map((preview) => preview.name).join(", ");
+      appendLog(`드롭한 모드 ${previews.length}개 확인 완료${names ? `: ${names}` : ""}`);
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("preview_dropped_mods", { paths }, error));
     } finally {
       setBusy(null);
       setDropBusyMessage(null);
@@ -378,9 +381,18 @@ function App() {
     );
     setDroppedModPreviews(null);
     const importDecisions = decisions.filter((decision) => decision.mode !== "skip");
+    const skipped = decisions.length - importDecisions.length;
+    if (skipped > 0) {
+      appendLog(`드롭한 모드 ${skipped}개 건너뜀`);
+    }
+    if (importDecisions.length > 0) {
+      appendLog(`드롭한 모드 등록 시작: ${importDecisions.length}개`);
+    }
     let applied = 0;
+    let failed = 0;
     for (const [index, decision] of importDecisions.entries()) {
       setDropBusyMessage(`드롭한 모드 등록 중... (${index + 1}/${importDecisions.length})`);
+      appendLog(`드롭한 모드 등록 중 (${index + 1}/${importDecisions.length}): ${decision.path}`);
       const result = await runAction("import_dropped_mod", {
         path: decision.path,
         replacePath: decision.mode === "replace" ? decision.replacePath : null,
@@ -388,6 +400,9 @@ function App() {
       if (result) {
         applied += 1;
         handledExternalPaths.add(decision.path);
+      } else {
+        failed += 1;
+        appendLog(`드롭한 모드 등록 실패 (${index + 1}/${importDecisions.length}): ${decision.path}`);
       }
     }
     if (source === "external") {
@@ -399,7 +414,11 @@ function App() {
     void cleanupDroppedPreviewCache();
     setDropBusyMessage(null);
     if (applied === 0) {
-      appendLog("드롭한 모드 추가를 건너뛰었습니다.");
+      appendLog(
+        failed > 0
+          ? `드롭한 모드 등록 실패: 성공 0개 / 실패 ${failed}개 / 건너뜀 ${skipped}개`
+          : "드롭한 모드 추가를 건너뛰었습니다.",
+      );
       return;
     }
     setSearch("");
@@ -407,6 +426,7 @@ function App() {
     setChangeFilter("all");
     setTranslationApplyFilter("all");
     setSort("registered");
+    appendLog(`드롭한 모드 등록 완료: 성공 ${applied}개 / 실패 ${failed}개 / 건너뜀 ${skipped}개`);
   }
 
   async function cleanupDroppedPreviewCache() {
@@ -416,7 +436,7 @@ function App() {
     try {
       await invokeCommand("cleanup_dropped_mod_preview_cache");
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("cleanup_dropped_mod_preview_cache", undefined, error));
     }
   }
 

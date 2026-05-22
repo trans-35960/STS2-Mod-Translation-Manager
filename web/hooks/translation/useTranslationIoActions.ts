@@ -8,6 +8,7 @@ import {
   translationLanguagesMatch,
 } from "../../features/translation/translationUtils";
 import type { ShortJsonExport } from "../../types";
+import { formatCommandError } from "../../utils/logging";
 import { isPreviewRuntime } from "../../utils/runtime";
 import type { TranslationActionsParams } from "./types";
 
@@ -78,7 +79,7 @@ export function useTranslationIoActions({
       appendLog(result.message);
       return true;
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("save_json_translation_sheet", { sheetPath, sheet: jsonSheet }, error));
       return false;
     } finally {
       setBusy(null);
@@ -93,8 +94,9 @@ export function useTranslationIoActions({
       return;
     }
     const defaultName = `${translationProject?.modName || "translation"}.${jsonSheet.target_language || "kor"}.csv`;
+    let outputPath: string | null | string[] = null;
     try {
-      const outputPath = isPreviewRuntime()
+      outputPath = isPreviewRuntime()
         ? `${dashboard?.paths.translation_work ?? "translation_work"}/${defaultName}`
         : await saveDialog({
             title: "번역 CSV 내보내기",
@@ -115,7 +117,7 @@ export function useTranslationIoActions({
       });
       appendLog(`CSV 내보내기 완료: ${result.rows}행 (${result.output_path})`);
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("export_json_translation_csv", { outputPath, sheet: jsonSheet }, error));
     } finally {
       setBusy(null);
     }
@@ -174,8 +176,9 @@ export function useTranslationIoActions({
     ].filter(Boolean).join(".");
     const defaultName = `${translationProject?.modName || "translation"}.${jsonSheet.target_language || "kor"}${suffix ? `.${suffix}` : ""}.short.json`;
     const title = normalizedOptions.warningOnly ? "검증 오류 JSON 내보내기" : normalizedOptions.changeOnly ? "신규/변경 JSON 내보내기" : "번역용 JSON 내보내기";
+    let outputPath: string | null | string[] = null;
     try {
-      const outputPath = isPreviewRuntime()
+      outputPath = isPreviewRuntime()
         ? `${dashboard?.paths.translation_work ?? "translation_work"}/${defaultName}`
         : await saveDialog({
             title,
@@ -210,7 +213,7 @@ export function useTranslationIoActions({
           });
       appendLog(`${normalizedOptions.warningOnly ? "검증 경고 JSON" : normalizedOptions.changeOnly ? "신규/변경 JSON" : "번역용 JSON"} 내보내기 완료: ${result.rows}행 (${result.output_path})`);
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("export_json_translation_short_json", { sheet: jsonSheet }, error));
     } finally {
       setBusy(null);
     }
@@ -223,8 +226,9 @@ export function useTranslationIoActions({
     if (!ensureCurrentSheetLanguage("불러오기")) {
       return;
     }
+    let inputPath: string | null | string[] = null;
     try {
-      const inputPath = isPreviewRuntime()
+      inputPath = isPreviewRuntime()
         ? `${dashboard?.paths.translation_work ?? "translation_work"}/translated.csv`
         : await openDialog({
             title: "번역 CSV/JSON 불러오기",
@@ -255,7 +259,7 @@ export function useTranslationIoActions({
       setPasteCandidatesByKey({});
       appendLog(result.message);
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("import_json_translation_values", { inputPath, sheet: jsonSheet }, error));
     } finally {
       setBusy(null);
     }
@@ -284,8 +288,9 @@ export function useTranslationIoActions({
         return false;
       }
     }
+    let outputDir: string | null | string[] = null;
     try {
-      const outputDir = isPreviewRuntime()
+      outputDir = isPreviewRuntime()
         ? `${dashboard?.paths.translation_work ?? "translation_work"}/patch_mods`
         : await openDialog({
             title: "번역 모드 내보낼 폴더 선택",
@@ -318,7 +323,7 @@ export function useTranslationIoActions({
       );
       return true;
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("export_translation_patch_mod", { sheetPath, outputDir }, error));
       return false;
     } finally {
       setBusy(null);

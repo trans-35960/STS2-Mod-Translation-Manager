@@ -114,8 +114,18 @@ pub(crate) fn import_dropped_mod(
 ) -> Result<ActionDto, String> {
     let source = PathBuf::from(path.trim());
     let app = app();
-    let import_source = dropped_mod_import_source(&source, app.config())?;
-    let record = dropped_mod_record(&import_source)?;
+    let import_source = dropped_mod_import_source(&source, app.config()).map_err(|error| {
+        format!(
+            "드롭한 모드 등록 준비 실패: {} ({error})",
+            source.display()
+        )
+    })?;
+    let record = dropped_mod_record(&import_source).map_err(|error| {
+        format!(
+            "드롭한 모드 정보 읽기 실패: {} ({error})",
+            import_source.display()
+        )
+    })?;
     let drop_import_root = drop_import_root_for_path(&import_source, app.config())
         .or_else(|| drop_import_root_for_path(&source, app.config()));
 
@@ -125,20 +135,36 @@ pub(crate) fn import_dropped_mod(
         .filter(|value| !value.is_empty())
     {
         let target = PathBuf::from(replace_path);
-        replace_existing_mod_path(&import_source, &target, app.config())?;
+        replace_existing_mod_path(&import_source, &target, app.config()).map_err(|error| {
+            format!(
+                "드롭한 모드 덮어쓰기 실패: {} -> {} ({error})",
+                import_source.display(),
+                target.display()
+            )
+        })?;
         cleanup_drop_import_root(drop_import_root.as_deref());
         return Ok(ActionDto {
-            message: format!("{} 덮어쓰기 완료", record.name),
+            message: format!(
+                "{} 덮어쓰기 완료: {} -> {}",
+                record.name,
+                import_source.display(),
+                target.display()
+            ),
             dashboard: dashboard().map_err(|error| error.to_string())?,
         });
     }
 
     let action = app
         .import_mod_as_new(&import_source)
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| format!("드롭한 모드 새 등록 실패: {} ({error})", import_source.display()))?;
     cleanup_drop_import_root(drop_import_root.as_deref());
     Ok(ActionDto {
-        message: format!("{} 새 모드 등록 완료: {}", record.name, action.to.display()),
+        message: format!(
+            "{} 새 모드 등록 완료: {} -> {}",
+            record.name,
+            import_source.display(),
+            action.to.display()
+        ),
         dashboard: dashboard().map_err(|error| error.to_string())?,
     })
 }

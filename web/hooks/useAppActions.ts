@@ -2,6 +2,7 @@ import React from "react";
 import { invokeCommand } from "../api/tauri";
 import type { ActionCommand, CommandArgs } from "../api/tauri";
 import type { Dashboard, Page, UiSettings } from "../types";
+import { formatCommandError } from "../utils/logging";
 import { isPreviewRuntime } from "../utils/runtime";
 
 export function useAppActions({
@@ -50,7 +51,7 @@ export function useAppActions({
       }
       return result;
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError(command, args, error));
       return null;
     } finally {
       if (usesGlobalBusy) {
@@ -68,7 +69,7 @@ export function useAppActions({
       await invokeCommand("open_path", { path });
       appendLog(`경로 열기: ${path}`);
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("open_path", { path }, error));
     }
   }
 

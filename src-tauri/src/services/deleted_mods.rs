@@ -503,10 +503,12 @@ fn deleted_mod_keys(config: &AppConfig) -> BTreeSet<String> {
 
 fn deleted_mod_keys_for_summary(config: &AppConfig, summary: &ScanSummary) -> BTreeSet<String> {
     let connected_keys = connected_mod_keys(summary);
+    let reinstalled_local_keys = reinstalled_local_deleted_mod_keys(config, summary);
     let mut keys = read_deleted_mod_entries(config)
         .unwrap_or_default()
         .into_iter()
         .map(|entry| entry.key)
+        .filter(|key| !reinstalled_local_keys.contains(key))
         .collect::<BTreeSet<_>>();
     keys.extend(
         read_deleted_mod_tombstones(config)
@@ -514,6 +516,26 @@ fn deleted_mod_keys_for_summary(config: &AppConfig, summary: &ScanSummary) -> BT
             .filter(|key| !connected_keys.contains(key)),
     );
     keys
+}
+
+fn reinstalled_local_deleted_mod_keys(
+    config: &AppConfig,
+    summary: &ScanSummary,
+) -> BTreeSet<String> {
+    let local_keys = summary
+        .game_mods
+        .iter()
+        .chain(summary.disabled_mods.iter())
+        .map(|record| record.stable_key())
+        .collect::<BTreeSet<_>>();
+    if local_keys.is_empty() {
+        return BTreeSet::new();
+    }
+    read_deleted_mod_entries(config)
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|entry| local_keys.contains(&entry.key).then_some(entry.key))
+        .collect()
 }
 
 fn prune_deleted_desired_mod_keys(

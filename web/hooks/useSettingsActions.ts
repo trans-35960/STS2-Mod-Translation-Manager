@@ -4,6 +4,7 @@ import type { ActionCommand, CommandArgs } from "../api/tauri";
 import { DEFAULT_UI_SETTINGS } from "../constants";
 import { previewGameLogs } from "../previewData";
 import type { DeletedMod, GameLog, UiSettings } from "../types";
+import { formatCommandError } from "../utils/logging";
 import { isPreviewRuntime } from "../utils/runtime";
 
 type RunAction = (command: ActionCommand, args?: CommandArgs[ActionCommand]) => Promise<unknown>;
@@ -59,7 +60,7 @@ export function useSettingsActions({
         appendLog(`게임 로그 확인: ${existing}개 파일 발견`);
       }
     } catch (error) {
-      appendLog(String(error));
+      appendLog(formatCommandError("read_game_logs", undefined, error));
     } finally {
       setGameLogsLoading(false);
     }
