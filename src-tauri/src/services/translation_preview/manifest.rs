@@ -31,31 +31,45 @@ fn read_mod_manifest_info(scan_root: &Path) -> ModManifestInfo {
         let Ok(value) = serde_json::from_str::<serde_json::Value>(&json) else {
             continue;
         };
-        let info = ModManifestInfo {
-            id: string_field(&value, &["id", "mod_id"]),
-            name: string_field(&value, &["name", "mod_name", "id"]),
-            version: string_field(&value, &["version", "mod_version"]),
-            author: string_field(&value, &["author", "creator"]),
-            description: string_field(&value, &["description", "desc"]),
-            dependencies: dependency_list_field(&value, &["dependencies", "deps", "requires"]),
-            target_mod_id: string_field(&value, &["target_mod_id", "target_id", "source_mod_id"]),
-            target_mod_name: string_field(&value, &["target_mod_name", "target_name", "source_mod_name"]),
-            target_mod_version: string_field(&value, &["target_mod_version", "target_version", "source_mod_version"]),
-            target_languages: string_list_field(&value, &["target_languages", "languages"]),
-            is_translation_patch: bool_field(&value, &["is_translation_patch", "translation_mod", "is_translation_mod"]),
-        };
-        if info.id.is_some()
-            || info.name.is_some()
-            || info.version.is_some()
-            || !info.dependencies.is_empty()
-            || info.target_mod_id.is_some()
-            || info.target_mod_name.is_some()
-            || info.is_translation_patch
-        {
-            return with_dependency_versions(info, &value);
+        let info = mod_manifest_info_from_value(&value);
+        if manifest_info_has_metadata(&info) {
+            return info;
         }
     }
     ModManifestInfo::default()
+}
+
+fn mod_manifest_info_from_value(value: &serde_json::Value) -> ModManifestInfo {
+    let info = ModManifestInfo {
+        id: string_field(value, &["id", "mod_id"]),
+        name: string_field(value, &["name", "mod_name", "id"]),
+        version: string_field(value, &["version", "mod_version"]),
+        author: string_field(value, &["author", "creator"]),
+        description: string_field(value, &["description", "desc"]),
+        dependencies: dependency_list_field(value, &["dependencies", "deps", "requires"]),
+        target_mod_id: string_field(value, &["target_mod_id", "target_id", "source_mod_id"]),
+        target_mod_name: string_field(value, &["target_mod_name", "target_name", "source_mod_name"]),
+        target_mod_version: string_field(
+            value,
+            &["target_mod_version", "target_version", "source_mod_version"],
+        ),
+        target_languages: string_list_field(value, &["target_languages", "languages"]),
+        is_translation_patch: bool_field(
+            value,
+            &["is_translation_patch", "translation_mod", "is_translation_mod"],
+        ),
+    };
+    with_dependency_versions(info, value)
+}
+
+fn manifest_info_has_metadata(info: &ModManifestInfo) -> bool {
+    info.id.is_some()
+        || info.name.is_some()
+        || info.version.is_some()
+        || !info.dependencies.is_empty()
+        || info.target_mod_id.is_some()
+        || info.target_mod_name.is_some()
+        || info.is_translation_patch
 }
 
 fn read_mod_manifest_for_record(record_path: &Path, scan_root: &Path) -> ModManifestInfo {

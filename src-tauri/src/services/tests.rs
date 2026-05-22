@@ -352,6 +352,48 @@ mod tests {
     }
 
     #[test]
+    fn sync_translation_patch_manifest_updates_target_dependency_version() {
+        let root = std::env::temp_dir().join(format!("sts2-sync-patch-manifest-{}", timestamp_string()));
+        let patch_root = root.join("BaseLib_tr");
+        fs::create_dir_all(&patch_root).expect("create patch root");
+        fs::write(
+            patch_root.join("BaseLib_tr.json"),
+            r#"{
+  "id": "BaseLib_tr",
+  "name": "BaseLib Korean Translation",
+  "is_translation_patch": true,
+  "dependencies": ["BaseLib"],
+  "dependency_versions": { "BaseLib": "3.1.0" },
+  "target_mod_id": "BaseLib",
+  "target_mod_name": "BaseLib",
+  "target_mod_version": "3.1.0",
+  "target_languages": ["kor"]
+}"#,
+        )
+        .expect("write manifest");
+
+        let updated = sync_translation_patch_manifest_version(
+            &patch_root,
+            "BaseLib",
+            Some("BaseLib"),
+            Some("3.1.4"),
+        )
+        .expect("sync manifest");
+
+        assert!(updated);
+        let manifest = read_mod_manifest_info(&patch_root);
+        assert_eq!(manifest.target_mod_version.as_deref(), Some("3.1.4"));
+        assert_eq!(
+            manifest
+                .dependencies
+                .first()
+                .and_then(|dependency| dependency.version.as_deref()),
+            Some("3.1.4")
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn connected_patch_copy_finds_target_language_inside_pck_contents() {
         let root = std::env::temp_dir().join(format!("sts2-patch-copy-{}", timestamp_string()));
         let scan_root = root.join("scan");
@@ -1814,6 +1856,19 @@ mod tests {
         assert_eq!(request.translation_work_dir, "translation_work");
         assert_eq!(request.save_backup_max_entries, 14);
         assert_eq!(request.mod_view_mode, "detail");
+    }
+
+    #[test]
+    fn dashboard_creates_missing_game_mods_dir_when_game_dir_exists() {
+        let root = std::env::temp_dir().join(format!("sts2-dashboard-mods-dir-{}", timestamp_string()));
+        let config = test_config(&root);
+        fs::create_dir_all(&config.game_dir).expect("create game dir");
+
+        let created = ensure_game_mods_dir_if_game_detected(&config);
+
+        assert!(created);
+        assert!(config.game_mods_dir.is_dir());
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]

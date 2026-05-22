@@ -235,6 +235,22 @@ fn build_translated_pck(
         install_source,
         config,
     )?;
+    if context.translation_patch_source_path.is_some()
+        && let Some(patch_path) = installed_mod_path
+            .as_deref()
+            .or(apply_context.extraction_source_path.as_deref())
+    {
+        let app = App::new(config.clone());
+        let target_manifest =
+            patch_source_manifest(&context, &input_pck, &build_root, &app, vendor_dir);
+        let dependency_id = original_package_id(&target_manifest, &context, &input_pck);
+        sync_translation_patch_manifest_version(
+            patch_path,
+            &dependency_id,
+            target_manifest.name.as_deref(),
+            target_manifest.version.as_deref(),
+        )?;
+    }
     Ok(PckBuildResult {
         output_pck_path: output_pck,
         installed_mod_path,
@@ -425,6 +441,134 @@ fn preferred_pck_from_directory(source: &Path, preferred_stem: Option<&str>) -> 
     let mut pcks = Vec::new();
     collect_supported_pck_files(source, &mut pcks);
     preferred_pck_from_candidates(pcks, preferred_stem)
+}
+
+fn sync_translation_patch_manifest_version(
+    patch_path: &Path,
+    target_id: &str,
+    target_name: Option<&str>,
+    target_version: Option<&str>,
+) -> Result<bool, String> {
+    let Some(target_version) = target_version
+        .map(str::trim)
+        .filter(|value| !value.is_empty() && *value != "-")
+    else {
+        return Ok(false);
+    };
+    let manifest_root = if patch_path.is_file() {
+        patch_path.parent().unwrap_or(patch_path)
+    } else {
+        patch_path
+    };
+    let mut manifests = Vec::new();
+    collect_manifest_candidates(manifest_root, manifest_root, &mut manifests);
+    manifests.sort();
+
+    for manifest_path in manifests {
+        let Ok(content) = fs::read_to_string(&manifest_path) else {
+            continue;
+        };
+        let json = strip_json_comments(content.trim_start_matches('\u{feff}'));
+        let Ok(mut value) = serde_json::from_str::<serde_json::Value>(&json) else {
+            continue;
+        };
+        let info = mod_manifest_info_from_value(&value);
+        if !is_translation_patch_manifest(&info) {
+            continue;
+        }
+        let dependency_id = info.target_mod_id.as_deref().unwrap_or(target_id);
+        update_translation_patch_manifest_value(
+            &mut value,
+            dependency_id,
+            target_name,
+            target_version,
+        );
+        let output = serde_json::to_string_pretty(&value).map_err(|error| error.to_string())?;
+        fs::write(&manifest_path, output).map_err(|error| error.to_string())?;
+        return Ok(true);
+    }
+
+    Ok(false)
+}
+
+fn update_translation_patch_manifest_value(
+    value: &mut serde_json::Value,
+    target_id: &str,
+    target_name: Option<&str>,
+    target_version: &str,
+) {
+    let Some(object) = value.as_object_mut() else {
+        return;
+    };
+    object.insert(
+        "target_mod_id".to_string(),
+        serde_json::Value::String(target_id.to_string()),
+    );
+    if let Some(target_name) = target_name.map(str::trim).filter(|value| !value.is_empty()) {
+        object.insert(
+            "target_mod_name".to_string(),
+            serde_json::Value::String(target_name.to_string()),
+        );
+    }
+    object.insert(
+        "target_mod_version".to_string(),
+        serde_json::Value::String(target_version.to_string()),
+    );
+    for alias in ["target_version", "source_mod_version"] {
+        if object.contains_key(alias) {
+            object.insert(
+                alias.to_string(),
+                serde_json::Value::String(target_version.to_string()),
+            );
+        }
+    }
+
+    let dependency_versions = object
+        .entry("dependency_versions")
+        .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()));
+    if !dependency_versions.is_object() {
+        *dependency_versions = serde_json::Value::Object(serde_json::Map::new());
+    }
+    if let Some(versions) = dependency_versions.as_object_mut() {
+        let existing_key = versions
+            .keys()
+            .find(|key| key.eq_ignore_ascii_case(target_id))
+            .cloned()
+            .unwrap_or_else(|| target_id.to_string());
+        versions.insert(
+            existing_key,
+            serde_json::Value::String(target_version.to_string()),
+        );
+    }
+
+    let dependencies = object
+        .entry("dependencies")
+        .or_insert_with(|| serde_json::Value::Array(Vec::new()));
+    if let Some(items) = dependencies.as_array_mut() {
+        let mut matched = false;
+        for item in items.iter_mut() {
+            if manifest_dependency_value_matches(item, target_id) {
+                matched = true;
+                if let Some(item_object) = item.as_object_mut() {
+                    item_object.insert(
+                        "version".to_string(),
+                        serde_json::Value::String(target_version.to_string()),
+                    );
+                }
+            }
+        }
+        if !matched {
+            items.push(serde_json::Value::String(target_id.to_string()));
+        }
+    }
+}
+
+fn manifest_dependency_value_matches(value: &serde_json::Value, target_id: &str) -> bool {
+    value
+        .as_str()
+        .or_else(|| value.get("id").and_then(serde_json::Value::as_str))
+        .or_else(|| value.get("name").and_then(serde_json::Value::as_str))
+        .is_some_and(|value| value.eq_ignore_ascii_case(target_id))
 }
 
 fn preferred_pck_from_candidates(

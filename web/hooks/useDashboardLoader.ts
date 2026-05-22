@@ -7,7 +7,7 @@ import { isPreviewRuntime } from "../utils/runtime";
 import { blockingSetupIssues } from "../utils/setup";
 
 const DASHBOARD_POLL_INTERVAL_MS = 30000;
-const DASHBOARD_POLL_WHILE_GAME_RUNNING_MS = 60000;
+const DASHBOARD_POLL_WHILE_GAME_RUNNING_MS = 3000;
 
 export function useDashboardLoader({
   appendLog,
@@ -30,6 +30,22 @@ export function useDashboardLoader({
   const [loadingMessage, setLoadingMessage] = React.useState(LOADING_STEPS[0]);
   const [settingsDraft, setSettingsDraft] = React.useState<UiSettings | null>(null);
   const pollRunningRef = React.useRef(false);
+
+  const refreshDashboard = React.useCallback(async () => {
+    if (isPreviewRuntime() || busy || loading || pollRunningRef.current) {
+      return;
+    }
+    pollRunningRef.current = true;
+    try {
+      const data = await invokeCommand("load_dashboard");
+      setDashboard(data);
+      setSettingsDraft((current) => current ?? data.settings);
+    } catch {
+      // The regular action log already surfaces explicit command failures.
+    } finally {
+      pollRunningRef.current = false;
+    }
+  }, [busy, loading]);
 
   const load = React.useCallback(async () => {
     const startedAt = window.performance.now();
@@ -107,22 +123,30 @@ export function useDashboardLoader({
       ? DASHBOARD_POLL_WHILE_GAME_RUNNING_MS
       : DASHBOARD_POLL_INTERVAL_MS;
     const intervalId = window.setInterval(async () => {
-      if (busy || loading || pollRunningRef.current || document.visibilityState !== "visible") {
+      if (document.visibilityState !== "visible") {
         return;
       }
-      pollRunningRef.current = true;
-      try {
-        const data = await invokeCommand("load_dashboard");
-        setDashboard(data);
-        setSettingsDraft((current) => current ?? data.settings);
-      } catch {
-        // The regular action log already surfaces explicit command failures.
-      } finally {
-        pollRunningRef.current = false;
-      }
+      await refreshDashboard();
     }, pollIntervalMs);
     return () => window.clearInterval(intervalId);
-  }, [busy, dashboard?.launch.running, loading]);
+  }, [dashboard?.launch.running, refreshDashboard]);
+
+  React.useEffect(() => {
+    if (isPreviewRuntime()) {
+      return;
+    }
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refreshDashboard();
+      }
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshWhenVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshWhenVisible);
+    };
+  }, [refreshDashboard]);
 
   return {
     dashboard,
@@ -133,5 +157,6 @@ export function useDashboardLoader({
     settingsDraft,
     setSettingsDraft,
     load,
+    refreshDashboard,
   };
 }

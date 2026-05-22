@@ -108,6 +108,7 @@ function App() {
     settingsDraft,
     setSettingsDraft,
     load,
+    refreshDashboard,
   } = useDashboardLoader({
     appendLog,
     busy,
@@ -510,6 +511,7 @@ function App() {
                 onImportVortexDownloads={() => importVortexDownloads()}
                 onLaunch={() => void launchWithSetupCheck("launch_current")}
                 onVanilla={() => void launchWithSetupCheck("launch_vanilla")}
+                onRefreshDashboard={() => void refreshDashboard()}
             />
           )}
           {!loading && dashboard && page === "translationTools" && (

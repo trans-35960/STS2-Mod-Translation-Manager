@@ -117,6 +117,7 @@ function ModsPage(props: {
   onImportVortexDownloads: () => void;
   onLaunch: () => void;
   onVanilla: () => void;
+  onRefreshDashboard: () => void;
 }) {
   const t = props.labels;
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({});
@@ -541,7 +542,14 @@ function ModsPage(props: {
             <ShieldAlert size={22} />
             <strong>게임이 실행 중입니다.</strong>
             <span>실행 중에 모드를 변경하면 게임 데이터가 꼬이거나 적용 상태가 달라질 수 있습니다.</span>
-            <button type="button" className="primary icon-button-text" onClick={() => setForceModChanges(true)}>
+            <button
+              type="button"
+              className="primary icon-button-text"
+              onClick={() => {
+                setForceModChanges(true);
+                props.onRefreshDashboard();
+              }}
+            >
               그래도 변경하기
             </button>
           </div>
