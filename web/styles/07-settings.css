@@ -336,6 +336,13 @@
   font-weight: 800;
 }
 
+.save-backup-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .deleted-mod-list {
   display: grid;
   gap: 8px;
@@ -400,7 +407,7 @@
 .save-backup-set summary {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   cursor: pointer;
@@ -426,9 +433,21 @@
   content: "▾";
 }
 
+.save-backup-select {
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+}
+
+.save-backup-select input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
 .save-backup-set summary > div {
   min-width: 0;
-  padding-left: 16px;
 }
 
 .save-backup-set strong,

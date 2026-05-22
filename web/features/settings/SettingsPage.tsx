@@ -591,8 +591,58 @@ function SaveBackupsPanel({
   onOpenPath: (path: string) => void;
 }) {
   const groups = groupSaveBackups(items);
+  const [selectedGroupIds, setSelectedGroupIds] = React.useState<Set<string>>(() => new Set());
   const totalBytes = items.reduce((total, item) => total + item.bytes, 0);
   const retentionLabel = retentionDays === 0 ? "기간 제한 없음" : `${retentionDays}일 보관`;
+  const selectedGroups = groups.filter((group) => selectedGroupIds.has(group.id));
+  const selectedItems = selectedGroups.flatMap((group) => group.items);
+  const allSelected = groups.length > 0 && selectedGroupIds.size === groups.length;
+
+  React.useEffect(() => {
+    const visibleIds = new Set(groups.map((group) => group.id));
+    setSelectedGroupIds((current) => {
+      const next = new Set(Array.from(current).filter((id) => visibleIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [groups]);
+
+  function toggleSelectedGroup(id: string) {
+    setSelectedGroupIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleAllGroups() {
+    setSelectedGroupIds((current) => {
+      if (groups.length > 0 && current.size === groups.length) {
+        return new Set();
+      }
+      return new Set(groups.map((group) => group.id));
+    });
+  }
+
+  function deleteSelectedGroups(event: React.MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (selectedItems.length === 0) {
+      return;
+    }
+    const confirmed = window.confirm(
+      `선택한 세이브 백업 ${selectedGroups.length}세트, ${selectedItems.length}개를 삭제할까요?\n\n삭제한 백업은 복원할 수 없습니다.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+    onDelete(selectedItems);
+    setSelectedGroupIds(new Set());
+  }
+
   return (
     <details className="deleted-mods-panel save-backups-panel summary-panel">
       <summary>
@@ -601,19 +651,43 @@ function SaveBackupsPanel({
             <h2>세이브 백업</h2>
             <small>{retentionLabel} · {groups.length}세트 · 백업 {items.length}개 · 총 {formatBytes(totalBytes)} · 종류별 최대 {maxEntries}개</small>
           </div>
-          <button
-            className="icon-button-text compact"
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onCreate();
-            }}
-            disabled={Boolean(busy)}
-          >
-            <Archive size={14} />
-            지금 백업
-          </button>
+          <div className="save-backup-summary-actions">
+            <button
+              className="icon-button-text compact"
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleAllGroups();
+              }}
+              disabled={Boolean(busy) || groups.length === 0}
+            >
+              <CheckCircle2 size={14} />
+              {allSelected ? "선택 해제" : "전체 선택"}
+            </button>
+            <button
+              className="icon-button-text compact danger-text"
+              type="button"
+              onClick={deleteSelectedGroups}
+              disabled={Boolean(busy) || selectedItems.length === 0}
+            >
+              <Trash2 size={14} />
+              선택 삭제
+            </button>
+            <button
+              className="icon-button-text compact"
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onCreate();
+              }}
+              disabled={Boolean(busy)}
+            >
+              <Archive size={14} />
+              지금 백업
+            </button>
+          </div>
         </div>
       </summary>
       {groups.length === 0 && <div className="empty compact">아직 복원 가능한 세이브 백업이 없습니다.</div>}
@@ -621,6 +695,18 @@ function SaveBackupsPanel({
         {groups.map((group) => (
           <details className="save-backup-set" key={group.id}>
             <summary>
+              <label
+                className="save-backup-select"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedGroupIds.has(group.id)}
+                  onChange={() => toggleSelectedGroup(group.id)}
+                  disabled={Boolean(busy)}
+                  aria-label={`${formatFullDateTime(group.createdEpoch)} 백업 선택`}
+                />
+              </label>
               <div>
                 <strong>{formatFullDateTime(group.createdEpoch)}</strong>
                 <small>{backupSetLabel(group)} · {formatBytes(group.bytes)}</small>

@@ -188,18 +188,16 @@ pub fn delete_backup(config: &AppConfig, id: &str) -> AppResult<SaveBackupEntry>
 
 pub fn ensure_modded_profiles(save_dir: &Path) -> AppResult<usize> {
     let modded_dir = save_dir.join("modded");
-    if modded_dir.exists() {
-        return Ok(0);
-    }
     fs::create_dir_all(&modded_dir).map_err(|source| AppError::io(&modded_dir, source))?;
 
     let mut copied = 0;
     for name in PROFILE_NAMES {
         let source = save_dir.join(name);
-        if !source.exists() {
+        let target = modded_dir.join(name);
+        if !source.exists() || target.exists() {
             continue;
         }
-        copy_path(&source, &modded_dir.join(name))?;
+        copy_path(&source, &target)?;
         copied += 1;
     }
     Ok(copied)
@@ -832,6 +830,30 @@ mod tests {
         assert_eq!(
             fs::read_to_string(root.join("modded/profile1/save.txt")).expect("read modded"),
             "vanilla"
+        );
+    }
+
+    #[test]
+    fn seeds_missing_modded_profiles_without_overwriting_existing_ones() {
+        let root = test_dir("seeds_missing_modded_profiles_without_overwriting_existing_ones");
+        fs::create_dir_all(root.join("profile1")).expect("profile1");
+        fs::create_dir_all(root.join("profile2")).expect("profile2");
+        fs::create_dir_all(root.join("modded/profile1")).expect("modded profile1");
+        fs::write(root.join("profile1/save.txt"), "vanilla profile1").expect("write profile1");
+        fs::write(root.join("profile2/save.txt"), "vanilla profile2").expect("write profile2");
+        fs::write(root.join("modded/profile1/save.txt"), "existing modded")
+            .expect("write modded profile1");
+
+        let copied = ensure_modded_profiles(&root).expect("seed missing modded");
+
+        assert_eq!(copied, 1);
+        assert_eq!(
+            fs::read_to_string(root.join("modded/profile1/save.txt")).expect("read profile1"),
+            "existing modded"
+        );
+        assert_eq!(
+            fs::read_to_string(root.join("modded/profile2/save.txt")).expect("read profile2"),
+            "vanilla profile2"
         );
     }
 
