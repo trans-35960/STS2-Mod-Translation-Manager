@@ -1036,6 +1036,8 @@ fn load_dashboard_inputs() -> sts2_mod_manager::error::AppResult<DashboardInputs
     let app = app();
     app.ensure_workspace_dirs()?;
     timing.mark("ensure_workspace_dirs");
+    ensure_game_mods_dir_if_game_detected(app.config());
+    timing.mark("ensure_game_mods_dir");
     let settings = read_ui_settings(app.config())?;
     timing.mark("read_ui_settings");
     prune_expired_deleted_mods(app.config(), settings.deleted_retention_days)
@@ -1067,6 +1069,23 @@ fn load_dashboard_inputs() -> sts2_mod_manager::error::AppResult<DashboardInputs
         tools,
         launch,
     })
+}
+
+fn ensure_game_mods_dir_if_game_detected(config: &AppConfig) -> bool {
+    if config.game_mods_dir.exists() || !config.game_dir.is_dir() {
+        return false;
+    }
+
+    match fs::create_dir_all(&config.game_mods_dir) {
+        Ok(()) => true,
+        Err(error) => {
+            eprintln!(
+                "failed to create game mods dir {}: {error}",
+                config.game_mods_dir.display()
+            );
+            false
+        }
+    }
 }
 
 fn dashboard_stats(mods: &[ModRowDto], presets: usize, translations: usize) -> StatsDto {
