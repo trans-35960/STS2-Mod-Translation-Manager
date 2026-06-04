@@ -58,6 +58,7 @@ function App() {
   const [droppedModPreviews, setDroppedModPreviews] = React.useState<DroppedModPreview[] | null>(null);
   const [droppedModSource, setDroppedModSource] = React.useState<DroppedModSource>("drop");
   const externalPromptedRef = React.useRef<Set<string> | null>(null);
+  const dragActiveRef = React.useRef(false);
   const { logs, setLogs, appendLog } = useAppLogs();
   const contentRef = React.useRef<HTMLElement | null>(null);
   const t = labels[locale];
@@ -262,14 +263,21 @@ function App() {
     let disposed = false;
     void getAppWindow().onDragDropEvent((event) => {
       if (event.payload.type === "enter" || event.payload.type === "over") {
-        setDragActive(true);
+        if (!dragActiveRef.current) {
+          dragActiveRef.current = true;
+          setDragActive(true);
+        }
         return;
       }
       if (event.payload.type === "leave") {
-        setDragActive(false);
+        if (dragActiveRef.current) {
+          dragActiveRef.current = false;
+          setDragActive(false);
+        }
         return;
       }
       if (event.payload.type === "drop") {
+        dragActiveRef.current = false;
         setDragActive(false);
         setPage("mods");
         void previewDroppedPaths(event.payload.paths);
@@ -391,19 +399,22 @@ function App() {
     }
     let applied = 0;
     let failed = 0;
-    for (const [index, decision] of importDecisions.entries()) {
-      setDropBusyMessage(`드롭한 모드 등록 중... (${index + 1}/${importDecisions.length})`);
-      appendLog(`드롭한 모드 등록 중 (${index + 1}/${importDecisions.length}): ${decision.path}`);
-      const result = await runAction("import_dropped_mod", {
-        path: decision.path,
-        replacePath: decision.mode === "replace" ? decision.replacePath : null,
+    if (importDecisions.length > 0) {
+      setDropBusyMessage(`드롭한 모드 등록 중... (${importDecisions.length}개)`);
+      const result = await runAction("import_dropped_mods", {
+        decisions: importDecisions.map((decision) => ({
+          path: decision.path,
+          mode: decision.mode,
+          replacePath: decision.mode === "replace" ? decision.replacePath : null,
+        })),
       });
       if (result) {
-        applied += 1;
-        handledExternalPaths.add(decision.path);
+        applied = importDecisions.length;
+        for (const decision of importDecisions) {
+          handledExternalPaths.add(decision.path);
+        }
       } else {
-        failed += 1;
-        appendLog(`드롭한 모드 등록 실패 (${index + 1}/${importDecisions.length}): ${decision.path}`);
+        failed = importDecisions.length;
       }
     }
     if (source === "external") {

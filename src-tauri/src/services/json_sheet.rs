@@ -960,7 +960,13 @@ fn remember_applied_language_preview(
     let extraction_source = extraction_source_for_record(&record);
     let cache_key = language_cache_key(&record, &extraction_source, &config.vendor_dir);
     let mut cache = read_language_preview_cache(config).map_err(|error| error.to_string())?;
-    let detected = language_preview(&extraction_source, &cache_key, &config.vendor_dir);
+    let detected = context
+        .pck_contents_root
+        .as_ref()
+        .filter(|path| path.exists())
+        .map(|path| language_preview_from_scan_root(path))
+        .filter(|preview| !preview.is_empty())
+        .unwrap_or_else(|| language_preview(&extraction_source, &cache_key, &config.vendor_dir));
     cache.entries.insert(cache_key, detected);
     cache.dirty = true;
     write_language_preview_cache(config, &cache).map_err(|error| error.to_string())

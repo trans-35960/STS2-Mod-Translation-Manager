@@ -1,5 +1,15 @@
 use crate::dto::*;
 
+async fn run_blocking<T, F>(task: F) -> Result<T, String>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(task)
+        .await
+        .map_err(|error| format!("백그라운드 작업 실패: {error}"))?
+}
+
 #[tauri::command]
 pub(crate) fn load_dashboard() -> Result<DashboardDto, String> {
     crate::services::load_dashboard()
@@ -48,6 +58,13 @@ pub(crate) fn import_dropped_mod(
     replace_path: Option<String>,
 ) -> Result<ActionDto, String> {
     crate::services::import_dropped_mod(path, replace_path)
+}
+
+#[tauri::command]
+pub(crate) fn import_dropped_mods(
+    decisions: Vec<DroppedModDecisionDto>,
+) -> Result<ActionDto, String> {
+    crate::services::import_dropped_mods(decisions)
 }
 
 #[tauri::command]
@@ -110,18 +127,21 @@ pub(crate) fn clear_translation_extract_cache(key: String) -> Result<ActionDto, 
 }
 
 #[tauri::command]
-pub(crate) fn prepare_translation_node(
+pub(crate) async fn prepare_translation_node(
     key: String,
     resource_path: String,
     output_dir: Option<String>,
     force: Option<bool>,
 ) -> Result<NodeTranslationDto, String> {
-    crate::services::prepare_translation_node(
-        key,
-        resource_path,
-        output_dir,
-        force.unwrap_or(false),
-    )
+    run_blocking(move || {
+        crate::services::prepare_translation_node(
+            key,
+            resource_path,
+            output_dir,
+            force.unwrap_or(false),
+        )
+    })
+    .await
 }
 
 #[tauri::command]
@@ -175,38 +195,44 @@ pub(crate) fn delete_save_backups(ids: Vec<String>) -> Result<ActionDto, String>
 }
 
 #[tauri::command]
-pub(crate) fn create_json_translation_sheet(
+pub(crate) async fn create_json_translation_sheet(
     source_path: String,
     existing_sheet_path: Option<String>,
     output_path: Option<String>,
     target_language: Option<String>,
 ) -> Result<JsonSheetActionDto, String> {
-    crate::services::create_json_translation_sheet(
-        source_path,
-        existing_sheet_path,
-        output_path,
-        target_language,
-    )
+    run_blocking(move || {
+        crate::services::create_json_translation_sheet(
+            source_path,
+            existing_sheet_path,
+            output_path,
+            target_language,
+        )
+    })
+    .await
 }
 
 #[tauri::command]
-pub(crate) fn recalculate_json_translation_sheet(
+pub(crate) async fn recalculate_json_translation_sheet(
     source_path: String,
     current_sheet_path: String,
     output_path: Option<String>,
     target_language: Option<String>,
 ) -> Result<JsonSheetActionDto, String> {
-    crate::services::recalculate_json_translation_sheet(
-        source_path,
-        current_sheet_path,
-        output_path,
-        target_language,
-    )
+    run_blocking(move || {
+        crate::services::recalculate_json_translation_sheet(
+            source_path,
+            current_sheet_path,
+            output_path,
+            target_language,
+        )
+    })
+    .await
 }
 
 #[tauri::command]
-pub(crate) fn load_json_translation_sheet(sheet_path: String) -> Result<JsonSheetDto, String> {
-    crate::services::load_json_translation_sheet(sheet_path)
+pub(crate) async fn load_json_translation_sheet(sheet_path: String) -> Result<JsonSheetDto, String> {
+    run_blocking(move || crate::services::load_json_translation_sheet(sheet_path)).await
 }
 
 #[tauri::command]
@@ -224,11 +250,11 @@ pub(crate) fn validate_json_translation_sheet_data(
 }
 
 #[tauri::command]
-pub(crate) fn save_json_translation_sheet(
+pub(crate) async fn save_json_translation_sheet(
     sheet_path: String,
     sheet: JsonSheetDto,
 ) -> Result<JsonSheetActionDto, String> {
-    crate::services::save_json_translation_sheet(sheet_path, sheet)
+    run_blocking(move || crate::services::save_json_translation_sheet(sheet_path, sheet)).await
 }
 
 #[tauri::command]

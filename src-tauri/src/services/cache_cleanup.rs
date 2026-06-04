@@ -40,6 +40,29 @@ fn work_cache_usage(config: &AppConfig) -> CacheUsageDto {
     usage
 }
 
+fn cached_work_cache_usage(config: &AppConfig) -> CacheUsageDto {
+    static CACHE: std::sync::OnceLock<std::sync::Mutex<Option<(Instant, String, CacheUsageDto)>>> =
+        std::sync::OnceLock::new();
+    let key = format!(
+        "{}|{}",
+        config.state_dir.display(),
+        config.translation_work_dir.display()
+    );
+    let cache = CACHE.get_or_init(|| std::sync::Mutex::new(None));
+    if let Ok(guard) = cache.lock()
+        && let Some((created, cached_key, usage)) = guard.as_ref()
+        && cached_key == &key
+        && created.elapsed().as_secs() < 120
+    {
+        return usage.clone();
+    }
+    let usage = work_cache_usage(config);
+    if let Ok(mut guard) = cache.lock() {
+        *guard = Some((Instant::now(), key, usage.clone()));
+    }
+    usage
+}
+
 fn add_translation_work_payload_usage(root: &Path, usage: &mut CacheUsageDto) {
     if !root.is_dir() {
         return;

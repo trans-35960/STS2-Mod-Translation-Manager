@@ -153,7 +153,7 @@ pub(crate) struct ModDependencyDto {
     pub(crate) version_matches: Option<bool>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub(crate) struct LanguagePreviewDto {
     pub(crate) code: String,
     pub(crate) label: String,
@@ -273,6 +273,14 @@ pub(crate) struct DroppedModPreviewDto {
     pub(crate) version_hint: Option<String>,
     pub(crate) bytes: u64,
     pub(crate) modified_epoch: Option<u64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct DroppedModDecisionDto {
+    pub(crate) path: String,
+    pub(crate) mode: String,
+    pub(crate) replace_path: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

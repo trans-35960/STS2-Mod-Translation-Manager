@@ -34,6 +34,7 @@ import {
 } from "./TranslationWidgets";
 import {
   isTabularTranslationPaste,
+  isStructuredTranslationJsonPaste,
   languageCodeFromSheetKey,
   languageFolderCode,
   normalizedLocalizationKey,
@@ -403,7 +404,7 @@ export function TranslationSheetTable({
           tabIndex={0}
           onPaste={(event) => {
             const text = event.clipboardData.getData("text/plain");
-            if (props.onPasteStructuredJson(text)) {
+            if (isStructuredTranslationJsonPaste(text) && props.onPasteStructuredJson(text)) {
               event.preventDefault();
             }
           }}
@@ -539,7 +540,7 @@ export function TranslationSheetTable({
                 onSelectValidationIssueKind={showValidationIssueKind}
                 parts={parts}
                 pasteCandidate={props.pasteCandidatesByKey[entry.key]}
-                registerRow={(element) => {
+                registerRow={(element: HTMLDivElement | null) => {
                   if (element) {
                     rowRefs.current.set(entry.key, element);
                   } else {
@@ -571,6 +572,35 @@ export function TranslationSheetTable({
   );
 }
 
+type JsonEntryRowProps = {
+  compareValuesByLanguage: Record<string, Record<string, string>>;
+  copiedIdKey: string | null;
+  entry: JsonTranslationEntry;
+  focused: boolean;
+  index: number;
+  issues: DisplayValidationIssue[];
+  onApplyPasteCandidate: (entryKey: string) => void;
+  onCopyEntryId: (entryKey: string, id: string, event: React.MouseEvent) => void;
+  onDismissPasteCandidate: (entryKey: string) => void;
+  onEditEntry: (index: number, value: string) => void;
+  onPasteEntries: (startIndex: number, text: string) => void;
+  onPasteStructuredJson: (text: string) => boolean;
+  onSelectRow: (index: number, event: React.MouseEvent) => void;
+  onSelectValidationIssueKind: (kind: string | null) => void;
+  parts: TranslationEntryRow["parts"];
+  pasteCandidate: PasteCandidate | undefined;
+  registerRow: (element: HTMLDivElement | null) => void;
+  searchHighlight: string;
+  selected: boolean;
+  selectedCompareLanguages: LanguagePreview[];
+  sheetSourceLanguage: string;
+  showCompareColumn: boolean;
+  showIds: boolean;
+  slotId: string;
+  validationIssueKindFilter: string | null;
+  wrapSource: boolean;
+};
+
 const JsonEntryRow = React.memo(function JsonEntryRow({
   compareValuesByLanguage,
   copiedIdKey,
@@ -598,34 +628,7 @@ const JsonEntryRow = React.memo(function JsonEntryRow({
   slotId,
   validationIssueKindFilter,
   wrapSource,
-}: {
-  compareValuesByLanguage: Record<string, Record<string, string>>;
-  copiedIdKey: string | null;
-  entry: JsonTranslationEntry;
-  focused: boolean;
-  index: number;
-  issues: DisplayValidationIssue[];
-  onApplyPasteCandidate: (entryKey: string) => void;
-  onCopyEntryId: (entryKey: string, id: string, event: React.MouseEvent) => void;
-  onDismissPasteCandidate: (entryKey: string) => void;
-  onEditEntry: (index: number, value: string) => void;
-  onPasteEntries: (startIndex: number, text: string) => void;
-  onPasteStructuredJson: (text: string) => boolean;
-  onSelectRow: (index: number, event: React.MouseEvent) => void;
-  onSelectValidationIssueKind: (kind: string | null) => void;
-  parts: TranslationEntryRow["parts"];
-  pasteCandidate: PasteCandidate | undefined;
-  registerRow: (element: HTMLDivElement | null) => void;
-  searchHighlight: string;
-  selected: boolean;
-  selectedCompareLanguages: LanguagePreview[];
-  sheetSourceLanguage: string;
-  showCompareColumn: boolean;
-  showIds: boolean;
-  slotId: string;
-  validationIssueKindFilter: string | null;
-  wrapSource: boolean;
-}) {
+}: JsonEntryRowProps) {
   const issueKinds = React.useMemo(() => issues.map((issue) => issue.kind), [issues]);
   const whitespaceLabel = whitespaceValueLabel(entry.translated_value);
   const sourceCellClass = [
@@ -659,21 +662,12 @@ const JsonEntryRow = React.memo(function JsonEntryRow({
         </code>
       )}
       <div className="translation-value-cell">
-        <AutoGrowTextarea
+        <TranslationValueEditor
+          index={index}
+          onEditEntry={onEditEntry}
+          onPasteEntries={onPasteEntries}
+          onPasteStructuredJson={onPasteStructuredJson}
           value={entry.translated_value}
-          placeholder="-"
-          onChange={(event) => onEditEntry(index, event.target.value)}
-          onPaste={(event) => {
-            const text = event.clipboardData.getData("text/plain");
-            if (onPasteStructuredJson(text)) {
-              event.preventDefault();
-              return;
-            }
-            if (isTabularTranslationPaste(text)) {
-              event.preventDefault();
-              onPasteEntries(index, text);
-            }
-          }}
         />
         {searchHighlight && includesSearch(entry.translated_value, searchHighlight) && (
           <div className="search-match-preview" aria-label="translated_value 검색 결과">
@@ -723,7 +717,107 @@ const JsonEntryRow = React.memo(function JsonEntryRow({
       </code>
     </div>
   );
-});
+}, areJsonEntryRowsEqual);
+
+function TranslationValueEditor({
+  index,
+  onEditEntry,
+  onPasteEntries,
+  onPasteStructuredJson,
+  value,
+}: {
+  index: number;
+  onEditEntry: (index: number, value: string) => void;
+  onPasteEntries: (startIndex: number, text: string) => void;
+  onPasteStructuredJson: (text: string) => boolean;
+  value: string;
+}) {
+  const [draft, setDraft] = React.useState(value);
+  const focusedRef = React.useRef(false);
+  const draftRef = React.useRef(value);
+  const timerRef = React.useRef<number | null>(null);
+
+  const clearTimer = React.useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const commit = React.useCallback((next: string) => {
+    clearTimer();
+    if (next !== value) {
+      onEditEntry(index, next);
+    }
+  }, [clearTimer, index, onEditEntry, value]);
+
+  React.useEffect(() => {
+    if (!focusedRef.current) {
+      setDraft(value);
+      draftRef.current = value;
+    }
+  }, [value]);
+
+  React.useEffect(() => clearTimer, [clearTimer]);
+
+  return (
+    <AutoGrowTextarea
+      value={draft}
+      placeholder="-"
+      onBlur={() => {
+        focusedRef.current = false;
+        commit(draftRef.current);
+      }}
+      onChange={(event) => {
+        const next = event.target.value;
+        setDraft(next);
+        draftRef.current = next;
+        clearTimer();
+        timerRef.current = window.setTimeout(() => commit(next), 220);
+      }}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onPaste={(event) => {
+        const text = event.clipboardData.getData("text/plain");
+        if (isStructuredTranslationJsonPaste(text) && onPasteStructuredJson(text)) {
+          event.preventDefault();
+          return;
+        }
+        if (isTabularTranslationPaste(text)) {
+          event.preventDefault();
+          commit(draftRef.current);
+          onPasteEntries(index, text);
+        }
+      }}
+    />
+  );
+}
+
+function areJsonEntryRowsEqual(
+  previous: JsonEntryRowProps,
+  next: JsonEntryRowProps,
+) {
+  return (
+    previous.entry === next.entry &&
+    previous.focused === next.focused &&
+    previous.index === next.index &&
+    previous.issues === next.issues &&
+    previous.parts === next.parts &&
+    previous.pasteCandidate === next.pasteCandidate &&
+    previous.searchHighlight === next.searchHighlight &&
+    previous.selected === next.selected &&
+    previous.selectedCompareLanguages === next.selectedCompareLanguages &&
+    previous.sheetSourceLanguage === next.sheetSourceLanguage &&
+    previous.showCompareColumn === next.showCompareColumn &&
+    previous.showIds === next.showIds &&
+    previous.slotId === next.slotId &&
+    previous.validationIssueKindFilter === next.validationIssueKindFilter &&
+    previous.wrapSource === next.wrapSource &&
+    previous.compareValuesByLanguage === next.compareValuesByLanguage &&
+    previous.copiedIdKey === next.copiedIdKey
+  );
+}
 
 function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query) {

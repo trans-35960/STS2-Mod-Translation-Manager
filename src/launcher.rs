@@ -152,6 +152,10 @@ fn is_game_running(config: &AppConfig, game_exe: Option<&Path>) -> bool {
     {
         names.push(name.to_string());
     }
+    if !names.is_empty() {
+        names = dedupe_case_insensitive(names);
+        return is_process_running(&names);
+    }
     names.extend(
         [
             "SlayTheSpire2.exe",
@@ -170,6 +174,14 @@ fn is_game_running(config: &AppConfig, game_exe: Option<&Path>) -> bool {
 
 #[cfg(target_os = "windows")]
 fn is_process_running(names: &[String]) -> bool {
+    if names.len() <= 3 {
+        for name in names {
+            if is_process_running_by_image_name(name) {
+                return true;
+            }
+        }
+        return false;
+    }
     let output = hidden_command("tasklist")
         .args(["/FO", "CSV", "/NH"])
         .output();
@@ -188,6 +200,28 @@ fn is_process_running(names: &[String]) -> bool {
         names
             .iter()
             .any(|name| image_name.eq_ignore_ascii_case(name.as_str()))
+    })
+}
+
+#[cfg(target_os = "windows")]
+fn is_process_running_by_image_name(name: &str) -> bool {
+    let filter = format!("IMAGENAME eq {name}");
+    let output = hidden_command("tasklist")
+        .args(["/FI", &filter, "/FO", "CSV", "/NH"])
+        .output();
+    let Ok(output) = output else {
+        return false;
+    };
+    let text = String::from_utf8_lossy(&output.stdout);
+    text.lines().any(|line| {
+        let image_name = line
+            .trim()
+            .trim_start_matches('"')
+            .split("\",")
+            .next()
+            .unwrap_or_default()
+            .trim_matches('"');
+        image_name.eq_ignore_ascii_case(name)
     })
 }
 

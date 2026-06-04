@@ -273,6 +273,27 @@ mod tests {
     }
 
     #[test]
+    fn pck_listing_parser_extracts_resource_paths() {
+        let output = r#"
+[06/04/2026 16:17:49] - res://Shadowverse/localization/zhs/cards.json
+[06/04/2026 16:17:49] - res://Shadowverse/images/card.png 12345
+Packed file: Shadowverse/localization/eng/cards.json
+"#;
+
+        let paths = parse_pck_resource_paths(output);
+
+        assert!(paths.contains(&"res://Shadowverse/localization/zhs/cards.json".to_string()));
+        assert!(paths.contains(&"res://Shadowverse/images/card.png".to_string()));
+        assert!(paths.contains(&"res://Shadowverse/localization/eng/cards.json".to_string()));
+        assert!(listed_resource_path_is_translation_candidate(
+            "res://Shadowverse/localization/zhs/cards.json"
+        ));
+        assert!(!listed_resource_path_is_translation_candidate(
+            "res://Shadowverse/images/card.png"
+        ));
+    }
+
+    #[test]
     fn translation_patch_targets_base_manifest_id_when_folder_name_differs() {
         let base_record = ModRecord {
             name: "Miyu STS2-622-v1-0-2-7-12-9-1777882282".to_string(),
@@ -493,6 +514,31 @@ mod tests {
         assert!(!folder_install_root_has_runtime_payload(
             &extracted.join("blight").join("localization")
         ));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn repaired_multi_mod_archive_promotes_child_mod_roots() {
+        let root = std::env::temp_dir().join(format!("sts2-multi-archive-repair-{}", timestamp_string()));
+        let config = test_config(&root);
+        let wrapper = config.game_mods_dir.join("ShadowversePack");
+        let base = wrapper.join("BaseLib");
+        let minion = wrapper.join("MinionLib");
+        let shadowverse = wrapper.join("shadowversebydmod");
+        fs::create_dir_all(&base).expect("create base");
+        fs::create_dir_all(&minion).expect("create minion");
+        fs::create_dir_all(&shadowverse).expect("create shadowverse");
+        fs::write(base.join("BaseLib.pck"), "pck").expect("write base pck");
+        fs::write(minion.join("MinionLib.pck"), "pck").expect("write minion pck");
+        fs::write(shadowverse.join("shadowversebydmod.pck"), "pck").expect("write shadowverse pck");
+
+        let repaired = repair_multi_mod_archive_folder(&wrapper, &config).expect("repair multi");
+
+        assert!(repaired);
+        assert!(!wrapper.exists());
+        assert!(config.game_mods_dir.join("BaseLib").is_dir());
+        assert!(config.game_mods_dir.join("MinionLib").is_dir());
+        assert!(config.game_mods_dir.join("shadowversebydmod").is_dir());
         let _ = fs::remove_dir_all(root);
     }
 

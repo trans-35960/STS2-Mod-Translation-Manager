@@ -4,6 +4,7 @@ fn mod_rows(
     deleted_keys: &BTreeSet<String>,
     game_updated_epoch: Option<u64>,
 ) -> sts2_mod_manager::error::AppResult<Vec<ModRowDto>> {
+    let mut trace = PerfTrace::new("mod_rows");
     let mut rows = BTreeMap::<String, ModRowBuilder>::new();
 
     for record in &report.summary.game_mods {
@@ -15,22 +16,28 @@ fn mod_rows(
     for record in &report.summary.external_manager_mods {
         rows.entry(record.stable_key()).or_default().external = Some(record.clone());
     }
+    trace.mark("group_records");
 
     let mut cache = read_language_preview_cache(config)?;
+    trace.mark("read_language_cache");
     let mut current_cache_keys = BTreeSet::new();
     let state_index = read_mod_state_index(&config.mod_index_path)?;
+    trace.mark("read_state_index");
     let desired_active_keys = desired_active_mod_keys(&report.summary, &config.state_dir)?;
+    trace.mark("read_desired_active");
     let lifecycle = mod_lifecycle_by_key(&state_index);
     let translation_applies = read_translation_apply_index(config)?;
+    trace.mark("read_translation_apply");
     let mut rows = rows
         .into_iter()
         .filter(|(key, _)| !deleted_keys.contains(key))
         .map(|(key, builder)| {
+            let row_started = Instant::now();
             let desired_active = desired_active_keys.contains(&key);
             let (update_state, change_reasons) = builder.change_summary(&state_index);
             let lifecycle = lifecycle.get(&key);
             let translation_apply = translation_applies.get(&key);
-            builder.into_dto(ModRowBuildContext {
+            let dto = builder.into_dto(ModRowBuildContext {
                 key,
                 update_state,
                 change_reasons,
@@ -42,11 +49,28 @@ fn mod_rows(
                 cache: &mut cache,
                 current_cache_keys: &mut current_cache_keys,
                 vendor_dir: &config.vendor_dir,
-            })
+            });
+            let elapsed = row_started.elapsed().as_millis();
+            if elapsed >= 30 || env::var_os("STS2_PERF_VERBOSE").is_some() {
+                append_performance_log(format!(
+                    "mod_row total={}ms key={} name={} active={} bytes={} state={} path={}",
+                    elapsed,
+                    dto.key,
+                    dto.name,
+                    dto.active,
+                    dto.bytes,
+                    dto.translation_state,
+                    dto.path
+                ));
+            }
+            dto
         })
         .collect::<Vec<_>>();
+    trace.mark("build_rows");
     resolve_mod_dependencies(&mut rows);
+    trace.mark("resolve_dependencies");
     resolve_translation_patch_summaries(&mut rows);
+    trace.mark("resolve_translation_patches");
 
     cache
         .entries
@@ -54,6 +78,8 @@ fn mod_rows(
     if cache.dirty {
         write_language_preview_cache(config, &cache)?;
     }
+    trace.mark("write_language_cache");
+    trace.finish(format!("rows={}", rows.len()), 0);
 
     Ok(rows)
 }
@@ -134,8 +160,12 @@ impl ModRowBuilder {
             let extraction_tree =
                 extraction_tree(&extraction_source, &cache_key, context.vendor_dir);
             let translation = translation_state(&extraction_source, &language_preview);
-            let scan_root = extraction_scan_root(&extraction_source, &cache_key, context.vendor_dir)
-                .unwrap_or_else(|| extraction_source.clone());
+            let scan_root = if source_has_pck_payload(&extraction_source) {
+                extraction_source.clone()
+            } else {
+                extraction_scan_root(&extraction_source, &cache_key, context.vendor_dir)
+                    .unwrap_or_else(|| extraction_source.clone())
+            };
             let manifest = read_mod_manifest_for_record(&record.path, &scan_root);
             (language_preview, extraction_tree, translation, manifest)
         };

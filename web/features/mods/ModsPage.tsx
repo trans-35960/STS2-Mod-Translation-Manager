@@ -218,13 +218,13 @@ function ModsPage(props: {
   }
 
   function startDetailColumnResize(column: DetailModColumnKey, event: React.MouseEvent) {
-    startColumnResize(event, detailColumns[column], minDetailModColumns[column], (width) => {
+    startColumnResize(event, detailColumns[column], minDetailModColumns[column], detailColumnVar(column), (width) => {
       setDetailColumns((current) => ({ ...current, [column]: width }));
     });
   }
 
   function startSimpleColumnResize(column: SimpleModColumnKey, event: React.MouseEvent) {
-    startColumnResize(event, simpleColumns[column], minSimpleModColumns[column], (width) => {
+    startColumnResize(event, simpleColumns[column], minSimpleModColumns[column], simpleColumnVar(column), (width) => {
       setSimpleColumns((current) => ({ ...current, [column]: width }));
     });
   }
@@ -724,6 +724,7 @@ function startColumnResize(
   event: React.MouseEvent,
   startWidth: number,
   minWidth: number,
+  cssVariable: string,
   setWidth: (width: number) => void,
 ) {
   event.preventDefault();
@@ -731,19 +732,60 @@ function startColumnResize(
   const startX = event.clientX;
   const previousCursor = document.body.style.cursor;
   const previousUserSelect = document.body.style.userSelect;
+  const table = event.currentTarget.closest<HTMLElement>(".mod-table");
+  const startedAt = window.performance.now();
+  let latestWidth = startWidth;
+  let moveCount = 0;
   document.body.style.cursor = "col-resize";
   document.body.style.userSelect = "none";
   const onMove = (moveEvent: MouseEvent) => {
-    setWidth(Math.max(minWidth, Math.min(920, startWidth + moveEvent.clientX - startX)));
+    moveCount += 1;
+    latestWidth = Math.max(minWidth, Math.min(920, startWidth + moveEvent.clientX - startX));
+    table?.style.setProperty(cssVariable, `${latestWidth}px`);
   };
   const onUp = () => {
     document.body.style.cursor = previousCursor;
     document.body.style.userSelect = previousUserSelect;
+    setWidth(latestWidth);
+    const elapsed = Math.round(window.performance.now() - startedAt);
+    if (elapsed >= 250 || moveCount >= 10) {
+      console.info(`[perf] column_resize ${cssVariable} ${elapsed}ms moves=${moveCount}`);
+    }
     document.removeEventListener("mousemove", onMove);
     document.removeEventListener("mouseup", onUp);
   };
   document.addEventListener("mousemove", onMove);
   document.addEventListener("mouseup", onUp);
+}
+
+function detailColumnVar(column: DetailModColumnKey): string {
+  switch (column) {
+    case "name":
+      return "--mod-name-col";
+    case "version":
+      return "--mod-version-col";
+    case "date":
+      return "--mod-date-col";
+    case "translation":
+      return "--mod-translation-col";
+    case "language":
+      return "--mod-language-col";
+    case "actions":
+      return "--mod-actions-col";
+  }
+}
+
+function simpleColumnVar(column: SimpleModColumnKey): string {
+  switch (column) {
+    case "name":
+      return "--mod-simple-name-col";
+    case "version":
+      return "--mod-simple-version-col";
+    case "language":
+      return "--mod-simple-language-col";
+    case "actions":
+      return "--mod-simple-actions-col";
+  }
 }
 
 function clampModColumns<T extends Record<string, number>>(columns: T, minimums: T): T {

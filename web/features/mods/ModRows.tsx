@@ -31,6 +31,7 @@ import {
   groupTranslationSummary,
   isDownloadingMod,
   languageResourceRoot,
+  needsDeferredTranslationAnalysis,
   recommendedSourceLanguage,
   representativeLanguage,
   shortPath,
@@ -85,6 +86,7 @@ function ModTableRow({
   const dependencyWarnings = warningDependencies(mod);
   const translationBusy = isTranslationPreparing(busy, mod.key);
   const downloading = isDownloadingMod(mod);
+  const canAnalyzeOnDemand = needsDeferredTranslationAnalysis(mod);
   return (
     <div
       className={`${child ? "table-row mod-grid mod-version-row" : "table-row mod-grid"}${mod.active ? "" : " inactive"}${focused ? " focused-mod" : ""}${changed ? " changed-mod" : ""}${rowChangeClass}`}
@@ -143,7 +145,7 @@ function ModTableRow({
           label={translationBusy ? `${mod.name} 번역 도구 준비 중...` : `${mod.name} 번역 도구에서 열기`}
           icon={translationBusy ? Loader2 : Languages}
           onClick={() => onStartModTranslation(mod, primaryResourcePath)}
-          disabled={Boolean(busy) || locked || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0)}
+          disabled={Boolean(busy) || locked || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0 && !canAnalyzeOnDemand)}
           loading={translationBusy}
         />
         <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />
@@ -385,6 +387,7 @@ function SimpleModRow({
   const dependencyWarnings = warningDependencies(mod);
   const translationBusy = isTranslationPreparing(busy, mod.key);
   const downloading = isDownloadingMod(mod);
+  const canAnalyzeOnDemand = needsDeferredTranslationAnalysis(mod);
   return (
     <div
       className={`${child ? "table-row mod-simple-grid mod-version-row simple" : "table-row mod-simple-grid simple"}${mod.active ? "" : " inactive"}${focused ? " focused-mod" : ""}${changed ? " changed-mod" : ""}${rowChangeClass}`}
@@ -435,7 +438,7 @@ function SimpleModRow({
           label={translationBusy ? `${mod.name} 번역 도구 준비 중...` : `${mod.name} 번역 도구에서 열기`}
           icon={translationBusy ? Loader2 : Languages}
           onClick={() => onStartModTranslation(mod, primaryResourcePath)}
-          disabled={Boolean(busy) || locked || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0)}
+          disabled={Boolean(busy) || locked || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0 && !canAnalyzeOnDemand)}
           loading={translationBusy}
         />
         <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />

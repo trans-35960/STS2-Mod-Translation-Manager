@@ -186,21 +186,16 @@ fn build_translated_pck(
 
     let input_pck = resolve_input_pck(&apply_context, &source_path, &build_root, vendor_dir)?;
     let version = pck_version(&pck_tool, &input_pck).unwrap_or_else(|_| "2.4.3.0".to_string());
-    let full_extract = build_root.join("full_extract");
-    run_pck_tool(
-        &pck_tool,
-        &["-e".into(), input_pck.clone(), full_extract.clone()],
-    )?;
-
     let target_relative =
         pck_target_for_language_output(&source_path, language_output_path, requested_pck_target)?;
-    let target_in_extract = full_extract.join(&target_relative);
+    let patch_root = build_root.join("patch_payload");
+    let target_in_patch = patch_root.join(&target_relative);
     ensure_path_in_roots(
-        &target_in_extract,
-        std::slice::from_ref(&full_extract),
+        &target_in_patch,
+        std::slice::from_ref(&patch_root),
         "PCK 삽입 경로",
     )?;
-    replace_dir_or_file(language_output_path, &target_in_extract)
+    replace_dir_or_file(language_output_path, &target_in_patch)
         .map_err(|error| error.to_string())?;
 
     let temp_output = build_root.join(
@@ -211,8 +206,9 @@ fn build_translated_pck(
     run_pck_tool(
         &pck_tool,
         &[
-            "-p".into(),
-            full_extract,
+            "-pc".into(),
+            input_pck.clone(),
+            patch_root,
             temp_output.clone(),
             PathBuf::from(&version),
         ],
@@ -867,8 +863,12 @@ fn patch_source_manifest(
     {
         let extraction_source = extraction_source_for_record(&record);
         let cache_key = language_cache_key(&record, &extraction_source, vendor_dir);
-        let scan_root = extraction_scan_root(&extraction_source, &cache_key, vendor_dir)
-            .unwrap_or_else(|| extraction_source.clone());
+        let scan_root = if source_has_pck_payload(&extraction_source) {
+            extraction_source.clone()
+        } else {
+            extraction_scan_root(&extraction_source, &cache_key, vendor_dir)
+                .unwrap_or_else(|| extraction_source.clone())
+        };
         let info = read_mod_manifest_for_record(&record.path, &scan_root);
         if manifest_has_identity(&info) {
             return info;

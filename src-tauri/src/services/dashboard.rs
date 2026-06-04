@@ -112,6 +112,93 @@ pub(crate) fn import_dropped_mod(
     path: String,
     replace_path: Option<String>,
 ) -> Result<ActionDto, String> {
+    let result = import_dropped_mod_inner(path.trim(), replace_path.as_deref(), true)?;
+    Ok(ActionDto {
+        message: result.message,
+        dashboard: dashboard().map_err(|error| error.to_string())?,
+    })
+}
+
+pub(crate) fn import_dropped_mods(
+    decisions: Vec<DroppedModDecisionDto>,
+) -> Result<ActionDto, String> {
+    let mut imported = 0usize;
+    let mut skipped = 0usize;
+    let mut cleanup_roots = BTreeSet::<PathBuf>::new();
+    let mut labels = Vec::new();
+
+    for decision in decisions {
+        match decision.mode.trim() {
+            "skip" => {
+                skipped += 1;
+            }
+            "new" => {
+                let result = import_dropped_mod_inner(&decision.path, None, false)?;
+                imported += 1;
+                if let Some(root) = result.cleanup_root {
+                    cleanup_roots.insert(root);
+                }
+                labels.push(result.label);
+            }
+            "replace" => {
+                let Some(replace_path) = decision
+                    .replace_path
+                    .as_deref()
+                    .map(str::trim)
+                    .filter(|value| !value.is_empty())
+                else {
+                    return Err(format!("대체할 기존 모드 경로가 없습니다: {}", decision.path));
+                };
+                let result = import_dropped_mod_inner(&decision.path, Some(replace_path), false)?;
+                imported += 1;
+                if let Some(root) = result.cleanup_root {
+                    cleanup_roots.insert(root);
+                }
+                labels.push(result.label);
+            }
+            mode => {
+                return Err(format!("알 수 없는 드롭 처리 방식입니다: {mode}"));
+            }
+        }
+    }
+
+    for root in cleanup_roots {
+        cleanup_drop_import_root(Some(root.as_path()));
+    }
+
+    let mut parts = vec![format!("드롭한 모드 등록 완료: 성공 {imported}개")];
+    if skipped > 0 {
+        parts.push(format!("건너뜀 {skipped}개"));
+    }
+    if !labels.is_empty() {
+        parts.push(format!(
+            "등록: {}{}",
+            labels.iter().take(5).cloned().collect::<Vec<_>>().join(", "),
+            if labels.len() > 5 {
+                format!(" 외 {}개", labels.len() - 5)
+            } else {
+                String::new()
+            }
+        ));
+    }
+
+    Ok(ActionDto {
+        message: parts.join(" / "),
+        dashboard: dashboard().map_err(|error| error.to_string())?,
+    })
+}
+
+struct DroppedModImportResult {
+    message: String,
+    label: String,
+    cleanup_root: Option<PathBuf>,
+}
+
+fn import_dropped_mod_inner(
+    path: &str,
+    replace_path: Option<&str>,
+    cleanup_after_import: bool,
+) -> Result<DroppedModImportResult, String> {
     let source = PathBuf::from(path.trim());
     let app = app();
     let import_source = dropped_mod_import_source(&source, app.config()).map_err(|error| {
@@ -129,11 +216,7 @@ pub(crate) fn import_dropped_mod(
     let drop_import_root = drop_import_root_for_path(&import_source, app.config())
         .or_else(|| drop_import_root_for_path(&source, app.config()));
 
-    if let Some(replace_path) = replace_path
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-    {
+    if let Some(replace_path) = replace_path.map(str::trim).filter(|value| !value.is_empty()) {
         let target = PathBuf::from(replace_path);
         replace_existing_mod_path(&import_source, &target, app.config()).map_err(|error| {
             format!(
@@ -142,30 +225,36 @@ pub(crate) fn import_dropped_mod(
                 target.display()
             )
         })?;
-        cleanup_drop_import_root(drop_import_root.as_deref());
-        return Ok(ActionDto {
+        if cleanup_after_import {
+            cleanup_drop_import_root(drop_import_root.as_deref());
+        }
+        return Ok(DroppedModImportResult {
             message: format!(
                 "{} 덮어쓰기 완료: {} -> {}",
                 record.name,
                 import_source.display(),
                 target.display()
             ),
-            dashboard: dashboard().map_err(|error| error.to_string())?,
+            label: record.name,
+            cleanup_root: (!cleanup_after_import).then_some(drop_import_root).flatten(),
         });
     }
 
     let action = app
         .import_mod_as_new(&import_source)
         .map_err(|error| format!("드롭한 모드 새 등록 실패: {} ({error})", import_source.display()))?;
-    cleanup_drop_import_root(drop_import_root.as_deref());
-    Ok(ActionDto {
+    if cleanup_after_import {
+        cleanup_drop_import_root(drop_import_root.as_deref());
+    }
+    Ok(DroppedModImportResult {
         message: format!(
             "{} 새 모드 등록 완료: {} -> {}",
             record.name,
             import_source.display(),
             action.to.display()
         ),
-        dashboard: dashboard().map_err(|error| error.to_string())?,
+        label: record.name,
+        cleanup_root: (!cleanup_after_import).then_some(drop_import_root).flatten(),
     })
 }
 
@@ -1046,8 +1135,10 @@ impl DashboardTiming {
             .join(" ");
         if parts.is_empty() {
             eprintln!("dashboard timing: {} total={}ms", self.name, total);
+            append_performance_log(format!("{} total={}ms", self.name, total));
         } else {
             eprintln!("dashboard timing: {} total={}ms {}", self.name, total, parts);
+            append_performance_log(format!("{} total={}ms {}", self.name, total, parts));
         }
     }
 }
@@ -1106,7 +1197,7 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         .map(save_backup_dto)
         .collect();
     timing.mark("save_backups");
-    let cache_usage = work_cache_usage(app.config());
+    let cache_usage = cached_work_cache_usage(app.config());
     timing.mark("cache_usage");
 
     let output = DashboardDto {

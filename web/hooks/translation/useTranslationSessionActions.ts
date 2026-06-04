@@ -4,6 +4,7 @@ import {
   isHardcodedResourcePath,
   languageResourceName,
   languageResourceRoot,
+  needsDeferredTranslationAnalysis,
 } from "../../features/mods/modUtils";
 import {
   inferPckTargetPath,
@@ -127,8 +128,11 @@ export function useTranslationSessionActions({
     const sourceNode = sourceMod.key === mod.key ? node : defaultTranslationNode(sourceMod);
     setBusy(`prepare_translation_node:${sourceMod.key}`);
     setJsonToolError("");
+    const startedAt = window.performance.now();
     try {
       const prepared = await prepareTreeNode(sourceMod, sourceNode, outputDir, force);
+      const prepareMs = Math.round(window.performance.now() - startedAt);
+      appendLog(`[perf] 번역 항목 준비 ${prepareMs}ms · 파일 ${prepared.copied_files}개`);
       setJsonSource(prepared.source_path);
       setJsonExistingSheet(prepared.existing_sheet_path || prepared.output_sheet_path);
       setJsonOutputSheet(prepared.output_sheet_path);
@@ -168,6 +172,7 @@ export function useTranslationSessionActions({
         outputPath: prepared.output_sheet_path,
         targetLanguage,
       });
+      const sheetMs = Math.round(window.performance.now() - startedAt - prepareMs);
       setJsonSheet(sheet.sheet);
       setJsonReport(sheet.report);
       setJsonPckTargetPath(inferPckTargetPath(sheet.sheet));
@@ -175,6 +180,7 @@ export function useTranslationSessionActions({
       setJsonApplyResult(null);
       setPasteCandidatesByKey({});
       appendLog(sheet.message);
+      appendLog(`[perf] 번역 시트 생성 ${sheetMs}ms · 항목 ${sheet.sheet.entries.length}개`);
     } catch (error) {
       const message = `번역 도구 작업 실패: ${formatError(error)}`;
       setJsonToolError(message);
@@ -190,11 +196,14 @@ export function useTranslationSessionActions({
       ? resourcePath || defaultTranslatableResourcePath(sourceMod)
       : defaultTranslatableResourcePath(sourceMod);
     if (!path) {
-      appendLog(`${sourceMod.name}: 감지된 언어/하드코딩 후보가 없습니다. 수동 경로를 입력해 주세요.`);
-      return;
+      if (!needsDeferredTranslationAnalysis(sourceMod)) {
+        appendLog(`${sourceMod.name}: 감지된 언어/하드코딩 후보가 없습니다. 수동 경로를 입력해 주세요.`);
+        return;
+      }
+      appendLog(`${sourceMod.name}: PCK 내부 언어 파일을 자동 분석합니다.`);
     }
     await openTreeNodeInTranslationTools(sourceMod, {
-      name: languageResourceName(path),
+      name: path ? languageResourceName(path) : "",
       path,
       source_path: path,
       kind: isHardcodedResourcePath(path) ? "hardcoded" : "language",
@@ -231,7 +240,7 @@ export function useTranslationSessionActions({
   function defaultTranslationNode(mod: ModRow): ExtractionTreeNode {
     const path = defaultTranslatableResourcePath(mod);
     return {
-      name: languageResourceName(path || mod.key),
+      name: path ? languageResourceName(path) : "",
       path,
       source_path: path,
       kind: isHardcodedResourcePath(path) ? "hardcoded" : "language",

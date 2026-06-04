@@ -15,6 +15,7 @@ pub fn run() {
             commands::open_path,
             commands::preview_dropped_mods,
             commands::import_dropped_mod,
+            commands::import_dropped_mods,
             commands::toggle_mod,
             commands::toggle_mods,
             commands::delete_mod,

@@ -112,6 +112,7 @@ export function ResizableHead({ label, onMouseDown }: { label: string; onMouseDo
 
 export function AutoGrowTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const ref = React.useRef<HTMLTextAreaElement | null>(null);
+  const [focused, setFocused] = React.useState(false);
 
   const resize = React.useCallback(() => {
     const textarea = ref.current;
@@ -123,11 +124,16 @@ export function AutoGrowTextarea(props: React.TextareaHTMLAttributes<HTMLTextAre
   }, []);
 
   React.useLayoutEffect(() => {
-    resize();
-  }, [props.value, resize]);
+    if (focused) {
+      resize();
+    }
+  }, [focused, props.value, resize]);
 
   React.useEffect(() => {
     const textarea = ref.current;
+    if (!focused) {
+      return;
+    }
     if (!textarea || typeof ResizeObserver === "undefined") {
       return;
     }
@@ -140,10 +146,21 @@ export function AutoGrowTextarea(props: React.TextareaHTMLAttributes<HTMLTextAre
     <textarea
       {...props}
       ref={ref}
-      rows={1}
+      rows={focused ? 1 : 2}
+      onBlur={(event) => {
+        setFocused(false);
+        props.onBlur?.(event);
+      }}
+      onFocus={(event) => {
+        setFocused(true);
+        props.onFocus?.(event);
+        window.requestAnimationFrame(resize);
+      }}
       onInput={(event) => {
         props.onInput?.(event);
-        resize();
+        if (focused) {
+          resize();
+        }
       }}
     />
   );

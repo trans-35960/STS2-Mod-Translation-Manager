@@ -294,6 +294,72 @@ fn timestamp_string() -> String {
         .unwrap_or_else(|_| "0".to_string())
 }
 
+fn append_performance_log(line: impl AsRef<str>) {
+    let path = resolve_workspace_dir()
+        .join("state")
+        .join("logs")
+        .join("performance.log");
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if fs::metadata(&path)
+        .map(|metadata| metadata.len() > 5 * 1024 * 1024)
+        .unwrap_or(false)
+    {
+        let _ = fs::rename(&path, path.with_extension("log.old"));
+    }
+    let Ok(mut file) = fs::OpenOptions::new().create(true).append(true).open(&path) else {
+        return;
+    };
+    let _ = writeln!(file, "{}\t{}", timestamp_string(), line.as_ref());
+}
+
+struct PerfTrace {
+    name: &'static str,
+    started: Instant,
+    last: Instant,
+    parts: Vec<(&'static str, u128)>,
+}
+
+impl PerfTrace {
+    fn new(name: &'static str) -> Self {
+        let now = Instant::now();
+        Self {
+            name,
+            started: now,
+            last: now,
+            parts: Vec::new(),
+        }
+    }
+
+    fn mark(&mut self, label: &'static str) {
+        let now = Instant::now();
+        self.parts
+            .push((label, now.duration_since(self.last).as_millis()));
+        self.last = now;
+    }
+
+    fn finish(self, detail: impl AsRef<str>, threshold_ms: u128) {
+        let total = self.started.elapsed().as_millis();
+        if total < threshold_ms && env::var_os("STS2_PERF_VERBOSE").is_none() {
+            return;
+        }
+        let parts = self
+            .parts
+            .into_iter()
+            .map(|(label, millis)| format!("{label}={millis}ms"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        append_performance_log(format!(
+            "{} total={}ms detail={} {}",
+            self.name,
+            total,
+            detail.as_ref(),
+            parts
+        ));
+    }
+}
+
 
 fn push_unique_path(paths: &mut Vec<PathBuf>, path: PathBuf) {
     if !paths.iter().any(|existing| existing == &path) {

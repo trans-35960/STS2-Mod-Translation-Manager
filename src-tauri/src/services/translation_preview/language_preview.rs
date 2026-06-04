@@ -52,6 +52,12 @@ fn translation_state(
             format!("{labels} 자동 감지"),
         );
     }
+    if source_has_pck_payload(extraction_source) {
+        return (
+            "번역 가능".to_string(),
+            "번역 도구를 열 때 내부 언어 파일을 준비합니다".to_string(),
+        );
+    }
     if hardcoded_source_count(extraction_source) > 0 {
         return (
             "하드코딩".to_string(),
@@ -87,10 +93,83 @@ fn translation_state(
 }
 
 fn language_preview(source: &Path, cache_key: &str, vendor_dir: &Path) -> Vec<LanguagePreviewDto> {
+    let mut trace = PerfTrace::new("language_preview");
+    if source_has_pck_payload(source) {
+        let preview = pck_language_preview(source, vendor_dir);
+        trace.mark("pck_listing");
+        trace.finish(
+            format!("languages={} source={}", preview.len(), source.display()),
+            25,
+        );
+        return preview;
+    }
+    trace.mark("pck_check");
     let Some(scan_root) = extraction_scan_root(source, cache_key, vendor_dir) else {
+        trace.mark("scan_root_missing");
+        trace.finish(format!("source={}", source.display()), 25);
         return Vec::new();
     };
-    language_preview_from_scan_root(&scan_root)
+    trace.mark("scan_root");
+    let preview = language_preview_from_scan_root(&scan_root);
+    trace.mark("scan_candidates");
+    trace.finish(
+        format!("languages={} source={}", preview.len(), source.display()),
+        25,
+    );
+    preview
+}
+
+fn listed_resource_path_is_translation_candidate(path: &str) -> bool {
+    let lower = path.to_ascii_lowercase();
+    if !(lower.ends_with(".json") || lower.ends_with(".loc")) {
+        return false;
+    }
+    lower.contains("/localization/")
+        || lower.contains("/localisations/")
+        || lower.contains("/translations/")
+        || lower.contains("/lang/")
+        || lower.contains("/strings/")
+}
+
+fn pck_language_preview(source: &Path, vendor_dir: &Path) -> Vec<LanguagePreviewDto> {
+    let mut pcks = Vec::new();
+    collect_pck_files(source, &mut pcks);
+    pcks.sort();
+
+    let mut by_code = BTreeMap::<String, LanguagePreviewBuilder>::new();
+    for pck in pcks {
+        for path in list_pck_resource_paths(&pck, vendor_dir) {
+            if !listed_resource_path_is_translation_candidate(&path) {
+                continue;
+            }
+            let relative = path.trim_start_matches("res://");
+            let code = infer_language_code(Path::new(relative))
+                .unwrap_or_else(|| "unknown".to_string());
+            let entry = by_code
+                .entry(code.clone())
+                .or_insert_with(|| LanguagePreviewBuilder {
+                    code: code.clone(),
+                    label: language_label(&code).to_string(),
+                    files: 0,
+                    keys: 0,
+                    sample_path: path.clone(),
+                });
+            entry.files += 1;
+        }
+    }
+
+    let mut previews = by_code
+        .into_values()
+        .map(|entry| LanguagePreviewDto {
+            code: entry.code,
+            label: entry.label,
+            files: entry.files,
+            keys: entry.keys,
+            sample_path: entry.sample_path,
+        })
+        .collect::<Vec<_>>();
+    sort_language_previews(&mut previews);
+    previews.into_iter().take(8).collect()
 }
 
 fn language_preview_from_scan_root(scan_root: &Path) -> Vec<LanguagePreviewDto> {
@@ -190,6 +269,9 @@ fn extraction_target(source: &Path, language_preview: &[LanguagePreviewDto]) -> 
             .collect::<Vec<_>>()
             .join(", ");
         return format!("{labels} 언어 파일 {}개", language_preview.len());
+    }
+    if source_has_pck_payload(source) {
+        return "PCK 내부 localization/lang/strings 계열 파일".to_string();
     }
     if hardcoded_source_count(source) > 0 {
         return "DLL/EXE 내부 고정 문자열 후보".to_string();
@@ -484,6 +566,26 @@ fn write_language_preview_cache(
         .map_err(|source| sts2_mod_manager::error::AppError::io(path.as_path(), source))
 }
 
+fn remember_language_preview_cache(
+    config: &AppConfig,
+    cache_key: &str,
+    languages: &[LanguagePreviewDto],
+) -> sts2_mod_manager::error::AppResult<()> {
+    let mut cache = read_language_preview_cache(config)?;
+    if cache
+        .entries
+        .get(cache_key)
+        .is_some_and(|cached| cached == languages)
+    {
+        return Ok(());
+    }
+    cache
+        .entries
+        .insert(cache_key.to_string(), languages.to_vec());
+    cache.dirty = true;
+    write_language_preview_cache(config, &cache)
+}
+
 fn language_preview_cache_path(config: &AppConfig) -> PathBuf {
     config.state_dir.join("language_preview_cache.tsv")
 }
@@ -491,7 +593,7 @@ fn language_preview_cache_path(config: &AppConfig) -> PathBuf {
 fn language_cache_key(record: &ModRecord, extraction_source: &Path, vendor_dir: &Path) -> String {
     format!(
         "{}|{}|{}|{}|{}|{}|{}|{}",
-        "sts2-localization-v6",
+        "sts2-localization-v7",
         record.source.as_key(),
         record.stable_key(),
         record.fingerprint.bytes,

@@ -1,25 +1,58 @@
 fn extraction_scan_root(source: &Path, cache_key: &str, vendor_dir: &Path) -> Option<PathBuf> {
+    let started = Instant::now();
     if source.is_dir() {
         if directory_contains_pck(source) {
             let destination = language_preview_extract_dir(cache_key);
             if !directory_preview_has_pck_contents(&destination) {
                 let _ = fs::remove_dir_all(&destination);
             }
+            append_performance_log(format!(
+                "extraction_scan_root stage=pck_directory_start source={} destination={}",
+                source.display(),
+                destination.display()
+            ));
             if !destination.exists() && !expand_directory_preview(source, &destination, vendor_dir)
             {
+                append_performance_log(format!(
+                    "extraction_scan_root stage=pck_directory_failed total={}ms source={}",
+                    started.elapsed().as_millis(),
+                    source.display()
+                ));
                 return None;
             }
             compact_language_preview_cache(&destination);
+            append_performance_log(format!(
+                "extraction_scan_root stage=pck_directory_done total={}ms source={} destination={}",
+                started.elapsed().as_millis(),
+                source.display(),
+                destination.display()
+            ));
             return Some(destination);
         }
         return Some(source.to_path_buf());
     }
     if is_supported_extractable_path(source) {
         let destination = language_preview_extract_dir(cache_key);
+        append_performance_log(format!(
+            "extraction_scan_root stage=extractable_start source={} destination={}",
+            source.display(),
+            destination.display()
+        ));
         if !destination.exists() && !expand_source(source, &destination, vendor_dir) {
+            append_performance_log(format!(
+                "extraction_scan_root stage=extractable_failed total={}ms source={}",
+                started.elapsed().as_millis(),
+                source.display()
+            ));
             return None;
         }
         compact_language_preview_cache(&destination);
+        append_performance_log(format!(
+            "extraction_scan_root stage=extractable_done total={}ms source={} destination={}",
+            started.elapsed().as_millis(),
+            source.display(),
+            destination.display()
+        ));
         return Some(destination);
     }
     None
@@ -51,9 +84,134 @@ fn full_extraction_scan_root(source: &Path, cache_key: &str, vendor_dir: &Path) 
 }
 
 fn directory_contains_pck(source: &Path) -> bool {
-    let mut pcks = Vec::new();
-    collect_pck_files(source, &mut pcks);
-    !pcks.is_empty()
+    find_first_pck_file(source).is_some()
+}
+
+fn source_has_pck_payload(source: &Path) -> bool {
+    let started = Instant::now();
+    if source.is_file() {
+        let found = is_pck_path(source);
+        let elapsed = started.elapsed().as_millis();
+        if elapsed >= 20 || (found && env::var_os("STS2_PERF_VERBOSE").is_some()) {
+            append_performance_log(format!(
+                "source_has_pck_payload total={}ms found={} path={}",
+                elapsed,
+                found,
+                source.display()
+            ));
+        }
+        return found;
+    }
+    let found = source.is_dir() && directory_contains_pck(source);
+    let elapsed = started.elapsed().as_millis();
+    if elapsed >= 20 || (found && env::var_os("STS2_PERF_VERBOSE").is_some()) {
+        append_performance_log(format!(
+            "source_has_pck_payload total={}ms found={} path={}",
+            elapsed,
+            found,
+            source.display()
+        ));
+    }
+    found
+}
+
+fn find_first_pck_file(path: &Path) -> Option<PathBuf> {
+    let metadata = fs::metadata(path).ok()?;
+    if metadata.is_file() {
+        return is_pck_path(path).then(|| path.to_path_buf());
+    }
+    if path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .map(|name| name.ends_with(".pck.contents"))
+        .unwrap_or(false)
+    {
+        return None;
+    }
+    let mut entries = fs::read_dir(path)
+        .ok()?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .collect::<Vec<_>>();
+    entries.sort();
+    for child in entries {
+        if let Some(found) = find_first_pck_file(&child) {
+            return Some(found);
+        }
+    }
+    None
+}
+
+fn parse_pck_resource_paths(output: &str) -> Vec<String> {
+    let mut paths = BTreeSet::new();
+    let normalized_output = output.replace('\0', "");
+    for line in normalized_output.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        if let Some(path) = resource_path_after_marker(line, "res://") {
+            paths.insert(path);
+            continue;
+        }
+        for token in line.split_whitespace() {
+            let token = token.trim_matches(|character: char| {
+                matches!(
+                    character,
+                    '"' | '\'' | ',' | ';' | '[' | ']' | '(' | ')' | '<' | '>'
+                )
+            });
+            if token.contains('/')
+                && token
+                    .rsplit_once('.')
+                    .is_some_and(|(_, extension)| extension.chars().all(|character| character.is_ascii_alphanumeric()))
+            {
+                paths.insert(format!("res://{}", token.trim_start_matches('/')));
+            }
+        }
+    }
+    paths.into_iter().collect()
+}
+
+fn resource_path_after_marker(line: &str, marker: &str) -> Option<String> {
+    let index = line.find(marker)?;
+    let rest = &line[index + marker.len()..];
+    let mut path = String::from(marker);
+    for character in rest.chars() {
+        if character.is_whitespace() || matches!(character, '"' | '\'' | ',' | ';' | ']' | ')' | '>') {
+            break;
+        }
+        path.push(character);
+    }
+    (path.len() > marker.len()).then_some(path)
+}
+
+fn list_pck_resource_paths(source: &Path, vendor_dir: &Path) -> Vec<String> {
+    let Some(pck_explorer) = embedded_pck_explorer_path(vendor_dir) else {
+        return Vec::new();
+    };
+    let started = Instant::now();
+    let output = hidden_command(pck_explorer)
+        .arg("-l")
+        .arg(source)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output();
+    let Ok(output) = output else {
+        return Vec::new();
+    };
+    if !output.status.success() {
+        return Vec::new();
+    }
+    let text = String::from_utf8_lossy(&output.stdout);
+    let paths = parse_pck_resource_paths(&text);
+    append_performance_log(format!(
+        "list_pck_resource_paths total={}ms paths={} source={}",
+        started.elapsed().as_millis(),
+        paths.len(),
+        source.display()
+    ));
+    paths
 }
 
 fn directory_preview_has_pck_contents(destination: &Path) -> bool {
@@ -84,6 +242,7 @@ fn directory_preview_has_pck_contents(destination: &Path) -> bool {
 }
 
 fn expand_directory_preview(source: &Path, destination: &Path, vendor_dir: &Path) -> bool {
+    let started = Instant::now();
     if fs::create_dir_all(destination).is_err() {
         return false;
     }
@@ -111,10 +270,18 @@ fn expand_directory_preview(source: &Path, destination: &Path, vendor_dir: &Path
             expanded_any = true;
         }
     }
+    append_performance_log(format!(
+        "expand_directory_preview total={}ms expanded={} source={} destination={}",
+        started.elapsed().as_millis(),
+        expanded_any,
+        source.display(),
+        destination.display()
+    ));
     expanded_any
 }
 
 fn compact_language_preview_cache(root: &Path) {
+    let started = Instant::now();
     let candidates = scan_translation_candidates(root).unwrap_or_default();
     let mut keep_files = candidates
         .into_iter()
@@ -130,6 +297,12 @@ fn compact_language_preview_cache(root: &Path) {
     collect_preview_metadata_files(root, root, &mut keep_files);
     remove_unkept_preview_files(root, &keep_files);
     remove_empty_preview_dirs(root, root);
+    append_performance_log(format!(
+        "compact_language_preview_cache total={}ms keep_files={} root={}",
+        started.elapsed().as_millis(),
+        keep_files.len(),
+        root.display()
+    ));
 }
 
 fn collect_preview_metadata_files(path: &Path, root: &Path, keep_files: &mut BTreeSet<PathBuf>) {
@@ -439,7 +612,15 @@ fn expand_pck(source: &Path, destination: &Path, vendor_dir: &Path) -> bool {
     if fs::create_dir_all(destination).is_err() {
         return false;
     }
-    hidden_command(pck_explorer)
+    let started = Instant::now();
+    let source_bytes = fs::metadata(source).map(|metadata| metadata.len()).unwrap_or(0);
+    append_performance_log(format!(
+        "expand_pck stage=start bytes={} source={} destination={}",
+        source_bytes,
+        source.display(),
+        destination.display()
+    ));
+    let success = hidden_command(pck_explorer)
         .arg("-e")
         .arg(source)
         .arg(destination)
@@ -447,7 +628,15 @@ fn expand_pck(source: &Path, destination: &Path, vendor_dir: &Path) -> bool {
         .stderr(Stdio::null())
         .status()
         .map(|status| status.success())
-        .unwrap_or(false)
+        .unwrap_or(false);
+    append_performance_log(format!(
+        "expand_pck stage=done success={} total={}ms source={} destination={}",
+        success,
+        started.elapsed().as_millis(),
+        source.display(),
+        destination.display()
+    ));
+    success
 }
 
 fn embedded_pck_explorer_path(vendor_dir: &Path) -> Option<PathBuf> {

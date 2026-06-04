@@ -50,6 +50,7 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
   const [columns, setColumns] = React.useState<TranslationColumns>(defaultColumns);
   const [focusEntryKey, setFocusEntryKey] = React.useState<string | null>(null);
   const [validationIssueKindFilter, setValidationIssueKindFilter] = React.useState<string | null>(null);
+  const splitKeyCacheRef = React.useRef(new Map<string, ReturnType<typeof splitSheetKey>>());
 
   const sheetSourceLanguage = React.useMemo(
     () =>
@@ -131,7 +132,11 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     () => {
       const query = entrySearch.trim().toLowerCase();
       return (props.sheet?.entries ?? [])
-        .map((entry, index) => ({ entry, index, parts: splitSheetKey(entry.key) }))
+        .map((entry, index) => ({
+          entry,
+          index,
+          parts: cachedSplitSheetKey(splitKeyCacheRef.current, entry.key),
+        }))
         .filter(({ entry, parts }) => {
           const isRemoved = entry.status === "removed";
           const showRemovedWarning = entryFilter === "warning" && validationIssueKindFilter === "removed";
@@ -213,14 +218,26 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     event.stopPropagation();
     const startX = event.clientX;
     const startWidth = columns[column];
+    const minWidth = column === "status" ? 70 : 140;
+    const grid = event.currentTarget.closest<HTMLElement>(".json-grid");
+    const cssVariable = columnCssVariable(column);
+    let latestWidth = startWidth;
+    let moveCount = 0;
+    const startedAt = window.performance.now();
     const onMove = (moveEvent: MouseEvent) => {
-      const minWidth = column === "status" ? 70 : 140;
-      setColumns((current) => ({
-        ...current,
-        [column]: Math.max(minWidth, startWidth + moveEvent.clientX - startX),
-      }));
+      moveCount += 1;
+      latestWidth = Math.max(minWidth, startWidth + moveEvent.clientX - startX);
+      grid?.style.setProperty(cssVariable, `${latestWidth}px`);
     };
     const onUp = () => {
+      setColumns((current) => ({
+        ...current,
+        [column]: latestWidth,
+      }));
+      const elapsed = Math.round(window.performance.now() - startedAt);
+      if (elapsed >= 250 || moveCount >= 10) {
+        console.info(`[perf] translation_column_resize ${column} ${elapsed}ms moves=${moveCount}`);
+      }
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
     };
@@ -364,6 +381,38 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     revealEntryKey,
     clearFocusEntryKey: () => setFocusEntryKey(null),
   };
+}
+
+function columnCssVariable(column: TranslationColumnKey): string {
+  switch (column) {
+    case "status":
+      return "--col-status";
+    case "id":
+      return "--col-id";
+    case "file":
+      return "--col-file";
+    case "key":
+      return "--col-key";
+    case "source":
+      return "--col-source";
+    case "compare":
+      return "--col-compare";
+    case "translated":
+      return "--col-translated";
+  }
+}
+
+function cachedSplitSheetKey(
+  cache: Map<string, ReturnType<typeof splitSheetKey>>,
+  key: string,
+): ReturnType<typeof splitSheetKey> {
+  const cached = cache.get(key);
+  if (cached) {
+    return cached;
+  }
+  const parts = splitSheetKey(key);
+  cache.set(key, parts);
+  return parts;
 }
 
 function validationIssueKeys(validation: JsonValidation | null, kind: string | null): Set<string> {

@@ -364,6 +364,10 @@ fn repair_archive_mod(path: &Path, config: &AppConfig) -> Result<bool, String> {
             "압축 해제에 실패했습니다. 7-Zip 내장 도구와 파일 손상 여부를 확인하세요.".to_string(),
         );
     }
+    if repair_multi_mod_archive_folder(&target, config)? {
+        remove_repaired_archive(path)?;
+        return Ok(true);
+    }
     repair_nested_mod_folder(&target)?;
 
     remove_repaired_archive(path)?;
@@ -374,6 +378,40 @@ fn remove_repaired_archive(path: &Path) -> Result<(), String> {
     remove_path_if_exists(path)
         .map_err(|error| format!("원본 압축 제거 실패: {} ({error})", path.display()))?;
     Ok(())
+}
+
+fn repair_multi_mod_archive_folder(path: &Path, config: &AppConfig) -> Result<bool, String> {
+    let records = split_dropped_directory(path)?;
+    if records.len() <= 1 {
+        return Ok(false);
+    }
+
+    let mut moves = Vec::<(PathBuf, PathBuf)>::new();
+    for record in records {
+        let file_name = record
+            .path
+            .file_name()
+            .ok_or_else(|| format!("모드 폴더 이름을 계산하지 못했습니다: {}", record.path.display()))?;
+        let target = config.game_mods_dir.join(file_name);
+        if target.exists() {
+            return Err(format!("압축 내부 모드 대상이 이미 존재합니다: {}", target.display()));
+        }
+        moves.push((record.path, target));
+    }
+
+    for (source, target) in moves {
+        move_path_or_copy(&source, &target).map_err(|error| {
+            format!(
+                "압축 내부 모드 이동 실패: {} -> {} ({error})",
+                source.display(),
+                target.display()
+            )
+        })?;
+    }
+
+    fs::remove_dir_all(path)
+        .map_err(|error| format!("압축 외부 폴더 제거 실패: {} ({error})", path.display()))?;
+    Ok(true)
 }
 
 fn repair_nested_mod_folder(path: &Path) -> Result<bool, String> {

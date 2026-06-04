@@ -3,8 +3,8 @@ import {
   compactTranslationFile,
   hasTranslationValue,
   isTabularTranslationPaste,
+  isStructuredTranslationJsonPaste,
   isTranslationSlotId,
-  looksLikeJsonPaste,
   parsePastedTranslationJson,
   splitSheetKey,
   structuredTranslationEntries,
@@ -39,16 +39,16 @@ export function useTranslationSheetActions({
       if (!current) {
         return current;
       }
-      const entries = current.entries.map((entry, entryIndex) => {
-        if (entryIndex !== index) {
-          return entry;
-        }
-        return {
-          ...entry,
-          translated_value: value,
-          status: editedTranslationStatus(entry, value),
-        } satisfies JsonTranslationEntry;
-      });
+      const entry = current.entries[index];
+      if (!entry) {
+        return current;
+      }
+      const entries = current.entries.slice();
+      entries[index] = {
+        ...entry,
+        translated_value: value,
+        status: editedTranslationStatus(entry, value),
+      } satisfies JsonTranslationEntry;
       return { ...current, entries };
     });
   }
@@ -165,10 +165,6 @@ export function useTranslationSheetActions({
     }
     const parsed = parsePastedTranslationJson(text);
     if (parsed === null) {
-      if (looksLikeJsonPaste(text)) {
-        appendLog("JSON 붙여넣기 실패: JSON 형식이 올바르지 않습니다.");
-        return true;
-      }
       return false;
     }
     const entries = structuredTranslationEntries(parsed);
@@ -287,7 +283,7 @@ export function useTranslationSheetActions({
     }
     const handlePaste = (event: ClipboardEvent) => {
       const text = event.clipboardData?.getData("text/plain") ?? "";
-      if (!text || parsePastedTranslationJson(text) === null) {
+      if (!text || !isStructuredTranslationJsonPaste(text)) {
         return;
       }
       if (pasteStructuredTranslationJson(text)) {

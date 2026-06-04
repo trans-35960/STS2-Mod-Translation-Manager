@@ -665,6 +665,17 @@ export function defaultTranslatableResourcePath(mod: ModRow): string {
   return defaultTranslationResourcePath(mod) || firstHardcodedResourcePath(mod.extraction_tree);
 }
 
+export function needsDeferredTranslationAnalysis(mod: ModRow): boolean {
+  const labels = [
+    mod.translation_state,
+    mod.extraction_hint,
+    mod.extraction_target,
+    mod.extraction_source_path,
+    mod.path,
+  ].join(" ").toLowerCase();
+  return labels.includes("pck") || labels.includes("pak") || labels.includes("분석 대기") || labels.includes("번역 가능");
+}
+
 export function isHardcodedResourcePath(path: string): boolean {
   return /\.(dll|exe)$/i.test(path.replace(/\\/g, "/").split("/").pop() ?? "");
 }

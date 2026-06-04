@@ -147,27 +147,19 @@ export function AppMenuBar(props: {
       {refreshLoading && <span className="menu-loading-strip" aria-hidden="true" />}
       <div
         className="titlebar-spacer"
-        onMouseDown={(event) => void startTitlebarDrag(event)}
+        data-tauri-drag-region
+        onDoubleClick={() => void toggleTitlebarMaximize()}
       />
       <WindowControls />
     </header>
   );
 }
 
-function isWindowChromeInteractive(target: EventTarget | null) {
-  return target instanceof Element && Boolean(target.closest("button, input, select, textarea, a, summary, details"));
-}
-
-async function startTitlebarDrag(event: React.MouseEvent<HTMLElement>) {
-  if (event.button !== 0 || isWindowChromeInteractive(event.target) || isPreviewRuntime()) {
+async function toggleTitlebarMaximize() {
+  if (isPreviewRuntime()) {
     return;
   }
-  if (event.detail >= 2) {
-    event.preventDefault();
-    await getAppWindow().toggleMaximize();
-    return;
-  }
-  await getAppWindow().startDragging();
+  await getAppWindow().toggleMaximize();
 }
 
 function MenuTab(props: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) {

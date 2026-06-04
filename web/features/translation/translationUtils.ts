@@ -174,6 +174,14 @@ export function looksLikeJsonPaste(text: string): boolean {
   return trimmed.startsWith("{") || trimmed.startsWith("[") || /^```(?:json)?\s*[\[{]/i.test(trimmed);
 }
 
+export function isStructuredTranslationJsonPaste(text: string): boolean {
+  const parsed = parsePastedTranslationJson(text);
+  if (parsed === null) {
+    return false;
+  }
+  return structuredTranslationEntries(parsed).some((entry) => isTranslationSlotId(entry.id));
+}
+
 export function isTabularTranslationPaste(text: string): boolean {
   const rows = text.replace(/\r/g, "").split("\n").filter((line) => line.length > 0);
   return rows.length > 0 && rows.every((line) => line.includes("\t"));

@@ -3,23 +3,37 @@ fn extraction_tree(
     cache_key: &str,
     vendor_dir: &Path,
 ) -> Vec<ExtractionTreeNodeDto> {
+    let mut trace = PerfTrace::new("extraction_tree");
+    if source_has_pck_payload(source) {
+        trace.mark("pck_deferred");
+        trace.finish(format!("source={}", source.display()), 25);
+        return Vec::new();
+    }
+    trace.mark("pck_check");
+
     if source.is_file() && !is_supported_extractable_path(source) {
         let name = source
             .file_name()
             .map(|value| value.to_string_lossy().to_string())
             .unwrap_or_else(|| display_path(source));
-        return vec![ExtractionTreeNodeDto {
+        let tree = vec![ExtractionTreeNodeDto {
             name,
             path: display_path(source),
             kind: "file".to_string(),
             source_path: display_path(source),
             children: Vec::new(),
         }];
+        trace.mark("single_file");
+        trace.finish(format!("nodes={} source={}", tree.len(), source.display()), 25);
+        return tree;
     }
 
     let Some(scan_root) = full_extraction_scan_root(source, cache_key, vendor_dir) else {
+        trace.mark("scan_root_missing");
+        trace.finish(format!("source={}", source.display()), 25);
         return Vec::new();
     };
+    trace.mark("scan_root");
     let language_paths = scan_translation_candidates(&scan_root)
         .map(|candidates| {
             candidates
@@ -30,6 +44,7 @@ fn extraction_tree(
         })
         .unwrap_or_default();
     let hardcoded_paths = hardcoded_candidate_paths(&scan_root);
+    trace.mark("candidate_paths");
 
     let resource_roots = pck_resource_roots(&scan_root);
     if !resource_roots.is_empty() {
@@ -56,7 +71,10 @@ fn extraction_tree(
                 );
             }
         }
-        return vec![root.into_dto()];
+        let tree = vec![root.into_dto()];
+        trace.mark("resource_tree");
+        trace.finish(format!("nodes={} source={}", tree.len(), source.display()), 25);
+        return tree;
     }
 
     let mut files = Vec::new();
@@ -78,9 +96,11 @@ fn extraction_tree(
             },
         );
     }
-    root.into_children()
+    let tree = root.into_children();
+    trace.mark("filesystem_tree");
+    trace.finish(format!("nodes={} source={}", tree.len(), source.display()), 25);
+    tree
 }
-
 
 fn collect_preview_files(root: &Path, files: &mut Vec<PathBuf>, limit: usize) {
     if files.len() >= limit {

@@ -37,10 +37,15 @@ export function useDashboardLoader({
       return;
     }
     pollRunningRef.current = true;
+    const startedAt = window.performance.now();
     try {
       const data = await invokeCommand("load_dashboard");
+      const commandMs = Math.round(window.performance.now() - startedAt);
       setDashboard(data);
       setSettingsDraft((current) => current ?? data.settings);
+      if (commandMs >= 500) {
+        appendLog(`[perf] 대시보드 새로고침 ${commandMs}ms · 모드 ${data.mods.length}개 · 번역작업 ${data.translations.length}개`);
+      }
     } catch (error) {
       appendLog(formatCommandError("load_dashboard", undefined, error));
     } finally {
@@ -64,9 +69,11 @@ export function useDashboardLoader({
       }
       setLoadingMessage("시스템 경로를 확인하고 있습니다");
       const data = await invokeCommand("load_dashboard");
+      const commandMs = Math.round(window.performance.now() - startedAt);
       setLoadingMessage("세이브 백업 경로와 실행 준비 상태를 확인하고 있습니다");
       setDashboard(data);
       setSettingsDraft(data.settings);
+      appendLog(`[perf] 초기 대시보드 로드 ${commandMs}ms · 모드 ${data.mods.length}개 · 프리셋 ${data.presets.length}개`);
       setJsonTargetLanguage((current) => current || data.settings.target_language || "kor");
       if (!selectedPreset && data.presets[0]) {
         setSelectedPreset(data.presets[0].name);

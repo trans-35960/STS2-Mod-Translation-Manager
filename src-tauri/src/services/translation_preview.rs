@@ -466,20 +466,46 @@ pub(crate) fn prepare_translation_node(
     output_dir: Option<String>,
     force: bool,
 ) -> Result<NodeTranslationDto, String> {
+    let mut trace = PerfTrace::new("prepare_translation_node");
     let app = app();
     app.ensure_workspace_dirs()
         .map_err(|error| error.to_string())?;
+    trace.mark("ensure_workspace");
     let record = find_mod_record(&app, &key)?;
+    trace.mark("find_record");
     let extraction_source = extraction_source_for_record(&record);
     let vendor_dir = app.config().vendor_dir.clone();
     if force {
         clear_translation_extract_cache_for_record(&record, &extraction_source, &vendor_dir)?;
     }
+    trace.mark("clear_cache");
     let cache_key = language_cache_key(&record, &extraction_source, &vendor_dir);
+    append_performance_log(format!(
+        "prepare_translation_node stage=extraction_scan_root_start key={} resource={} source={}",
+        key,
+        resource_path,
+        extraction_source.display()
+    ));
     let scan_root = extraction_scan_root(&extraction_source, &cache_key, &vendor_dir)
         .ok_or_else(|| "선택 항목을 분석할 수 없습니다.".to_string())?;
+    append_performance_log(format!(
+        "prepare_translation_node stage=extraction_scan_root_done key={} scan_root={}",
+        key,
+        scan_root.display()
+    ));
+    trace.mark("extraction_scan_root");
     let manifest = read_mod_manifest_for_record(&record.path, &scan_root);
+    trace.mark("read_manifest");
     let available_languages = language_preview_from_scan_root(&scan_root);
+    if let Err(error) =
+        remember_language_preview_cache(app.config(), &cache_key, &available_languages)
+    {
+        append_performance_log(format!(
+            "remember_language_preview_cache failed key={} error={}",
+            key, error
+        ));
+    }
+    trace.mark("available_languages");
     let settings = read_ui_settings(app.config()).map_err(|error| error.to_string())?;
     let target_language = settings.target_language;
     let mut selected_resource_path = if resource_path.trim().is_empty() {
@@ -489,6 +515,7 @@ pub(crate) fn prepare_translation_node(
     } else {
         resource_path.clone()
     };
+    trace.mark("select_default_path");
     let mut selected = selected_translation_files(&scan_root, &selected_resource_path);
     if selected.is_empty()
         && !resource_path.trim().is_empty()
@@ -502,6 +529,13 @@ pub(crate) fn prepare_translation_node(
     if selected.is_empty() {
         return Err("선택 항목 아래에서 localization 언어 파일이나 DLL 문자열 후보를 찾지 못했습니다.".to_string());
     }
+    trace.mark("select_files");
+    append_performance_log(format!(
+        "prepare_translation_node stage=selected_files key={} files={} resource={}",
+        key,
+        selected.len(),
+        selected_resource_path
+    ));
 
     let selection_id = stable_resource_id(&selected_resource_path);
     let default_source_root = app
@@ -546,6 +580,7 @@ pub(crate) fn prepare_translation_node(
     }
     fs::create_dir_all(&source_root).map_err(|error| error.to_string())?;
     fs::create_dir_all(&translated_root).map_err(|error| error.to_string())?;
+    trace.mark("prepare_dirs");
 
     let mut copied = Vec::new();
     for file in &selected {
@@ -563,7 +598,9 @@ pub(crate) fn prepare_translation_node(
         fs::copy(file, &target).map_err(|error| error.to_string())?;
         copied.push(target);
     }
+    trace.mark("copy_source_files");
     copy_existing_target_language_files(&scan_root, &selected, &translated_root, &target_language)?;
+    trace.mark("copy_target_files");
     let connected_patch = copy_connected_translation_patch_files(
         ConnectedTranslationPatchRequest {
             app: &app,
@@ -576,6 +613,7 @@ pub(crate) fn prepare_translation_node(
             vendor_dir: &vendor_dir,
         },
     )?;
+    trace.mark("connected_patch");
     copied.sort();
     let pck_contents_root = copied
         .first()
@@ -617,6 +655,7 @@ pub(crate) fn prepare_translation_node(
             .and_then(|target| target.pck_stem.as_deref()),
     })
     .map_err(|error| error.to_string())?;
+    trace.mark("write_context");
     let first_source = copied
         .first()
         .cloned()
@@ -637,7 +676,7 @@ pub(crate) fn prepare_translation_node(
         translated_root.clone()
     };
 
-    Ok(NodeTranslationDto {
+    let output = NodeTranslationDto {
         message: format!(
             "{} 항목 추출 완료: {}개 작업 파일 ({})",
             selected_resource_path,
@@ -662,7 +701,18 @@ pub(crate) fn prepare_translation_node(
         mod_description: manifest.description.unwrap_or_default(),
         available_languages,
         can_export_patch_mod,
-    })
+    };
+    trace.finish(
+        format!(
+            "key={} files={} resource={} source={}",
+            output.mod_key,
+            output.copied_files,
+            selected_resource_path,
+            extraction_source.display()
+        ),
+        0,
+    );
+    Ok(output)
 }
 
 

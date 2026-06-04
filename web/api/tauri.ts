@@ -30,6 +30,9 @@ export type CommandArgs = {
   open_path: { path: string };
   preview_dropped_mods: { paths: string[] };
   import_dropped_mod: { path: string; replacePath?: string | null };
+  import_dropped_mods: {
+    decisions: Array<{ path: string; mode: "new" | "skip" | "replace"; replacePath?: string | null }>;
+  };
   toggle_mod: { key: string; active: boolean; force?: boolean | null };
   toggle_mods: { changes: ModToggleRequest[] };
   delete_mod: { key: string; path: string };
@@ -114,6 +117,7 @@ export type CommandResult = {
   open_path: void;
   preview_dropped_mods: DroppedModPreview[];
   import_dropped_mod: ActionResult;
+  import_dropped_mods: ActionResult;
   toggle_mod: ActionResult;
   toggle_mods: ActionResult;
   delete_mod: ActionResult;
