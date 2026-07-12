@@ -22,6 +22,7 @@ export function useSettingsActions({
 }) {
   const [gameLogs, setGameLogs] = React.useState<GameLog[]>([]);
   const [gameLogsLoading, setGameLogsLoading] = React.useState(false);
+  const [gameLogsLoaded, setGameLogsLoaded] = React.useState(false);
 
   async function saveSettings() {
     if (!settingsDraft) {
@@ -62,6 +63,7 @@ export function useSettingsActions({
     } catch (error) {
       appendLog(formatCommandError("read_game_logs", undefined, error));
     } finally {
+      setGameLogsLoaded(true);
       setGameLogsLoading(false);
     }
   }
@@ -184,6 +186,7 @@ export function useSettingsActions({
   return {
     gameLogs,
     gameLogsLoading,
+    gameLogsLoaded,
     saveSettings,
     loadGameLogs,
     chooseTranslationWorkDir,

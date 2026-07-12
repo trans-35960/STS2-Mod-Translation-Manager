@@ -34,6 +34,7 @@ import type {
   ModSort,
   Page,
   TranslationApplyFilter,
+  TranslationPreparationProgress,
 } from "./types";
 import { getAppWindow, invokeCommand, openDialog } from "./api/tauri";
 import { formatCommandError } from "./utils/logging";
@@ -43,6 +44,7 @@ function App() {
   const [locale, setLocale] = React.useState<Locale>("ko");
   const [page, setPage] = React.useState<Page>("mods");
   const [busy, setBusy] = React.useState<string | null>(null);
+  const [translationPreparationProgress, setTranslationPreparationProgress] = React.useState<TranslationPreparationProgress | null>(null);
   const [search, setSearch] = React.useState("");
   const [statFilter, setStatFilter] = React.useState<DashboardStatFilter>("all");
   const [activeFilter, setActiveFilter] = React.useState<ActiveFilter>("all");
@@ -58,6 +60,7 @@ function App() {
   const [droppedModPreviews, setDroppedModPreviews] = React.useState<DroppedModPreview[] | null>(null);
   const [droppedModSource, setDroppedModSource] = React.useState<DroppedModSource>("drop");
   const externalPromptedRef = React.useRef<Set<string> | null>(null);
+  const cacheUsageLoadedRef = React.useRef("");
   const dragActiveRef = React.useRef(false);
   const { logs, setLogs, appendLog } = useAppLogs();
   const contentRef = React.useRef<HTMLElement | null>(null);
@@ -114,7 +117,6 @@ function App() {
   } = useDashboardLoader({
     appendLog,
     busy,
-    selectedPreset,
     setPage,
     setSelectedPreset,
     setJsonTargetLanguage,
@@ -134,6 +136,7 @@ function App() {
   const {
     gameLogs,
     gameLogsLoading,
+    gameLogsLoaded,
     saveSettings,
     loadGameLogs,
     chooseTranslationWorkDir,
@@ -177,10 +180,32 @@ function App() {
   });
 
   React.useEffect(() => {
-    if (page === "settings" && gameLogs.length === 0 && !gameLogsLoading) {
+    if (page === "settings" && !gameLogsLoaded && !gameLogsLoading) {
       void loadGameLogs(false);
     }
-  }, [gameLogs.length, gameLogsLoading, page]);
+  }, [gameLogsLoaded, gameLogsLoading, page]);
+
+  React.useEffect(() => {
+    if (page !== "settings") {
+      cacheUsageLoadedRef.current = "";
+      return;
+    }
+    if (!dashboard || isPreviewRuntime()) {
+      return;
+    }
+    const cacheUsageKey = `${dashboard.paths.state}|${dashboard.paths.translation_work}`;
+    if (cacheUsageLoadedRef.current === cacheUsageKey) {
+      return;
+    }
+    cacheUsageLoadedRef.current = cacheUsageKey;
+    void invokeCommand("load_cache_usage")
+      .then((cacheUsage) => {
+        setDashboard((current) => (current ? { ...current, cache_usage: cacheUsage } : current));
+      })
+      .catch((error) => {
+        appendLog(formatCommandError("load_cache_usage", undefined, error));
+      });
+  }, [appendLog, dashboard, page, setDashboard]);
 
   const {
     applyAllPasteCandidates,
@@ -253,6 +278,7 @@ function App() {
     setPendingExtract,
     setSelectedRows,
     setTranslationProject,
+    setTranslationPreparationProgress,
   });
 
   React.useEffect(() => {
@@ -484,7 +510,7 @@ function App() {
 
         {loading && <LoadingScreen step={loadingMessage || LOADING_STEPS[loadingStep]} />}
         {dropBusyMessage && <LoadingScreen step={dropBusyMessage} />}
-        <BusyProgressModal busy={busy} />
+        <BusyProgressModal busy={busy} liveProgress={translationPreparationProgress} />
 
         {dashboard && page === "mods" && (
           <StatsGrid

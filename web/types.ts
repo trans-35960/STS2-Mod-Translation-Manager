@@ -230,6 +230,15 @@ export type LaunchStatus = {
   running: boolean;
 };
 
+export type TranslationPreparationProgress = {
+  phase: "source_check" | "cache_hit" | "extracting" | "selecting_files" | "copying_files" | "source_ready" | "creating_sheet" | "opening_tools";
+  detail: string;
+  step: number;
+  total_steps: number;
+  source_bytes: number;
+  cache_hit: boolean | null;
+};
+
 export type GameLog = {
   path: string;
   exists: boolean;

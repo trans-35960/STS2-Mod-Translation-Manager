@@ -1,3 +1,4 @@
+import { Channel } from "@tauri-apps/api/core";
 import { invokeCommand } from "../../api/tauri";
 import {
   defaultTranslatableResourcePath,
@@ -12,7 +13,7 @@ import {
   retargetTranslationSheetPath,
 } from "../../features/translation/translationUtils";
 import { previewJsonReport, previewJsonSheet } from "../../previewData";
-import type { ExtractionTreeNode, ModRow } from "../../types";
+import type { ExtractionTreeNode, ModRow, TranslationPreparationProgress } from "../../types";
 import { formatError } from "../../utils/logging";
 import { isPreviewRuntime } from "../../utils/runtime";
 import type { TranslationActionsParams } from "./types";
@@ -45,6 +46,7 @@ export function useTranslationSessionActions({
   setPendingExtract,
   setSelectedRows,
   setTranslationProject,
+  setTranslationPreparationProgress,
 }: TranslationActionsParams) {
   function closeTranslationSession() {
     setJsonSource("");
@@ -92,11 +94,14 @@ export function useTranslationSessionActions({
         can_export_patch_mod: true,
       };
     }
+    const onProgress = new Channel<TranslationPreparationProgress>();
+    onProgress.onmessage = setTranslationPreparationProgress;
     return await invokeCommand("prepare_translation_node", {
       key: sourceMod.key,
       resourcePath: node.path || node.name,
       outputDir: outputDir ?? null,
       force,
+      onProgress,
     });
   }
 
@@ -127,6 +132,14 @@ export function useTranslationSessionActions({
     const sourceMod = baseModForTranslationPatch(mod);
     const sourceNode = sourceMod.key === mod.key ? node : defaultTranslationNode(sourceMod);
     setBusy(`prepare_translation_node:${sourceMod.key}`);
+    setTranslationPreparationProgress({
+      phase: "source_check",
+      detail: `${sourceMod.name}의 번역 리소스를 확인하고 있습니다.`,
+      step: 0,
+      total_steps: 5,
+      source_bytes: sourceMod.bytes,
+      cache_hit: null,
+    });
     setJsonToolError("");
     const startedAt = window.performance.now();
     try {
@@ -159,6 +172,14 @@ export function useTranslationSessionActions({
       setPage("translationTools");
       appendLog(prepared.message);
       appendLog(`번역 시트 생성 시작: ${prepared.source_path}`);
+      setTranslationPreparationProgress((current) => ({
+        phase: "creating_sheet",
+        detail: "원문과 기존 번역을 비교해 번역 시트를 생성하고 있습니다.",
+        step: 3,
+        total_steps: 5,
+        source_bytes: current?.source_bytes ?? sourceMod.bytes,
+        cache_hit: current?.cache_hit ?? null,
+      }));
       if (isPreviewRuntime()) {
         setJsonSheet(previewJsonSheet);
         setJsonReport(previewJsonReport);
@@ -181,11 +202,20 @@ export function useTranslationSessionActions({
       setPasteCandidatesByKey({});
       appendLog(sheet.message);
       appendLog(`[perf] 번역 시트 생성 ${sheetMs}ms · 항목 ${sheet.sheet.entries.length}개`);
+      setTranslationPreparationProgress((current) => ({
+        phase: "opening_tools",
+        detail: `번역 항목 ${sheet.sheet.entries.length}개를 편집기에 표시하고 있습니다.`,
+        step: 4,
+        total_steps: 5,
+        source_bytes: current?.source_bytes ?? sourceMod.bytes,
+        cache_hit: current?.cache_hit ?? null,
+      }));
     } catch (error) {
       const message = `번역 도구 작업 실패: ${formatError(error)}`;
       setJsonToolError(message);
       appendLog(message);
     } finally {
+      setTranslationPreparationProgress(null);
       setBusy(null);
     }
   }

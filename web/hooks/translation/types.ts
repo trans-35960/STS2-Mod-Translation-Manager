@@ -12,6 +12,7 @@ import type {
   Page,
   PasteCandidate,
   TranslationProjectInfo,
+  TranslationPreparationProgress,
   UiSettings,
 } from "../../types";
 
@@ -60,6 +61,7 @@ export type TranslationActionsParams = {
   setPendingExtract: StateSetter<ModRow | null>;
   setSelectedRows: StateSetter<number[]>;
   setTranslationProject: StateSetter<TranslationProjectInfo | null>;
+  setTranslationPreparationProgress: StateSetter<TranslationPreparationProgress | null>;
 };
 
 export type RunJsonTool = (command: JsonToolCommand, args: CommandArgs[JsonToolCommand]) => Promise<boolean>;

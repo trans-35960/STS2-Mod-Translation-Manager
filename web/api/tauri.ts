@@ -1,9 +1,11 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, type Channel } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import type {
   ActionResult,
+  CacheUsage,
   Dashboard,
+  LaunchStatus,
   DroppedModPreview,
   GameLog,
   JsonApply,
@@ -18,10 +20,13 @@ import type {
   SaveSettingsRequest,
   ShortJsonExport,
   TranslationPatchExport,
+  TranslationPreparationProgress,
 } from "../types";
 
 export type CommandArgs = {
   load_dashboard: undefined;
+  load_launch_status: undefined;
+  load_cache_usage: undefined;
   save_settings: { request: SaveSettingsRequest };
   save_mod_view_mode: { modViewMode: "detail" | "simple" };
   read_game_logs: undefined;
@@ -53,6 +58,7 @@ export type CommandArgs = {
     resourcePath: string;
     outputDir?: string | null;
     force?: boolean | null;
+    onProgress: Channel<TranslationPreparationProgress>;
   };
   save_preset: { name: string };
   apply_preset: { name: string };
@@ -109,6 +115,8 @@ export type CommandArgs = {
 
 export type CommandResult = {
   load_dashboard: Dashboard;
+  load_launch_status: LaunchStatus;
+  load_cache_usage: CacheUsage;
   save_settings: ActionResult;
   save_mod_view_mode: void;
   read_game_logs: GameLog[];

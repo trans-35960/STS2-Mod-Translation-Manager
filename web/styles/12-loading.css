@@ -149,6 +149,23 @@
   animation: loading-progress 1.05s ease-in-out infinite;
 }
 
+.busy-progress-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -7px;
+}
+
+.busy-progress-meta span {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 3px 8px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 850;
+}
+
 .busy-progress-steps {
   display: grid;
   gap: 9px;
@@ -178,13 +195,20 @@
   font-size: 11px;
 }
 
-.busy-progress-steps li.active {
+.busy-progress-steps li.active,
+.busy-progress-steps li.completed {
   color: #0f766e;
 }
 
-.busy-progress-steps li.active > span {
+.busy-progress-steps li.active > span,
+.busy-progress-steps li.completed > span {
   border-color: rgba(15, 118, 110, 0.32);
   background: #e7f5f1;
+}
+
+.busy-progress-steps li.current > span {
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.12);
+  animation: busy-step-pulse 1.2s ease-in-out infinite;
 }
 
 .busy-progress-steps p {
@@ -199,6 +223,12 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes busy-step-pulse {
+  50% {
+    box-shadow: 0 0 0 7px rgba(20, 184, 166, 0.04);
   }
 }
 

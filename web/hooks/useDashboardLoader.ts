@@ -8,19 +8,17 @@ import { isPreviewRuntime } from "../utils/runtime";
 import { blockingSetupIssues } from "../utils/setup";
 
 const DASHBOARD_POLL_INTERVAL_MS = 30000;
-const DASHBOARD_POLL_WHILE_GAME_RUNNING_MS = 3000;
+const LAUNCH_STATUS_POLL_INTERVAL_MS = 3000;
 
 export function useDashboardLoader({
   appendLog,
   busy,
-  selectedPreset,
   setPage,
   setSelectedPreset,
   setJsonTargetLanguage,
 }: {
   appendLog: (message: string) => void;
   busy: string | null;
-  selectedPreset: string;
   setPage: React.Dispatch<React.SetStateAction<Page>>;
   setSelectedPreset: React.Dispatch<React.SetStateAction<string>>;
   setJsonTargetLanguage: React.Dispatch<React.SetStateAction<string>>;
@@ -41,7 +39,9 @@ export function useDashboardLoader({
     try {
       const data = await invokeCommand("load_dashboard");
       const commandMs = Math.round(window.performance.now() - startedAt);
-      setDashboard(data);
+      setDashboard((current) =>
+        current ? { ...data, cache_usage: current.cache_usage } : data,
+      );
       setSettingsDraft((current) => current ?? data.settings);
       if (commandMs >= 500) {
         appendLog(`[perf] 대시보드 새로고침 ${commandMs}ms · 모드 ${data.mods.length}개 · 번역작업 ${data.translations.length}개`);
@@ -50,6 +50,30 @@ export function useDashboardLoader({
       appendLog(formatCommandError("load_dashboard", undefined, error));
     } finally {
       pollRunningRef.current = false;
+    }
+  }, [appendLog, busy, loading]);
+
+  const refreshLaunchStatus = React.useCallback(async () => {
+    if (isPreviewRuntime() || busy || loading) {
+      return;
+    }
+    try {
+      const launch = await invokeCommand("load_launch_status");
+      setDashboard((current) => {
+        if (
+          !current ||
+          (current.launch.ready === launch.ready &&
+            current.launch.game_exe === launch.game_exe &&
+            current.launch.steam_exe === launch.steam_exe &&
+            current.launch.target_label === launch.target_label &&
+            current.launch.running === launch.running)
+        ) {
+          return current;
+        }
+        return { ...current, launch };
+      });
+    } catch (error) {
+      appendLog(formatCommandError("load_launch_status", undefined, error));
     }
   }, [appendLog, busy, loading]);
 
@@ -62,7 +86,7 @@ export function useDashboardLoader({
         setDashboard(previewDashboard);
         setSettingsDraft(previewDashboard.settings);
         setJsonTargetLanguage((current) => current || previewDashboard.settings.target_language || "kor");
-        setSelectedPreset(previewDashboard.presets[0]?.name ?? "");
+        setSelectedPreset((current) => current || previewDashboard.presets[0]?.name || "");
         setLoadingMessage("브라우저 미리보기 데이터를 준비했습니다");
         appendLog("Browser preview mode: Tauri commands are replaced with sample data.");
         return;
@@ -75,9 +99,7 @@ export function useDashboardLoader({
       setSettingsDraft(data.settings);
       appendLog(`[perf] 초기 대시보드 로드 ${commandMs}ms · 모드 ${data.mods.length}개 · 프리셋 ${data.presets.length}개`);
       setJsonTargetLanguage((current) => current || data.settings.target_language || "kor");
-      if (!selectedPreset && data.presets[0]) {
-        setSelectedPreset(data.presets[0].name);
-      }
+      setSelectedPreset((current) => current || data.presets[0]?.name || "");
       const blockingIssues = blockingSetupIssues(data);
       if (blockingIssues.length > 0) {
         setLoadingMessage("초기 설정 입력이 필요합니다. 설정 화면으로 이동합니다");
@@ -91,21 +113,16 @@ export function useDashboardLoader({
         setDashboard(previewDashboard);
         setSettingsDraft(previewDashboard.settings);
         setJsonTargetLanguage((current) => current || previewDashboard.settings.target_language || "kor");
-        setSelectedPreset(previewDashboard.presets[0]?.name ?? "");
+        setSelectedPreset((current) => current || previewDashboard.presets[0]?.name || "");
         setLoadingMessage("브라우저 미리보기 데이터를 준비했습니다");
         appendLog("Browser preview mode: Tauri commands are replaced with sample data.");
       } else {
         appendLog(formatCommandError("load_dashboard", undefined, error));
       }
     } finally {
-      const minimumLoadingMs = isPreviewRuntime() ? 120 : 650;
-      const remaining = Math.max(0, minimumLoadingMs - (window.performance.now() - startedAt));
-      if (remaining > 0) {
-        await new Promise((resolve) => window.setTimeout(resolve, remaining));
-      }
       setLoading(false);
     }
-  }, [appendLog, selectedPreset, setJsonTargetLanguage, setPage, setSelectedPreset]);
+  }, [appendLog, setJsonTargetLanguage, setPage, setSelectedPreset]);
 
   React.useEffect(() => {
     void load();
@@ -127,17 +144,26 @@ export function useDashboardLoader({
     if (isPreviewRuntime()) {
       return;
     }
-    const pollIntervalMs = dashboard?.launch.running
-      ? DASHBOARD_POLL_WHILE_GAME_RUNNING_MS
-      : DASHBOARD_POLL_INTERVAL_MS;
     const intervalId = window.setInterval(async () => {
       if (document.visibilityState !== "visible") {
         return;
       }
       await refreshDashboard();
-    }, pollIntervalMs);
+    }, DASHBOARD_POLL_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
-  }, [dashboard?.launch.running, refreshDashboard]);
+  }, [refreshDashboard]);
+
+  React.useEffect(() => {
+    if (isPreviewRuntime()) {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void refreshLaunchStatus();
+      }
+    }, LAUNCH_STATUS_POLL_INTERVAL_MS);
+    return () => window.clearInterval(intervalId);
+  }, [refreshLaunchStatus]);
 
   React.useEffect(() => {
     if (isPreviewRuntime()) {

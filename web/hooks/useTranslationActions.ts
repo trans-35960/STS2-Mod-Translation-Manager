@@ -29,6 +29,7 @@ export function useTranslationActions(params: TranslationActionsParams) {
   const sessionActions = useTranslationSessionActions(params);
   const validationRequestId = React.useRef(0);
   const validationOverrideRef = React.useRef<ValidationOverride | null>(null);
+  const lastValidatedSheetRef = React.useRef(params.jsonSheet);
   const hasValidation = Boolean(params.jsonValidation);
 
   async function validateCurrentTranslationSheet(options: { busy?: boolean; log?: boolean } = {}) {
@@ -45,6 +46,7 @@ export function useTranslationActions(params: TranslationActionsParams) {
         sheet: params.jsonSheet,
       });
       if (requestId === validationRequestId.current) {
+        lastValidatedSheetRef.current = params.jsonSheet;
         params.setJsonValidation(result);
       }
       if (options.log) {
@@ -71,7 +73,13 @@ export function useTranslationActions(params: TranslationActionsParams) {
   }
 
   React.useEffect(() => {
-    if (isPreviewRuntime() || params.page !== "translationTools" || !params.jsonSheet || !hasValidation) {
+    if (
+      isPreviewRuntime() ||
+      params.page !== "translationTools" ||
+      !params.jsonSheet ||
+      !hasValidation ||
+      lastValidatedSheetRef.current === params.jsonSheet
+    ) {
       return;
     }
     const timeoutId = window.setTimeout(() => {

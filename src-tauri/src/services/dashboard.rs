@@ -119,6 +119,10 @@ pub(crate) fn import_dropped_mod(
     })
 }
 
+pub(crate) fn load_launch_status() -> Result<LaunchStatusDto, String> {
+    Ok(launch_dto(app().launch_status()))
+}
+
 pub(crate) fn import_dropped_mods(
     decisions: Vec<DroppedModDecisionDto>,
 ) -> Result<ActionDto, String> {
@@ -1197,7 +1201,14 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         .map(save_backup_dto)
         .collect();
     timing.mark("save_backups");
-    let cache_usage = cached_work_cache_usage(app.config());
+    // Cache usage requires a recursive walk over potentially thousands of files.
+    // It is loaded on demand when the settings page is opened instead of delaying
+    // every dashboard refresh.
+    let cache_usage = CacheUsageDto {
+        bytes: 0,
+        files: 0,
+        dirs: 0,
+    };
     timing.mark("cache_usage");
 
     let output = DashboardDto {

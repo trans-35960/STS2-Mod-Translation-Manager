@@ -13,7 +13,7 @@ import {
 import appIconUrl from "../assets/app-icon.png";
 import { getAppWindow } from "../api/tauri";
 import { labels } from "../i18n";
-import type { Dashboard, DashboardStatFilter, Locale, Page } from "../types";
+import type { Dashboard, DashboardStatFilter, Locale, Page, TranslationPreparationProgress } from "../types";
 import { isPreviewRuntime } from "../utils/runtime";
 export function LoadingScreen({ step }: { step: string }) {
   return (
@@ -35,11 +35,26 @@ export function LoadingScreen({ step }: { step: string }) {
   );
 }
 
-export function BusyProgressModal({ busy }: { busy: string | null }) {
-  const progress = busyProgress(busy);
+export function BusyProgressModal({ busy, liveProgress }: { busy: string | null; liveProgress?: TranslationPreparationProgress | null }) {
+  const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
+  React.useEffect(() => {
+    if (!busy) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const startedAt = window.performance.now();
+    setElapsedSeconds(0);
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((window.performance.now() - startedAt) / 1000));
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [busy]);
+
+  const progress = busyProgress(busy, liveProgress);
   if (!progress) {
     return null;
   }
+  const isLiveTranslationProgress = Boolean(liveProgress && busy?.startsWith("prepare_translation_node"));
   return (
     <div className="busy-progress-backdrop" role="presentation">
       <section className="busy-progress-modal" role="status" aria-live="polite" aria-label={progress.title}>
@@ -50,9 +65,19 @@ export function BusyProgressModal({ busy }: { busy: string | null }) {
         <div className="busy-progress-bar" aria-hidden="true">
           <span />
         </div>
+        {isLiveTranslationProgress && liveProgress && (
+          <div className="busy-progress-meta">
+            <span>{progressPhaseLabel(liveProgress.phase)}</span>
+            <span>경과 {formatElapsed(elapsedSeconds)}</span>
+            {liveProgress.source_bytes > 0 && <span>원본 {formatProgressBytes(liveProgress.source_bytes)}</span>}
+            {liveProgress.cache_hit !== null && (
+              <span>{liveProgress.cache_hit ? "캐시 재사용" : "캐시 생성 중"}</span>
+            )}
+          </div>
+        )}
         <ol className="busy-progress-steps">
           {progress.steps.map((step, index) => (
-            <li className={index <= progress.activeStep ? "active" : ""} key={step}>
+            <li className={index < progress.activeStep ? "completed" : index === progress.activeStep ? "active current" : ""} key={step}>
               <span>{index + 1}</span>
               <p>{step}</p>
             </li>
@@ -63,7 +88,7 @@ export function BusyProgressModal({ busy }: { busy: string | null }) {
   );
 }
 
-function busyProgress(busy: string | null): { title: string; detail: string; steps: string[]; activeStep: number } | null {
+function busyProgress(busy: string | null, liveProgress?: TranslationPreparationProgress | null): { title: string; detail: string; steps: string[]; activeStep: number } | null {
   if (!busy) {
     return null;
   }
@@ -102,9 +127,9 @@ function busyProgress(busy: string | null): { title: string; detail: string; ste
   if (busy.startsWith("prepare_translation_node")) {
     return {
       title: "번역 작업 준비 중",
-      detail: "선택한 항목을 번역 도구에서 바로 열 수 있도록 작업 파일과 시트를 준비합니다.",
-      steps: ["추출 캐시 확인", "원본/대상 언어 파일 복사", "번역 시트 생성", "번역 도구 열기"],
-      activeStep: 2,
+      detail: liveProgress?.detail ?? "선택한 항목을 번역 도구에서 바로 열 수 있도록 작업 파일과 시트를 준비합니다.",
+      steps: ["대상 모드 확인", "PCK 분석 및 추출 캐시 준비", "원본/대상 언어 파일 복사", "번역 시트 생성", "번역 도구 열기"],
+      activeStep: liveProgress?.step ?? 0,
     };
   }
   return null;
@@ -153,6 +178,33 @@ export function AppMenuBar(props: {
       <WindowControls />
     </header>
   );
+}
+
+function progressPhaseLabel(phase: TranslationPreparationProgress["phase"]): string {
+  return ({
+    source_check: "리소스 확인",
+    cache_hit: "추출 캐시 확인 완료",
+    extracting: "PCK 압축 해제",
+    selecting_files: "번역 파일 탐색",
+    copying_files: "작업 파일 복사",
+    source_ready: "원본 준비 완료",
+    creating_sheet: "번역 시트 생성",
+    opening_tools: "편집기 표시",
+  })[phase];
+}
+
+function formatElapsed(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds}초`;
+  }
+  return `${Math.floor(seconds / 60)}분 ${seconds % 60}초`;
+}
+
+function formatProgressBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(bytes >= 100 * 1024 * 1024 ? 0 : 1)} MB`;
 }
 
 async function toggleTitlebarMaximize() {

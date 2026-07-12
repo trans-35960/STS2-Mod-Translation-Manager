@@ -65,22 +65,25 @@ export function useTranslationSessionState({
     if (!translationSessionReady) {
       return;
     }
-    writeStoredTranslationSession({
-      sourcePath: jsonSource,
-      existingSheetPath: jsonExistingSheet,
-      outputSheetPath: jsonOutputSheet,
-      translatedOutputPath: jsonTranslatedOutput,
-      pckTargetPath: jsonPckTargetPath,
-      sheet: jsonSheet,
-      report: jsonReport,
-      validation: jsonValidation,
-      applyResult: jsonApplyResult,
-      projectInfo: translationProject,
-      targetLanguage: jsonTargetLanguage,
-      compareSamplePaths,
-      compareValuesByLanguage,
-      compareViewEnabled,
-    });
+    const timeoutId = window.setTimeout(() => {
+      writeStoredTranslationSession({
+        sourcePath: jsonSource,
+        existingSheetPath: jsonExistingSheet,
+        outputSheetPath: jsonOutputSheet,
+        translatedOutputPath: jsonTranslatedOutput,
+        pckTargetPath: jsonPckTargetPath,
+        sheet: jsonSheet,
+        report: jsonReport,
+        validation: jsonValidation,
+        applyResult: jsonApplyResult,
+        projectInfo: translationProject,
+        targetLanguage: jsonTargetLanguage,
+        compareSamplePaths,
+        compareValuesByLanguage,
+        compareViewEnabled,
+      });
+    }, 1000);
+    return () => window.clearTimeout(timeoutId);
   }, [
     compareSamplePaths,
     compareValuesByLanguage,

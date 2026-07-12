@@ -465,8 +465,18 @@ pub(crate) fn prepare_translation_node(
     resource_path: String,
     output_dir: Option<String>,
     force: bool,
+    report_progress: impl Fn(TranslationPreparationProgressDto),
 ) -> Result<NodeTranslationDto, String> {
+    const TOTAL_STEPS: usize = 5;
     let mut trace = PerfTrace::new("prepare_translation_node");
+    report_progress(TranslationPreparationProgressDto {
+        phase: "source_check".to_string(),
+        detail: "대상 모드와 번역 리소스를 확인하고 있습니다.".to_string(),
+        step: 0,
+        total_steps: TOTAL_STEPS,
+        source_bytes: 0,
+        cache_hit: None,
+    });
     let app = app();
     app.ensure_workspace_dirs()
         .map_err(|error| error.to_string())?;
@@ -480,6 +490,40 @@ pub(crate) fn prepare_translation_node(
     }
     trace.mark("clear_cache");
     let cache_key = language_cache_key(&record, &extraction_source, &vendor_dir);
+    let pck_source = if extraction_source.is_dir() {
+        find_first_pck_file(&extraction_source)
+    } else if is_pck_path(&extraction_source) {
+        Some(extraction_source.clone())
+    } else {
+        None
+    };
+    let source_bytes = pck_source
+        .as_deref()
+        .and_then(|path| fs::metadata(path).ok())
+        .map(|metadata| metadata.len())
+        .unwrap_or(record.fingerprint.bytes);
+    let cache_path = language_preview_extract_dir(&cache_key);
+    let cache_hit = if extraction_source.is_dir() && directory_contains_pck(&extraction_source) {
+        directory_preview_has_pck_contents(&cache_path)
+    } else if is_supported_extractable_path(&extraction_source) {
+        cache_path.exists()
+    } else {
+        true
+    };
+    report_progress(TranslationPreparationProgressDto {
+        phase: if cache_hit { "cache_hit" } else { "extracting" }.to_string(),
+        detail: if cache_hit {
+            "기존 추출 캐시를 재사용합니다.".to_string()
+        } else if pck_source.is_some() {
+            "PCK 내부 파일을 분석하고 있습니다. 대용량 모드는 수십 초 걸릴 수 있습니다.".to_string()
+        } else {
+            "번역 리소스 추출 캐시를 생성하고 있습니다.".to_string()
+        },
+        step: 1,
+        total_steps: TOTAL_STEPS,
+        source_bytes,
+        cache_hit: Some(cache_hit),
+    });
     append_performance_log(format!(
         "prepare_translation_node stage=extraction_scan_root_start key={} resource={} source={}",
         key,
@@ -494,6 +538,14 @@ pub(crate) fn prepare_translation_node(
         scan_root.display()
     ));
     trace.mark("extraction_scan_root");
+    report_progress(TranslationPreparationProgressDto {
+        phase: "selecting_files".to_string(),
+        detail: "선택한 언어의 원본 파일과 기존 번역 파일을 찾고 있습니다.".to_string(),
+        step: 2,
+        total_steps: TOTAL_STEPS,
+        source_bytes,
+        cache_hit: Some(cache_hit),
+    });
     let manifest = read_mod_manifest_for_record(&record.path, &scan_root);
     trace.mark("read_manifest");
     let available_languages = language_preview_from_scan_root(&scan_root);
@@ -582,6 +634,15 @@ pub(crate) fn prepare_translation_node(
     fs::create_dir_all(&translated_root).map_err(|error| error.to_string())?;
     trace.mark("prepare_dirs");
 
+    report_progress(TranslationPreparationProgressDto {
+        phase: "copying_files".to_string(),
+        detail: format!("번역 대상 파일 {}개를 작업 폴더로 복사하고 있습니다.", selected.len()),
+        step: 2,
+        total_steps: TOTAL_STEPS,
+        source_bytes,
+        cache_hit: Some(cache_hit),
+    });
+
     let mut copied = Vec::new();
     for file in &selected {
         let relative = pck_resource_relative_path(file)
@@ -656,6 +717,14 @@ pub(crate) fn prepare_translation_node(
     })
     .map_err(|error| error.to_string())?;
     trace.mark("write_context");
+    report_progress(TranslationPreparationProgressDto {
+        phase: "source_ready".to_string(),
+        detail: format!("원본 파일 {}개 준비를 완료했습니다.", copied.len()),
+        step: 3,
+        total_steps: TOTAL_STEPS,
+        source_bytes,
+        cache_hit: Some(cache_hit),
+    });
     let first_source = copied
         .first()
         .cloned()

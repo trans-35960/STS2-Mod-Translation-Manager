@@ -1,6 +1,5 @@
 use crate::config::AppConfig;
 use crate::error::{AppError, AppResult};
-use crate::process::hidden_command;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -174,55 +173,46 @@ fn is_game_running(config: &AppConfig, game_exe: Option<&Path>) -> bool {
 
 #[cfg(target_os = "windows")]
 fn is_process_running(names: &[String]) -> bool {
-    if names.len() <= 3 {
-        for name in names {
-            if is_process_running_by_image_name(name) {
-                return true;
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
+        TH32CS_SNAPPROCESS,
+    };
+
+    // SAFETY: the snapshot handle is checked before use, PROCESSENTRY32W has the
+    // required size, and the handle is closed on every path after creation.
+    unsafe {
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if snapshot == INVALID_HANDLE_VALUE {
+            return false;
+        }
+
+        let mut entry = PROCESSENTRY32W::default();
+        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+        let mut found = false;
+        if Process32FirstW(snapshot, &mut entry) != 0 {
+            loop {
+                let length = entry
+                    .szExeFile
+                    .iter()
+                    .position(|character| *character == 0)
+                    .unwrap_or(entry.szExeFile.len());
+                let image_name = String::from_utf16_lossy(&entry.szExeFile[..length]);
+                if names
+                    .iter()
+                    .any(|name| image_name.eq_ignore_ascii_case(name))
+                {
+                    found = true;
+                    break;
+                }
+                if Process32NextW(snapshot, &mut entry) == 0 {
+                    break;
+                }
             }
         }
-        return false;
+        CloseHandle(snapshot);
+        found
     }
-    let output = hidden_command("tasklist")
-        .args(["/FO", "CSV", "/NH"])
-        .output();
-    let Ok(output) = output else {
-        return false;
-    };
-    let text = String::from_utf8_lossy(&output.stdout);
-    text.lines().any(|line| {
-        let image_name = line
-            .trim()
-            .trim_start_matches('"')
-            .split("\",")
-            .next()
-            .unwrap_or_default()
-            .trim_matches('"');
-        names
-            .iter()
-            .any(|name| image_name.eq_ignore_ascii_case(name.as_str()))
-    })
-}
-
-#[cfg(target_os = "windows")]
-fn is_process_running_by_image_name(name: &str) -> bool {
-    let filter = format!("IMAGENAME eq {name}");
-    let output = hidden_command("tasklist")
-        .args(["/FI", &filter, "/FO", "CSV", "/NH"])
-        .output();
-    let Ok(output) = output else {
-        return false;
-    };
-    let text = String::from_utf8_lossy(&output.stdout);
-    text.lines().any(|line| {
-        let image_name = line
-            .trim()
-            .trim_start_matches('"')
-            .split("\",")
-            .next()
-            .unwrap_or_default()
-            .trim_matches('"');
-        image_name.eq_ignore_ascii_case(name)
-    })
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -450,6 +440,19 @@ mod tests {
             fs::read_to_string(path).expect("read steam app id"),
             format!("  {STEAM_APP_ID}\r\n")
         );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn detects_the_current_process_without_spawning_tasklist() {
+        let current_exe = std::env::current_exe().expect("current executable");
+        let image_name = current_exe
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("executable file name")
+            .to_string();
+
+        assert!(is_process_running(&[image_name]));
     }
 
     fn test_dir(name: &str) -> PathBuf {

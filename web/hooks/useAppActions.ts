@@ -36,7 +36,17 @@ export function useAppActions({
         return null;
       }
       const result = await invokeCommand(command, args);
-      setDashboard(result.dashboard);
+      setDashboard((current) => {
+        if (!current || command === "cleanup_orphan_caches") {
+          return result.dashboard;
+        }
+        const cacheRootsUnchanged =
+          current.paths.state === result.dashboard.paths.state &&
+          current.paths.translation_work === result.dashboard.paths.translation_work;
+        return cacheRootsUnchanged
+          ? { ...result.dashboard, cache_usage: current.cache_usage }
+          : result.dashboard;
+      });
       setSettingsDraft(result.dashboard.settings);
       if (restoreScrollTop !== undefined) {
         window.requestAnimationFrame(() => {

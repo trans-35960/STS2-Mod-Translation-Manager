@@ -275,6 +275,16 @@ pub(crate) struct DroppedModPreviewDto {
     pub(crate) modified_epoch: Option<u64>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct TranslationPreparationProgressDto {
+    pub(crate) phase: String,
+    pub(crate) detail: String,
+    pub(crate) step: usize,
+    pub(crate) total_steps: usize,
+    pub(crate) source_bytes: u64,
+    pub(crate) cache_hit: Option<bool>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DroppedModDecisionDto {

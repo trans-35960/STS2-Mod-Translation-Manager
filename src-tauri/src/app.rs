@@ -7,6 +7,8 @@ pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             commands::load_dashboard,
+            commands::load_launch_status,
+            commands::load_cache_usage,
             commands::save_settings,
             commands::save_mod_view_mode,
             commands::read_game_logs,
