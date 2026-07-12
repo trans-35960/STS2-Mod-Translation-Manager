@@ -1,0 +1,63 @@
+{
+  "projectRoot": "D:/github/STS2-Mod-Translation-Manager",
+  "batchFiles": [
+    {
+      "path": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "language": "rust",
+      "sizeLines": 663,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src-tauri/src/services/translation_preview/manifest.rs",
+      "language": "rust",
+      "sizeLines": 309,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "language": "rust",
+      "sizeLines": 584,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "src/main.rs",
+      "language": "rust",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "vite.config.ts",
+      "language": "typescript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/styles.css",
+      "language": "css",
+      "sizeLines": 16,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/vite-env.d.ts",
+      "language": "typescript",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "src-tauri/src/services/translation_preview/language_preview.rs": [],
+    "src-tauri/src/services/translation_preview/manifest.rs": [],
+    "src-tauri/src/services/translation_preview/resource_paths.rs": [],
+    "src-tauri/tauri.conf.json": [],
+    "src/main.rs": [],
+    "vite.config.ts": [],
+    "web/styles.css": [],
+    "web/vite-env.d.ts": []
+  }
+}

@@ -1,0 +1,1638 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/launcher.rs",
+      "type": "file",
+      "name": "launcher.rs",
+      "filePath": "src/launcher.rs",
+      "summary": "게임과 Steam 실행 파일을 찾고 실행 상태를 확인하며 현재 또는 바닐라 모드로 프로세스를 시작합니다.",
+      "tags": [
+        "process-management",
+        "game-launcher",
+        "steam",
+        "rust"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/launcher.rs:status",
+      "type": "function",
+      "name": "status",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        32,
+        46
+      ],
+      "summary": "`status` 게임 또는 보조 프로세스의 상태 확인과 실행 흐름을 담당합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:wait_for_game_exit",
+      "type": "function",
+      "name": "wait_for_game_exit",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        48,
+        60
+      ],
+      "summary": "`wait_for_game_exit` 게임 또는 보조 프로세스의 상태 확인과 실행 흐름을 담당합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:launch",
+      "type": "function",
+      "name": "launch",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        62,
+        101
+      ],
+      "summary": "`launch` 게임 또는 보조 프로세스의 상태 확인과 실행 흐름을 담당합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:ensure_steam_app_id_file",
+      "type": "function",
+      "name": "ensure_steam_app_id_file",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        103,
+        113
+      ],
+      "summary": "`ensure_steam_app_id_file` 제약을 검증하고 유효하지 않거나 위험한 상태를 오류로 차단합니다.",
+      "tags": [
+        "validation",
+        "guard",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:resolve_game_exe",
+      "type": "function",
+      "name": "resolve_game_exe",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        115,
+        123
+      ],
+      "summary": "`resolve_game_exe` 설정과 파일시스템 단서를 바탕으로 가장 적합한 경로나 값을 결정합니다.",
+      "tags": [
+        "resolution",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:find_known_exe",
+      "type": "function",
+      "name": "find_known_exe",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        125,
+        137
+      ],
+      "summary": "`find_known_exe` 설정과 파일시스템 단서를 바탕으로 가장 적합한 경로나 값을 결정합니다.",
+      "tags": [
+        "resolution",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:is_game_running",
+      "type": "function",
+      "name": "is_game_running",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        139,
+        173
+      ],
+      "summary": "`is_game_running` 조건을 판정해 상위 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:is_process_running",
+      "type": "function",
+      "name": "is_process_running",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        176,
+        204
+      ],
+      "summary": "`is_process_running` 조건을 판정해 상위 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:is_process_running_by_image_name",
+      "type": "function",
+      "name": "is_process_running_by_image_name",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        207,
+        226
+      ],
+      "summary": "`is_process_running_by_image_name` 조건을 판정해 상위 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:find_known_exe_in_dir",
+      "type": "function",
+      "name": "find_known_exe_in_dir",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        233,
+        242
+      ],
+      "summary": "`find_known_exe_in_dir` 설정과 파일시스템 단서를 바탕으로 가장 적합한 경로나 값을 결정합니다.",
+      "tags": [
+        "resolution",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:find_known_exe_recursive",
+      "type": "function",
+      "name": "find_known_exe_recursive",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        244,
+        265
+      ],
+      "summary": "`find_known_exe_recursive` 설정과 파일시스템 단서를 바탕으로 가장 적합한 경로나 값을 결정합니다.",
+      "tags": [
+        "resolution",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:should_skip_dir",
+      "type": "function",
+      "name": "should_skip_dir",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        267,
+        282
+      ],
+      "summary": "`should_skip_dir` 조건을 판정해 상위 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:find_steam_game_exe",
+      "type": "function",
+      "name": "find_steam_game_exe",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        284,
+        301
+      ],
+      "summary": "`find_steam_game_exe` 설정과 파일시스템 단서를 바탕으로 가장 적합한 경로나 값을 결정합니다.",
+      "tags": [
+        "resolution",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:steam_install_dir",
+      "type": "function",
+      "name": "steam_install_dir",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        308,
+        318
+      ],
+      "summary": "`steam_install_dir` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:steam_library_dirs",
+      "type": "function",
+      "name": "steam_library_dirs",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        320,
+        331
+      ],
+      "summary": "`steam_library_dirs` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:acf_value",
+      "type": "function",
+      "name": "acf_value",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        333,
+        346
+      ],
+      "summary": "`acf_value` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/launcher.rs:dedupe_case_insensitive",
+      "type": "function",
+      "name": "dedupe_case_insensitive",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        358,
+        369
+      ],
+      "summary": "`dedupe_case_insensitive` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/launcher.rs:LaunchStatus",
+      "type": "class",
+      "name": "LaunchStatus",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        15,
+        20
+      ],
+      "summary": "`LaunchStatus`는 게임과 Steam 실행 파일을 찾고 실행 상태를 확인하며 현재 또는 바닐라 모드로 프로세스를 시작합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "state-model",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/launcher.rs:LaunchReport",
+      "type": "class",
+      "name": "LaunchReport",
+      "filePath": "src/launcher.rs",
+      "lineRange": [
+        23,
+        30
+      ],
+      "summary": "`LaunchReport`는 게임과 Steam 실행 파일을 찾고 실행 상태를 확인하며 현재 또는 바닐라 모드로 프로세스를 시작합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/lib.rs",
+      "type": "file",
+      "name": "lib.rs",
+      "filePath": "src/lib.rs",
+      "summary": "코어 crate의 공개 모듈 구성을 선언하는 Rust 라이브러리 진입점입니다.",
+      "tags": [
+        "entry-point",
+        "barrel",
+        "crate-root",
+        "rust"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "file:src/path_guard.rs",
+      "type": "file",
+      "name": "path_guard.rs",
+      "filePath": "src/path_guard.rs",
+      "summary": "삭제·교체 대상이 허용된 root 내부인지 검증하고 canonical path 기준으로 위험한 경로 조작을 차단합니다.",
+      "tags": [
+        "path-security",
+        "validation",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/path_guard.rs:ensure_existing_path_in_roots",
+      "type": "function",
+      "name": "ensure_existing_path_in_roots",
+      "filePath": "src/path_guard.rs",
+      "lineRange": [
+        4,
+        12
+      ],
+      "summary": "`ensure_existing_path_in_roots` 제약을 검증하고 유효하지 않거나 위험한 상태를 오류로 차단합니다.",
+      "tags": [
+        "validation",
+        "guard",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/path_guard.rs:ensure_path_in_roots",
+      "type": "function",
+      "name": "ensure_path_in_roots",
+      "filePath": "src/path_guard.rs",
+      "lineRange": [
+        14,
+        33
+      ],
+      "summary": "`ensure_path_in_roots` 제약을 검증하고 유효하지 않거나 위험한 상태를 오류로 차단합니다.",
+      "tags": [
+        "validation",
+        "guard",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/path_guard.rs:ensure_canonical_path_in_roots",
+      "type": "function",
+      "name": "ensure_canonical_path_in_roots",
+      "filePath": "src/path_guard.rs",
+      "lineRange": [
+        35,
+        60
+      ],
+      "summary": "`ensure_canonical_path_in_roots` 제약을 검증하고 유효하지 않거나 위험한 상태를 오류로 차단합니다.",
+      "tags": [
+        "validation",
+        "guard",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/path_guard.rs:canonicalize_existing_or_parent",
+      "type": "function",
+      "name": "canonicalize_existing_or_parent",
+      "filePath": "src/path_guard.rs",
+      "lineRange": [
+        62,
+        84
+      ],
+      "summary": "`canonicalize_existing_or_parent` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/preset.rs",
+      "type": "file",
+      "name": "preset.rs",
+      "filePath": "src/preset.rs",
+      "summary": "활성 모드 구성을 프리셋으로 저장·적용하고 관련 모드 파일을 포함한 archive를 가져오거나 내보냅니다.",
+      "tags": [
+        "preset",
+        "archive",
+        "mod-management",
+        "persistence"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/preset.rs:save_from_enabled",
+      "type": "function",
+      "name": "save_from_enabled",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        47,
+        68
+      ],
+      "summary": "`save_from_enabled` 현재 상태를 직렬화해 지정된 저장소에 기록합니다.",
+      "tags": [
+        "serialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:list_presets",
+      "type": "function",
+      "name": "list_presets",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        70,
+        86
+      ],
+      "summary": "`list_presets` 대상 경로 또는 항목을 순회해 정렬된 분석 결과를 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:load_preset",
+      "type": "function",
+      "name": "load_preset",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        88,
+        97
+      ],
+      "summary": "`load_preset` 데이터를 읽고 파싱해 상위 서비스가 사용할 구조로 복원합니다.",
+      "tags": [
+        "deserialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:apply_preset",
+      "type": "function",
+      "name": "apply_preset",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        99,
+        135
+      ],
+      "summary": "`apply_preset` 입력 데이터를 변환해 번역·모드 관리 워크플로의 결과물을 생성합니다.",
+      "tags": [
+        "transformation",
+        "workflow",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:export_preset_archive",
+      "type": "function",
+      "name": "export_preset_archive",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        137,
+        187
+      ],
+      "summary": "`export_preset_archive` 입력 데이터를 변환해 번역·모드 관리 워크플로의 결과물을 생성합니다.",
+      "tags": [
+        "transformation",
+        "workflow",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/preset.rs:import_preset_archive",
+      "type": "function",
+      "name": "import_preset_archive",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        189,
+        224
+      ],
+      "summary": "`import_preset_archive` 입력 데이터를 변환해 번역·모드 관리 워크플로의 결과물을 생성합니다.",
+      "tags": [
+        "transformation",
+        "workflow",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:write_preset",
+      "type": "function",
+      "name": "write_preset",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        226,
+        251
+      ],
+      "summary": "`write_preset` 현재 상태를 직렬화해 지정된 저장소에 기록합니다.",
+      "tags": [
+        "serialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:read_preset",
+      "type": "function",
+      "name": "read_preset",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        253,
+        303
+      ],
+      "summary": "`read_preset` 데이터를 읽고 파싱해 상위 서비스가 사용할 구조로 복원합니다.",
+      "tags": [
+        "deserialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/preset.rs:preset_mods_for_write",
+      "type": "function",
+      "name": "preset_mods_for_write",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        309,
+        325
+      ],
+      "summary": "`preset_mods_for_write` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:preset_mod_from_record",
+      "type": "function",
+      "name": "preset_mod_from_record",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        327,
+        343
+      ],
+      "summary": "`preset_mod_from_record` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:version_warning",
+      "type": "function",
+      "name": "version_warning",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        351,
+        377
+      ],
+      "summary": "`version_warning` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:directory_bytes",
+      "type": "function",
+      "name": "directory_bytes",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        379,
+        393
+      ],
+      "summary": "`directory_bytes` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:copy_path",
+      "type": "function",
+      "name": "copy_path",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        395,
+        406
+      ],
+      "summary": "`copy_path` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:copy_dir_recursive",
+      "type": "function",
+      "name": "copy_dir_recursive",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        408,
+        423
+      ],
+      "summary": "`copy_dir_recursive` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:run_powershell_archive_command",
+      "type": "function",
+      "name": "run_powershell_archive_command",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        439,
+        453
+      ],
+      "summary": "`run_powershell_archive_command` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/preset.rs:normalize_preset_name",
+      "type": "function",
+      "name": "normalize_preset_name",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        470,
+        491
+      ],
+      "summary": "`normalize_preset_name` 원시 입력을 해석하거나 정규화해 일관된 내부 표현으로 변환합니다.",
+      "tags": [
+        "parsing",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/preset.rs:Preset",
+      "type": "class",
+      "name": "Preset",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        11,
+        15
+      ],
+      "summary": "`Preset`는 활성 모드 구성을 프리셋으로 저장·적용하고 관련 모드 파일을 포함한 archive를 가져오거나 내보냅니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/preset.rs:PresetMod",
+      "type": "class",
+      "name": "PresetMod",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        18,
+        24
+      ],
+      "summary": "`PresetMod`는 활성 모드 구성을 프리셋으로 저장·적용하고 관련 모드 파일을 포함한 archive를 가져오거나 내보냅니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/preset.rs:PresetApplyReport",
+      "type": "class",
+      "name": "PresetApplyReport",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        27,
+        32
+      ],
+      "summary": "`PresetApplyReport`는 활성 모드 구성을 프리셋으로 저장·적용하고 관련 모드 파일을 포함한 archive를 가져오거나 내보냅니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/preset.rs:PresetExportReport",
+      "type": "class",
+      "name": "PresetExportReport",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        35,
+        39
+      ],
+      "summary": "`PresetExportReport`는 활성 모드 구성을 프리셋으로 저장·적용하고 관련 모드 파일을 포함한 archive를 가져오거나 내보냅니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/preset.rs:PresetImportReport",
+      "type": "class",
+      "name": "PresetImportReport",
+      "filePath": "src/preset.rs",
+      "lineRange": [
+        42,
+        45
+      ],
+      "summary": "`PresetImportReport`는 활성 모드 구성을 프리셋으로 저장·적용하고 관련 모드 파일을 포함한 archive를 가져오거나 내보냅니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:status",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:status",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:wait_for_game_exit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:wait_for_game_exit",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:launch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:launch",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:ensure_steam_app_id_file",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:resolve_game_exe",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:resolve_game_exe",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:find_known_exe",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:is_game_running",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:is_process_running",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:is_process_running_by_image_name",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:find_known_exe_in_dir",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:find_known_exe_recursive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:should_skip_dir",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:find_steam_game_exe",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:steam_install_dir",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:steam_library_dirs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:acf_value",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "function:src/launcher.rs:dedupe_case_insensitive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "class:src/launcher.rs:LaunchStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "class:src/launcher.rs:LaunchStatus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "class:src/launcher.rs:LaunchReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "class:src/launcher.rs:LaunchReport",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/path_guard.rs",
+      "target": "function:src/path_guard.rs:ensure_existing_path_in_roots",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/path_guard.rs",
+      "target": "function:src/path_guard.rs:ensure_existing_path_in_roots",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/path_guard.rs",
+      "target": "function:src/path_guard.rs:ensure_path_in_roots",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/path_guard.rs",
+      "target": "function:src/path_guard.rs:ensure_path_in_roots",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/path_guard.rs",
+      "target": "function:src/path_guard.rs:ensure_canonical_path_in_roots",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/path_guard.rs",
+      "target": "function:src/path_guard.rs:canonicalize_existing_or_parent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:save_from_enabled",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:save_from_enabled",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:list_presets",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:list_presets",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:load_preset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:load_preset",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:apply_preset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:apply_preset",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:export_preset_archive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:export_preset_archive",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:import_preset_archive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:import_preset_archive",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:write_preset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:read_preset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:preset_mods_for_write",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:preset_mod_from_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:version_warning",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:directory_bytes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:copy_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:copy_dir_recursive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:run_powershell_archive_command",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "function:src/preset.rs:normalize_preset_name",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:Preset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:Preset",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:PresetMod",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:PresetMod",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:PresetApplyReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:PresetApplyReport",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:PresetExportReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:PresetExportReport",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:PresetImportReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "class:src/preset.rs:PresetImportReport",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "file:src/config.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "file:src/error.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/launcher.rs",
+      "target": "file:src/process.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/app.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/cli.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/config.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/discovery.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/domain.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/error.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/json_translation/mod.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/launcher.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/path_guard.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/preset.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/process.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/save_backup.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/state.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/text_ui.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/translation.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/vault.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/lib.rs",
+      "target": "file:src/vendor_tools.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "file:src/discovery.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "file:src/domain.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "file:src/error.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "file:src/process.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/preset.rs",
+      "target": "file:src/vault.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:src/launcher.rs:launch",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/launcher.rs:ensure_steam_app_id_file",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/launcher.rs:is_process_running",
+      "target": "function:src/process.rs:hidden_command",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/launcher.rs:is_process_running_by_image_name",
+      "target": "function:src/process.rs:hidden_command",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/launcher.rs:find_steam_game_exe",
+      "target": "function:src/config.rs:steam_install_dir",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/launcher.rs:find_steam_game_exe",
+      "target": "function:src/config.rs:steam_library_dirs",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:save_from_enabled",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:save_from_enabled",
+      "target": "function:src/discovery.rs:scan_mod_directory",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:list_presets",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:apply_preset",
+      "target": "function:src/vault.rs:disable_all",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:apply_preset",
+      "target": "function:src/vault.rs:list_disabled_game_mods",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:apply_preset",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:apply_preset",
+      "target": "function:src/vault.rs:enable_mod",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:export_preset_archive",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:export_preset_archive",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:export_preset_archive",
+      "target": "function:src/vault.rs:copy_path",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:import_preset_archive",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:import_preset_archive",
+      "target": "function:src/vault.rs:import_mod_to_disabled",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:write_preset",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:read_preset",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:preset_mod_from_record",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:version_warning",
+      "target": "function:src/vault.rs:list_disabled_game_mods",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:version_warning",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:directory_bytes",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:copy_path",
+      "target": "function:src/vault.rs:copy_dir_recursive",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:copy_path",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:copy_dir_recursive",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:copy_dir_recursive",
+      "target": "function:src/vault.rs:copy_dir_recursive",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/preset.rs:run_powershell_archive_command",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

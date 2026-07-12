@@ -1,0 +1,1639 @@
+{
+  "nodes": [
+    {
+      "id": "file:web/features/translation/TranslationToolsTypes.ts",
+      "type": "file",
+      "name": "TranslationToolsTypes.ts",
+      "filePath": "web/features/translation/TranslationToolsTypes.ts",
+      "summary": "번역 도구 페이지의 props, 열 설정, 필터 및 표시 행 계약을 정의한다.",
+      "tags": [
+        "type-definition",
+        "translation",
+        "typescript"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/features/translation/TranslationWidgets.tsx",
+      "type": "file",
+      "name": "TranslationWidgets.tsx",
+      "filePath": "web/features/translation/TranslationWidgets.tsx",
+      "summary": "적용 결과, 비교 값, 붙여넣기 후보, 프로젝트 요약, 크기 조절 헤더와 자동 높이 입력기를 제공한다.",
+      "tags": [
+        "component",
+        "translation",
+        "shared-ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/translation/TranslationWidgets.tsx:ApplyStatusToast",
+      "type": "function",
+      "name": "ApplyStatusToast",
+      "filePath": "web/features/translation/TranslationWidgets.tsx",
+      "lineRange": [
+        10,
+        30
+      ],
+      "summary": "번역 적용·패키징 결과를 닫을 수 있는 알림으로 표시한다.",
+      "tags": [
+        "component",
+        "translation",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/TranslationWidgets.tsx:CompareStack",
+      "type": "function",
+      "name": "CompareStack",
+      "filePath": "web/features/translation/TranslationWidgets.tsx",
+      "lineRange": [
+        32,
+        46
+      ],
+      "summary": "선택한 언어별 비교 문자열을 세로 목록으로 표시한다.",
+      "tags": [
+        "component",
+        "translation",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/TranslationWidgets.tsx:PasteCandidateCard",
+      "type": "function",
+      "name": "PasteCandidateCard",
+      "filePath": "web/features/translation/TranslationWidgets.tsx",
+      "lineRange": [
+        48,
+        70
+      ],
+      "summary": "기존 값과 충돌하는 붙여넣기 후보의 허가·취소 동작을 제공한다.",
+      "tags": [
+        "component",
+        "translation",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/TranslationWidgets.tsx:ProjectSummary",
+      "type": "function",
+      "name": "ProjectSummary",
+      "filePath": "web/features/translation/TranslationWidgets.tsx",
+      "lineRange": [
+        72,
+        102
+      ],
+      "summary": "프로젝트 메타데이터와 언어 목록을 요약한다.",
+      "tags": [
+        "component",
+        "translation",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/TranslationWidgets.tsx:ResizableHead",
+      "type": "function",
+      "name": "ResizableHead",
+      "filePath": "web/features/translation/TranslationWidgets.tsx",
+      "lineRange": [
+        104,
+        111
+      ],
+      "summary": "번역 테이블 열의 크기 조절 헤더를 렌더링한다.",
+      "tags": [
+        "component",
+        "translation",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/TranslationWidgets.tsx:AutoGrowTextarea",
+      "type": "function",
+      "name": "AutoGrowTextarea",
+      "filePath": "web/features/translation/TranslationWidgets.tsx",
+      "lineRange": [
+        113,
+        167
+      ],
+      "summary": "포커스된 입력의 scrollHeight에 맞춰 높이를 자동 조정한다.",
+      "tags": [
+        "component",
+        "translation",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/features/translation/translationUtils.ts",
+      "type": "file",
+      "name": "translationUtils.ts",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "summary": "번역 키·경로·언어 정규화, 프로젝트 트리, 구조화 붙여넣기, slot ID 및 비교 키를 처리하는 핵심 유틸리티다.",
+      "tags": [
+        "utility",
+        "translation",
+        "parsing"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:createCompareValueMap",
+      "type": "function",
+      "name": "createCompareValueMap",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        27,
+        35
+      ],
+      "summary": "언어 비교 결과를 원본·정규화·안정 키로 조회 가능한 맵으로 만든다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:buildTranslationProjectTree",
+      "type": "function",
+      "name": "buildTranslationProjectTree",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        37,
+        75
+      ],
+      "summary": "시트 엔트리 경로와 상태를 집계해 번역 프로젝트 트리를 구축한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:bestLocalizationRoot",
+      "type": "function",
+      "name": "bestLocalizationRoot",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        77,
+        86
+      ],
+      "summary": "프로젝트 트리에서 가장 대표적인 localization 루트를 고른다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:collectLocalizationNodes",
+      "type": "function",
+      "name": "collectLocalizationNodes",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        88,
+        95
+      ],
+      "summary": "트리를 재귀 순회해 localization 이름의 노드를 수집한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:sheetEntryFilePath",
+      "type": "function",
+      "name": "sheetEntryFilePath",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        97,
+        99
+      ],
+      "summary": "복합 번역 키에서 파일 경로를 추출한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:splitSheetKey",
+      "type": "function",
+      "name": "splitSheetKey",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        101,
+        113
+      ],
+      "summary": "file 스킴 번역 키를 파일과 엔트리 키로 분리한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:languageCodeFromSheetKey",
+      "type": "function",
+      "name": "languageCodeFromSheetKey",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        115,
+        119
+      ],
+      "summary": "번역 키의 localization 경로에서 언어 코드를 추출한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:languageCodeFromSourcePath",
+      "type": "function",
+      "name": "languageCodeFromSourcePath",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        121,
+        123
+      ],
+      "summary": "원본 경로의 localization 구간에서 언어 코드를 추출한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:normalizedLocalizationKey",
+      "type": "function",
+      "name": "normalizedLocalizationKey",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        125,
+        129
+      ],
+      "summary": "언어 폴더를 placeholder로 치환한 비교용 키를 만든다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:stableCompareKey",
+      "type": "function",
+      "name": "stableCompareKey",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        131,
+        141
+      ],
+      "summary": "언어 구간을 제거한 파일·엔트리 비교 키를 만든다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:pathMatchesProjectNode",
+      "type": "function",
+      "name": "pathMatchesProjectNode",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        143,
+        150
+      ],
+      "summary": "파일 경로가 선택한 프로젝트 노드 범위에 속하는지 판별한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:parsePastedTranslationJson",
+      "type": "function",
+      "name": "parsePastedTranslationJson",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        152,
+        170
+      ],
+      "summary": "클립보드 문자열을 JSON 값으로 안전하게 파싱한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:looksLikeJsonPaste",
+      "type": "function",
+      "name": "looksLikeJsonPaste",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        172,
+        175
+      ],
+      "summary": "문자열이 JSON 붙여넣기 후보 형태인지 빠르게 판별한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:isStructuredTranslationJsonPaste",
+      "type": "function",
+      "name": "isStructuredTranslationJsonPaste",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        177,
+        183
+      ],
+      "summary": "문자열이 지원되는 구조화 번역 JSON인지 검사한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:isTabularTranslationPaste",
+      "type": "function",
+      "name": "isTabularTranslationPaste",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        185,
+        188
+      ],
+      "summary": "문자열이 여러 행 또는 탭 기반 표 데이터인지 판별한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:structuredTranslationEntries",
+      "type": "function",
+      "name": "structuredTranslationEntries",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        190,
+        220
+      ],
+      "summary": "다양한 JSON 형태에서 번역 slot 엔트리를 재귀 추출한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:compactTranslationEntries",
+      "type": "function",
+      "name": "compactTranslationEntries",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        222,
+        242
+      ],
+      "summary": "축약 JSON 객체에서 번역 엔트리를 재귀 추출한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:isTranslationSlotId",
+      "type": "function",
+      "name": "isTranslationSlotId",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        244,
+        246
+      ],
+      "summary": "문자열이 번역 slot ID 형식인지 검사한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:translationSlotEntries",
+      "type": "function",
+      "name": "translationSlotEntries",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        248,
+        275
+      ],
+      "summary": "시트 엔트리에 파일별 안정 slot ID와 축약 파일명을 부여한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:compactTranslationFile",
+      "type": "function",
+      "name": "compactTranslationFile",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        277,
+        285
+      ],
+      "summary": "localization 언어 루트 앞부분을 제거해 파일 경로를 축약한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "formatting"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:translationSlotId",
+      "type": "function",
+      "name": "translationSlotId",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        287,
+        289
+      ],
+      "summary": "파일 내 순번과 체크섬으로 slot ID를 생성한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:translationSlotKey",
+      "type": "function",
+      "name": "translationSlotKey",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        291,
+        293
+      ],
+      "summary": "파일과 slot ID를 충돌 없는 복합 키로 결합한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:stableSlotKey",
+      "type": "function",
+      "name": "stableSlotKey",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        295,
+        298
+      ],
+      "summary": "번역 엔트리에서 언어에 독립적인 slot 체크섬 입력을 만든다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:slotChecksum",
+      "type": "function",
+      "name": "slotChecksum",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        300,
+        303
+      ],
+      "summary": "안정 키의 FNV 해시를 짧은 36진수 체크섬으로 변환한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:fnv64",
+      "type": "function",
+      "name": "fnv64",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        305,
+        314
+      ],
+      "summary": "문자열 바이트에 64비트 FNV-1a 해시를 계산한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:isTranslatableEntry",
+      "type": "function",
+      "name": "isTranslatableEntry",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        316,
+        318
+      ],
+      "summary": "삭제되지 않고 원본 값이 있는 엔트리인지 판별한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:hasTranslationValue",
+      "type": "function",
+      "name": "hasTranslationValue",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        320,
+        322
+      ],
+      "summary": "번역값이 비어 있지 않은지 판별한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:whitespaceValueLabel",
+      "type": "function",
+      "name": "whitespaceValueLabel",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        324,
+        326
+      ],
+      "summary": "공백만 있는 번역값의 길이 라벨을 만든다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:languageFolderCode",
+      "type": "function",
+      "name": "languageFolderCode",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        328,
+        333
+      ],
+      "summary": "언어 샘플 경로 또는 코드에서 폴더 언어 코드를 얻는다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:languageLabel",
+      "type": "function",
+      "name": "languageLabel",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        335,
+        351
+      ],
+      "summary": "언어 코드를 사용자용 언어 이름으로 변환한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "formatting"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:normalizeTranslationLanguageCode",
+      "type": "function",
+      "name": "normalizeTranslationLanguageCode",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        353,
+        374
+      ],
+      "summary": "번역 언어 코드 별칭을 표준 3자리 코드로 정규화한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:translationLanguagesMatch",
+      "type": "function",
+      "name": "translationLanguagesMatch",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        376,
+        378
+      ],
+      "summary": "두 번역 언어 코드가 정규화 후 같은지 비교한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:retargetTranslationSheetPath",
+      "type": "function",
+      "name": "retargetTranslationSheetPath",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        380,
+        385
+      ],
+      "summary": "번역 시트 파일명의 대상 언어 구간을 교체한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:inferPckTargetPath",
+      "type": "function",
+      "name": "inferPckTargetPath",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        387,
+        405
+      ],
+      "summary": "시트 원본과 엔트리 경로에서 PCK 적용 대상 경로를 추론한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:replaceLocalizationLanguageInPath",
+      "type": "function",
+      "name": "replaceLocalizationLanguageInPath",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        407,
+        414
+      ],
+      "summary": "localization 경로의 언어 폴더를 대상 언어로 교체한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:stripFileNameFromPckTarget",
+      "type": "function",
+      "name": "stripFileNameFromPckTarget",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        416,
+        423
+      ],
+      "summary": "PCK 대상이 파일이면 부모 디렉터리로 정규화한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:incrementProjectNode",
+      "type": "function",
+      "name": "incrementProjectNode",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        425,
+        435
+      ],
+      "summary": "엔트리 상태에 따라 프로젝트 트리 노드 집계값을 증가시킨다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:rollupProjectNode",
+      "type": "function",
+      "name": "rollupProjectNode",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        437,
+        444
+      ],
+      "summary": "자식 노드의 번역 집계를 부모 노드로 재귀 합산한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/translationUtils.ts:projectNameFromPath",
+      "type": "function",
+      "name": "projectNameFromPath",
+      "filePath": "web/features/translation/translationUtils.ts",
+      "lineRange": [
+        446,
+        448
+      ],
+      "summary": "원본 경로에서 프로젝트 표시 이름을 추출한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "type": "file",
+      "name": "useTranslationToolsUiState.ts",
+      "filePath": "web/features/translation/useTranslationToolsUiState.ts",
+      "summary": "번역 시트에서 언어 옵션, 통계, 프로젝트 트리, 필터·검색 결과와 열 크기 조절 상태를 파생하는 React hook이다.",
+      "tags": [
+        "hook",
+        "translation",
+        "state-management"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/translation/useTranslationToolsUiState.ts:useTranslationToolsUiState",
+      "type": "function",
+      "name": "useTranslationToolsUiState",
+      "filePath": "web/features/translation/useTranslationToolsUiState.ts",
+      "lineRange": [
+        40,
+        384
+      ],
+      "summary": "번역 도구의 필터·검색·열·언어 상태와 시트 기반 파생 데이터를 관리한다.",
+      "tags": [
+        "hook",
+        "translation",
+        "state-management"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/translation/useTranslationToolsUiState.ts:columnCssVariable",
+      "type": "function",
+      "name": "columnCssVariable",
+      "filePath": "web/features/translation/useTranslationToolsUiState.ts",
+      "lineRange": [
+        386,
+        403
+      ],
+      "summary": "번역 열 키를 CSS 사용자 속성 이름으로 변환한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/useTranslationToolsUiState.ts:cachedSplitSheetKey",
+      "type": "function",
+      "name": "cachedSplitSheetKey",
+      "filePath": "web/features/translation/useTranslationToolsUiState.ts",
+      "lineRange": [
+        405,
+        416
+      ],
+      "summary": "번역 키 분해 결과를 캐시에서 조회하거나 계산해 저장한다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/useTranslationToolsUiState.ts:validationIssueKeys",
+      "type": "function",
+      "name": "validationIssueKeys",
+      "filePath": "web/features/translation/useTranslationToolsUiState.ts",
+      "lineRange": [
+        418,
+        438
+      ],
+      "summary": "검증 결과에서 선택한 문제 종류에 해당하는 엔트리 키 집합을 만든다.",
+      "tags": [
+        "utility",
+        "translation",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/i18n.ts",
+      "type": "file",
+      "name": "i18n.ts",
+      "filePath": "web/i18n.ts",
+      "summary": "모드 관리와 번역 도구 전반에서 사용하는 한국어·영어 UI 라벨 사전을 정의한다.",
+      "tags": [
+        "localization",
+        "configuration",
+        "ui-copy"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:ApplyStatusToast",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:ApplyStatusToast",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:CompareStack",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:CompareStack",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:PasteCandidateCard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:PasteCandidateCard",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:ProjectSummary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:ProjectSummary",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:ResizableHead",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:ResizableHead",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:AutoGrowTextarea",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "function:web/features/translation/TranslationWidgets.tsx:AutoGrowTextarea",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:createCompareValueMap",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:createCompareValueMap",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:buildTranslationProjectTree",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:buildTranslationProjectTree",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:bestLocalizationRoot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:bestLocalizationRoot",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:collectLocalizationNodes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:collectLocalizationNodes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:sheetEntryFilePath",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:sheetEntryFilePath",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:splitSheetKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:splitSheetKey",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:languageCodeFromSheetKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:languageCodeFromSheetKey",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:languageCodeFromSourcePath",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:languageCodeFromSourcePath",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:normalizedLocalizationKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:normalizedLocalizationKey",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:stableCompareKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:stableCompareKey",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:pathMatchesProjectNode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:pathMatchesProjectNode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:parsePastedTranslationJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:parsePastedTranslationJson",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:looksLikeJsonPaste",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:looksLikeJsonPaste",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:isStructuredTranslationJsonPaste",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:isStructuredTranslationJsonPaste",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:isTabularTranslationPaste",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:isTabularTranslationPaste",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:structuredTranslationEntries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:structuredTranslationEntries",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:compactTranslationEntries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:compactTranslationEntries",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:isTranslationSlotId",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:isTranslationSlotId",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:translationSlotEntries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:translationSlotEntries",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:compactTranslationFile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:compactTranslationFile",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:translationSlotId",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:translationSlotId",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:translationSlotKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:translationSlotKey",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:stableSlotKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:stableSlotKey",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:slotChecksum",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:slotChecksum",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:fnv64",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:fnv64",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:isTranslatableEntry",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:isTranslatableEntry",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:hasTranslationValue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:hasTranslationValue",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:whitespaceValueLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:whitespaceValueLabel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:languageFolderCode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:languageFolderCode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:languageLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:languageLabel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:normalizeTranslationLanguageCode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:normalizeTranslationLanguageCode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:translationLanguagesMatch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:translationLanguagesMatch",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:retargetTranslationSheetPath",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:retargetTranslationSheetPath",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:inferPckTargetPath",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:inferPckTargetPath",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:replaceLocalizationLanguageInPath",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:replaceLocalizationLanguageInPath",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:stripFileNameFromPckTarget",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:stripFileNameFromPckTarget",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:incrementProjectNode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:incrementProjectNode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:rollupProjectNode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:rollupProjectNode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:projectNameFromPath",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "function:web/features/translation/translationUtils.ts:projectNameFromPath",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "target": "function:web/features/translation/useTranslationToolsUiState.ts:useTranslationToolsUiState",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "target": "function:web/features/translation/useTranslationToolsUiState.ts:useTranslationToolsUiState",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "target": "function:web/features/translation/useTranslationToolsUiState.ts:columnCssVariable",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "target": "function:web/features/translation/useTranslationToolsUiState.ts:cachedSplitSheetKey",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "target": "function:web/features/translation/useTranslationToolsUiState.ts:validationIssueKeys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/TranslationToolsTypes.ts",
+      "target": "file:web/i18n.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/TranslationToolsTypes.ts",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "file:web/components/Common.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "file:web/features/mods/modUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/TranslationWidgets.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/translationUtils.ts",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "target": "file:web/features/mods/modUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "target": "file:web/features/translation/TranslationToolsTypes.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "target": "file:web/features/translation/translationUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/useTranslationToolsUiState.ts",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

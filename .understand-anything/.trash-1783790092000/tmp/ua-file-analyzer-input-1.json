@@ -1,0 +1,339 @@
+{
+  "projectRoot": "D:/github/STS2-Mod-Translation-Manager",
+  "batchFiles": [
+    {
+      "path": "web/api/tauri.ts",
+      "language": "typescript",
+      "sizeLines": 197,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/components/AppShell.tsx",
+      "language": "typescript",
+      "sizeLines": 324,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/components/TooltipLayer.tsx",
+      "language": "typescript",
+      "sizeLines": 129,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/constants.ts",
+      "language": "typescript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/features/mods/DroppedModConfirmModal.tsx",
+      "language": "typescript",
+      "sizeLines": 282,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/features/mods/ModConfirmModal.tsx",
+      "language": "typescript",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/features/settings/SettingsPage.tsx",
+      "language": "typescript",
+      "sizeLines": 886,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/features/translation/LogToasts.tsx",
+      "language": "typescript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/features/translation/useTranslationSessionState.ts",
+      "language": "typescript",
+      "sizeLines": 139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/translation/types.ts",
+      "language": "typescript",
+      "sizeLines": 67,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/translation/useJsonToolRunner.ts",
+      "language": "typescript",
+      "sizeLines": 131,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/translation/useTranslationCompareActions.ts",
+      "language": "typescript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/translation/useTranslationIoActions.ts",
+      "language": "typescript",
+      "sizeLines": 392,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/translation/useTranslationSessionActions.ts",
+      "language": "typescript",
+      "sizeLines": 333,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/translation/useTranslationSheetActions.ts",
+      "language": "typescript",
+      "sizeLines": 432,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/useAppActions.ts",
+      "language": "typescript",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/useAppLogs.ts",
+      "language": "typescript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/useDashboardLoader.ts",
+      "language": "typescript",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/useModActions.ts",
+      "language": "typescript",
+      "sizeLines": 539,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/useSettingsActions.ts",
+      "language": "typescript",
+      "sizeLines": 199,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/hooks/useTranslationActions.ts",
+      "language": "typescript",
+      "sizeLines": 315,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/main.tsx",
+      "language": "typescript",
+      "sizeLines": 796,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/previewData.ts",
+      "language": "typescript",
+      "sizeLines": 407,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/types.ts",
+      "language": "typescript",
+      "sizeLines": 413,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/utils/logging.ts",
+      "language": "typescript",
+      "sizeLines": 160,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/utils/runtime.ts",
+      "language": "typescript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/utils/setup.ts",
+      "language": "typescript",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    },
+    {
+      "path": "web/utils/storage.ts",
+      "language": "typescript",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "web/api/tauri.ts": [
+      "web/types.ts"
+    ],
+    "web/components/AppShell.tsx": [
+      "web/api/tauri.ts",
+      "web/i18n.ts",
+      "web/types.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/components/TooltipLayer.tsx": [],
+    "web/constants.ts": [
+      "web/types.ts"
+    ],
+    "web/features/mods/DroppedModConfirmModal.tsx": [
+      "web/features/mods/modUtils.ts",
+      "web/types.ts"
+    ],
+    "web/features/mods/ModConfirmModal.tsx": [
+      "web/hooks/useModActions.ts"
+    ],
+    "web/features/settings/SettingsPage.tsx": [
+      "web/components/AppShell.tsx",
+      "web/components/Common.tsx",
+      "web/features/mods/modUtils.ts",
+      "web/i18n.ts",
+      "web/types.ts",
+      "web/utils/logging.ts"
+    ],
+    "web/features/translation/LogToasts.tsx": [
+      "web/types.ts",
+      "web/utils/logging.ts"
+    ],
+    "web/features/translation/useTranslationSessionState.ts": [
+      "web/types.ts",
+      "web/utils/storage.ts"
+    ],
+    "web/hooks/translation/types.ts": [
+      "web/api/tauri.ts",
+      "web/types.ts"
+    ],
+    "web/hooks/translation/useJsonToolRunner.ts": [
+      "web/api/tauri.ts",
+      "web/features/translation/LogToasts.tsx",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/previewData.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/translation/useTranslationCompareActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/mods/modUtils.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/translation/useTranslationIoActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/translation/useTranslationSessionActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/mods/modUtils.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/previewData.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/translation/useTranslationSheetActions.ts": [
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/types.ts"
+    ],
+    "web/hooks/useAppActions.ts": [
+      "web/api/tauri.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/useAppLogs.ts": [],
+    "web/hooks/useDashboardLoader.ts": [
+      "web/api/tauri.ts",
+      "web/constants.ts",
+      "web/previewData.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts",
+      "web/utils/setup.ts"
+    ],
+    "web/hooks/useModActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/mods/modUtils.ts",
+      "web/types.ts",
+      "web/utils/runtime.ts",
+      "web/utils/setup.ts"
+    ],
+    "web/hooks/useSettingsActions.ts": [
+      "web/api/tauri.ts",
+      "web/constants.ts",
+      "web/previewData.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/useTranslationActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/hooks/translation/useJsonToolRunner.ts",
+      "web/hooks/translation/useTranslationCompareActions.ts",
+      "web/hooks/translation/useTranslationIoActions.ts",
+      "web/hooks/translation/useTranslationSessionActions.ts",
+      "web/hooks/translation/useTranslationSheetActions.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/main.tsx": [
+      "web/api/tauri.ts",
+      "web/components/AppShell.tsx",
+      "web/components/TooltipLayer.tsx",
+      "web/constants.ts",
+      "web/features/mods/DroppedModConfirmModal.tsx",
+      "web/features/mods/ModConfirmModal.tsx",
+      "web/features/mods/ModsPage.tsx",
+      "web/features/settings/SettingsPage.tsx",
+      "web/features/translation/LogToasts.tsx",
+      "web/features/translation/TranslationToolsPage.tsx",
+      "web/features/translation/useTranslationSessionState.ts",
+      "web/hooks/useAppActions.ts",
+      "web/hooks/useAppLogs.ts",
+      "web/hooks/useDashboardLoader.ts",
+      "web/hooks/useModActions.ts",
+      "web/hooks/useSettingsActions.ts",
+      "web/hooks/useTranslationActions.ts",
+      "web/i18n.ts",
+      "web/styles.css",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/previewData.ts": [
+      "web/types.ts"
+    ],
+    "web/types.ts": [],
+    "web/utils/logging.ts": [
+      "web/types.ts"
+    ],
+    "web/utils/runtime.ts": [],
+    "web/utils/setup.ts": [
+      "web/types.ts"
+    ],
+    "web/utils/storage.ts": [
+      "web/constants.ts",
+      "web/types.ts"
+    ]
+  }
+}

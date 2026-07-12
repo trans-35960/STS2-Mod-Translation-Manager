@@ -1,0 +1,35 @@
+{
+  "projectRoot": "D:/github/STS2-Mod-Translation-Manager",
+  "batchFiles": [
+    {
+      "path": "scripts/build-release.ps1",
+      "language": "powershell",
+      "sizeLines": 177,
+      "fileCategory": "script"
+    },
+    {
+      "path": "scripts/check-tauri-contract.ps1",
+      "language": "powershell",
+      "sizeLines": 93,
+      "fileCategory": "script"
+    },
+    {
+      "path": "scripts/check.ps1",
+      "language": "powershell",
+      "sizeLines": 76,
+      "fileCategory": "script"
+    },
+    {
+      "path": "scripts/e2e-smoke.ps1",
+      "language": "powershell",
+      "sizeLines": 28,
+      "fileCategory": "script"
+    }
+  ],
+  "batchImportData": {
+    "scripts/build-release.ps1": [],
+    "scripts/check-tauri-contract.ps1": [],
+    "scripts/check.ps1": [],
+    "scripts/e2e-smoke.ps1": []
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "projectRoot": "D:/github/STS2-Mod-Translation-Manager",
+  "batchFiles": [
+    {
+      "path": "web/styles/01-base.css",
+      "language": "css",
+      "sizeLines": 102,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/02-shell.css",
+      "language": "css",
+      "sizeLines": 125,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/03-dashboard.css",
+      "language": "css",
+      "sizeLines": 201,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/04-mods.css",
+      "language": "css",
+      "sizeLines": 894,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/05-translation-workflow.css",
+      "language": "css",
+      "sizeLines": 576,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/06-translation-sheet.css",
+      "language": "css",
+      "sizeLines": 896,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/07-settings.css",
+      "language": "css",
+      "sizeLines": 511,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/08-logs.css",
+      "language": "css",
+      "sizeLines": 225,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/09-modal-tree.css",
+      "language": "css",
+      "sizeLines": 293,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/10-ui-refresh-overrides.css",
+      "language": "css",
+      "sizeLines": 968,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/11-responsive.css",
+      "language": "css",
+      "sizeLines": 66,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/12-loading.css",
+      "language": "css",
+      "sizeLines": 219,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/13-menu-titlebar.css",
+      "language": "css",
+      "sizeLines": 311,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/14-mobile.css",
+      "language": "css",
+      "sizeLines": 78,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "web/styles/15-tooltips.css",
+      "language": "css",
+      "sizeLines": 53,
+      "fileCategory": "markup"
+    }
+  ],
+  "batchImportData": {
+    "web/styles/01-base.css": [],
+    "web/styles/02-shell.css": [],
+    "web/styles/03-dashboard.css": [],
+    "web/styles/04-mods.css": [],
+    "web/styles/05-translation-workflow.css": [],
+    "web/styles/06-translation-sheet.css": [],
+    "web/styles/07-settings.css": [],
+    "web/styles/08-logs.css": [],
+    "web/styles/09-modal-tree.css": [],
+    "web/styles/10-ui-refresh-overrides.css": [],
+    "web/styles/11-responsive.css": [],
+    "web/styles/12-loading.css": [],
+    "web/styles/13-menu-titlebar.css": [],
+    "web/styles/14-mobile.css": [],
+    "web/styles/15-tooltips.css": []
+  }
+}

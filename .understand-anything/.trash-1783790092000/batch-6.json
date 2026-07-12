@@ -1,0 +1,333 @@
+{
+  "nodes": [
+    {
+      "id": "file:scripts/build-release.ps1",
+      "type": "file",
+      "name": "build-release.ps1",
+      "filePath": "scripts/build-release.ps1",
+      "summary": "Rust test·release build와 Tauri build를 실행하고 CLI smoke check 후 portable Windows zip을 조립한다. Repository root 경계와 실행 중 binary를 확인해 위험한 overwrite를 막는다.",
+      "tags": [
+        "release",
+        "build-system",
+        "packaging",
+        "powershell"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/build-release.ps1:Assert-PathUnderRoot",
+      "type": "function",
+      "name": "Assert-PathUnderRoot",
+      "filePath": "scripts/build-release.ps1",
+      "lineRange": [
+        14,
+        29
+      ],
+      "summary": "작업 경로와 repository root를 정규화해 삭제·교체 대상이 root 밖으로 벗어나지 않는지 검증한다.",
+      "tags": [
+        "path-validation",
+        "release-safety",
+        "filesystem"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build-release.ps1:Reset-Directory",
+      "type": "function",
+      "name": "Reset-Directory",
+      "filePath": "scripts/build-release.ps1",
+      "lineRange": [
+        31,
+        42
+      ],
+      "summary": "Root 경계 검증 후 staging directory를 제거하고 빈 directory로 다시 만든다.",
+      "tags": [
+        "filesystem",
+        "release",
+        "staging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build-release.ps1:Copy-RequiredItem",
+      "type": "function",
+      "name": "Copy-RequiredItem",
+      "filePath": "scripts/build-release.ps1",
+      "lineRange": [
+        44,
+        55
+      ],
+      "summary": "필수 release item 존재를 확인하고 file 또는 directory를 destination으로 복사한다.",
+      "tags": [
+        "filesystem",
+        "release",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build-release.ps1:Assert-ExecutableNotRunning",
+      "type": "function",
+      "name": "Assert-ExecutableNotRunning",
+      "filePath": "scripts/build-release.ps1",
+      "lineRange": [
+        57,
+        77
+      ],
+      "summary": "Windows process 목록에서 release executable이 실행 중인지 확인해 overwrite 충돌을 예방한다.",
+      "tags": [
+        "process-management",
+        "release-safety",
+        "windows"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build-release.ps1:Invoke-Npm",
+      "type": "function",
+      "name": "Invoke-Npm",
+      "filePath": "scripts/build-release.ps1",
+      "lineRange": [
+        79,
+        105
+      ],
+      "summary": "PATH와 일반 설치 위치에서 npm을 찾고 인자를 전달해 실행하며 비정상 종료를 오류로 바꾼다.",
+      "tags": [
+        "build-system",
+        "npm",
+        "process-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/build-release.ps1:New-PortablePackage",
+      "type": "function",
+      "name": "New-PortablePackage",
+      "filePath": "scripts/build-release.ps1",
+      "lineRange": [
+        107,
+        151
+      ],
+      "summary": "Tauri version으로 portable staging directory를 만들고 GUI·CLI·vendor·license를 모아 zip archive를 생성한다.",
+      "tags": [
+        "packaging",
+        "release",
+        "portable-build"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/check-tauri-contract.ps1",
+      "type": "file",
+      "name": "check-tauri-contract.ps1",
+      "filePath": "scripts/check-tauri-contract.ps1",
+      "summary": "Rust Tauri command 목록과 TypeScript CommandArgs·CommandResult key를 추출해 양방향 불일치를 실패로 처리한다.",
+      "tags": [
+        "contract-test",
+        "tauri",
+        "validation",
+        "powershell"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/check-tauri-contract.ps1:Get-RustCommandNames",
+      "type": "function",
+      "name": "Get-RustCommandNames",
+      "filePath": "scripts/check-tauri-contract.ps1",
+      "lineRange": [
+        8,
+        18
+      ],
+      "summary": "Rust command module에서 tauri::command가 붙은 공개 function 이름을 추출해 정렬한다.",
+      "tags": [
+        "contract-test",
+        "rust",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/check-tauri-contract.ps1:Get-TypeKeys",
+      "type": "function",
+      "name": "Get-TypeKeys",
+      "filePath": "scripts/check-tauri-contract.ps1",
+      "lineRange": [
+        20,
+        59
+      ],
+      "summary": "TypeScript exported object type의 brace 범위를 찾아 최상위 property key를 추출한다.",
+      "tags": [
+        "contract-test",
+        "typescript",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/check-tauri-contract.ps1:Compare-ContractSet",
+      "type": "function",
+      "name": "Compare-ContractSet",
+      "filePath": "scripts/check-tauri-contract.ps1",
+      "lineRange": [
+        61,
+        84
+      ],
+      "summary": "예상 command와 실제 type key 집합의 누락·초과 항목을 보고하고 불일치 시 실패한다.",
+      "tags": [
+        "contract-test",
+        "validation",
+        "comparison"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/check.ps1",
+      "type": "file",
+      "name": "check.ps1",
+      "filePath": "scripts/check.ps1",
+      "summary": "Root와 Tauri crate의 test·clippy, command contract, TypeScript·Vite build를 순차 실행하는 local quality gate다.",
+      "tags": [
+        "quality-gate",
+        "test",
+        "lint",
+        "build-system"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:scripts/check.ps1:Invoke-Step",
+      "type": "function",
+      "name": "Invoke-Step",
+      "filePath": "scripts/check.ps1",
+      "lineRange": [
+        17,
+        28
+      ],
+      "summary": "검증 단계 label을 출력하고 전달된 scriptblock을 실행한다.",
+      "tags": [
+        "quality-gate",
+        "task-runner",
+        "logging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/check.ps1:Resolve-Node",
+      "type": "function",
+      "name": "Resolve-Node",
+      "filePath": "scripts/check.ps1",
+      "lineRange": [
+        30,
+        42
+      ],
+      "summary": "PATH의 Node.js를 우선 찾고 Cursor bundled runtime을 fallback으로 사용한다.",
+      "tags": [
+        "runtime-detection",
+        "nodejs",
+        "build-system"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/e2e-smoke.ps1",
+      "type": "file",
+      "name": "e2e-smoke.ps1",
+      "filePath": "scripts/e2e-smoke.ps1",
+      "summary": "Release Tauri app을 필요 시 build하고 focus 없는 hidden window로 실행해 조기 종료 여부를 확인한 뒤 process를 정리한다.",
+      "tags": [
+        "e2e-smoke",
+        "tauri",
+        "test",
+        "process-management"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:scripts/build-release.ps1",
+      "target": "function:scripts/build-release.ps1:Assert-PathUnderRoot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/build-release.ps1",
+      "target": "function:scripts/build-release.ps1:Reset-Directory",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/build-release.ps1",
+      "target": "function:scripts/build-release.ps1:Copy-RequiredItem",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/build-release.ps1",
+      "target": "function:scripts/build-release.ps1:Assert-ExecutableNotRunning",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/build-release.ps1",
+      "target": "function:scripts/build-release.ps1:Invoke-Npm",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/build-release.ps1",
+      "target": "function:scripts/build-release.ps1:New-PortablePackage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/check-tauri-contract.ps1",
+      "target": "function:scripts/check-tauri-contract.ps1:Get-RustCommandNames",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/check-tauri-contract.ps1",
+      "target": "function:scripts/check-tauri-contract.ps1:Get-TypeKeys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/check-tauri-contract.ps1",
+      "target": "function:scripts/check-tauri-contract.ps1:Compare-ContractSet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/check.ps1",
+      "target": "function:scripts/check.ps1:Invoke-Step",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/check.ps1",
+      "target": "function:scripts/check.ps1:Resolve-Node",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/check.ps1",
+      "target": "file:scripts/check-tauri-contract.ps1",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

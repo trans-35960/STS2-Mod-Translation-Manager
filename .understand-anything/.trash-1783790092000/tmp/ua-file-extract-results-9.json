@@ -1,0 +1,5281 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 8,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "language": "rust",
+      "fileCategory": "code",
+      "totalLines": 663,
+      "nonEmptyLines": 616,
+      "functions": [
+        {
+          "name": "cached_language_preview",
+          "startLine": 1,
+          "endLine": 19,
+          "params": [
+            "cache_key",
+            "extraction_source",
+            "cache",
+            "current_cache_keys",
+            "vendor_dir"
+          ]
+        },
+        {
+          "name": "source_labels",
+          "startLine": 21,
+          "endLine": 30,
+          "params": [
+            "builder"
+          ]
+        },
+        {
+          "name": "is_game_disabled_record",
+          "startLine": 32,
+          "endLine": 37,
+          "params": [
+            "record"
+          ]
+        },
+        {
+          "name": "translation_state",
+          "startLine": 39,
+          "endLine": 93,
+          "params": [
+            "extraction_source",
+            "language_preview"
+          ]
+        },
+        {
+          "name": "language_preview",
+          "startLine": 95,
+          "endLine": 120,
+          "params": [
+            "source",
+            "cache_key",
+            "vendor_dir"
+          ]
+        },
+        {
+          "name": "listed_resource_path_is_translation_candidate",
+          "startLine": 122,
+          "endLine": 132,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "pck_language_preview",
+          "startLine": 134,
+          "endLine": 173,
+          "params": [
+            "source",
+            "vendor_dir"
+          ]
+        },
+        {
+          "name": "language_preview_from_scan_root",
+          "startLine": 175,
+          "endLine": 212,
+          "params": [
+            "scan_root"
+          ]
+        },
+        {
+          "name": "compare_scan_root",
+          "startLine": 214,
+          "endLine": 249,
+          "params": [
+            "sheet"
+          ]
+        },
+        {
+          "name": "scan_root_before_localization",
+          "startLine": 251,
+          "endLine": 261,
+          "params": [
+            "source"
+          ]
+        },
+        {
+          "name": "extraction_target",
+          "startLine": 264,
+          "endLine": 292,
+          "params": [
+            "source",
+            "language_preview"
+          ]
+        },
+        {
+          "name": "sort_language_previews",
+          "startLine": 302,
+          "endLine": 311,
+          "params": [
+            "previews"
+          ]
+        },
+        {
+          "name": "count_json_translation_keys",
+          "startLine": 313,
+          "endLine": 327,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "hardcoded_source_count",
+          "startLine": 329,
+          "endLine": 342,
+          "params": [
+            "source"
+          ]
+        },
+        {
+          "name": "count_translation_file_keys",
+          "startLine": 344,
+          "endLine": 354,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "count_json_file_string_keys",
+          "startLine": 356,
+          "endLine": 366,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "count_json_string_leaves",
+          "startLine": 368,
+          "endLine": 375,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "infer_language_code",
+          "startLine": 377,
+          "endLine": 396,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "infer_language_code_for_candidate",
+          "startLine": 398,
+          "endLine": 405,
+          "params": [
+            "scan_root",
+            "path"
+          ]
+        },
+        {
+          "name": "split_language_tokens",
+          "startLine": 407,
+          "endLine": 416,
+          "params": [
+            "text"
+          ]
+        },
+        {
+          "name": "normalize_language_code",
+          "startLine": 418,
+          "endLine": 434,
+          "params": [
+            "token"
+          ]
+        },
+        {
+          "name": "is_known_language_code",
+          "startLine": 436,
+          "endLine": 457,
+          "params": [
+            "code"
+          ]
+        },
+        {
+          "name": "language_label",
+          "startLine": 459,
+          "endLine": 480,
+          "params": [
+            "code"
+          ]
+        },
+        {
+          "name": "read_language_preview_cache",
+          "startLine": 482,
+          "endLine": 530,
+          "params": [
+            "config"
+          ]
+        },
+        {
+          "name": "write_language_preview_cache",
+          "startLine": 532,
+          "endLine": 567,
+          "params": [
+            "config",
+            "cache"
+          ]
+        },
+        {
+          "name": "remember_language_preview_cache",
+          "startLine": 569,
+          "endLine": 587,
+          "params": [
+            "config",
+            "cache_key",
+            "languages"
+          ]
+        },
+        {
+          "name": "language_preview_cache_path",
+          "startLine": 589,
+          "endLine": 591,
+          "params": [
+            "config"
+          ]
+        },
+        {
+          "name": "language_cache_key",
+          "startLine": 593,
+          "endLine": 605,
+          "params": [
+            "record",
+            "extraction_source",
+            "vendor_dir"
+          ]
+        },
+        {
+          "name": "vendor_extractor_signature",
+          "startLine": 607,
+          "endLine": 633,
+          "params": [
+            "vendor_dir"
+          ]
+        },
+        {
+          "name": "escape_cache_field",
+          "startLine": 635,
+          "endLine": 640,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "unescape_cache_field",
+          "startLine": 642,
+          "endLine": 662,
+          "params": [
+            "value"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "LanguagePreviewBuilder",
+          "startLine": 294,
+          "endLine": 300,
+          "methods": [],
+          "properties": [
+            "code",
+            "label",
+            "files",
+            "keys",
+            "sample_path"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "cached_language_preview",
+          "callee": "current_cache_keys.insert",
+          "lineNumber": 8
+        },
+        {
+          "caller": "cached_language_preview",
+          "callee": "cache_key.to_string",
+          "lineNumber": 8
+        },
+        {
+          "caller": "cached_language_preview",
+          "callee": "cache.entries.get",
+          "lineNumber": 9
+        },
+        {
+          "caller": "cached_language_preview",
+          "callee": "cached.clone",
+          "lineNumber": 10
+        },
+        {
+          "caller": "cached_language_preview",
+          "callee": "language_preview",
+          "lineNumber": 13
+        },
+        {
+          "caller": "cached_language_preview",
+          "callee": "cache\r\n        .entries.insert",
+          "lineNumber": 14
+        },
+        {
+          "caller": "cached_language_preview",
+          "callee": "cache_key.to_string",
+          "lineNumber": 16
+        },
+        {
+          "caller": "cached_language_preview",
+          "callee": "detected.clone",
+          "lineNumber": 16
+        },
+        {
+          "caller": "source_labels",
+          "callee": "Vec::new",
+          "lineNumber": 22
+        },
+        {
+          "caller": "source_labels",
+          "callee": "builder.active.is_some",
+          "lineNumber": 23
+        },
+        {
+          "caller": "source_labels",
+          "callee": "labels.push",
+          "lineNumber": 24
+        },
+        {
+          "caller": "source_labels",
+          "callee": "builder.external.is_some",
+          "lineNumber": 26
+        },
+        {
+          "caller": "source_labels",
+          "callee": "labels.push",
+          "lineNumber": 27
+        },
+        {
+          "caller": "source_labels",
+          "callee": "labels.join",
+          "lineNumber": 29
+        },
+        {
+          "caller": "is_game_disabled_record",
+          "callee": "record.path.components().any",
+          "lineNumber": 33
+        },
+        {
+          "caller": "is_game_disabled_record",
+          "callee": "record.path.components",
+          "lineNumber": 33
+        },
+        {
+          "caller": "is_game_disabled_record",
+          "callee": "component.as_os_str().to_string_lossy",
+          "lineNumber": 34
+        },
+        {
+          "caller": "is_game_disabled_record",
+          "callee": "component.as_os_str",
+          "lineNumber": 34
+        },
+        {
+          "caller": "is_game_disabled_record",
+          "callee": "value.eq_ignore_ascii_case",
+          "lineNumber": 35
+        },
+        {
+          "caller": "translation_state",
+          "callee": "language_preview.is_empty",
+          "lineNumber": 43
+        },
+        {
+          "caller": "translation_state",
+          "callee": "language_preview\r\n            .iter()\r\n            .take(4)\r\n            .map(|language| language.label.as_str())\r\n            .collect::<Vec<_>>().join",
+          "lineNumber": 44
+        },
+        {
+          "caller": "translation_state",
+          "callee": "language_preview\r\n            .iter()\r\n            .take(4)\r\n            .map(|language| language.label.as_str())\r\n            .collect::<Vec<_>>",
+          "lineNumber": 44
+        },
+        {
+          "caller": "translation_state",
+          "callee": "language_preview\r\n            .iter()\r\n            .take(4).map",
+          "lineNumber": 44
+        },
+        {
+          "caller": "translation_state",
+          "callee": "language_preview\r\n            .iter().take",
+          "lineNumber": 44
+        },
+        {
+          "caller": "translation_state",
+          "callee": "language_preview.iter",
+          "lineNumber": 44
+        },
+        {
+          "caller": "translation_state",
+          "callee": "language.label.as_str",
+          "lineNumber": 47
+        },
+        {
+          "caller": "translation_state",
+          "callee": "source_has_pck_payload",
+          "lineNumber": 55
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"번역 가능\".to_string",
+          "lineNumber": 57
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"번역 도구를 열 때 내부 언어 파일을 준비합니다\".to_string",
+          "lineNumber": 58
+        },
+        {
+          "caller": "translation_state",
+          "callee": "hardcoded_source_count",
+          "lineNumber": 61
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"하드코딩\".to_string",
+          "lineNumber": 63
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"DLL/EXE 내부 고정 문자열 후보 감지\".to_string",
+          "lineNumber": 64
+        },
+        {
+          "caller": "translation_state",
+          "callee": "extraction_source\r\n        .extension()\r\n        .and_then(|value| value.to_str())\r\n        .unwrap_or(\"\").to_ascii_lowercase",
+          "lineNumber": 68
+        },
+        {
+          "caller": "translation_state",
+          "callee": "extraction_source\r\n        .extension()\r\n        .and_then(|value| value.to_str()).unwrap_or",
+          "lineNumber": 68
+        },
+        {
+          "caller": "translation_state",
+          "callee": "extraction_source\r\n        .extension().and_then",
+          "lineNumber": 68
+        },
+        {
+          "caller": "translation_state",
+          "callee": "extraction_source.extension",
+          "lineNumber": 68
+        },
+        {
+          "caller": "translation_state",
+          "callee": "value.to_str",
+          "lineNumber": 70
+        },
+        {
+          "caller": "translation_state",
+          "callee": "extension.as_str",
+          "lineNumber": 74
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"언어 없음\".to_string",
+          "lineNumber": 76
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"ZIP 내부에서 localization 언어 파일을 찾지 못함\".to_string",
+          "lineNumber": 77
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"언어 없음\".to_string",
+          "lineNumber": 80
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"압축 내부에서 localization 언어 파일을 찾지 못함\".to_string",
+          "lineNumber": 81
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"언어 없음\".to_string",
+          "lineNumber": 84
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"PCK 내부에서 localization 언어 파일을 찾지 못함\".to_string",
+          "lineNumber": 85
+        },
+        {
+          "caller": "translation_state",
+          "callee": "extraction_source.is_dir",
+          "lineNumber": 87
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"언어 없음\".to_string",
+          "lineNumber": 88
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"폴더에서 localization 언어 파일을 찾지 못함\".to_string",
+          "lineNumber": 89
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"검토 필요\".to_string",
+          "lineNumber": 91
+        },
+        {
+          "caller": "translation_state",
+          "callee": "\"지원 형식 확인 필요\".to_string",
+          "lineNumber": 91
+        },
+        {
+          "caller": "language_preview",
+          "callee": "PerfTrace::new",
+          "lineNumber": 96
+        },
+        {
+          "caller": "language_preview",
+          "callee": "source_has_pck_payload",
+          "lineNumber": 97
+        },
+        {
+          "caller": "language_preview",
+          "callee": "pck_language_preview",
+          "lineNumber": 98
+        },
+        {
+          "caller": "language_preview",
+          "callee": "trace.mark",
+          "lineNumber": 99
+        },
+        {
+          "caller": "language_preview",
+          "callee": "trace.finish",
+          "lineNumber": 100
+        },
+        {
+          "caller": "language_preview",
+          "callee": "trace.mark",
+          "lineNumber": 106
+        },
+        {
+          "caller": "language_preview",
+          "callee": "extraction_scan_root",
+          "lineNumber": 107
+        },
+        {
+          "caller": "language_preview",
+          "callee": "trace.mark",
+          "lineNumber": 108
+        },
+        {
+          "caller": "language_preview",
+          "callee": "trace.finish",
+          "lineNumber": 109
+        },
+        {
+          "caller": "language_preview",
+          "callee": "Vec::new",
+          "lineNumber": 110
+        },
+        {
+          "caller": "language_preview",
+          "callee": "trace.mark",
+          "lineNumber": 112
+        },
+        {
+          "caller": "language_preview",
+          "callee": "language_preview_from_scan_root",
+          "lineNumber": 113
+        },
+        {
+          "caller": "language_preview",
+          "callee": "trace.mark",
+          "lineNumber": 114
+        },
+        {
+          "caller": "language_preview",
+          "callee": "trace.finish",
+          "lineNumber": 115
+        },
+        {
+          "caller": "listed_resource_path_is_translation_candidate",
+          "callee": "path.to_ascii_lowercase",
+          "lineNumber": 123
+        },
+        {
+          "caller": "listed_resource_path_is_translation_candidate",
+          "callee": "lower.ends_with",
+          "lineNumber": 124
+        },
+        {
+          "caller": "listed_resource_path_is_translation_candidate",
+          "callee": "lower.ends_with",
+          "lineNumber": 124
+        },
+        {
+          "caller": "listed_resource_path_is_translation_candidate",
+          "callee": "lower.contains",
+          "lineNumber": 127
+        },
+        {
+          "caller": "listed_resource_path_is_translation_candidate",
+          "callee": "lower.contains",
+          "lineNumber": 128
+        },
+        {
+          "caller": "listed_resource_path_is_translation_candidate",
+          "callee": "lower.contains",
+          "lineNumber": 129
+        },
+        {
+          "caller": "listed_resource_path_is_translation_candidate",
+          "callee": "lower.contains",
+          "lineNumber": 130
+        },
+        {
+          "caller": "listed_resource_path_is_translation_candidate",
+          "callee": "lower.contains",
+          "lineNumber": 131
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "Vec::new",
+          "lineNumber": 135
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "collect_pck_files",
+          "lineNumber": 136
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "pcks.sort",
+          "lineNumber": 137
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "BTreeMap::<String, LanguagePreviewBuilder>::new",
+          "lineNumber": 139
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "list_pck_resource_paths",
+          "lineNumber": 141
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "listed_resource_path_is_translation_candidate",
+          "lineNumber": 142
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "path.trim_start_matches",
+          "lineNumber": 145
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "infer_language_code(Path::new(relative)).unwrap_or_else",
+          "lineNumber": 146
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "infer_language_code",
+          "lineNumber": 146
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "Path::new",
+          "lineNumber": 146
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "\"unknown\".to_string",
+          "lineNumber": 147
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "by_code\n                .entry(code.clone()).or_insert_with",
+          "lineNumber": 148
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "by_code.entry",
+          "lineNumber": 148
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "code.clone",
+          "lineNumber": 149
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "code.clone",
+          "lineNumber": 151
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "language_label(&code).to_string",
+          "lineNumber": 152
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "language_label",
+          "lineNumber": 152
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "path.clone",
+          "lineNumber": 155
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "by_code\n        .into_values()\n        .map(|entry| LanguagePreviewDto {\n            code: entry.code,\n            label: entry.label,\n            files: entry.files,\n            keys: entry.keys,\n            sample_path: entry.sample_path,\n        })\n        .collect::<Vec<_>>",
+          "lineNumber": 161
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "by_code\n        .into_values().map",
+          "lineNumber": 161
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "by_code.into_values",
+          "lineNumber": 161
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "sort_language_previews",
+          "lineNumber": 171
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "previews.into_iter().take(8).collect",
+          "lineNumber": 172
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "previews.into_iter().take",
+          "lineNumber": 172
+        },
+        {
+          "caller": "pck_language_preview",
+          "callee": "previews.into_iter",
+          "lineNumber": 172
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "scan_translation_candidates",
+          "lineNumber": 176
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "Vec::new",
+          "lineNumber": 177
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "BTreeMap::<String, LanguagePreviewBuilder>::new",
+          "lineNumber": 180
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "is_hardcoded_source_file",
+          "lineNumber": 182
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "infer_language_code_for_candidate(scan_root, &candidate.path).unwrap_or_else",
+          "lineNumber": 185
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "infer_language_code_for_candidate",
+          "lineNumber": 185
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "\"unknown\".to_string",
+          "lineNumber": 186
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "by_code\r\n            .entry(code.clone()).or_insert_with",
+          "lineNumber": 187
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "by_code.entry",
+          "lineNumber": 187
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "code.clone",
+          "lineNumber": 188
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "code.clone",
+          "lineNumber": 190
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "language_label(&code).to_string",
+          "lineNumber": 191
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "language_label",
+          "lineNumber": 191
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "resource_display_path",
+          "lineNumber": 194
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "count_json_translation_keys",
+          "lineNumber": 197
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "by_code\r\n        .into_values()\r\n        .map(|entry| LanguagePreviewDto {\r\n            code: entry.code,\r\n            label: entry.label,\r\n            files: entry.files,\r\n            keys: entry.keys,\r\n            sample_path: entry.sample_path,\r\n        })\r\n        .collect::<Vec<_>>",
+          "lineNumber": 200
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "by_code\r\n        .into_values().map",
+          "lineNumber": 200
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "by_code.into_values",
+          "lineNumber": 200
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "sort_language_previews",
+          "lineNumber": 210
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "previews.into_iter().take(8).collect",
+          "lineNumber": 211
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "previews.into_iter().take",
+          "lineNumber": 211
+        },
+        {
+          "caller": "language_preview_from_scan_root",
+          "callee": "previews.into_iter",
+          "lineNumber": 211
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "PathBuf::from",
+          "lineNumber": 215
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "read_translation_context(&source_path).unwrap_or_default",
+          "lineNumber": 216
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "read_translation_context",
+          "lineNumber": 216
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "context\r\n        .pck_contents_root\r\n        .as_ref().filter",
+          "lineNumber": 217
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "context\r\n        .pck_contents_root.as_ref",
+          "lineNumber": 217
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "path.exists",
+          "lineNumber": 220
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "Some",
+          "lineNumber": 222
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "root.clone",
+          "lineNumber": 222
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "context.mod_key.as_deref",
+          "lineNumber": 224
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "app",
+          "lineNumber": 225
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "find_mod_record",
+          "lineNumber": 226
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "extraction_source_for_record",
+          "lineNumber": 227
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "language_cache_key",
+          "lineNumber": 229
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "app.config",
+          "lineNumber": 229
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "extraction_scan_root",
+          "lineNumber": 231
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "app.config",
+          "lineNumber": 231
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "Some",
+          "lineNumber": 233
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "context\r\n        .extraction_source_path\r\n        .as_ref().filter",
+          "lineNumber": 237
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "context\r\n        .extraction_source_path.as_ref",
+          "lineNumber": 237
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "path.exists",
+          "lineNumber": 240
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "extraction_scan_root",
+          "lineNumber": 243
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "app().config",
+          "lineNumber": 243
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "app",
+          "lineNumber": 243
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "Some",
+          "lineNumber": 244
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "PathBuf::from",
+          "lineNumber": 247
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "scan_root_before_localization(&source).or_else",
+          "lineNumber": 248
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "scan_root_before_localization",
+          "lineNumber": 248
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "source.exists().then_some",
+          "lineNumber": 248
+        },
+        {
+          "caller": "compare_scan_root",
+          "callee": "source.exists",
+          "lineNumber": 248
+        },
+        {
+          "caller": "scan_root_before_localization",
+          "callee": "source.ancestors",
+          "lineNumber": 252
+        },
+        {
+          "caller": "scan_root_before_localization",
+          "callee": "ancestor.file_name().and_then",
+          "lineNumber": 253
+        },
+        {
+          "caller": "scan_root_before_localization",
+          "callee": "ancestor.file_name",
+          "lineNumber": 253
+        },
+        {
+          "caller": "scan_root_before_localization",
+          "callee": "value.to_str",
+          "lineNumber": 253
+        },
+        {
+          "caller": "scan_root_before_localization",
+          "callee": "name.eq_ignore_ascii_case",
+          "lineNumber": 256
+        },
+        {
+          "caller": "scan_root_before_localization",
+          "callee": "ancestor.parent().map",
+          "lineNumber": 257
+        },
+        {
+          "caller": "scan_root_before_localization",
+          "callee": "ancestor.parent",
+          "lineNumber": 257
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "language_preview.is_empty",
+          "lineNumber": 265
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "language_preview\n            .iter()\n            .map(|language| language.label.as_str())\n            .collect::<Vec<_>>().join",
+          "lineNumber": 266
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "language_preview\n            .iter()\n            .map(|language| language.label.as_str())\n            .collect::<Vec<_>>",
+          "lineNumber": 266
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "language_preview\n            .iter().map",
+          "lineNumber": 266
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "language_preview.iter",
+          "lineNumber": 266
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "language.label.as_str",
+          "lineNumber": 268
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "source_has_pck_payload",
+          "lineNumber": 273
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "\"PCK 내부 localization/lang/strings 계열 파일\".to_string",
+          "lineNumber": 274
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "hardcoded_source_count",
+          "lineNumber": 276
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "\"DLL/EXE 내부 고정 문자열 후보\".to_string",
+          "lineNumber": 277
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "source\r\n        .extension()\r\n        .and_then(|value| value.to_str())\r\n        .unwrap_or(\"\").to_ascii_lowercase",
+          "lineNumber": 280
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "source\r\n        .extension()\r\n        .and_then(|value| value.to_str()).unwrap_or",
+          "lineNumber": 280
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "source\r\n        .extension().and_then",
+          "lineNumber": 280
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "source.extension",
+          "lineNumber": 280
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "value.to_str",
+          "lineNumber": 282
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "extension.as_str",
+          "lineNumber": 285
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "\"ZIP 내부 localization/lang/strings 계열 파일\".to_string",
+          "lineNumber": 286
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "\"압축 내부 localization/lang/strings 계열 파일\".to_string",
+          "lineNumber": 287
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "\"PCK 내부 파일\".to_string",
+          "lineNumber": 288
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "source.is_dir",
+          "lineNumber": 289
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "\"폴더 내부 localization/lang/strings 계열 파일\".to_string",
+          "lineNumber": 289
+        },
+        {
+          "caller": "extraction_target",
+          "callee": "\"지원 형식 검토 필요\".to_string",
+          "lineNumber": 290
+        },
+        {
+          "caller": "sort_language_previews",
+          "callee": "previews.sort_by",
+          "lineNumber": 303
+        },
+        {
+          "caller": "sort_language_previews",
+          "callee": "right\r\n            .keys\r\n            .cmp(&left.keys)\r\n            .then_with(|| right.files.cmp(&left.files)).then_with",
+          "lineNumber": 304
+        },
+        {
+          "caller": "sort_language_previews",
+          "callee": "right\r\n            .keys\r\n            .cmp(&left.keys).then_with",
+          "lineNumber": 304
+        },
+        {
+          "caller": "sort_language_previews",
+          "callee": "right\r\n            .keys.cmp",
+          "lineNumber": 304
+        },
+        {
+          "caller": "sort_language_previews",
+          "callee": "right.files.cmp",
+          "lineNumber": 307
+        },
+        {
+          "caller": "sort_language_previews",
+          "callee": "left.code.cmp",
+          "lineNumber": 308
+        },
+        {
+          "caller": "sort_language_previews",
+          "callee": "previews.dedup_by",
+          "lineNumber": 310
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "fs::metadata",
+          "lineNumber": 314
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "metadata.is_file",
+          "lineNumber": 317
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "count_translation_file_keys",
+          "lineNumber": 318
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "Vec::new",
+          "lineNumber": 320
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "collect_files_with_extension",
+          "lineNumber": 321
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "collect_files_with_extension",
+          "lineNumber": 322
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "files\r\n        .iter()\r\n        .map(|file| count_translation_file_keys(file)).sum",
+          "lineNumber": 323
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "files\r\n        .iter().map",
+          "lineNumber": 323
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "files.iter",
+          "lineNumber": 323
+        },
+        {
+          "caller": "count_json_translation_keys",
+          "callee": "count_translation_file_keys",
+          "lineNumber": 325
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "source.is_file",
+          "lineNumber": 330
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "is_hardcoded_source_file",
+          "lineNumber": 330
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "usize::from",
+          "lineNumber": 331
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "hardcoded_file_has_strings",
+          "lineNumber": 331
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "source.is_dir",
+          "lineNumber": 333
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "Vec::new",
+          "lineNumber": 336
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "collect_hardcoded_files",
+          "lineNumber": 337
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "files\r\n        .into_iter()\r\n        .filter(|path| hardcoded_file_has_strings(path)).count",
+          "lineNumber": 338
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "files\r\n        .into_iter().filter",
+          "lineNumber": 338
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "files.into_iter",
+          "lineNumber": 338
+        },
+        {
+          "caller": "hardcoded_source_count",
+          "callee": "hardcoded_file_has_strings",
+          "lineNumber": 340
+        },
+        {
+          "caller": "count_translation_file_keys",
+          "callee": "path\r\n        .extension()\r\n        .and_then(|value| value.to_str())\r\n        .unwrap_or(\"\").to_ascii_lowercase",
+          "lineNumber": 345
+        },
+        {
+          "caller": "count_translation_file_keys",
+          "callee": "path\r\n        .extension()\r\n        .and_then(|value| value.to_str()).unwrap_or",
+          "lineNumber": 345
+        },
+        {
+          "caller": "count_translation_file_keys",
+          "callee": "path\r\n        .extension().and_then",
+          "lineNumber": 345
+        },
+        {
+          "caller": "count_translation_file_keys",
+          "callee": "path.extension",
+          "lineNumber": 345
+        },
+        {
+          "caller": "count_translation_file_keys",
+          "callee": "value.to_str",
+          "lineNumber": 347
+        },
+        {
+          "caller": "count_translation_file_keys",
+          "callee": "extension.as_str",
+          "lineNumber": 350
+        },
+        {
+          "caller": "count_translation_file_keys",
+          "callee": "count_json_file_string_keys",
+          "lineNumber": 351
+        },
+        {
+          "caller": "count_json_file_string_keys",
+          "callee": "fs::read_to_string",
+          "lineNumber": 357
+        },
+        {
+          "caller": "count_json_file_string_keys",
+          "callee": "serde_json::from_str::<serde_json::Value>",
+          "lineNumber": 361
+        },
+        {
+          "caller": "count_json_file_string_keys",
+          "callee": "content.trim_start_matches",
+          "lineNumber": 361
+        },
+        {
+          "caller": "count_json_file_string_keys",
+          "callee": "count_json_string_leaves",
+          "lineNumber": 365
+        },
+        {
+          "caller": "count_json_string_leaves",
+          "callee": "usize::from",
+          "lineNumber": 370
+        },
+        {
+          "caller": "count_json_string_leaves",
+          "callee": "text.trim().is_empty",
+          "lineNumber": 370
+        },
+        {
+          "caller": "count_json_string_leaves",
+          "callee": "text.trim",
+          "lineNumber": 370
+        },
+        {
+          "caller": "count_json_string_leaves",
+          "callee": "items.iter().map(count_json_string_leaves).sum",
+          "lineNumber": 371
+        },
+        {
+          "caller": "count_json_string_leaves",
+          "callee": "items.iter().map",
+          "lineNumber": 371
+        },
+        {
+          "caller": "count_json_string_leaves",
+          "callee": "items.iter",
+          "lineNumber": 371
+        },
+        {
+          "caller": "count_json_string_leaves",
+          "callee": "entries.values().map(count_json_string_leaves).sum",
+          "lineNumber": 372
+        },
+        {
+          "caller": "count_json_string_leaves",
+          "callee": "entries.values().map",
+          "lineNumber": 372
+        },
+        {
+          "caller": "count_json_string_leaves",
+          "callee": "entries.values",
+          "lineNumber": 372
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "Vec::new",
+          "lineNumber": 378
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "path.components",
+          "lineNumber": 379
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "tokens.extend",
+          "lineNumber": 380
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "split_language_tokens",
+          "lineNumber": 380
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "component.as_os_str().to_string_lossy",
+          "lineNumber": 381
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "component.as_os_str",
+          "lineNumber": 381
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "path.file_stem",
+          "lineNumber": 384
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "tokens.extend",
+          "lineNumber": 385
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "split_language_tokens",
+          "lineNumber": 385
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "stem.to_string_lossy",
+          "lineNumber": 385
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "normalize_language_code",
+          "lineNumber": 389
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "is_known_language_code",
+          "lineNumber": 390
+        },
+        {
+          "caller": "infer_language_code",
+          "callee": "Some",
+          "lineNumber": 391
+        },
+        {
+          "caller": "infer_language_code_for_candidate",
+          "callee": "path.strip_prefix(scan_root).unwrap_or",
+          "lineNumber": 399
+        },
+        {
+          "caller": "infer_language_code_for_candidate",
+          "callee": "path.strip_prefix",
+          "lineNumber": 399
+        },
+        {
+          "caller": "infer_language_code_for_candidate",
+          "callee": "infer_language_code(relative).or_else",
+          "lineNumber": 400
+        },
+        {
+          "caller": "infer_language_code_for_candidate",
+          "callee": "infer_language_code",
+          "lineNumber": 400
+        },
+        {
+          "caller": "infer_language_code_for_candidate",
+          "callee": "scan_root\r\n            .file_name().and_then",
+          "lineNumber": 401
+        },
+        {
+          "caller": "infer_language_code_for_candidate",
+          "callee": "scan_root.file_name",
+          "lineNumber": 401
+        },
+        {
+          "caller": "infer_language_code_for_candidate",
+          "callee": "infer_language_code",
+          "lineNumber": 403
+        },
+        {
+          "caller": "infer_language_code_for_candidate",
+          "callee": "Path::new",
+          "lineNumber": 403
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "text.split(|character: char| {\r\n        !(character.is_ascii_alphanumeric() || character == '-' || character == '_')\r\n    })\r\n    .flat_map(|part| part.split(['-', '_']))\r\n    .map(str::trim)\r\n    .filter(|part| !part.is_empty())\r\n    .map(|part| part.to_ascii_lowercase()).collect",
+          "lineNumber": 408
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "text.split(|character: char| {\r\n        !(character.is_ascii_alphanumeric() || character == '-' || character == '_')\r\n    })\r\n    .flat_map(|part| part.split(['-', '_']))\r\n    .map(str::trim)\r\n    .filter(|part| !part.is_empty()).map",
+          "lineNumber": 408
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "text.split(|character: char| {\r\n        !(character.is_ascii_alphanumeric() || character == '-' || character == '_')\r\n    })\r\n    .flat_map(|part| part.split(['-', '_']))\r\n    .map(str::trim).filter",
+          "lineNumber": 408
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "text.split(|character: char| {\r\n        !(character.is_ascii_alphanumeric() || character == '-' || character == '_')\r\n    })\r\n    .flat_map(|part| part.split(['-', '_'])).map",
+          "lineNumber": 408
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "text.split(|character: char| {\r\n        !(character.is_ascii_alphanumeric() || character == '-' || character == '_')\r\n    }).flat_map",
+          "lineNumber": 408
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "text.split",
+          "lineNumber": 408
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "character.is_ascii_alphanumeric",
+          "lineNumber": 409
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "part.split",
+          "lineNumber": 411
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "part.is_empty",
+          "lineNumber": 413
+        },
+        {
+          "caller": "split_language_tokens",
+          "callee": "part.to_ascii_lowercase",
+          "lineNumber": 414
+        },
+        {
+          "caller": "normalize_language_code",
+          "callee": "match token {\r\n        \"kr\" | \"kor\" | \"korean\" => \"kor\",\r\n        \"eng\" | \"english\" => \"en\",\r\n        \"jpn\" | \"jp\" | \"japanese\" => \"ja\",\r\n        \"zhs\" | \"chs\" | \"sc\" | \"simplified\" => \"zh-cn\",\r\n        \"zht\" | \"cht\" | \"tc\" | \"traditional\" => \"zh-tw\",\r\n        \"deu\" | \"ger\" | \"german\" => \"de\",\r\n        \"fra\" | \"fre\" | \"french\" => \"fr\",\r\n        \"spa\" | \"spanish\" => \"es\",\r\n        \"rus\" | \"russian\" => \"ru\",\r\n        \"por\" | \"portuguese\" => \"pt\",\r\n        \"italian\" => \"it\",\r\n        other => other,\r\n    }.to_string",
+          "lineNumber": 419
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "language_preview_cache_path",
+          "lineNumber": 485
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "path.exists",
+          "lineNumber": 486
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "Ok",
+          "lineNumber": 487
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "BTreeMap::new",
+          "lineNumber": 488
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "fs::read_to_string(&path).map_err",
+          "lineNumber": 493
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "fs::read_to_string",
+          "lineNumber": 493
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "sts2_mod_manager::error::AppError::io",
+          "lineNumber": 494
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "path.as_path",
+          "lineNumber": 494
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "BTreeMap::<String, Vec<LanguagePreviewDto>>::new",
+          "lineNumber": 495
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "content.lines",
+          "lineNumber": 496
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "line.split('\\t').collect::<Vec<_>>",
+          "lineNumber": 497
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "line.split",
+          "lineNumber": 497
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts.len",
+          "lineNumber": 498
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "entries.entry(parts[0].to_string()).or_default",
+          "lineNumber": 499
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "entries.entry",
+          "lineNumber": 499
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts[0].to_string",
+          "lineNumber": 499
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts.len",
+          "lineNumber": 502
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts[3].parse::<usize>().unwrap_or",
+          "lineNumber": 505
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts[3].parse::<usize>",
+          "lineNumber": 505
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts[4].parse::<usize>().unwrap_or",
+          "lineNumber": 506
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts[4].parse::<usize>",
+          "lineNumber": 506
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts[1].is_empty",
+          "lineNumber": 507
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts[2].is_empty",
+          "lineNumber": 507
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "entries.entry(parts[0].to_string()).or_default",
+          "lineNumber": 511
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "entries.entry",
+          "lineNumber": 511
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts[0].to_string",
+          "lineNumber": 511
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "entries\r\n            .entry(parts[0].to_string())\r\n            .or_default().push",
+          "lineNumber": 514
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "entries\r\n            .entry(parts[0].to_string()).or_default",
+          "lineNumber": 514
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "entries.entry",
+          "lineNumber": 514
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "parts[0].to_string",
+          "lineNumber": 515
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "unescape_cache_field",
+          "lineNumber": 518
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "unescape_cache_field",
+          "lineNumber": 519
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "unescape_cache_field",
+          "lineNumber": 522
+        },
+        {
+          "caller": "read_language_preview_cache",
+          "callee": "Ok",
+          "lineNumber": 526
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "language_preview_cache_path",
+          "lineNumber": 536
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "path.parent",
+          "lineNumber": 537
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "fs::create_dir_all(parent).map_err",
+          "lineNumber": 538
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "fs::create_dir_all",
+          "lineNumber": 538
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "sts2_mod_manager::error::AppError::io",
+          "lineNumber": 539
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "String::new",
+          "lineNumber": 542
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "languages.is_empty",
+          "lineNumber": 544
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push_str",
+          "lineNumber": 545
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push_str",
+          "lineNumber": 546
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push_str",
+          "lineNumber": 550
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push",
+          "lineNumber": 551
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push_str",
+          "lineNumber": 552
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "escape_cache_field",
+          "lineNumber": 552
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push",
+          "lineNumber": 553
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push_str",
+          "lineNumber": 554
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "escape_cache_field",
+          "lineNumber": 554
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push",
+          "lineNumber": 555
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push_str",
+          "lineNumber": 556
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "language.files.to_string",
+          "lineNumber": 556
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push",
+          "lineNumber": 557
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push_str",
+          "lineNumber": 558
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "language.keys.to_string",
+          "lineNumber": 558
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push",
+          "lineNumber": 559
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push_str",
+          "lineNumber": 560
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "escape_cache_field",
+          "lineNumber": 560
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "output.push",
+          "lineNumber": 561
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "fs::write(&path, output).map_err",
+          "lineNumber": 565
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "fs::write",
+          "lineNumber": 565
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "sts2_mod_manager::error::AppError::io",
+          "lineNumber": 566
+        },
+        {
+          "caller": "write_language_preview_cache",
+          "callee": "path.as_path",
+          "lineNumber": 566
+        },
+        {
+          "caller": "remember_language_preview_cache",
+          "callee": "read_language_preview_cache",
+          "lineNumber": 574
+        },
+        {
+          "caller": "remember_language_preview_cache",
+          "callee": "cache\n        .entries\n        .get(cache_key).is_some_and",
+          "lineNumber": 575
+        },
+        {
+          "caller": "remember_language_preview_cache",
+          "callee": "cache\n        .entries.get",
+          "lineNumber": 575
+        },
+        {
+          "caller": "remember_language_preview_cache",
+          "callee": "Ok",
+          "lineNumber": 580
+        },
+        {
+          "caller": "remember_language_preview_cache",
+          "callee": "cache\n        .entries.insert",
+          "lineNumber": 582
+        },
+        {
+          "caller": "remember_language_preview_cache",
+          "callee": "cache_key.to_string",
+          "lineNumber": 584
+        },
+        {
+          "caller": "remember_language_preview_cache",
+          "callee": "languages.to_vec",
+          "lineNumber": 584
+        },
+        {
+          "caller": "remember_language_preview_cache",
+          "callee": "write_language_preview_cache",
+          "lineNumber": 586
+        },
+        {
+          "caller": "language_preview_cache_path",
+          "callee": "config.state_dir.join",
+          "lineNumber": 590
+        },
+        {
+          "caller": "vendor_extractor_signature",
+          "callee": "[\r\n        vendor_dir.join(\"7zip\").join(\"7z.exe\"),\r\n        vendor_dir\r\n            .join(\"godot-pck-explorer-dotnet-ui-console-win-linux-mac\")\r\n            .join(\"GodotPCKExplorer.Console.exe\"),\r\n    ]\r\n    .into_iter()\r\n    .map(|path| match fs::metadata(&path) {\r\n        Ok(metadata) => format!(\r\n            \"{}:{}:{}\",\r\n            path.file_name()\r\n                .map(|value| value.to_string_lossy())\r\n                .unwrap_or_default(),\r\n            metadata.len(),\r\n            epoch_seconds(metadata.modified().ok()).unwrap_or(0)\r\n        ),\r\n        Err(_) => format!(\r\n            \"{}:missing\",\r\n            path.file_name()\r\n                .map(|value| value.to_string_lossy())\r\n                .unwrap_or_default()\r\n        ),\r\n    })\r\n    .collect::<Vec<_>>().join",
+          "lineNumber": 608
+        },
+        {
+          "caller": "vendor_extractor_signature",
+          "callee": "[\r\n        vendor_dir.join(\"7zip\").join(\"7z.exe\"),\r\n        vendor_dir\r\n            .join(\"godot-pck-explorer-dotnet-ui-console-win-linux-mac\")\r\n            .join(\"GodotPCKExplorer.Console.exe\"),\r\n    ]\r\n    .into_iter()\r\n    .map(|path| match fs::metadata(&path) {\r\n        Ok(metadata) => format!(\r\n            \"{}:{}:{}\",\r\n            path.file_name()\r\n                .map(|value| value.to_string_lossy())\r\n                .unwrap_or_default(),\r\n            metadata.len(),\r\n            epoch_seconds(metadata.modified().ok()).unwrap_or(0)\r\n        ),\r\n        Err(_) => format!(\r\n            \"{}:missing\",\r\n            path.file_name()\r\n                .map(|value| value.to_string_lossy())\r\n                .unwrap_or_default()\r\n        ),\r\n    })\r\n    .collect::<Vec<_>>",
+          "lineNumber": 608
+        },
+        {
+          "caller": "vendor_extractor_signature",
+          "callee": "[\r\n        vendor_dir.join(\"7zip\").join(\"7z.exe\"),\r\n        vendor_dir\r\n            .join(\"godot-pck-explorer-dotnet-ui-console-win-linux-mac\")\r\n            .join(\"GodotPCKExplorer.Console.exe\"),\r\n    ]\r\n    .into_iter().map",
+          "lineNumber": 608
+        },
+        {
+          "caller": "vendor_extractor_signature",
+          "callee": "[\r\n        vendor_dir.join(\"7zip\").join(\"7z.exe\"),\r\n        vendor_dir\r\n            .join(\"godot-pck-explorer-dotnet-ui-console-win-linux-mac\")\r\n            .join(\"GodotPCKExplorer.Console.exe\"),\r\n    ].into_iter",
+          "lineNumber": 608
+        },
+        {
+          "caller": "vendor_extractor_signature",
+          "callee": "vendor_dir.join(\"7zip\").join",
+          "lineNumber": 609
+        },
+        {
+          "caller": "vendor_extractor_signature",
+          "callee": "vendor_dir.join",
+          "lineNumber": 609
+        },
+        {
+          "caller": "vendor_extractor_signature",
+          "callee": "vendor_dir\r\n            .join(\"godot-pck-explorer-dotnet-ui-console-win-linux-mac\").join",
+          "lineNumber": 610
+        },
+        {
+          "caller": "vendor_extractor_signature",
+          "callee": "vendor_dir.join",
+          "lineNumber": 610
+        },
+        {
+          "caller": "vendor_extractor_signature",
+          "callee": "fs::metadata",
+          "lineNumber": 615
+        },
+        {
+          "caller": "escape_cache_field",
+          "callee": "value\r\n        .replace('\\\\', \"\\\\\\\\\")\r\n        .replace('\\t', \"\\\\t\").replace",
+          "lineNumber": 636
+        },
+        {
+          "caller": "escape_cache_field",
+          "callee": "value\r\n        .replace('\\\\', \"\\\\\\\\\").replace",
+          "lineNumber": 636
+        },
+        {
+          "caller": "escape_cache_field",
+          "callee": "value.replace",
+          "lineNumber": 636
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "String::new",
+          "lineNumber": 643
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "value.chars",
+          "lineNumber": 644
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "chars.next",
+          "lineNumber": 645
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "chars.next",
+          "lineNumber": 647
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "output.push",
+          "lineNumber": 648
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "output.push",
+          "lineNumber": 649
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "output.push",
+          "lineNumber": 650
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "output.push",
+          "lineNumber": 652
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "output.push",
+          "lineNumber": 653
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "output.push",
+          "lineNumber": 655
+        },
+        {
+          "caller": "unescape_cache_field",
+          "callee": "output.push",
+          "lineNumber": 658
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 31,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "src-tauri/src/services/translation_preview/manifest.rs",
+      "language": "rust",
+      "fileCategory": "code",
+      "totalLines": 309,
+      "nonEmptyLines": 290,
+      "functions": [
+        {
+          "name": "read_mod_manifest_info",
+          "startLine": 22,
+          "endLine": 40,
+          "params": [
+            "scan_root"
+          ]
+        },
+        {
+          "name": "mod_manifest_info_from_value",
+          "startLine": 42,
+          "endLine": 63,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "manifest_info_has_metadata",
+          "startLine": 65,
+          "endLine": 73,
+          "params": [
+            "info"
+          ]
+        },
+        {
+          "name": "read_mod_manifest_for_record",
+          "startLine": 75,
+          "endLine": 86,
+          "params": [
+            "record_path",
+            "scan_root"
+          ]
+        },
+        {
+          "name": "merge_manifest_info",
+          "startLine": 88,
+          "endLine": 111,
+          "params": [
+            "primary",
+            "fallback"
+          ]
+        },
+        {
+          "name": "strip_json_comments",
+          "startLine": 113,
+          "endLine": 169,
+          "params": [
+            "input"
+          ]
+        },
+        {
+          "name": "collect_manifest_candidates",
+          "startLine": 171,
+          "endLine": 198,
+          "params": [
+            "root",
+            "path",
+            "output"
+          ]
+        },
+        {
+          "name": "string_field",
+          "startLine": 200,
+          "endLine": 206,
+          "params": [
+            "value",
+            "keys"
+          ]
+        },
+        {
+          "name": "string_list_field",
+          "startLine": 208,
+          "endLine": 235,
+          "params": [
+            "value",
+            "keys"
+          ]
+        },
+        {
+          "name": "bool_field",
+          "startLine": 237,
+          "endLine": 242,
+          "params": [
+            "value",
+            "keys"
+          ]
+        },
+        {
+          "name": "dependency_list_field",
+          "startLine": 244,
+          "endLine": 276,
+          "params": [
+            "value",
+            "keys"
+          ]
+        },
+        {
+          "name": "with_dependency_versions",
+          "startLine": 278,
+          "endLine": 308,
+          "params": [
+            "info",
+            "value"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "ModManifestInfo",
+          "startLine": 2,
+          "endLine": 14,
+          "methods": [],
+          "properties": [
+            "id",
+            "name",
+            "version",
+            "author",
+            "description",
+            "dependencies",
+            "target_mod_id",
+            "target_mod_name",
+            "target_mod_version",
+            "target_languages",
+            "is_translation_patch"
+          ]
+        },
+        {
+          "name": "ManifestDependency",
+          "startLine": 17,
+          "endLine": 20,
+          "methods": [],
+          "properties": [
+            "id",
+            "version"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "Vec::new",
+          "lineNumber": 23
+        },
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "collect_manifest_candidates",
+          "lineNumber": 24
+        },
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "manifests.sort",
+          "lineNumber": 25
+        },
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "fs::read_to_string",
+          "lineNumber": 27
+        },
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "strip_json_comments",
+          "lineNumber": 30
+        },
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "content.trim_start_matches",
+          "lineNumber": 30
+        },
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "serde_json::from_str::<serde_json::Value>",
+          "lineNumber": 31
+        },
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "mod_manifest_info_from_value",
+          "lineNumber": 34
+        },
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "manifest_info_has_metadata",
+          "lineNumber": 35
+        },
+        {
+          "caller": "read_mod_manifest_info",
+          "callee": "ModManifestInfo::default",
+          "lineNumber": 39
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "string_field",
+          "lineNumber": 44
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "string_field",
+          "lineNumber": 45
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "string_field",
+          "lineNumber": 46
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "string_field",
+          "lineNumber": 47
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "string_field",
+          "lineNumber": 48
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "dependency_list_field",
+          "lineNumber": 49
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "string_field",
+          "lineNumber": 50
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "string_field",
+          "lineNumber": 51
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "string_field",
+          "lineNumber": 52
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "string_list_field",
+          "lineNumber": 56
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "bool_field",
+          "lineNumber": 57
+        },
+        {
+          "caller": "mod_manifest_info_from_value",
+          "callee": "with_dependency_versions",
+          "lineNumber": 62
+        },
+        {
+          "caller": "manifest_info_has_metadata",
+          "callee": "info.id.is_some",
+          "lineNumber": 66
+        },
+        {
+          "caller": "manifest_info_has_metadata",
+          "callee": "info.name.is_some",
+          "lineNumber": 67
+        },
+        {
+          "caller": "manifest_info_has_metadata",
+          "callee": "info.version.is_some",
+          "lineNumber": 68
+        },
+        {
+          "caller": "manifest_info_has_metadata",
+          "callee": "info.dependencies.is_empty",
+          "lineNumber": 69
+        },
+        {
+          "caller": "manifest_info_has_metadata",
+          "callee": "info.target_mod_id.is_some",
+          "lineNumber": 70
+        },
+        {
+          "caller": "manifest_info_has_metadata",
+          "callee": "info.target_mod_name.is_some",
+          "lineNumber": 71
+        },
+        {
+          "caller": "read_mod_manifest_for_record",
+          "callee": "read_mod_manifest_info",
+          "lineNumber": 76
+        },
+        {
+          "caller": "read_mod_manifest_for_record",
+          "callee": "read_mod_manifest_info",
+          "lineNumber": 80
+        },
+        {
+          "caller": "read_mod_manifest_for_record",
+          "callee": "is_translation_patch_manifest",
+          "lineNumber": 81
+        },
+        {
+          "caller": "read_mod_manifest_for_record",
+          "callee": "merge_manifest_info",
+          "lineNumber": 82
+        },
+        {
+          "caller": "read_mod_manifest_for_record",
+          "callee": "merge_manifest_info",
+          "lineNumber": 84
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.id.or",
+          "lineNumber": 89
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.name.or",
+          "lineNumber": 90
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.version.or",
+          "lineNumber": 91
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.author.or",
+          "lineNumber": 92
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.description.or",
+          "lineNumber": 93
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.target_mod_id.or",
+          "lineNumber": 94
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.target_mod_name.or",
+          "lineNumber": 95
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.target_mod_version.or",
+          "lineNumber": 96
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.target_languages.is_empty",
+          "lineNumber": 98
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary\r\n            .dependencies\r\n            .iter().any",
+          "lineNumber": 102
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary\r\n            .dependencies.iter",
+          "lineNumber": 102
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "existing.id.eq_ignore_ascii_case",
+          "lineNumber": 105
+        },
+        {
+          "caller": "merge_manifest_info",
+          "callee": "primary.dependencies.push",
+          "lineNumber": 107
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "String::with_capacity",
+          "lineNumber": 114
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "input.len",
+          "lineNumber": 114
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "input.chars().peekable",
+          "lineNumber": 115
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "input.chars",
+          "lineNumber": 115
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "chars.next",
+          "lineNumber": 119
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "output.push",
+          "lineNumber": 121
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "output.push",
+          "lineNumber": 134
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "chars.peek().copied",
+          "lineNumber": 139
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "chars.peek",
+          "lineNumber": 139
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "chars.next",
+          "lineNumber": 141
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "chars.by_ref",
+          "lineNumber": 142
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "output.push",
+          "lineNumber": 144
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "chars.next",
+          "lineNumber": 151
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "chars.by_ref",
+          "lineNumber": 153
+        },
+        {
+          "caller": "strip_json_comments",
+          "callee": "output.push",
+          "lineNumber": 165
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "fs::metadata",
+          "lineNumber": 172
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "metadata.is_file",
+          "lineNumber": 175
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "path\r\n            .extension()\r\n            .and_then(|value| value.to_str())\r\n            .map(|extension| extension.eq_ignore_ascii_case(\"json\")).unwrap_or",
+          "lineNumber": 176
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "path\r\n            .extension()\r\n            .and_then(|value| value.to_str()).map",
+          "lineNumber": 176
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "path\r\n            .extension().and_then",
+          "lineNumber": 176
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "path.extension",
+          "lineNumber": 176
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "value.to_str",
+          "lineNumber": 178
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "extension.eq_ignore_ascii_case",
+          "lineNumber": 179
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "path_inside_pck_contents",
+          "lineNumber": 182
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "path\r\n                .strip_prefix(root)\r\n                .map(|relative| relative.components().count() <= 3).unwrap_or",
+          "lineNumber": 183
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "path\r\n                .strip_prefix(root).map",
+          "lineNumber": 183
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "path.strip_prefix",
+          "lineNumber": 183
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "relative.components().count",
+          "lineNumber": 185
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "relative.components",
+          "lineNumber": 185
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "output.push",
+          "lineNumber": 188
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "path.to_path_buf",
+          "lineNumber": 188
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "fs::read_dir",
+          "lineNumber": 192
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "entries.filter_map",
+          "lineNumber": 195
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "collect_manifest_candidates",
+          "lineNumber": 196
+        },
+        {
+          "caller": "collect_manifest_candidates",
+          "callee": "entry.path",
+          "lineNumber": 196
+        },
+        {
+          "caller": "string_field",
+          "callee": "keys.iter()\r\n        .find_map(|key| value.get(*key)?.as_str())\r\n        .map(str::trim)\r\n        .filter(|value| !value.is_empty()).map",
+          "lineNumber": 201
+        },
+        {
+          "caller": "string_field",
+          "callee": "keys.iter()\r\n        .find_map(|key| value.get(*key)?.as_str())\r\n        .map(str::trim).filter",
+          "lineNumber": 201
+        },
+        {
+          "caller": "string_field",
+          "callee": "keys.iter()\r\n        .find_map(|key| value.get(*key)?.as_str()).map",
+          "lineNumber": 201
+        },
+        {
+          "caller": "string_field",
+          "callee": "keys.iter().find_map",
+          "lineNumber": 201
+        },
+        {
+          "caller": "string_field",
+          "callee": "keys.iter",
+          "lineNumber": 201
+        },
+        {
+          "caller": "string_field",
+          "callee": "value.get(*key)?.as_str",
+          "lineNumber": 202
+        },
+        {
+          "caller": "string_field",
+          "callee": "value.get",
+          "lineNumber": 202
+        },
+        {
+          "caller": "string_field",
+          "callee": "value.is_empty",
+          "lineNumber": 204
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "keys.iter().find_map",
+          "lineNumber": 209
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "keys.iter",
+          "lineNumber": 209
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "value.get",
+          "lineNumber": 209
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "Vec::new",
+          "lineNumber": 210
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "items\r\n            .iter()\r\n            .filter_map(|item| {\r\n                item.as_str()\r\n                    .or_else(|| item.get(\"id\").and_then(serde_json::Value::as_str))\r\n                    .or_else(|| item.get(\"name\").and_then(serde_json::Value::as_str))\r\n            })\r\n            .map(str::trim)\r\n            .filter(|value| !value.is_empty())\r\n            .map(ToString::to_string)\r\n            .collect::<Vec<_>>",
+          "lineNumber": 213
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "items\r\n            .iter()\r\n            .filter_map(|item| {\r\n                item.as_str()\r\n                    .or_else(|| item.get(\"id\").and_then(serde_json::Value::as_str))\r\n                    .or_else(|| item.get(\"name\").and_then(serde_json::Value::as_str))\r\n            })\r\n            .map(str::trim)\r\n            .filter(|value| !value.is_empty()).map",
+          "lineNumber": 213
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "items\r\n            .iter()\r\n            .filter_map(|item| {\r\n                item.as_str()\r\n                    .or_else(|| item.get(\"id\").and_then(serde_json::Value::as_str))\r\n                    .or_else(|| item.get(\"name\").and_then(serde_json::Value::as_str))\r\n            })\r\n            .map(str::trim).filter",
+          "lineNumber": 213
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "items\r\n            .iter()\r\n            .filter_map(|item| {\r\n                item.as_str()\r\n                    .or_else(|| item.get(\"id\").and_then(serde_json::Value::as_str))\r\n                    .or_else(|| item.get(\"name\").and_then(serde_json::Value::as_str))\r\n            }).map",
+          "lineNumber": 213
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "items\r\n            .iter().filter_map",
+          "lineNumber": 213
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "items.iter",
+          "lineNumber": 213
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "item.as_str()\r\n                    .or_else(|| item.get(\"id\").and_then(serde_json::Value::as_str)).or_else",
+          "lineNumber": 216
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "item.as_str().or_else",
+          "lineNumber": 216
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "item.as_str",
+          "lineNumber": 216
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "item.get(\"id\").and_then",
+          "lineNumber": 217
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "item.get",
+          "lineNumber": 217
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "item.get(\"name\").and_then",
+          "lineNumber": 218
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "item.get",
+          "lineNumber": 218
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "value.is_empty",
+          "lineNumber": 221
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "text\r\n            .split([',', ';'])\r\n            .map(str::trim)\r\n            .filter(|value| !value.is_empty())\r\n            .map(ToString::to_string)\r\n            .collect::<Vec<_>>",
+          "lineNumber": 224
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "text\r\n            .split([',', ';'])\r\n            .map(str::trim)\r\n            .filter(|value| !value.is_empty()).map",
+          "lineNumber": 224
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "text\r\n            .split([',', ';'])\r\n            .map(str::trim).filter",
+          "lineNumber": 224
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "text\r\n            .split([',', ';']).map",
+          "lineNumber": 224
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "text.split",
+          "lineNumber": 224
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "value.is_empty",
+          "lineNumber": 227
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "Vec::new",
+          "lineNumber": 230
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "values.sort",
+          "lineNumber": 232
+        },
+        {
+          "caller": "string_list_field",
+          "callee": "values.dedup",
+          "lineNumber": 233
+        },
+        {
+          "caller": "bool_field",
+          "callee": "keys.iter()\r\n        .find_map(|key| value.get(*key))\r\n        .and_then(serde_json::Value::as_bool).unwrap_or",
+          "lineNumber": 238
+        },
+        {
+          "caller": "bool_field",
+          "callee": "keys.iter()\r\n        .find_map(|key| value.get(*key)).and_then",
+          "lineNumber": 238
+        },
+        {
+          "caller": "bool_field",
+          "callee": "keys.iter().find_map",
+          "lineNumber": 238
+        },
+        {
+          "caller": "bool_field",
+          "callee": "keys.iter",
+          "lineNumber": 238
+        },
+        {
+          "caller": "bool_field",
+          "callee": "value.get",
+          "lineNumber": 239
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "string_list_field",
+          "lineNumber": 245
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "ids\r\n        .into_iter()\r\n        .map(|id| ManifestDependency { id, version: None })\r\n        .collect::<Vec<_>>",
+          "lineNumber": 246
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "ids\r\n        .into_iter().map",
+          "lineNumber": 246
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "ids.into_iter",
+          "lineNumber": 246
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "keys.iter().find_map",
+          "lineNumber": 250
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "keys.iter",
+          "lineNumber": 250
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "value.get",
+          "lineNumber": 250
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "items\r\n            .iter()\r\n            .filter_map(|item| {\r\n                let id = item\r\n                    .as_str()\r\n                    .or_else(|| item.get(\"id\").and_then(serde_json::Value::as_str))\r\n                    .or_else(|| item.get(\"name\").and_then(serde_json::Value::as_str))?\r\n                    .trim()\r\n                    .to_string();\r\n                if id.is_empty() {\r\n                    return None;\r\n                }\r\n                Some(ManifestDependency {\r\n                    id,\r\n                    version: string_field(item, &[\"version\", \"required_version\", \"target_version\"]),\r\n                })\r\n            }).collect",
+          "lineNumber": 254
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "items\r\n            .iter().filter_map",
+          "lineNumber": 254
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "items.iter",
+          "lineNumber": 254
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "item\r\n                    .as_str()\r\n                    .or_else(|| item.get(\"id\").and_then(serde_json::Value::as_str))\r\n                    .or_else(|| item.get(\"name\").and_then(serde_json::Value::as_str))?\r\n                    .trim().to_string",
+          "lineNumber": 257
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "item\r\n                    .as_str()\r\n                    .or_else(|| item.get(\"id\").and_then(serde_json::Value::as_str))\r\n                    .or_else(|| item.get(\"name\").and_then(serde_json::Value::as_str))?.trim",
+          "lineNumber": 257
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "item\r\n                    .as_str()\r\n                    .or_else(|| item.get(\"id\").and_then(serde_json::Value::as_str)).or_else",
+          "lineNumber": 257
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "item\r\n                    .as_str().or_else",
+          "lineNumber": 257
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "item.as_str",
+          "lineNumber": 257
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "item.get(\"id\").and_then",
+          "lineNumber": 259
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "item.get",
+          "lineNumber": 259
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "item.get(\"name\").and_then",
+          "lineNumber": 260
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "item.get",
+          "lineNumber": 260
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "id.is_empty",
+          "lineNumber": 263
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "Some",
+          "lineNumber": 266
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "string_field",
+          "lineNumber": 268
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "dependencies.sort_by",
+          "lineNumber": 273
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "left.id.cmp",
+          "lineNumber": 273
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "dependencies.dedup_by",
+          "lineNumber": 274
+        },
+        {
+          "caller": "dependency_list_field",
+          "callee": "left.id.eq_ignore_ascii_case",
+          "lineNumber": 274
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "value.get(\"dependency_versions\").and_then",
+          "lineNumber": 282
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "value.get",
+          "lineNumber": 282
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "dependency.version.is_some",
+          "lineNumber": 285
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "versions\r\n                .get(&dependency.id)\r\n                .and_then(serde_json::Value::as_str)\r\n                .map(str::trim)\r\n                .filter(|value| !value.is_empty()).map",
+          "lineNumber": 288
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "versions\r\n                .get(&dependency.id)\r\n                .and_then(serde_json::Value::as_str)\r\n                .map(str::trim).filter",
+          "lineNumber": 288
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "versions\r\n                .get(&dependency.id)\r\n                .and_then(serde_json::Value::as_str).map",
+          "lineNumber": 288
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "versions\r\n                .get(&dependency.id).and_then",
+          "lineNumber": 288
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "versions.get",
+          "lineNumber": 288
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "value.is_empty",
+          "lineNumber": 292
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "info.target_mod_id.as_deref",
+          "lineNumber": 297
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "info.target_mod_version.as_ref",
+          "lineNumber": 298
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "info\r\n            .dependencies\r\n            .iter_mut().find",
+          "lineNumber": 299
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "info\r\n            .dependencies.iter_mut",
+          "lineNumber": 299
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "dependency.id.eq_ignore_ascii_case",
+          "lineNumber": 302
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "dependency.version.is_none",
+          "lineNumber": 303
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "Some",
+          "lineNumber": 305
+        },
+        {
+          "caller": "with_dependency_versions",
+          "callee": "target_version.clone",
+          "lineNumber": 305
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 12,
+        "classCount": 2
+      }
+    },
+    {
+      "path": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "language": "rust",
+      "fileCategory": "code",
+      "totalLines": 584,
+      "nonEmptyLines": 547,
+      "functions": [
+        {
+          "name": "selected_translation_files",
+          "startLine": 1,
+          "endLine": 22,
+          "params": [
+            "scan_root",
+            "resource_path"
+          ]
+        },
+        {
+          "name": "selected_translation_files_from_filesystem_path",
+          "startLine": 24,
+          "endLine": 55,
+          "params": [
+            "scan_root",
+            "resource_path",
+            "candidates"
+          ]
+        },
+        {
+          "name": "resource_path_matches_selection",
+          "startLine": 57,
+          "endLine": 80,
+          "params": [
+            "display",
+            "selection"
+          ]
+        },
+        {
+          "name": "path_is_same_or_child",
+          "startLine": 82,
+          "endLine": 88,
+          "params": [
+            "path",
+            "parent"
+          ]
+        },
+        {
+          "name": "copy_existing_target_language_files",
+          "startLine": 90,
+          "endLine": 129,
+          "params": [
+            "scan_root",
+            "source_files",
+            "translated_root",
+            "target_language"
+          ]
+        },
+        {
+          "name": "default_translation_resource_path",
+          "startLine": 131,
+          "endLine": 157,
+          "params": [
+            "scan_root",
+            "_target_language"
+          ]
+        },
+        {
+          "name": "default_hardcoded_resource_path",
+          "startLine": 159,
+          "endLine": 167,
+          "params": [
+            "scan_root"
+          ]
+        },
+        {
+          "name": "selected_hardcoded_files",
+          "startLine": 169,
+          "endLine": 182,
+          "params": [
+            "scan_root",
+            "resource_path"
+          ]
+        },
+        {
+          "name": "selected_hardcoded_file_from_filesystem_path",
+          "startLine": 184,
+          "endLine": 203,
+          "params": [
+            "scan_root",
+            "resource_path",
+            "candidate"
+          ]
+        },
+        {
+          "name": "collect_hardcoded_files",
+          "startLine": 205,
+          "endLine": 226,
+          "params": [
+            "root",
+            "files"
+          ]
+        },
+        {
+          "name": "hardcoded_file_has_strings",
+          "startLine": 228,
+          "endLine": 236,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "looks_like_translatable_hardcoded_value",
+          "startLine": 238,
+          "endLine": 243,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "language_dir_for_candidate",
+          "startLine": 245,
+          "endLine": 256,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "fallback_translation_memory_sheet",
+          "startLine": 258,
+          "endLine": 292,
+          "params": [
+            "translation_work_dir",
+            "mod_key",
+            "target_language",
+            "resource_path"
+          ]
+        },
+        {
+          "name": "select_translation_memory_sheet",
+          "startLine": 294,
+          "endLine": 324,
+          "params": [
+            "translation_work_dir",
+            "exact_sheet",
+            "mod_keys",
+            "target_language",
+            "resource_path"
+          ]
+        },
+        {
+          "name": "translation_sheet_has_translations",
+          "startLine": 326,
+          "endLine": 335,
+          "params": [
+            "sheet_path"
+          ]
+        },
+        {
+          "name": "translation_memory_candidate_keys",
+          "startLine": 337,
+          "endLine": 371,
+          "params": [
+            "app",
+            "record",
+            "manifest"
+          ]
+        },
+        {
+          "name": "translation_memory_family_tokens",
+          "startLine": 373,
+          "endLine": 390,
+          "params": [
+            "record",
+            "manifest"
+          ]
+        },
+        {
+          "name": "add_translation_memory_token",
+          "startLine": 392,
+          "endLine": 399,
+          "params": [
+            "tokens",
+            "value"
+          ]
+        },
+        {
+          "name": "related_translation_memory_tokens",
+          "startLine": 401,
+          "endLine": 412,
+          "params": [
+            "left",
+            "right"
+          ]
+        },
+        {
+          "name": "translation_sheet_matches_resource",
+          "startLine": 414,
+          "endLine": 431,
+          "params": [
+            "sheet_path",
+            "resource_path"
+          ]
+        },
+        {
+          "name": "resource_paths_match",
+          "startLine": 433,
+          "endLine": 444,
+          "params": [
+            "left",
+            "right"
+          ]
+        },
+        {
+          "name": "localization_resource_tail",
+          "startLine": 446,
+          "endLine": 456,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "normalize_resource_path",
+          "startLine": 458,
+          "endLine": 465,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "pck_resource_roots",
+          "startLine": 467,
+          "endLine": 472,
+          "params": [
+            "scan_root"
+          ]
+        },
+        {
+          "name": "collect_pck_resource_roots",
+          "startLine": 474,
+          "endLine": 493,
+          "params": [
+            "path",
+            "roots"
+          ]
+        },
+        {
+          "name": "pck_resource_relative_path",
+          "startLine": 495,
+          "endLine": 514,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "resource_path_to_relative",
+          "startLine": 516,
+          "endLine": 526,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "localization_language_component",
+          "startLine": 528,
+          "endLine": 534,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "replace_resource_language",
+          "startLine": 536,
+          "endLine": 546,
+          "params": [
+            "path",
+            "language"
+          ]
+        },
+        {
+          "name": "path_components",
+          "startLine": 548,
+          "endLine": 552,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "pck_contents_root_for_path",
+          "startLine": 554,
+          "endLine": 570,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "resource_display_path",
+          "startLine": 572,
+          "endLine": 576,
+          "params": [
+            "path"
+          ]
+        },
+        {
+          "name": "slash_path",
+          "startLine": 578,
+          "endLine": 583,
+          "params": [
+            "path"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "selected_translation_files",
+          "callee": "normalize_resource_path",
+          "lineNumber": 2
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "scan_translation_candidates",
+          "lineNumber": 3
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "selected_hardcoded_files",
+          "lineNumber": 4
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "candidates\r\n        .iter()\r\n        .filter_map(|candidate| {\r\n            let display = normalize_resource_path(&resource_display_path(&candidate.path));\r\n            resource_path_matches_selection(&display, &normalized).then_some(candidate.path.clone())\r\n        })\r\n        .collect::<Vec<_>>",
+          "lineNumber": 6
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "candidates\r\n        .iter().filter_map",
+          "lineNumber": 6
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "candidates.iter",
+          "lineNumber": 6
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "normalize_resource_path",
+          "lineNumber": 9
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "resource_display_path",
+          "lineNumber": 9
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "resource_path_matches_selection(&display, &normalized).then_some",
+          "lineNumber": 10
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "resource_path_matches_selection",
+          "lineNumber": 10
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "candidate.path.clone",
+          "lineNumber": 10
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "selected.is_empty",
+          "lineNumber": 13
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "selected_translation_files_from_filesystem_path",
+          "lineNumber": 14
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "selected.is_empty",
+          "lineNumber": 16
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "selected_hardcoded_files",
+          "lineNumber": 17
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "selected.sort",
+          "lineNumber": 19
+        },
+        {
+          "caller": "selected_translation_files",
+          "callee": "selected.dedup",
+          "lineNumber": 20
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "resource_path.trim",
+          "lineNumber": 29
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "trimmed.is_empty",
+          "lineNumber": 30
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "trimmed.starts_with",
+          "lineNumber": 30
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "Vec::new",
+          "lineNumber": 31
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "PathBuf::from",
+          "lineNumber": 34
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "raw_path.is_relative",
+          "lineNumber": 36
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "selections.push",
+          "lineNumber": 37
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "scan_root.join",
+          "lineNumber": 37
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "selections\r\n        .into_iter()\r\n        .map(|path| normalize_resource_path(&path.to_string_lossy()))\r\n        .collect::<Vec<_>>",
+          "lineNumber": 40
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "selections\r\n        .into_iter().map",
+          "lineNumber": 40
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "selections.into_iter",
+          "lineNumber": 40
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "normalize_resource_path",
+          "lineNumber": 42
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "path.to_string_lossy",
+          "lineNumber": 42
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "candidates\r\n        .iter()\r\n        .filter_map(|candidate| {\r\n            let candidate_path = normalize_resource_path(&candidate.path.to_string_lossy());\r\n            normalized_selections\r\n                .iter()\r\n                .any(|selection| path_is_same_or_child(&candidate_path, selection))\r\n                .then_some(candidate.path.clone())\r\n        }).collect",
+          "lineNumber": 45
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "candidates\r\n        .iter().filter_map",
+          "lineNumber": 45
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "candidates.iter",
+          "lineNumber": 45
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "normalize_resource_path",
+          "lineNumber": 48
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "candidate.path.to_string_lossy",
+          "lineNumber": 48
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "normalized_selections\r\n                .iter()\r\n                .any(|selection| path_is_same_or_child(&candidate_path, selection)).then_some",
+          "lineNumber": 49
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "normalized_selections\r\n                .iter().any",
+          "lineNumber": 49
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "normalized_selections.iter",
+          "lineNumber": 49
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "path_is_same_or_child",
+          "lineNumber": 51
+        },
+        {
+          "caller": "selected_translation_files_from_filesystem_path",
+          "callee": "candidate.path.clone",
+          "lineNumber": 52
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "path_is_same_or_child",
+          "lineNumber": 61
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "display.strip_prefix(\"res://\").unwrap_or",
+          "lineNumber": 64
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "display.strip_prefix",
+          "lineNumber": 64
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "selection.strip_prefix(\"res://\").unwrap_or",
+          "lineNumber": 65
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "selection.strip_prefix",
+          "lineNumber": 65
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "selection_relative.is_empty",
+          "lineNumber": 66
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "path_is_same_or_child",
+          "lineNumber": 69
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "display_relative\r\n        .find(&scoped_selection)\r\n        .map(|index| {\r\n            let rest = &display_relative[index + scoped_selection.len()..];\r\n            rest.is_empty() || rest.starts_with('/')\r\n        }).unwrap_or",
+          "lineNumber": 73
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "display_relative\r\n        .find(&scoped_selection).map",
+          "lineNumber": 73
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "display_relative.find",
+          "lineNumber": 73
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "scoped_selection.len",
+          "lineNumber": 76
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "rest.is_empty",
+          "lineNumber": 77
+        },
+        {
+          "caller": "resource_path_matches_selection",
+          "callee": "rest.starts_with",
+          "lineNumber": 77
+        },
+        {
+          "caller": "path_is_same_or_child",
+          "callee": "path\r\n            .strip_prefix(parent)\r\n            .map(|rest| rest.starts_with('/')).unwrap_or",
+          "lineNumber": 84
+        },
+        {
+          "caller": "path_is_same_or_child",
+          "callee": "path\r\n            .strip_prefix(parent).map",
+          "lineNumber": 84
+        },
+        {
+          "caller": "path_is_same_or_child",
+          "callee": "path.strip_prefix",
+          "lineNumber": 84
+        },
+        {
+          "caller": "path_is_same_or_child",
+          "callee": "rest.starts_with",
+          "lineNumber": 86
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "pck_resource_relative_path(source_file)\r\n            .or_else(|| {\r\n                source_file\r\n                    .strip_prefix(scan_root)\r\n                    .ok()\r\n                    .map(Path::to_path_buf)\r\n            }).unwrap_or_else",
+          "lineNumber": 98
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "pck_resource_relative_path(source_file).or_else",
+          "lineNumber": 98
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "pck_resource_relative_path",
+          "lineNumber": 98
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "source_file\r\n                    .strip_prefix(scan_root)\r\n                    .ok().map",
+          "lineNumber": 100
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "source_file\r\n                    .strip_prefix(scan_root).ok",
+          "lineNumber": 100
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "source_file.strip_prefix",
+          "lineNumber": 100
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "source_file\r\n                    .file_name()\r\n                    .map(PathBuf::from).unwrap_or_else",
+          "lineNumber": 106
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "source_file\r\n                    .file_name().map",
+          "lineNumber": 106
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "source_file.file_name",
+          "lineNumber": 106
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "PathBuf::from",
+          "lineNumber": 109
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "replace_resource_language",
+          "lineNumber": 111
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "scan_root.join",
+          "lineNumber": 117
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "original_target.is_file",
+          "lineNumber": 118
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "translated_root.join",
+          "lineNumber": 121
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "workspace_target.parent",
+          "lineNumber": 122
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "fs::create_dir_all(parent).map_err",
+          "lineNumber": 123
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "fs::create_dir_all",
+          "lineNumber": 123
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "error.to_string",
+          "lineNumber": 123
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "fs::copy(&original_target, &workspace_target).map_err",
+          "lineNumber": 125
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "fs::copy",
+          "lineNumber": 125
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "error.to_string",
+          "lineNumber": 125
+        },
+        {
+          "caller": "copy_existing_target_language_files",
+          "callee": "Ok",
+          "lineNumber": 128
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "BTreeMap::<PathBuf, (usize, usize)>::new",
+          "lineNumber": 132
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "scan_translation_candidates(scan_root).ok",
+          "lineNumber": 133
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "scan_translation_candidates",
+          "lineNumber": 133
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "is_hardcoded_source_file",
+          "lineNumber": 134
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "language_dir_for_candidate",
+          "lineNumber": 137
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "by_dir.entry(dir).or_insert",
+          "lineNumber": 140
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "by_dir.entry",
+          "lineNumber": 140
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "count_json_translation_keys",
+          "lineNumber": 142
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "by_dir\r\n        .into_iter()\r\n        .max_by(\r\n            |(left_path, (left_files, left_keys)), (right_path, (right_files, right_keys))| {\r\n                left_keys\r\n                    .cmp(right_keys)\r\n                    .then_with(|| left_files.cmp(right_files))\r\n                    .then_with(|| {\r\n                        resource_display_path(right_path).cmp(&resource_display_path(left_path))\r\n                    })\r\n            },\r\n        ).map",
+          "lineNumber": 144
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "by_dir\r\n        .into_iter().max_by",
+          "lineNumber": 144
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "by_dir.into_iter",
+          "lineNumber": 144
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "left_keys\r\n                    .cmp(right_keys)\r\n                    .then_with(|| left_files.cmp(right_files)).then_with",
+          "lineNumber": 148
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "left_keys\r\n                    .cmp(right_keys).then_with",
+          "lineNumber": 148
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "left_keys.cmp",
+          "lineNumber": 148
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "left_files.cmp",
+          "lineNumber": 150
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "resource_display_path(right_path).cmp",
+          "lineNumber": 152
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "resource_display_path",
+          "lineNumber": 152
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "resource_display_path",
+          "lineNumber": 152
+        },
+        {
+          "caller": "default_translation_resource_path",
+          "callee": "resource_display_path",
+          "lineNumber": 156
+        },
+        {
+          "caller": "default_hardcoded_resource_path",
+          "callee": "Vec::new",
+          "lineNumber": 160
+        },
+        {
+          "caller": "default_hardcoded_resource_path",
+          "callee": "collect_hardcoded_files",
+          "lineNumber": 161
+        },
+        {
+          "caller": "default_hardcoded_resource_path",
+          "callee": "files\r\n        .into_iter()\r\n        .filter(|path| hardcoded_file_has_strings(path))\r\n        .map(|path| resource_display_path(&path)).next",
+          "lineNumber": 162
+        },
+        {
+          "caller": "default_hardcoded_resource_path",
+          "callee": "files\r\n        .into_iter()\r\n        .filter(|path| hardcoded_file_has_strings(path)).map",
+          "lineNumber": 162
+        },
+        {
+          "caller": "default_hardcoded_resource_path",
+          "callee": "files\r\n        .into_iter().filter",
+          "lineNumber": 162
+        },
+        {
+          "caller": "default_hardcoded_resource_path",
+          "callee": "files.into_iter",
+          "lineNumber": 162
+        },
+        {
+          "caller": "default_hardcoded_resource_path",
+          "callee": "hardcoded_file_has_strings",
+          "lineNumber": 164
+        },
+        {
+          "caller": "default_hardcoded_resource_path",
+          "callee": "resource_display_path",
+          "lineNumber": 165
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "normalize_resource_path",
+          "lineNumber": 170
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "Vec::new",
+          "lineNumber": 171
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "collect_hardcoded_files",
+          "lineNumber": 172
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "files\r\n        .into_iter()\r\n        .filter(|file| {\r\n            let display = normalize_resource_path(&resource_display_path(file));\r\n            resource_path_matches_selection(&display, &normalized)\r\n                || selected_hardcoded_file_from_filesystem_path(scan_root, resource_path, file)\r\n        })\r\n        .filter(|path| hardcoded_file_has_strings(path)).collect",
+          "lineNumber": 173
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "files\r\n        .into_iter()\r\n        .filter(|file| {\r\n            let display = normalize_resource_path(&resource_display_path(file));\r\n            resource_path_matches_selection(&display, &normalized)\r\n                || selected_hardcoded_file_from_filesystem_path(scan_root, resource_path, file)\r\n        }).filter",
+          "lineNumber": 173
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "files\r\n        .into_iter().filter",
+          "lineNumber": 173
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "files.into_iter",
+          "lineNumber": 173
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "normalize_resource_path",
+          "lineNumber": 176
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "resource_display_path",
+          "lineNumber": 176
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "resource_path_matches_selection",
+          "lineNumber": 177
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "selected_hardcoded_file_from_filesystem_path",
+          "lineNumber": 178
+        },
+        {
+          "caller": "selected_hardcoded_files",
+          "callee": "hardcoded_file_has_strings",
+          "lineNumber": 180
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "resource_path.trim",
+          "lineNumber": 189
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "trimmed.is_empty",
+          "lineNumber": 190
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "trimmed.starts_with",
+          "lineNumber": 190
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "PathBuf::from",
+          "lineNumber": 193
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "raw_path.is_relative",
+          "lineNumber": 195
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "selections.push",
+          "lineNumber": 196
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "scan_root.join",
+          "lineNumber": 196
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "normalize_resource_path",
+          "lineNumber": 198
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "candidate.to_string_lossy",
+          "lineNumber": 198
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "selections.into_iter().any",
+          "lineNumber": 199
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "selections.into_iter",
+          "lineNumber": 199
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "normalize_resource_path",
+          "lineNumber": 200
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "selection.to_string_lossy",
+          "lineNumber": 200
+        },
+        {
+          "caller": "selected_hardcoded_file_from_filesystem_path",
+          "callee": "path_is_same_or_child",
+          "lineNumber": 201
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "fs::metadata",
+          "lineNumber": 206
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "metadata.is_file",
+          "lineNumber": 209
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "is_hardcoded_source_file",
+          "lineNumber": 210
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "files.push",
+          "lineNumber": 211
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "root.to_path_buf",
+          "lineNumber": 211
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "fs::read_dir",
+          "lineNumber": 215
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "entries\r\n        .filter_map(Result::ok)\r\n        .map(|entry| entry.path())\r\n        .collect::<Vec<_>>",
+          "lineNumber": 218
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "entries\r\n        .filter_map(Result::ok).map",
+          "lineNumber": 218
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "entries.filter_map",
+          "lineNumber": 218
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "entry.path",
+          "lineNumber": 220
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "entries.sort",
+          "lineNumber": 222
+        },
+        {
+          "caller": "collect_hardcoded_files",
+          "callee": "collect_hardcoded_files",
+          "lineNumber": 224
+        },
+        {
+          "caller": "hardcoded_file_has_strings",
+          "callee": "flatten_hardcoded_values(path)\r\n        .map(|values| {\r\n            values\r\n                .values()\r\n                .any(|value| looks_like_translatable_hardcoded_value(value))\r\n        }).unwrap_or",
+          "lineNumber": 229
+        },
+        {
+          "caller": "hardcoded_file_has_strings",
+          "callee": "flatten_hardcoded_values(path).map",
+          "lineNumber": 229
+        },
+        {
+          "caller": "hardcoded_file_has_strings",
+          "callee": "flatten_hardcoded_values",
+          "lineNumber": 229
+        },
+        {
+          "caller": "hardcoded_file_has_strings",
+          "callee": "values\r\n                .values().any",
+          "lineNumber": 231
+        },
+        {
+          "caller": "hardcoded_file_has_strings",
+          "callee": "values.values",
+          "lineNumber": 231
+        },
+        {
+          "caller": "hardcoded_file_has_strings",
+          "callee": "looks_like_translatable_hardcoded_value",
+          "lineNumber": 233
+        },
+        {
+          "caller": "looks_like_translatable_hardcoded_value",
+          "callee": "value.trim",
+          "lineNumber": 239
+        },
+        {
+          "caller": "looks_like_translatable_hardcoded_value",
+          "callee": "trimmed.chars().count",
+          "lineNumber": 240
+        },
+        {
+          "caller": "looks_like_translatable_hardcoded_value",
+          "callee": "trimmed.chars",
+          "lineNumber": 240
+        },
+        {
+          "caller": "looks_like_translatable_hardcoded_value",
+          "callee": "trimmed.chars().any",
+          "lineNumber": 241
+        },
+        {
+          "caller": "looks_like_translatable_hardcoded_value",
+          "callee": "trimmed.chars",
+          "lineNumber": 241
+        },
+        {
+          "caller": "looks_like_translatable_hardcoded_value",
+          "callee": "trimmed.chars().any",
+          "lineNumber": 242
+        },
+        {
+          "caller": "looks_like_translatable_hardcoded_value",
+          "callee": "trimmed.chars",
+          "lineNumber": 242
+        },
+        {
+          "caller": "looks_like_translatable_hardcoded_value",
+          "callee": "character.is_whitespace",
+          "lineNumber": 242
+        },
+        {
+          "caller": "looks_like_translatable_hardcoded_value",
+          "callee": "\".:,;!?\".contains",
+          "lineNumber": 242
+        },
+        {
+          "caller": "language_dir_for_candidate",
+          "callee": "path.ancestors",
+          "lineNumber": 246
+        },
+        {
+          "caller": "language_dir_for_candidate",
+          "callee": "path.is_file",
+          "lineNumber": 247
+        },
+        {
+          "caller": "language_dir_for_candidate",
+          "callee": "ancestors.next",
+          "lineNumber": 248
+        },
+        {
+          "caller": "language_dir_for_candidate",
+          "callee": "localization_language_component(ancestor).is_some",
+          "lineNumber": 251
+        },
+        {
+          "caller": "language_dir_for_candidate",
+          "callee": "localization_language_component",
+          "lineNumber": 251
+        },
+        {
+          "caller": "language_dir_for_candidate",
+          "callee": "Some",
+          "lineNumber": 252
+        },
+        {
+          "caller": "language_dir_for_candidate",
+          "callee": "ancestor.to_path_buf",
+          "lineNumber": 252
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "translation_work_dir\r\n        .join(\"translation_memory\").join",
+          "lineNumber": 264
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "translation_work_dir.join",
+          "lineNumber": 264
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "fs::read_dir(memory_dir)\r\n        .ok()?\r\n        .filter_map(Result::ok)\r\n        .map(|entry| entry.path())\r\n        .filter(|path| {\r\n            path.file_name()\r\n                .map(|name| name.to_string_lossy().ends_with(&suffix))\r\n                .unwrap_or(false)\r\n        })\r\n        .filter(|path| translation_sheet_matches_resource(path, resource_path))\r\n        .filter_map(|path| {\r\n            read_sheet(&path)\r\n                .ok()\r\n                .filter(|sheet| {\r\n                    sheet\r\n                        .entries\r\n                        .iter()\r\n                        .any(|entry| !entry.translated_value.is_empty())\r\n                })\r\n                .map(|sheet| (sheet.updated_epoch, path))\r\n        })\r\n        .collect::<Vec<_>>",
+          "lineNumber": 268
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "fs::read_dir(memory_dir)\r\n        .ok()?\r\n        .filter_map(Result::ok)\r\n        .map(|entry| entry.path())\r\n        .filter(|path| {\r\n            path.file_name()\r\n                .map(|name| name.to_string_lossy().ends_with(&suffix))\r\n                .unwrap_or(false)\r\n        })\r\n        .filter(|path| translation_sheet_matches_resource(path, resource_path)).filter_map",
+          "lineNumber": 268
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "fs::read_dir(memory_dir)\r\n        .ok()?\r\n        .filter_map(Result::ok)\r\n        .map(|entry| entry.path())\r\n        .filter(|path| {\r\n            path.file_name()\r\n                .map(|name| name.to_string_lossy().ends_with(&suffix))\r\n                .unwrap_or(false)\r\n        }).filter",
+          "lineNumber": 268
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "fs::read_dir(memory_dir)\r\n        .ok()?\r\n        .filter_map(Result::ok)\r\n        .map(|entry| entry.path()).filter",
+          "lineNumber": 268
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "fs::read_dir(memory_dir)\r\n        .ok()?\r\n        .filter_map(Result::ok).map",
+          "lineNumber": 268
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "fs::read_dir(memory_dir)\r\n        .ok()?.filter_map",
+          "lineNumber": 268
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "fs::read_dir(memory_dir).ok",
+          "lineNumber": 268
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "fs::read_dir",
+          "lineNumber": 268
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "entry.path",
+          "lineNumber": 271
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "path.file_name()\r\n                .map(|name| name.to_string_lossy().ends_with(&suffix)).unwrap_or",
+          "lineNumber": 273
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "path.file_name().map",
+          "lineNumber": 273
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "path.file_name",
+          "lineNumber": 273
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "name.to_string_lossy().ends_with",
+          "lineNumber": 274
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "name.to_string_lossy",
+          "lineNumber": 274
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "translation_sheet_matches_resource",
+          "lineNumber": 277
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "read_sheet(&path)\r\n                .ok()\r\n                .filter(|sheet| {\r\n                    sheet\r\n                        .entries\r\n                        .iter()\r\n                        .any(|entry| !entry.translated_value.is_empty())\r\n                }).map",
+          "lineNumber": 279
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "read_sheet(&path)\r\n                .ok().filter",
+          "lineNumber": 279
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "read_sheet(&path).ok",
+          "lineNumber": 279
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "read_sheet",
+          "lineNumber": 279
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "sheet\r\n                        .entries\r\n                        .iter().any",
+          "lineNumber": 282
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "sheet\r\n                        .entries.iter",
+          "lineNumber": 282
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "entry.translated_value.is_empty",
+          "lineNumber": 285
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "candidates.sort",
+          "lineNumber": 290
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "candidates.pop().map",
+          "lineNumber": 291
+        },
+        {
+          "caller": "fallback_translation_memory_sheet",
+          "callee": "candidates.pop",
+          "lineNumber": 291
+        },
+        {
+          "caller": "select_translation_memory_sheet",
+          "callee": "exact_sheet\r\n        .as_deref().is_some_and",
+          "lineNumber": 301
+        },
+        {
+          "caller": "select_translation_memory_sheet",
+          "callee": "exact_sheet.as_deref",
+          "lineNumber": 301
+        },
+        {
+          "caller": "select_translation_memory_sheet",
+          "callee": "fallback_translation_memory_sheet",
+          "lineNumber": 308
+        },
+        {
+          "caller": "select_translation_memory_sheet",
+          "callee": "exact_sheet.as_ref().is_some_and",
+          "lineNumber": 316
+        },
+        {
+          "caller": "select_translation_memory_sheet",
+          "callee": "exact_sheet.as_ref",
+          "lineNumber": 316
+        },
+        {
+          "caller": "select_translation_memory_sheet",
+          "callee": "translation_sheet_has_translations",
+          "lineNumber": 319
+        },
+        {
+          "caller": "select_translation_memory_sheet",
+          "callee": "Some",
+          "lineNumber": 320
+        },
+        {
+          "caller": "translation_sheet_has_translations",
+          "callee": "read_sheet(sheet_path)\r\n        .map(|sheet| {\r\n            sheet\r\n                .entries\r\n                .iter()\r\n                .any(|entry| !entry.translated_value.is_empty())\r\n        }).unwrap_or",
+          "lineNumber": 327
+        },
+        {
+          "caller": "translation_sheet_has_translations",
+          "callee": "read_sheet(sheet_path).map",
+          "lineNumber": 327
+        },
+        {
+          "caller": "translation_sheet_has_translations",
+          "callee": "read_sheet",
+          "lineNumber": 327
+        },
+        {
+          "caller": "translation_sheet_has_translations",
+          "callee": "sheet\r\n                .entries\r\n                .iter().any",
+          "lineNumber": 329
+        },
+        {
+          "caller": "translation_sheet_has_translations",
+          "callee": "sheet\r\n                .entries.iter",
+          "lineNumber": 329
+        },
+        {
+          "caller": "translation_sheet_has_translations",
+          "callee": "entry.translated_value.is_empty",
+          "lineNumber": 332
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "record.stable_key",
+          "lineNumber": 342
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "translation_memory_family_tokens",
+          "lineNumber": 343
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "app.scan_preview_report().map",
+          "lineNumber": 345
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "app.scan_preview_report",
+          "lineNumber": 345
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "summary\r\n        .game_mods\r\n        .into_iter()\r\n        .chain(summary.disabled_mods).chain",
+          "lineNumber": 348
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "summary\r\n        .game_mods\r\n        .into_iter().chain",
+          "lineNumber": 348
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "summary\r\n        .game_mods.into_iter",
+          "lineNumber": 348
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "candidate.stable_key",
+          "lineNumber": 354
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "keys.iter().any",
+          "lineNumber": 355
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "keys.iter",
+          "lineNumber": 355
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "extraction_source_for_record",
+          "lineNumber": 358
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "language_cache_key",
+          "lineNumber": 360
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "app.config",
+          "lineNumber": 360
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "extraction_scan_root(&candidate_source, &candidate_cache_key, &app.config().vendor_dir).unwrap_or",
+          "lineNumber": 362
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "extraction_scan_root",
+          "lineNumber": 362
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "app.config",
+          "lineNumber": 362
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "read_mod_manifest_for_record",
+          "lineNumber": 364
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "translation_memory_family_tokens",
+          "lineNumber": 365
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "related_translation_memory_tokens",
+          "lineNumber": 366
+        },
+        {
+          "caller": "translation_memory_candidate_keys",
+          "callee": "keys.push",
+          "lineNumber": 367
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "BTreeSet::new",
+          "lineNumber": 377
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "add_translation_memory_token",
+          "lineNumber": 378
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "record.stable_key",
+          "lineNumber": 378
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "add_translation_memory_token",
+          "lineNumber": 379
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "record.stable_key().split(['-', '_', ' ']).next",
+          "lineNumber": 380
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "record.stable_key().split",
+          "lineNumber": 380
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "record.stable_key",
+          "lineNumber": 380
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "add_translation_memory_token",
+          "lineNumber": 381
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "manifest.id.as_deref",
+          "lineNumber": 383
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "add_translation_memory_token",
+          "lineNumber": 384
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "manifest.name.as_deref",
+          "lineNumber": 386
+        },
+        {
+          "caller": "translation_memory_family_tokens",
+          "callee": "add_translation_memory_token",
+          "lineNumber": 387
+        },
+        {
+          "caller": "add_translation_memory_token",
+          "callee": "normalize_dependency_token",
+          "lineNumber": 393
+        },
+        {
+          "caller": "add_translation_memory_token",
+          "callee": "token.chars().count",
+          "lineNumber": 394
+        },
+        {
+          "caller": "add_translation_memory_token",
+          "callee": "token.chars",
+          "lineNumber": 394
+        },
+        {
+          "caller": "add_translation_memory_token",
+          "callee": "token.chars().all",
+          "lineNumber": 395
+        },
+        {
+          "caller": "add_translation_memory_token",
+          "callee": "token.chars",
+          "lineNumber": 395
+        },
+        {
+          "caller": "add_translation_memory_token",
+          "callee": "character.is_ascii_digit",
+          "lineNumber": 395
+        },
+        {
+          "caller": "add_translation_memory_token",
+          "callee": "tokens.insert",
+          "lineNumber": 397
+        },
+        {
+          "caller": "related_translation_memory_tokens",
+          "callee": "left.iter().any",
+          "lineNumber": 405
+        },
+        {
+          "caller": "related_translation_memory_tokens",
+          "callee": "left.iter",
+          "lineNumber": 405
+        },
+        {
+          "caller": "related_translation_memory_tokens",
+          "callee": "right.iter().any",
+          "lineNumber": 406
+        },
+        {
+          "caller": "related_translation_memory_tokens",
+          "callee": "right.iter",
+          "lineNumber": 406
+        },
+        {
+          "caller": "related_translation_memory_tokens",
+          "callee": "left_token.starts_with",
+          "lineNumber": 408
+        },
+        {
+          "caller": "related_translation_memory_tokens",
+          "callee": "right_token.starts_with",
+          "lineNumber": 409
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "read_sheet",
+          "lineNumber": 415
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "PathBuf::from",
+          "lineNumber": 418
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "relative_after_named_component",
+          "lineNumber": 419
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "relative\r\n        .extension()\r\n        .and_then(|value| value.to_str())\r\n        .map(|extension| matches!(extension.to_ascii_lowercase().as_str(), \"json\" | \"loc\")).unwrap_or",
+          "lineNumber": 422
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "relative\r\n        .extension()\r\n        .and_then(|value| value.to_str()).map",
+          "lineNumber": 422
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "relative\r\n        .extension().and_then",
+          "lineNumber": 422
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "relative.extension",
+          "lineNumber": 422
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "value.to_str",
+          "lineNumber": 424
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "relative.pop",
+          "lineNumber": 428
+        },
+        {
+          "caller": "translation_sheet_matches_resource",
+          "callee": "resource_paths_match",
+          "lineNumber": 430
+        },
+        {
+          "caller": "resource_paths_match",
+          "callee": "normalize_resource_path",
+          "lineNumber": 434
+        },
+        {
+          "caller": "resource_paths_match",
+          "callee": "normalize_resource_path",
+          "lineNumber": 435
+        },
+        {
+          "caller": "resource_paths_match",
+          "callee": "localization_resource_tail",
+          "lineNumber": 439
+        },
+        {
+          "caller": "resource_paths_match",
+          "callee": "localization_resource_tail",
+          "lineNumber": 440
+        },
+        {
+          "caller": "resource_paths_match",
+          "callee": "left_localization\r\n        .zip(right_localization).is_some_and",
+          "lineNumber": 441
+        },
+        {
+          "caller": "resource_paths_match",
+          "callee": "left_localization.zip",
+          "lineNumber": 441
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "path\r\n        .trim_start_matches(\"res://\")\r\n        .split('/')\r\n        .filter(|part| !part.is_empty())\r\n        .collect::<Vec<_>>",
+          "lineNumber": 447
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "path\r\n        .trim_start_matches(\"res://\")\r\n        .split('/').filter",
+          "lineNumber": 447
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "path\r\n        .trim_start_matches(\"res://\").split",
+          "lineNumber": 447
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "path.trim_start_matches",
+          "lineNumber": 447
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "part.is_empty",
+          "lineNumber": 450
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "parts\r\n        .iter().position",
+          "lineNumber": 452
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "parts.iter",
+          "lineNumber": 452
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "part.eq_ignore_ascii_case",
+          "lineNumber": 454
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "Some",
+          "lineNumber": 455
+        },
+        {
+          "caller": "localization_resource_tail",
+          "callee": "parts[localization..].join",
+          "lineNumber": 455
+        },
+        {
+          "caller": "normalize_resource_path",
+          "callee": "path.replace('\\\\', \"/\").to_ascii_lowercase",
+          "lineNumber": 459
+        },
+        {
+          "caller": "normalize_resource_path",
+          "callee": "path.replace",
+          "lineNumber": 459
+        },
+        {
+          "caller": "normalize_resource_path",
+          "callee": "normalized.trim_end_matches('/').to_string",
+          "lineNumber": 463
+        },
+        {
+          "caller": "normalize_resource_path",
+          "callee": "normalized.trim_end_matches",
+          "lineNumber": 463
+        },
+        {
+          "caller": "pck_resource_roots",
+          "callee": "Vec::new",
+          "lineNumber": 468
+        },
+        {
+          "caller": "pck_resource_roots",
+          "callee": "collect_pck_resource_roots",
+          "lineNumber": 469
+        },
+        {
+          "caller": "pck_resource_roots",
+          "callee": "roots.sort",
+          "lineNumber": 470
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "path.is_dir",
+          "lineNumber": 475
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "path\r\n        .file_name()\r\n        .and_then(|value| value.to_str())\r\n        .map(|name| name.ends_with(\".pck.contents\")).unwrap_or",
+          "lineNumber": 478
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "path\r\n        .file_name()\r\n        .and_then(|value| value.to_str()).map",
+          "lineNumber": 478
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "path\r\n        .file_name().and_then",
+          "lineNumber": 478
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "path.file_name",
+          "lineNumber": 478
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "value.to_str",
+          "lineNumber": 480
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "name.ends_with",
+          "lineNumber": 481
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "roots.push",
+          "lineNumber": 484
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "path.to_path_buf",
+          "lineNumber": 484
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "fs::read_dir",
+          "lineNumber": 487
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "entries.filter_map",
+          "lineNumber": 490
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "collect_pck_resource_roots",
+          "lineNumber": 491
+        },
+        {
+          "caller": "collect_pck_resource_roots",
+          "callee": "entry.path",
+          "lineNumber": 491
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "path\r\n        .components()\r\n        .map(|component| component.as_os_str().to_os_string())\r\n        .collect::<Vec<_>>",
+          "lineNumber": 496
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "path\r\n        .components().map",
+          "lineNumber": 496
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "path.components",
+          "lineNumber": 496
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "component.as_os_str().to_os_string",
+          "lineNumber": 498
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "component.as_os_str",
+          "lineNumber": 498
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "components.iter().position",
+          "lineNumber": 500
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "components.iter",
+          "lineNumber": 500
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "component\r\n            .to_string_lossy()\r\n            .to_ascii_lowercase().ends_with",
+          "lineNumber": 501
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "component\r\n            .to_string_lossy().to_ascii_lowercase",
+          "lineNumber": 501
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "component.to_string_lossy",
+          "lineNumber": 501
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "components.len",
+          "lineNumber": 506
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "PathBuf::new",
+          "lineNumber": 509
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "components.iter().skip",
+          "lineNumber": 510
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "components.iter",
+          "lineNumber": 510
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "relative.push",
+          "lineNumber": 511
+        },
+        {
+          "caller": "pck_resource_relative_path",
+          "callee": "Some",
+          "lineNumber": 513
+        },
+        {
+          "caller": "resource_path_to_relative",
+          "callee": "path.trim",
+          "lineNumber": 517
+        },
+        {
+          "caller": "resource_path_to_relative",
+          "callee": "trimmed.strip_prefix",
+          "lineNumber": 518
+        },
+        {
+          "caller": "resource_path_to_relative",
+          "callee": "Some",
+          "lineNumber": 519
+        },
+        {
+          "caller": "resource_path_to_relative",
+          "callee": "PathBuf::from",
+          "lineNumber": 519
+        },
+        {
+          "caller": "resource_path_to_relative",
+          "callee": "rest.trim_start_matches",
+          "lineNumber": 519
+        },
+        {
+          "caller": "resource_path_to_relative",
+          "callee": "trimmed.is_empty",
+          "lineNumber": 521
+        },
+        {
+          "caller": "resource_path_to_relative",
+          "callee": "Some",
+          "lineNumber": 524
+        },
+        {
+          "caller": "resource_path_to_relative",
+          "callee": "PathBuf::from",
+          "lineNumber": 524
+        },
+        {
+          "caller": "localization_language_component",
+          "callee": "path_components",
+          "lineNumber": 529
+        },
+        {
+          "caller": "localization_language_component",
+          "callee": "parts\r\n        .iter().position",
+          "lineNumber": 530
+        },
+        {
+          "caller": "localization_language_component",
+          "callee": "parts.iter",
+          "lineNumber": 530
+        },
+        {
+          "caller": "localization_language_component",
+          "callee": "part.eq_ignore_ascii_case",
+          "lineNumber": 532
+        },
+        {
+          "caller": "localization_language_component",
+          "callee": "parts.get(localization + 1).cloned",
+          "lineNumber": 533
+        },
+        {
+          "caller": "localization_language_component",
+          "callee": "parts.get",
+          "lineNumber": 533
+        },
+        {
+          "caller": "replace_resource_language",
+          "callee": "path_components",
+          "lineNumber": 537
+        },
+        {
+          "caller": "replace_resource_language",
+          "callee": "parts\r\n        .iter().position",
+          "lineNumber": 538
+        },
+        {
+          "caller": "replace_resource_language",
+          "callee": "parts.iter",
+          "lineNumber": 538
+        },
+        {
+          "caller": "replace_resource_language",
+          "callee": "part.eq_ignore_ascii_case",
+          "lineNumber": 540
+        },
+        {
+          "caller": "replace_resource_language",
+          "callee": "parts.len",
+          "lineNumber": 541
+        },
+        {
+          "caller": "replace_resource_language",
+          "callee": "language.to_string",
+          "lineNumber": 544
+        },
+        {
+          "caller": "replace_resource_language",
+          "callee": "Some",
+          "lineNumber": 545
+        },
+        {
+          "caller": "replace_resource_language",
+          "callee": "parts.iter().collect",
+          "lineNumber": 545
+        },
+        {
+          "caller": "replace_resource_language",
+          "callee": "parts.iter",
+          "lineNumber": 545
+        },
+        {
+          "caller": "path_components",
+          "callee": "path.components()\r\n        .map(|component| component.as_os_str().to_string_lossy().to_string()).collect",
+          "lineNumber": 549
+        },
+        {
+          "caller": "path_components",
+          "callee": "path.components().map",
+          "lineNumber": 549
+        },
+        {
+          "caller": "path_components",
+          "callee": "path.components",
+          "lineNumber": 549
+        },
+        {
+          "caller": "path_components",
+          "callee": "component.as_os_str().to_string_lossy().to_string",
+          "lineNumber": 550
+        },
+        {
+          "caller": "path_components",
+          "callee": "component.as_os_str().to_string_lossy",
+          "lineNumber": 550
+        },
+        {
+          "caller": "path_components",
+          "callee": "component.as_os_str",
+          "lineNumber": 550
+        },
+        {
+          "caller": "pck_contents_root_for_path",
+          "callee": "PathBuf::new",
+          "lineNumber": 555
+        },
+        {
+          "caller": "pck_contents_root_for_path",
+          "callee": "path.components",
+          "lineNumber": 557
+        },
+        {
+          "caller": "pck_contents_root_for_path",
+          "callee": "root.push",
+          "lineNumber": 558
+        },
+        {
+          "caller": "pck_contents_root_for_path",
+          "callee": "component.as_os_str",
+          "lineNumber": 558
+        },
+        {
+          "caller": "pck_contents_root_for_path",
+          "callee": "component\r\n            .as_os_str()\r\n            .to_string_lossy()\r\n            .to_ascii_lowercase().ends_with",
+          "lineNumber": 559
+        },
+        {
+          "caller": "pck_contents_root_for_path",
+          "callee": "component\r\n            .as_os_str()\r\n            .to_string_lossy().to_ascii_lowercase",
+          "lineNumber": 559
+        },
+        {
+          "caller": "pck_contents_root_for_path",
+          "callee": "component\r\n            .as_os_str().to_string_lossy",
+          "lineNumber": 559
+        },
+        {
+          "caller": "pck_contents_root_for_path",
+          "callee": "component.as_os_str",
+          "lineNumber": 559
+        },
+        {
+          "caller": "pck_contents_root_for_path",
+          "callee": "found.then_some",
+          "lineNumber": 569
+        },
+        {
+          "caller": "resource_display_path",
+          "callee": "pck_resource_relative_path(path)\r\n        .map(|relative| format!(\"res://{}\", slash_path(&relative))).unwrap_or_else",
+          "lineNumber": 573
+        },
+        {
+          "caller": "resource_display_path",
+          "callee": "pck_resource_relative_path(path).map",
+          "lineNumber": 573
+        },
+        {
+          "caller": "resource_display_path",
+          "callee": "pck_resource_relative_path",
+          "lineNumber": 573
+        },
+        {
+          "caller": "resource_display_path",
+          "callee": "display_path",
+          "lineNumber": 575
+        },
+        {
+          "caller": "slash_path",
+          "callee": "path.components()\r\n        .map(|component| component.as_os_str().to_string_lossy().to_string())\r\n        .collect::<Vec<_>>().join",
+          "lineNumber": 579
+        },
+        {
+          "caller": "slash_path",
+          "callee": "path.components()\r\n        .map(|component| component.as_os_str().to_string_lossy().to_string())\r\n        .collect::<Vec<_>>",
+          "lineNumber": 579
+        },
+        {
+          "caller": "slash_path",
+          "callee": "path.components().map",
+          "lineNumber": 579
+        },
+        {
+          "caller": "slash_path",
+          "callee": "path.components",
+          "lineNumber": 579
+        },
+        {
+          "caller": "slash_path",
+          "callee": "component.as_os_str().to_string_lossy().to_string",
+          "lineNumber": 580
+        },
+        {
+          "caller": "slash_path",
+          "callee": "component.as_os_str().to_string_lossy",
+          "lineNumber": 580
+        },
+        {
+          "caller": "slash_path",
+          "callee": "component.as_os_str",
+          "lineNumber": 580
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 34,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 44,
+      "nonEmptyLines": 44,
+      "sections": [
+        {
+          "heading": "$schema",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "productName",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "version",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "identifier",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "build",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "app",
+          "level": 1,
+          "line": 12
+        },
+        {
+          "heading": "bundle",
+          "level": 1,
+          "line": 34
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "src/main.rs",
+      "language": "rust",
+      "fileCategory": "code",
+      "totalLines": 8,
+      "nonEmptyLines": 7,
+      "functions": [
+        {
+          "name": "main",
+          "startLine": 3,
+          "endLine": 8,
+          "params": []
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "main",
+          "callee": "cli::run_from_env",
+          "lineNumber": 4
+        },
+        {
+          "caller": "main",
+          "callee": "std::process::exit",
+          "lineNumber": 6
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "vite.config.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 12,
+      "nonEmptyLines": 11,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "web/styles.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 16,
+      "nonEmptyLines": 16,
+      "metrics": {}
+    },
+    {
+      "path": "web/vite-env.d.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "totalLines": 1,
+      "nonEmptyLines": 1,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,1482 @@
+{
+  "nodes": [
+    {
+      "id": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "type": "file",
+      "name": "language_preview.rs",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "summary": "Mod resource와 PCK를 scan해 언어별 file·key 수와 sample path를 계산하고 번역 상태·추출 대상을 판단한다. 결과를 extractor signature와 함께 cache해 반복 dashboard scan 비용을 줄인다.",
+      "tags": [
+        "translation-preview",
+        "language-detection",
+        "caching",
+        "rust"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:cached_language_preview",
+      "type": "function",
+      "name": "cached_language_preview",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        1,
+        19
+      ],
+      "summary": "`cached_language_preview`는 언어 preview cache key·파일·직렬화 상태를 관리하는 내부 helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:source_labels",
+      "type": "function",
+      "name": "source_labels",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        21,
+        30
+      ],
+      "summary": "`source_labels`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:translation_state",
+      "type": "function",
+      "name": "translation_state",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        39,
+        93
+      ],
+      "summary": "`translation_state`는 mod resource scan 결과를 언어 preview와 번역 상태 정보로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_preview",
+      "type": "function",
+      "name": "language_preview",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        95,
+        120
+      ],
+      "summary": "`language_preview`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:listed_resource_path_is_translation_candidate",
+      "type": "function",
+      "name": "listed_resource_path_is_translation_candidate",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        122,
+        132
+      ],
+      "summary": "`listed_resource_path_is_translation_candidate`는 mod resource scan 결과를 언어 preview와 번역 상태 정보로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:pck_language_preview",
+      "type": "function",
+      "name": "pck_language_preview",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        134,
+        173
+      ],
+      "summary": "`pck_language_preview`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_preview_from_scan_root",
+      "type": "function",
+      "name": "language_preview_from_scan_root",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        175,
+        212
+      ],
+      "summary": "`language_preview_from_scan_root`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:compare_scan_root",
+      "type": "function",
+      "name": "compare_scan_root",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        214,
+        249
+      ],
+      "summary": "`compare_scan_root`는 mod resource scan 결과를 언어 preview와 번역 상태 정보로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:scan_root_before_localization",
+      "type": "function",
+      "name": "scan_root_before_localization",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        251,
+        261
+      ],
+      "summary": "`scan_root_before_localization`는 mod resource scan 결과를 언어 preview와 번역 상태 정보로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:extraction_target",
+      "type": "function",
+      "name": "extraction_target",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        264,
+        292
+      ],
+      "summary": "`extraction_target`는 mod resource scan 결과를 언어 preview와 번역 상태 정보로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:sort_language_previews",
+      "type": "function",
+      "name": "sort_language_previews",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        302,
+        311
+      ],
+      "summary": "`sort_language_previews`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:count_json_translation_keys",
+      "type": "function",
+      "name": "count_json_translation_keys",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        313,
+        327
+      ],
+      "summary": "`count_json_translation_keys`는 번역 후보 JSON 또는 resource에서 사용자 번역 대상 key 수를 계산한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:hardcoded_source_count",
+      "type": "function",
+      "name": "hardcoded_source_count",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        329,
+        342
+      ],
+      "summary": "`hardcoded_source_count`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:count_translation_file_keys",
+      "type": "function",
+      "name": "count_translation_file_keys",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        344,
+        354
+      ],
+      "summary": "`count_translation_file_keys`는 번역 후보 JSON 또는 resource에서 사용자 번역 대상 key 수를 계산한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:count_json_file_string_keys",
+      "type": "function",
+      "name": "count_json_file_string_keys",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        356,
+        366
+      ],
+      "summary": "`count_json_file_string_keys`는 번역 후보 JSON 또는 resource에서 사용자 번역 대상 key 수를 계산한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:infer_language_code",
+      "type": "function",
+      "name": "infer_language_code",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        377,
+        396
+      ],
+      "summary": "`infer_language_code`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:split_language_tokens",
+      "type": "function",
+      "name": "split_language_tokens",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        407,
+        416
+      ],
+      "summary": "`split_language_tokens`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:normalize_language_code",
+      "type": "function",
+      "name": "normalize_language_code",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        418,
+        434
+      ],
+      "summary": "`normalize_language_code`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:is_known_language_code",
+      "type": "function",
+      "name": "is_known_language_code",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        436,
+        457
+      ],
+      "summary": "`is_known_language_code`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_label",
+      "type": "function",
+      "name": "language_label",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        459,
+        480
+      ],
+      "summary": "`language_label`는 resource 경로에서 언어 code를 추론·정규화하거나 표시 label로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:read_language_preview_cache",
+      "type": "function",
+      "name": "read_language_preview_cache",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        482,
+        530
+      ],
+      "summary": "`read_language_preview_cache`는 언어 preview cache key·파일·직렬화 상태를 관리하는 내부 helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:write_language_preview_cache",
+      "type": "function",
+      "name": "write_language_preview_cache",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        532,
+        567
+      ],
+      "summary": "`write_language_preview_cache`는 언어 preview cache key·파일·직렬화 상태를 관리하는 내부 helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:remember_language_preview_cache",
+      "type": "function",
+      "name": "remember_language_preview_cache",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        569,
+        587
+      ],
+      "summary": "`remember_language_preview_cache`는 언어 preview cache key·파일·직렬화 상태를 관리하는 내부 helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_cache_key",
+      "type": "function",
+      "name": "language_cache_key",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        593,
+        605
+      ],
+      "summary": "`language_cache_key`는 언어 preview cache key·파일·직렬화 상태를 관리하는 내부 helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:vendor_extractor_signature",
+      "type": "function",
+      "name": "vendor_extractor_signature",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        607,
+        633
+      ],
+      "summary": "`vendor_extractor_signature`는 mod resource scan 결과를 언어 preview와 번역 상태 정보로 변환한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/language_preview.rs:unescape_cache_field",
+      "type": "function",
+      "name": "unescape_cache_field",
+      "filePath": "src-tauri/src/services/translation_preview/language_preview.rs",
+      "lineRange": [
+        642,
+        662
+      ],
+      "summary": "`unescape_cache_field`는 언어 preview cache key·파일·직렬화 상태를 관리하는 내부 helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "language-detection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "type": "file",
+      "name": "manifest.rs",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "summary": "JSON comment를 허용해 mod manifest 후보를 읽고 metadata, dependency, translation patch target 정보를 병합·정규화한다.",
+      "tags": [
+        "manifest",
+        "mod-metadata",
+        "parsing",
+        "rust"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/manifest.rs:read_mod_manifest_info",
+      "type": "function",
+      "name": "read_mod_manifest_info",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "lineRange": [
+        22,
+        40
+      ],
+      "summary": "`read_mod_manifest_info`는 mod manifest 후보를 읽어 metadata를 추출·병합하는 parsing helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "manifest-parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/manifest.rs:mod_manifest_info_from_value",
+      "type": "function",
+      "name": "mod_manifest_info_from_value",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "lineRange": [
+        42,
+        63
+      ],
+      "summary": "`mod_manifest_info_from_value`는 mod manifest 후보를 읽어 metadata를 추출·병합하는 parsing helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "manifest-parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/manifest.rs:read_mod_manifest_for_record",
+      "type": "function",
+      "name": "read_mod_manifest_for_record",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "lineRange": [
+        75,
+        86
+      ],
+      "summary": "`read_mod_manifest_for_record`는 mod manifest 후보를 읽어 metadata를 추출·병합하는 parsing helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "manifest-parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/manifest.rs:merge_manifest_info",
+      "type": "function",
+      "name": "merge_manifest_info",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "lineRange": [
+        88,
+        111
+      ],
+      "summary": "`merge_manifest_info`는 mod manifest 후보를 읽어 metadata를 추출·병합하는 parsing helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "manifest-parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/manifest.rs:strip_json_comments",
+      "type": "function",
+      "name": "strip_json_comments",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "lineRange": [
+        113,
+        169
+      ],
+      "summary": "`strip_json_comments`는 문자열 literal을 보존하면서 manifest의 line·block comment를 제거한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "manifest-parsing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/manifest.rs:collect_manifest_candidates",
+      "type": "function",
+      "name": "collect_manifest_candidates",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "lineRange": [
+        171,
+        198
+      ],
+      "summary": "`collect_manifest_candidates`는 mod manifest 후보를 읽어 metadata를 추출·병합하는 parsing helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "manifest-parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/manifest.rs:string_list_field",
+      "type": "function",
+      "name": "string_list_field",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "lineRange": [
+        208,
+        235
+      ],
+      "summary": "`string_list_field`는 mod manifest 후보를 읽어 metadata를 추출·병합하는 parsing helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "manifest-parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/manifest.rs:dependency_list_field",
+      "type": "function",
+      "name": "dependency_list_field",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "lineRange": [
+        244,
+        276
+      ],
+      "summary": "`dependency_list_field`는 manifest dependency ID와 version 정보를 읽거나 보강한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "manifest-parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/manifest.rs:with_dependency_versions",
+      "type": "function",
+      "name": "with_dependency_versions",
+      "filePath": "src-tauri/src/services/translation_preview/manifest.rs",
+      "lineRange": [
+        278,
+        308
+      ],
+      "summary": "`with_dependency_versions`는 manifest dependency ID와 version 정보를 읽거나 보강한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "manifest-parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "type": "file",
+      "name": "resource_paths.rs",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "summary": "Localization·hardcoded resource 선택, target language file 복사와 translation memory sheet 탐색을 담당한다. PCK와 filesystem 경로를 공통 표시·비교 형태로 정규화한다.",
+      "tags": [
+        "translation",
+        "resource-path",
+        "translation-memory",
+        "rust"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:selected_translation_files",
+      "type": "function",
+      "name": "selected_translation_files",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        1,
+        22
+      ],
+      "summary": "`selected_translation_files`는 translation resource 선택과 target language 준비 workflow를 지원하는 Rust helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:selected_translation_files_from_filesystem_path",
+      "type": "function",
+      "name": "selected_translation_files_from_filesystem_path",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        24,
+        55
+      ],
+      "summary": "`selected_translation_files_from_filesystem_path`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:resource_path_matches_selection",
+      "type": "function",
+      "name": "resource_path_matches_selection",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        57,
+        80
+      ],
+      "summary": "`resource_path_matches_selection`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:copy_existing_target_language_files",
+      "type": "function",
+      "name": "copy_existing_target_language_files",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        90,
+        129
+      ],
+      "summary": "`copy_existing_target_language_files`는 translation resource 선택과 target language 준비 workflow를 지원하는 Rust helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:default_translation_resource_path",
+      "type": "function",
+      "name": "default_translation_resource_path",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        131,
+        157
+      ],
+      "summary": "`default_translation_resource_path`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:selected_hardcoded_files",
+      "type": "function",
+      "name": "selected_hardcoded_files",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        169,
+        182
+      ],
+      "summary": "`selected_hardcoded_files`는 hardcoded source file 가운데 번역 가능한 문자열 resource를 선택한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:selected_hardcoded_file_from_filesystem_path",
+      "type": "function",
+      "name": "selected_hardcoded_file_from_filesystem_path",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        184,
+        203
+      ],
+      "summary": "`selected_hardcoded_file_from_filesystem_path`는 hardcoded source file 가운데 번역 가능한 문자열 resource를 선택한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:collect_hardcoded_files",
+      "type": "function",
+      "name": "collect_hardcoded_files",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        205,
+        226
+      ],
+      "summary": "`collect_hardcoded_files`는 hardcoded source file 가운데 번역 가능한 문자열 resource를 선택한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:language_dir_for_candidate",
+      "type": "function",
+      "name": "language_dir_for_candidate",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        245,
+        256
+      ],
+      "summary": "`language_dir_for_candidate`는 translation resource 선택과 target language 준비 workflow를 지원하는 Rust helper다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:fallback_translation_memory_sheet",
+      "type": "function",
+      "name": "fallback_translation_memory_sheet",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        258,
+        292
+      ],
+      "summary": "`fallback_translation_memory_sheet`는 기존 translation memory sheet를 resource와 mod 계열 기준으로 탐색·검증한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:select_translation_memory_sheet",
+      "type": "function",
+      "name": "select_translation_memory_sheet",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        294,
+        324
+      ],
+      "summary": "`select_translation_memory_sheet`는 기존 translation memory sheet를 resource와 mod 계열 기준으로 탐색·검증한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_sheet_has_translations",
+      "type": "function",
+      "name": "translation_sheet_has_translations",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        326,
+        335
+      ],
+      "summary": "`translation_sheet_has_translations`는 기존 translation memory sheet를 resource와 mod 계열 기준으로 탐색·검증한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_memory_candidate_keys",
+      "type": "function",
+      "name": "translation_memory_candidate_keys",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        337,
+        371
+      ],
+      "summary": "`translation_memory_candidate_keys`는 기존 translation memory sheet를 resource와 mod 계열 기준으로 탐색·검증한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_memory_family_tokens",
+      "type": "function",
+      "name": "translation_memory_family_tokens",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        373,
+        390
+      ],
+      "summary": "`translation_memory_family_tokens`는 기존 translation memory sheet를 resource와 mod 계열 기준으로 탐색·검증한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:related_translation_memory_tokens",
+      "type": "function",
+      "name": "related_translation_memory_tokens",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        401,
+        412
+      ],
+      "summary": "`related_translation_memory_tokens`는 기존 translation memory sheet를 resource와 mod 계열 기준으로 탐색·검증한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_sheet_matches_resource",
+      "type": "function",
+      "name": "translation_sheet_matches_resource",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        414,
+        431
+      ],
+      "summary": "`translation_sheet_matches_resource`는 기존 translation memory sheet를 resource와 mod 계열 기준으로 탐색·검증한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:resource_paths_match",
+      "type": "function",
+      "name": "resource_paths_match",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        433,
+        444
+      ],
+      "summary": "`resource_paths_match`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:localization_resource_tail",
+      "type": "function",
+      "name": "localization_resource_tail",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        446,
+        456
+      ],
+      "summary": "`localization_resource_tail`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:collect_pck_resource_roots",
+      "type": "function",
+      "name": "collect_pck_resource_roots",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        474,
+        493
+      ],
+      "summary": "`collect_pck_resource_roots`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:pck_resource_relative_path",
+      "type": "function",
+      "name": "pck_resource_relative_path",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        495,
+        514
+      ],
+      "summary": "`pck_resource_relative_path`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:resource_path_to_relative",
+      "type": "function",
+      "name": "resource_path_to_relative",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        516,
+        526
+      ],
+      "summary": "`resource_path_to_relative`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:replace_resource_language",
+      "type": "function",
+      "name": "replace_resource_language",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        536,
+        546
+      ],
+      "summary": "`replace_resource_language`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/resource_paths.rs:pck_contents_root_for_path",
+      "type": "function",
+      "name": "pck_contents_root_for_path",
+      "filePath": "src-tauri/src/services/translation_preview/resource_paths.rs",
+      "lineRange": [
+        554,
+        570
+      ],
+      "summary": "`pck_contents_root_for_path`는 filesystem·PCK resource 경로를 선택, 비교 또는 상대 경로로 정규화한다.",
+      "tags": [
+        "function",
+        "translation-preview",
+        "resource-path"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:src-tauri/tauri.conf.json",
+      "type": "config",
+      "name": "tauri.conf.json",
+      "filePath": "src-tauri/tauri.conf.json",
+      "summary": "Tauri product metadata, Vite build command, custom window 크기, CSP와 Windows bundle resource를 정의한다.",
+      "tags": [
+        "configuration",
+        "tauri",
+        "security",
+        "bundling"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:cached_language_preview",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:source_labels",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:translation_state",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_preview",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:listed_resource_path_is_translation_candidate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:pck_language_preview",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_preview_from_scan_root",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:compare_scan_root",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:scan_root_before_localization",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:extraction_target",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:sort_language_previews",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:count_json_translation_keys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:hardcoded_source_count",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:count_translation_file_keys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:count_json_file_string_keys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:infer_language_code",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:split_language_tokens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:normalize_language_code",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:is_known_language_code",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_label",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:read_language_preview_cache",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:write_language_preview_cache",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:remember_language_preview_cache",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_cache_key",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:vendor_extractor_signature",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:unescape_cache_field",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:read_mod_manifest_info",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:mod_manifest_info_from_value",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:read_mod_manifest_for_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:merge_manifest_info",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:strip_json_comments",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:collect_manifest_candidates",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:string_list_field",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:dependency_list_field",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/manifest.rs",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:with_dependency_versions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:selected_translation_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:selected_translation_files_from_filesystem_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:resource_path_matches_selection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:copy_existing_target_language_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:default_translation_resource_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:selected_hardcoded_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:selected_hardcoded_file_from_filesystem_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:collect_hardcoded_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:language_dir_for_candidate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:fallback_translation_memory_sheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:select_translation_memory_sheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_sheet_has_translations",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_memory_candidate_keys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_memory_family_tokens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:related_translation_memory_tokens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_sheet_matches_resource",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:resource_paths_match",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:localization_resource_tail",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:collect_pck_resource_roots",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:pck_resource_relative_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:resource_path_to_relative",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:replace_resource_language",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/resource_paths.rs",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:pck_contents_root_for_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_preview_from_scan_root",
+      "target": "function:src-tauri/src/services/translation_preview/resource_paths.rs:collect_hardcoded_files",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_memory_candidate_keys",
+      "target": "function:src-tauri/src/services/translation_preview/manifest.rs:read_mod_manifest_for_record",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src-tauri/src/services/translation_preview/resource_paths.rs:translation_memory_candidate_keys",
+      "target": "function:src-tauri/src/services/translation_preview/language_preview.rs:language_cache_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "config:src-tauri/tauri.conf.json",
+      "target": "file:vite.config.ts",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

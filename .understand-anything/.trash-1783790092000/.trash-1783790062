@@ -1,0 +1,13 @@
+{
+  "fixedSectionOk": true,
+  "nodesRecovered": 0,
+  "edgesRestored": 0,
+  "crossBatchEdgesAdded": 0,
+  "typesRemapped": 0,
+  "complexityRemapped": 0,
+  "notes": [
+    "병합 보고서에 기계 수정 또는 드롭 경고가 없으며, 25개 batch 파일의 1171개 node와 1968개 edge가 assembled graph에 그대로 보존되었습니다.",
+    "scan importMap의 139개 항목에서 확인한 259개 고유 import 관계가 assembled graph의 imports edge와 누락·초과 없이 정확히 일치했습니다.",
+    "139개 scan file 모두 file-level node가 존재하며, 중복 node ID, dangling edge, 알 수 없는 node type·complexity, 필수 필드 누락은 발견되지 않았습니다."
+  ]
+}

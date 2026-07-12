@@ -1,0 +1,160 @@
+{
+  "nodes": [
+    {
+      "id": "document:AGENTS.md",
+      "type": "document",
+      "name": "AGENTS.md",
+      "filePath": "AGENTS.md",
+      "summary": "Release 대상, GitHub 인증 주의사항, 사전 검증 command와 commit 제외 경로를 규정하는 agent 작업 지침이다.",
+      "tags": [
+        "documentation",
+        "agent-guidelines",
+        "release-process",
+        "repository-policy"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:Cargo.toml",
+      "type": "config",
+      "name": "Cargo.toml",
+      "filePath": "Cargo.toml",
+      "summary": "핵심 Rust package의 이름·version·edition과 Serde 직렬화 dependency를 선언한다.",
+      "tags": [
+        "configuration",
+        "rust",
+        "cargo",
+        "dependency-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Slay the Spire 2 mod의 한국어 번역·관리 desktop app을 소개하고 screenshot, 주요 기능, 개발 환경, CLI 사용법과 주의사항을 설명한다.",
+      "tags": [
+        "documentation",
+        "entry-point",
+        "user-guide",
+        "development"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:THIRD_PARTY_NOTICES.md",
+      "type": "document",
+      "name": "THIRD_PARTY_NOTICES.md",
+      "filePath": "THIRD_PARTY_NOTICES.md",
+      "summary": "배포물에 포함되는 7-Zip, Godot PCK Explorer, Mbed TLS 구성요소의 license와 source 고지를 제공한다.",
+      "tags": [
+        "documentation",
+        "third-party",
+        "licensing",
+        "compliance"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:index.html",
+      "type": "file",
+      "name": "index.html",
+      "filePath": "index.html",
+      "summary": "React application mount point와 초기 loading placeholder를 제공하고 web/main.tsx module을 불러오는 Vite HTML entry다.",
+      "tags": [
+        "entry-point",
+        "html",
+        "react",
+        "loading-screen"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "package.json",
+      "summary": "React 19, Tauri 2, Vite 7 frontend dependency와 개발·build·preview·E2E script를 정의한다.",
+      "tags": [
+        "configuration",
+        "npm",
+        "build-system",
+        "dependency-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:tsconfig.json",
+      "type": "config",
+      "name": "tsconfig.json",
+      "filePath": "tsconfig.json",
+      "summary": "web directory를 대상으로 strict TypeScript, ES2020, React JSX, noEmit compilation을 설정한다.",
+      "tags": [
+        "configuration",
+        "typescript",
+        "strict-mode",
+        "build-system"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:AGENTS.md",
+      "target": "config:Cargo.toml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENTS.md",
+      "target": "config:package.json",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:Cargo.toml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:package.json",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:THIRD_PARTY_NOTICES.md",
+      "target": "document:README.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:Cargo.toml",
+      "target": "config:package.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:package.json",
+      "target": "file:index.html",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:tsconfig.json",
+      "target": "config:package.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

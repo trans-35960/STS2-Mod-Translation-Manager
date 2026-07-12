@@ -1,0 +1,1083 @@
+{
+  "nodes": [
+    {
+      "id": "file:web/components/Common.tsx",
+      "type": "file",
+      "name": "Common.tsx",
+      "filePath": "web/components/Common.tsx",
+      "summary": "여러 화면에서 공유하는 출처 태그, 아이콘 버튼, 상태 배지와 pill 컴포넌트를 제공한다.",
+      "tags": [
+        "component",
+        "shared-ui",
+        "presentation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/components/Common.tsx:SourceTags",
+      "type": "function",
+      "name": "SourceTags",
+      "filePath": "web/components/Common.tsx",
+      "lineRange": [
+        4,
+        17
+      ],
+      "summary": "복합 출처 문자열을 제한된 수의 태그로 표시한다.",
+      "tags": [
+        "component",
+        "shared-ui",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/Common.tsx:IconButton",
+      "type": "function",
+      "name": "IconButton",
+      "filePath": "web/components/Common.tsx",
+      "lineRange": [
+        19,
+        49
+      ],
+      "summary": "아이콘과 접근성 라벨을 갖춘 공용 동작 버튼을 렌더링한다.",
+      "tags": [
+        "component",
+        "shared-ui",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/Common.tsx:StatusBadge",
+      "type": "function",
+      "name": "StatusBadge",
+      "filePath": "web/components/Common.tsx",
+      "lineRange": [
+        51,
+        53
+      ],
+      "summary": "상태 의미에 따른 색조 배지를 렌더링한다.",
+      "tags": [
+        "component",
+        "shared-ui",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/Common.tsx:Pill",
+      "type": "function",
+      "name": "Pill",
+      "filePath": "web/components/Common.tsx",
+      "lineRange": [
+        55,
+        57
+      ],
+      "summary": "짧은 상태 텍스트를 pill 형태로 표시한다.",
+      "tags": [
+        "component",
+        "shared-ui",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/features/mods/ExtractModal.tsx",
+      "type": "file",
+      "name": "ExtractModal.tsx",
+      "filePath": "web/features/mods/ExtractModal.tsx",
+      "summary": "모드 번역 리소스의 추출 경로와 파일 트리를 선택하고 전체 또는 개별 노드 추출을 실행하는 확인 모달을 구현한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "file-tree"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/mods/ExtractModal.tsx:ExtractConfirmModal",
+      "type": "function",
+      "name": "ExtractConfirmModal",
+      "filePath": "web/features/mods/ExtractModal.tsx",
+      "lineRange": [
+        6,
+        143
+      ],
+      "summary": "추출 대상 모드와 출력 경로를 확인하고 전체 또는 선택 노드 추출을 전달한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/mods/ExtractModal.tsx:FileTree",
+      "type": "function",
+      "name": "FileTree",
+      "filePath": "web/features/mods/ExtractModal.tsx",
+      "lineRange": [
+        145,
+        175
+      ],
+      "summary": "추출 가능한 리소스 노드 목록을 재귀 트리로 렌더링한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ExtractModal.tsx:FileTreeNode",
+      "type": "function",
+      "name": "FileTreeNode",
+      "filePath": "web/features/mods/ExtractModal.tsx",
+      "lineRange": [
+        177,
+        231
+      ],
+      "summary": "개별 추출 트리 노드의 펼침, 선택, 컨텍스트 동작을 처리한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/features/mods/ImportMenu.tsx",
+      "type": "file",
+      "name": "ImportMenu.tsx",
+      "filePath": "web/features/mods/ImportMenu.tsx",
+      "summary": "폴더, 압축 파일, Vortex 다운로드에서 모드를 가져오는 동작을 묶은 팝오버 메뉴를 제공한다.",
+      "tags": [
+        "component",
+        "mod-import",
+        "menu"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/mods/ImportMenu.tsx:ImportMenu",
+      "type": "function",
+      "name": "ImportMenu",
+      "filePath": "web/features/mods/ImportMenu.tsx",
+      "lineRange": [
+        4,
+        57
+      ],
+      "summary": "지원되는 모드 가져오기 경로를 선택하는 메뉴의 열림 상태와 실행을 관리한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/features/mods/ModBadges.tsx",
+      "type": "file",
+      "name": "ModBadges.tsx",
+      "filePath": "web/features/mods/ModBadges.tsx",
+      "summary": "모드의 대표 언어와 사용 가능한 언어 목록을 키 수 및 대상 언어 상태와 함께 배지로 표시한다.",
+      "tags": [
+        "component",
+        "language",
+        "mod-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/mods/ModBadges.tsx:RepresentativeLanguageBadge",
+      "type": "function",
+      "name": "RepresentativeLanguageBadge",
+      "filePath": "web/features/mods/ModBadges.tsx",
+      "lineRange": [
+        12,
+        33
+      ],
+      "summary": "대상 언어 또는 대표 원본 언어 한 개를 요약 배지로 표시한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModBadges.tsx:LanguageBadges",
+      "type": "function",
+      "name": "LanguageBadges",
+      "filePath": "web/features/mods/ModBadges.tsx",
+      "lineRange": [
+        35,
+        68
+      ],
+      "summary": "사용 가능한 언어를 키 수와 대상·대표 상태가 포함된 배지 목록으로 표시한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/features/mods/ModRows.tsx",
+      "type": "file",
+      "name": "ModRows.tsx",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "summary": "상세·간단 보기의 모드 및 모드 그룹 행을 렌더링하고 선택, 활성화, 번역, 추출, 삭제 동작을 연결한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "table-row"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:ModTableRow",
+      "type": "function",
+      "name": "ModTableRow",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        41,
+        163
+      ],
+      "summary": "상세 모드 행에 메타데이터, 경고, 언어와 주요 관리 동작을 렌더링한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:ModGroupTableRow",
+      "type": "function",
+      "name": "ModGroupTableRow",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        165,
+        254
+      ],
+      "summary": "상세 보기에서 여러 버전 모드 그룹의 요약과 그룹 동작을 렌더링한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:SimpleModGroupRow",
+      "type": "function",
+      "name": "SimpleModGroupRow",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        256,
+        340
+      ],
+      "summary": "간단 보기에서 모드 그룹의 핵심 상태와 펼침·토글 동작을 렌더링한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:SimpleModRow",
+      "type": "function",
+      "name": "SimpleModRow",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        342,
+        456
+      ],
+      "summary": "간단 보기의 개별 모드 상태와 주요 동작을 렌더링한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:ModSelectionCheckbox",
+      "type": "function",
+      "name": "ModSelectionCheckbox",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        458,
+        479
+      ],
+      "summary": "삭제 가능한 모드 또는 그룹의 선택 체크박스를 렌더링한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:ChangeReasonList",
+      "type": "function",
+      "name": "ChangeReasonList",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        491,
+        500
+      ],
+      "summary": "모드 변경 사유를 중복 제거된 배지 목록으로 표시한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:DependencyWarningIcon",
+      "type": "function",
+      "name": "DependencyWarningIcon",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        502,
+        512
+      ],
+      "summary": "비활성·누락·버전 불일치 의존성 경고를 툴팁 아이콘으로 표시한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:isExpandableRowBlankClick",
+      "type": "function",
+      "name": "isExpandableRowBlankClick",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        523,
+        536
+      ],
+      "summary": "그룹 행의 빈 영역 클릭인지 판별해 오동작을 막는다.",
+      "tags": [
+        "utility",
+        "mod-management",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:ToggleSwitch",
+      "type": "function",
+      "name": "ToggleSwitch",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        538,
+        564
+      ],
+      "summary": "진행 상태와 잠금 상태를 반영하는 모드 활성화 스위치를 렌더링한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:TranslationApplyCell",
+      "type": "function",
+      "name": "TranslationApplyCell",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        632,
+        648
+      ],
+      "summary": "번역 적용 여부와 적용 시각을 모드 행에 표시한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModRows.tsx:DependencyList",
+      "type": "function",
+      "name": "DependencyList",
+      "filePath": "web/features/mods/ModRows.tsx",
+      "lineRange": [
+        650,
+        669
+      ],
+      "summary": "모드 의존성의 활성·가용·버전 상태를 표시한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/features/mods/ModTranslationActions.tsx",
+      "type": "file",
+      "name": "ModTranslationActions.tsx",
+      "filePath": "web/features/mods/ModTranslationActions.tsx",
+      "summary": "자동 감지 언어가 없는 모드에서 번역 리소스 경로를 파일 트리 또는 수동 입력으로 고르는 UI를 제공한다.",
+      "tags": [
+        "component",
+        "translation",
+        "file-tree"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/mods/ModTranslationActions.tsx:ModTranslationActions",
+      "type": "function",
+      "name": "ModTranslationActions",
+      "filePath": "web/features/mods/ModTranslationActions.tsx",
+      "lineRange": [
+        5,
+        38
+      ],
+      "summary": "자동 언어 후보가 없는 모드의 수동 번역 경로 선택 UI를 관리한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModTranslationActions.tsx:LanguageCandidateTree",
+      "type": "function",
+      "name": "LanguageCandidateTree",
+      "filePath": "web/features/mods/ModTranslationActions.tsx",
+      "lineRange": [
+        40,
+        58
+      ],
+      "summary": "번역 후보 리소스 목록을 재귀 트리의 루트로 렌더링한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModTranslationActions.tsx:LanguageCandidateNode",
+      "type": "function",
+      "name": "LanguageCandidateNode",
+      "filePath": "web/features/mods/ModTranslationActions.tsx",
+      "lineRange": [
+        60,
+        118
+      ],
+      "summary": "번역 후보 트리 노드의 경로 계산, 펼침 및 선택을 처리한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/features/mods/ModsPage.tsx",
+      "type": "file",
+      "name": "ModsPage.tsx",
+      "filePath": "web/features/mods/ModsPage.tsx",
+      "summary": "모드 검색·필터·정렬·그룹화·선택과 프리셋, 가져오기, 실행 및 열 너비 상태를 총괄하는 메인 관리 화면이다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "state-management"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/mods/ModsPage.tsx:ModsPage",
+      "type": "function",
+      "name": "ModsPage",
+      "filePath": "web/features/mods/ModsPage.tsx",
+      "lineRange": [
+        81,
+        695
+      ],
+      "summary": "모드 목록의 필터, 정렬, 선택, 그룹, 열 설정과 전체 관리 동작을 조정한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/mods/ModsPage.tsx:ModResizableHead",
+      "type": "function",
+      "name": "ModResizableHead",
+      "filePath": "web/features/mods/ModsPage.tsx",
+      "lineRange": [
+        697,
+        721
+      ],
+      "summary": "모드 테이블 열의 크기 조절 손잡이가 포함된 헤더를 렌더링한다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModsPage.tsx:startColumnResize",
+      "type": "function",
+      "name": "startColumnResize",
+      "filePath": "web/features/mods/ModsPage.tsx",
+      "lineRange": [
+        723,
+        759
+      ],
+      "summary": "포인터 이동 동안 CSS 열 너비를 갱신하고 완료 값을 상태에 반영한다.",
+      "tags": [
+        "utility",
+        "mod-management",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModsPage.tsx:detailColumnVar",
+      "type": "function",
+      "name": "detailColumnVar",
+      "filePath": "web/features/mods/ModsPage.tsx",
+      "lineRange": [
+        761,
+        776
+      ],
+      "summary": "상세 보기 열을 대응하는 CSS 사용자 속성으로 변환한다.",
+      "tags": [
+        "utility",
+        "mod-management",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModsPage.tsx:simpleColumnVar",
+      "type": "function",
+      "name": "simpleColumnVar",
+      "filePath": "web/features/mods/ModsPage.tsx",
+      "lineRange": [
+        778,
+        789
+      ],
+      "summary": "간단 보기 열을 대응하는 CSS 사용자 속성으로 변환한다.",
+      "tags": [
+        "utility",
+        "mod-management",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModsPage.tsx:attachedTranslationMods",
+      "type": "function",
+      "name": "attachedTranslationMods",
+      "filePath": "web/features/mods/ModsPage.tsx",
+      "lineRange": [
+        808,
+        818
+      ],
+      "summary": "그룹에서 원본 모드와 연결된 번역 모드 자식을 분리한다.",
+      "tags": [
+        "utility",
+        "mod-management",
+        "domain-logic"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:web/components/Common.tsx",
+      "target": "function:web/components/Common.tsx:SourceTags",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/Common.tsx",
+      "target": "function:web/components/Common.tsx:SourceTags",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/Common.tsx",
+      "target": "function:web/components/Common.tsx:IconButton",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/Common.tsx",
+      "target": "function:web/components/Common.tsx:IconButton",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/Common.tsx",
+      "target": "function:web/components/Common.tsx:StatusBadge",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/Common.tsx",
+      "target": "function:web/components/Common.tsx:StatusBadge",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/Common.tsx",
+      "target": "function:web/components/Common.tsx:Pill",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/Common.tsx",
+      "target": "function:web/components/Common.tsx:Pill",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ExtractModal.tsx",
+      "target": "function:web/features/mods/ExtractModal.tsx:ExtractConfirmModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ExtractModal.tsx",
+      "target": "function:web/features/mods/ExtractModal.tsx:ExtractConfirmModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ExtractModal.tsx",
+      "target": "function:web/features/mods/ExtractModal.tsx:FileTree",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ExtractModal.tsx",
+      "target": "function:web/features/mods/ExtractModal.tsx:FileTreeNode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ImportMenu.tsx",
+      "target": "function:web/features/mods/ImportMenu.tsx:ImportMenu",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ImportMenu.tsx",
+      "target": "function:web/features/mods/ImportMenu.tsx:ImportMenu",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ModBadges.tsx",
+      "target": "function:web/features/mods/ModBadges.tsx:RepresentativeLanguageBadge",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModBadges.tsx",
+      "target": "function:web/features/mods/ModBadges.tsx:RepresentativeLanguageBadge",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ModBadges.tsx",
+      "target": "function:web/features/mods/ModBadges.tsx:LanguageBadges",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModBadges.tsx",
+      "target": "function:web/features/mods/ModBadges.tsx:LanguageBadges",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:ModTableRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:ModTableRow",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:ModGroupTableRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:ModGroupTableRow",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:SimpleModGroupRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:SimpleModGroupRow",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:SimpleModRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:SimpleModRow",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:ModSelectionCheckbox",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:ChangeReasonList",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:DependencyWarningIcon",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:isExpandableRowBlankClick",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:ToggleSwitch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:TranslationApplyCell",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "function:web/features/mods/ModRows.tsx:DependencyList",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModTranslationActions.tsx",
+      "target": "function:web/features/mods/ModTranslationActions.tsx:ModTranslationActions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModTranslationActions.tsx",
+      "target": "function:web/features/mods/ModTranslationActions.tsx:ModTranslationActions",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ModTranslationActions.tsx",
+      "target": "function:web/features/mods/ModTranslationActions.tsx:LanguageCandidateTree",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModTranslationActions.tsx",
+      "target": "function:web/features/mods/ModTranslationActions.tsx:LanguageCandidateNode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "function:web/features/mods/ModsPage.tsx:ModsPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "function:web/features/mods/ModsPage.tsx:ModsPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "function:web/features/mods/ModsPage.tsx:ModResizableHead",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "function:web/features/mods/ModsPage.tsx:startColumnResize",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "function:web/features/mods/ModsPage.tsx:detailColumnVar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "function:web/features/mods/ModsPage.tsx:simpleColumnVar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "function:web/features/mods/ModsPage.tsx:attachedTranslationMods",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ExtractModal.tsx",
+      "target": "file:web/features/mods/modUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ExtractModal.tsx",
+      "target": "file:web/i18n.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ExtractModal.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModBadges.tsx",
+      "target": "file:web/components/Common.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModBadges.tsx",
+      "target": "file:web/features/mods/modUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModBadges.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "file:web/components/Common.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "file:web/features/mods/ModBadges.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "file:web/features/mods/ModTranslationActions.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "file:web/features/mods/modUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "file:web/i18n.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModRows.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModTranslationActions.tsx",
+      "target": "file:web/features/mods/modUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModTranslationActions.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/api/tauri.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/features/mods/ExtractModal.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/features/mods/ImportMenu.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/features/mods/ModRows.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/features/mods/modUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/features/mods/PresetMenu.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/i18n.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/utils/runtime.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModsPage.tsx",
+      "target": "file:web/utils/storage.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}

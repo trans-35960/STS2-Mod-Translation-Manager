@@ -1,0 +1,127 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 15,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "web/styles/01-base.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 102,
+      "nonEmptyLines": 89,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/02-shell.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 125,
+      "nonEmptyLines": 110,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/03-dashboard.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 201,
+      "nonEmptyLines": 174,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/04-mods.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 894,
+      "nonEmptyLines": 774,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/05-translation-workflow.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 576,
+      "nonEmptyLines": 487,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/06-translation-sheet.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 896,
+      "nonEmptyLines": 777,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/07-settings.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 511,
+      "nonEmptyLines": 433,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/08-logs.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 225,
+      "nonEmptyLines": 194,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/09-modal-tree.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 293,
+      "nonEmptyLines": 251,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/10-ui-refresh-overrides.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 968,
+      "nonEmptyLines": 823,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/11-responsive.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 66,
+      "nonEmptyLines": 52,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/12-loading.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 219,
+      "nonEmptyLines": 193,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/13-menu-titlebar.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 311,
+      "nonEmptyLines": 270,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/14-mobile.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 78,
+      "nonEmptyLines": 64,
+      "metrics": {}
+    },
+    {
+      "path": "web/styles/15-tooltips.css",
+      "language": "css",
+      "fileCategory": "markup",
+      "totalLines": 53,
+      "nonEmptyLines": 47,
+      "metrics": {}
+    }
+  ]
+}

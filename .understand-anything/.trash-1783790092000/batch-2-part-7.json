@@ -1,0 +1,1720 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/translation.rs",
+      "type": "file",
+      "name": "translation.rs",
+      "filePath": "src/translation.rs",
+      "summary": "번역 후보 파일을 탐지하고 archive/PCK를 확장해 작업공간을 만들며 번역 결과를 대상 경로에 병합합니다.",
+      "tags": [
+        "translation",
+        "extraction",
+        "workspace",
+        "filesystem"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/translation.rs:scan_translation_candidates",
+      "type": "function",
+      "name": "scan_translation_candidates",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        36,
+        45
+      ],
+      "summary": "`scan_translation_candidates` 대상 경로 또는 항목을 순회해 정렬된 분석 결과를 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:extract_translation_work",
+      "type": "function",
+      "name": "extract_translation_work",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        47,
+        137
+      ],
+      "summary": "`extract_translation_work` 입력 데이터를 변환해 번역·모드 관리 워크플로의 결과물을 생성합니다.",
+      "tags": [
+        "transformation",
+        "workflow",
+        "translation",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/translation.rs:list_translation_workspaces",
+      "type": "function",
+      "name": "list_translation_workspaces",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        139,
+        174
+      ],
+      "summary": "`list_translation_workspaces` 대상 경로 또는 항목을 순회해 정렬된 분석 결과를 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:merge_translation_workspace",
+      "type": "function",
+      "name": "merge_translation_workspace",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        176,
+        212
+      ],
+      "summary": "`merge_translation_workspace` 입력 데이터를 변환해 번역·모드 관리 워크플로의 결과물을 생성합니다.",
+      "tags": [
+        "transformation",
+        "workflow",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:visit",
+      "type": "function",
+      "name": "visit",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        214,
+        230
+      ],
+      "summary": "`visit` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:classify_translation_file",
+      "type": "function",
+      "name": "classify_translation_file",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        232,
+        286
+      ],
+      "summary": "`classify_translation_file` 원시 입력을 해석하거나 정규화해 일관된 내부 표현으로 변환합니다.",
+      "tags": [
+        "parsing",
+        "utility",
+        "translation",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/translation.rs:contains_language_code_token",
+      "type": "function",
+      "name": "contains_language_code_token",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        304,
+        328
+      ],
+      "summary": "`contains_language_code_token` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:language_candidate_path_text",
+      "type": "function",
+      "name": "language_candidate_path_text",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        330,
+        342
+      ],
+      "summary": "`language_candidate_path_text` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:is_supported_archive",
+      "type": "function",
+      "name": "is_supported_archive",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        351,
+        361
+      ],
+      "summary": "`is_supported_archive` 조건을 판정해 상위 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:expand_source",
+      "type": "function",
+      "name": "expand_source",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        374,
+        384
+      ],
+      "summary": "`expand_source` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:expand_archive",
+      "type": "function",
+      "name": "expand_archive",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        386,
+        396
+      ],
+      "summary": "`expand_archive` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:expand_with_7z",
+      "type": "function",
+      "name": "expand_with_7z",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        403,
+        420
+      ],
+      "summary": "`expand_with_7z` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:collect_pck_files_inner",
+      "type": "function",
+      "name": "collect_pck_files_inner",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        438,
+        457
+      ],
+      "summary": "`collect_pck_files_inner` 대상 경로 또는 항목을 순회해 정렬된 분석 결과를 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:expand_pck",
+      "type": "function",
+      "name": "expand_pck",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        459,
+        478
+      ],
+      "summary": "`expand_pck` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:expand_zip_archive",
+      "type": "function",
+      "name": "expand_zip_archive",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        487,
+        497
+      ],
+      "summary": "`expand_zip_archive` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:write_manifest",
+      "type": "function",
+      "name": "write_manifest",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        499,
+        519
+      ],
+      "summary": "`write_manifest` 현재 상태를 직렬화해 지정된 저장소에 기록합니다.",
+      "tags": [
+        "serialization",
+        "file-io",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:write_review_file",
+      "type": "function",
+      "name": "write_review_file",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        521,
+        547
+      ],
+      "summary": "`write_review_file` 현재 상태를 직렬화해 지정된 저장소에 기록합니다.",
+      "tags": [
+        "serialization",
+        "file-io",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:previous_versions",
+      "type": "function",
+      "name": "previous_versions",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        549,
+        566
+      ],
+      "summary": "`previous_versions` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:version_id_for_path",
+      "type": "function",
+      "name": "version_id_for_path",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        568,
+        589
+      ],
+      "summary": "`version_id_for_path` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:stable_key_for_path",
+      "type": "function",
+      "name": "stable_key_for_path",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        591,
+        609
+      ],
+      "summary": "`stable_key_for_path` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/translation.rs:collect_files_inner",
+      "type": "function",
+      "name": "collect_files_inner",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        618,
+        629
+      ],
+      "summary": "`collect_files_inner` 대상 경로 또는 항목을 순회해 정렬된 분석 결과를 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "translation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/translation.rs:TranslationExtractReport",
+      "type": "class",
+      "name": "TranslationExtractReport",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        13,
+        20
+      ],
+      "summary": "`TranslationExtractReport`는 번역 후보 파일을 탐지하고 archive/PCK를 확장해 작업공간을 만들며 번역 결과를 대상 경로에 병합합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/translation.rs:TranslationWorkspace",
+      "type": "class",
+      "name": "TranslationWorkspace",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        23,
+        28
+      ],
+      "summary": "`TranslationWorkspace`는 번역 후보 파일을 탐지하고 archive/PCK를 확장해 작업공간을 만들며 번역 결과를 대상 경로에 병합합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/translation.rs:TranslationMergeReport",
+      "type": "class",
+      "name": "TranslationMergeReport",
+      "filePath": "src/translation.rs",
+      "lineRange": [
+        31,
+        34
+      ],
+      "summary": "`TranslationMergeReport`는 번역 후보 파일을 탐지하고 archive/PCK를 확장해 작업공간을 만들며 번역 결과를 대상 경로에 병합합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/vault.rs",
+      "type": "file",
+      "name": "vault.rs",
+      "filePath": "src/vault.rs",
+      "summary": "게임 mods와 비활성 저장소 사이에서 모드를 이동·복사하고 충돌을 피하며 일괄 활성화 상태를 관리합니다.",
+      "tags": [
+        "mod-vault",
+        "filesystem",
+        "lifecycle",
+        "mod-management"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/vault.rs:import_mod_to_disabled",
+      "type": "function",
+      "name": "import_mod_to_disabled",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        26,
+        31
+      ],
+      "summary": "`import_mod_to_disabled` 입력 데이터를 변환해 번역·모드 관리 워크플로의 결과물을 생성합니다.",
+      "tags": [
+        "transformation",
+        "workflow",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:import_mod_to_disabled_as_new",
+      "type": "function",
+      "name": "import_mod_to_disabled_as_new",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        33,
+        38
+      ],
+      "summary": "`import_mod_to_disabled_as_new` 입력 데이터를 변환해 번역·모드 관리 워크플로의 결과물을 생성합니다.",
+      "tags": [
+        "transformation",
+        "workflow",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:import_mod_to_disabled_with_mode",
+      "type": "function",
+      "name": "import_mod_to_disabled_with_mode",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        40,
+        71
+      ],
+      "summary": "`import_mod_to_disabled_with_mode` 입력 데이터를 변환해 번역·모드 관리 워크플로의 결과물을 생성합니다.",
+      "tags": [
+        "transformation",
+        "workflow",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:list_disabled_game_entries",
+      "type": "function",
+      "name": "list_disabled_game_entries",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        73,
+        85
+      ],
+      "summary": "`list_disabled_game_entries` 대상 경로 또는 항목을 순회해 정렬된 분석 결과를 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:enable_mod",
+      "type": "function",
+      "name": "enable_mod",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        87,
+        116
+      ],
+      "summary": "`enable_mod` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:normalize_active_archives",
+      "type": "function",
+      "name": "normalize_active_archives",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        118,
+        143
+      ],
+      "summary": "`normalize_active_archives` 원시 입력을 해석하거나 정규화해 일관된 내부 표현으로 변환합니다.",
+      "tags": [
+        "parsing",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:activation_target_path",
+      "type": "function",
+      "name": "activation_target_path",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        145,
+        157
+      ],
+      "summary": "`activation_target_path` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:disable_mod",
+      "type": "function",
+      "name": "disable_mod",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        159,
+        184
+      ],
+      "summary": "`disable_mod` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:disable_all",
+      "type": "function",
+      "name": "disable_all",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        186,
+        196
+      ],
+      "summary": "`disable_all` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:disable_game_mod_metadata",
+      "type": "function",
+      "name": "disable_game_mod_metadata",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        198,
+        227
+      ],
+      "summary": "`disable_game_mod_metadata` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:move_path",
+      "type": "function",
+      "name": "move_path",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        239,
+        279
+      ],
+      "summary": "`move_path` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:list_disabled_game_mods",
+      "type": "function",
+      "name": "list_disabled_game_mods",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        285,
+        287
+      ],
+      "summary": "`list_disabled_game_mods` 대상 경로 또는 항목을 순회해 정렬된 분석 결과를 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:find_disabled_game_record",
+      "type": "function",
+      "name": "find_disabled_game_record",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        289,
+        299
+      ],
+      "summary": "`find_disabled_game_record` 설정과 파일시스템 단서를 바탕으로 가장 적합한 경로나 값을 결정합니다.",
+      "tags": [
+        "resolution",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:remove_path_if_exists",
+      "type": "function",
+      "name": "remove_path_if_exists",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        308,
+        317
+      ],
+      "summary": "`remove_path_if_exists` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:record_for_path",
+      "type": "function",
+      "name": "record_for_path",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        319,
+        331
+      ],
+      "summary": "`record_for_path` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:copy_path",
+      "type": "function",
+      "name": "copy_path",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        333,
+        350
+      ],
+      "summary": "`copy_path` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:copy_dir_recursive",
+      "type": "function",
+      "name": "copy_dir_recursive",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        352,
+        367
+      ],
+      "summary": "`copy_dir_recursive` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:expand_zip_archive",
+      "type": "function",
+      "name": "expand_zip_archive",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        369,
+        392
+      ],
+      "summary": "`expand_zip_archive` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:expand_mod_archive",
+      "type": "function",
+      "name": "expand_mod_archive",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        394,
+        407
+      ],
+      "summary": "`expand_mod_archive` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:expand_with_7z",
+      "type": "function",
+      "name": "expand_with_7z",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        409,
+        440
+      ],
+      "summary": "`expand_with_7z` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/vault.rs:unique_child_path",
+      "type": "function",
+      "name": "unique_child_path",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        454,
+        469
+      ],
+      "summary": "`unique_child_path` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/vault.rs:DisabledModEntry",
+      "type": "class",
+      "name": "DisabledModEntry",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        12,
+        17
+      ],
+      "summary": "`DisabledModEntry`는 게임 mods와 비활성 저장소 사이에서 모드를 이동·복사하고 충돌을 피하며 일괄 활성화 상태를 관리합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/vault.rs:DisabledModAction",
+      "type": "class",
+      "name": "DisabledModAction",
+      "filePath": "src/vault.rs",
+      "lineRange": [
+        20,
+        24
+      ],
+      "summary": "`DisabledModAction`는 게임 mods와 비활성 저장소 사이에서 모드를 이동·복사하고 충돌을 피하며 일괄 활성화 상태를 관리합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/vendor_tools.rs",
+      "type": "file",
+      "name": "vendor_tools.rs",
+      "filePath": "src/vendor_tools.rs",
+      "summary": "번들된 7-Zip과 Godot PCK Explorer 실행 파일의 경로와 사용 가능 상태를 보고합니다.",
+      "tags": [
+        "vendor-tools",
+        "tool-discovery",
+        "configuration",
+        "rust"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/vendor_tools.rs:inspect",
+      "type": "function",
+      "name": "inspect",
+      "filePath": "src/vendor_tools.rs",
+      "lineRange": [
+        11,
+        36
+      ],
+      "summary": "`inspect` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/vendor_tools.rs:VendorTool",
+      "type": "class",
+      "name": "VendorTool",
+      "filePath": "src/vendor_tools.rs",
+      "lineRange": [
+        4,
+        9
+      ],
+      "summary": "`VendorTool`는 번들된 7-Zip과 Godot PCK Explorer 실행 파일의 경로와 사용 가능 상태를 보고합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "rust"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:scan_translation_candidates",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:scan_translation_candidates",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:extract_translation_work",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:extract_translation_work",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:list_translation_workspaces",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:list_translation_workspaces",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:merge_translation_workspace",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:merge_translation_workspace",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:visit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:classify_translation_file",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:contains_language_code_token",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:language_candidate_path_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:is_supported_archive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:expand_source",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:expand_archive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:expand_with_7z",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:collect_pck_files_inner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:expand_pck",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:expand_zip_archive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:write_manifest",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:write_review_file",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:previous_versions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:version_id_for_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:stable_key_for_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "function:src/translation.rs:collect_files_inner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "class:src/translation.rs:TranslationExtractReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "class:src/translation.rs:TranslationExtractReport",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "class:src/translation.rs:TranslationWorkspace",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "class:src/translation.rs:TranslationWorkspace",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "class:src/translation.rs:TranslationMergeReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "class:src/translation.rs:TranslationMergeReport",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:import_mod_to_disabled",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:import_mod_to_disabled",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:import_mod_to_disabled_as_new",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:import_mod_to_disabled_as_new",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:import_mod_to_disabled_with_mode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:list_disabled_game_entries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:list_disabled_game_entries",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:enable_mod",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:enable_mod",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:normalize_active_archives",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:normalize_active_archives",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:activation_target_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:disable_mod",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:disable_mod",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:disable_all",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:disable_all",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:disable_game_mod_metadata",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:move_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:list_disabled_game_mods",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:list_disabled_game_mods",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:find_disabled_game_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:remove_path_if_exists",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:record_for_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:copy_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:copy_dir_recursive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:expand_zip_archive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:expand_mod_archive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:expand_with_7z",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "function:src/vault.rs:unique_child_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "class:src/vault.rs:DisabledModEntry",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "class:src/vault.rs:DisabledModEntry",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "class:src/vault.rs:DisabledModAction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "class:src/vault.rs:DisabledModAction",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vendor_tools.rs",
+      "target": "function:src/vendor_tools.rs:inspect",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vendor_tools.rs",
+      "target": "function:src/vendor_tools.rs:inspect",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/vendor_tools.rs",
+      "target": "class:src/vendor_tools.rs:VendorTool",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/vendor_tools.rs",
+      "target": "class:src/vendor_tools.rs:VendorTool",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "file:src/domain.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "file:src/error.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "file:src/json_translation/mod.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/translation.rs",
+      "target": "file:src/process.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "file:src/discovery.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "file:src/domain.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "file:src/error.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/vault.rs",
+      "target": "file:src/process.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:src/translation.rs:extract_translation_work",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:list_translation_workspaces",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:merge_translation_workspace",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:visit",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:expand_with_7z",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:expand_with_7z",
+      "target": "function:src/process.rs:hidden_command",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:collect_pck_files_inner",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:expand_pck",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:expand_pck",
+      "target": "function:src/process.rs:hidden_command",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:expand_zip_archive",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:expand_zip_archive",
+      "target": "function:src/process.rs:powershell_expand_archive",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:write_manifest",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:write_review_file",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:previous_versions",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:version_id_for_path",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/translation.rs:collect_files_inner",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:import_mod_to_disabled_with_mode",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:import_mod_to_disabled_with_mode",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:list_disabled_game_entries",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:enable_mod",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:enable_mod",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:normalize_active_archives",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:normalize_active_archives",
+      "target": "function:src/discovery.rs:scan_mod_directory",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:normalize_active_archives",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:disable_mod",
+      "target": "function:src/discovery.rs:scan_mod_directory",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:disable_mod",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:disable_mod",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:disable_all",
+      "target": "function:src/discovery.rs:scan_mod_directory",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:disable_all",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:disable_game_mod_metadata",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:move_path",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:list_disabled_game_mods",
+      "target": "function:src/discovery.rs:scan_mod_directory",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:find_disabled_game_record",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:record_for_path",
+      "target": "function:src/discovery.rs:scan_mod_directory",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:copy_path",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:copy_dir_recursive",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:expand_zip_archive",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:expand_zip_archive",
+      "target": "function:src/process.rs:powershell_expand_archive",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:expand_with_7z",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/vault.rs:expand_with_7z",
+      "target": "function:src/process.rs:hidden_command",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

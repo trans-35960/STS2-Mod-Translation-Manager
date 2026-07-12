@@ -1,0 +1,2040 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/process.rs",
+      "type": "file",
+      "name": "process.rs",
+      "filePath": "src/process.rs",
+      "summary": "Windows 콘솔 창을 숨긴 외부 명령 실행기와 PowerShell archive 압축·해제 도우미를 제공합니다.",
+      "tags": [
+        "process-management",
+        "powershell",
+        "archive",
+        "utility"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/process.rs:hidden_command",
+      "type": "function",
+      "name": "hidden_command",
+      "filePath": "src/process.rs",
+      "lineRange": [
+        8,
+        12
+      ],
+      "summary": "`hidden_command` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/process.rs:powershell_expand_archive",
+      "type": "function",
+      "name": "powershell_expand_archive",
+      "filePath": "src/process.rs",
+      "lineRange": [
+        14,
+        28
+      ],
+      "summary": "`powershell_expand_archive` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/process.rs:powershell_compress_directory_contents",
+      "type": "function",
+      "name": "powershell_compress_directory_contents",
+      "filePath": "src/process.rs",
+      "lineRange": [
+        30,
+        47
+      ],
+      "summary": "`powershell_compress_directory_contents` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/save_backup.rs",
+      "type": "file",
+      "name": "save_backup.rs",
+      "filePath": "src/save_backup.rs",
+      "summary": "바닐라·모드 세이브를 스냅샷으로 백업·복원·정리하고 current run 및 Steam Cloud cache를 안전하게 전환합니다.",
+      "tags": [
+        "backup",
+        "save-management",
+        "filesystem",
+        "lifecycle"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/save_backup.rs:as_str",
+      "type": "function",
+      "name": "as_str",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        19,
+        24
+      ],
+      "summary": "`as_str` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:label",
+      "type": "function",
+      "name": "label",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        26,
+        31
+      ],
+      "summary": "`label` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:backup_before_launch",
+      "type": "function",
+      "name": "backup_before_launch",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        66,
+        115
+      ],
+      "summary": "`backup_before_launch` 게임 또는 보조 프로세스의 상태 확인과 실행 흐름을 담당합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/save_backup.rs:list_backups",
+      "type": "function",
+      "name": "list_backups",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        117,
+        148
+      ],
+      "summary": "`list_backups` 대상 경로 또는 항목을 순회해 정렬된 분석 결과를 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:restore_backup",
+      "type": "function",
+      "name": "restore_backup",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        150,
+        177
+      ],
+      "summary": "`restore_backup` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:delete_backup",
+      "type": "function",
+      "name": "delete_backup",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        179,
+        187
+      ],
+      "summary": "`delete_backup` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:ensure_modded_profiles",
+      "type": "function",
+      "name": "ensure_modded_profiles",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        189,
+        204
+      ],
+      "summary": "`ensure_modded_profiles` 제약을 검증하고 유효하지 않거나 위험한 상태를 오류로 차단합니다.",
+      "tags": [
+        "validation",
+        "guard",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:quarantine_modded_current_runs_for_vanilla",
+      "type": "function",
+      "name": "quarantine_modded_current_runs_for_vanilla",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        206,
+        237
+      ],
+      "summary": "`quarantine_modded_current_runs_for_vanilla` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:bridge_modded_current_runs_for_modded_launch",
+      "type": "function",
+      "name": "bridge_modded_current_runs_for_modded_launch",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        239,
+        271
+      ],
+      "summary": "`bridge_modded_current_runs_for_modded_launch` 게임 또는 보조 프로세스의 상태 확인과 실행 흐름을 담당합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:clear_current_runs_for_mode_switch",
+      "type": "function",
+      "name": "clear_current_runs_for_mode_switch",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        273,
+        321
+      ],
+      "summary": "`clear_current_runs_for_mode_switch` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:has_modded_current_run_for_mode_switch",
+      "type": "function",
+      "name": "has_modded_current_run_for_mode_switch",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        323,
+        325
+      ],
+      "summary": "`has_modded_current_run_for_mode_switch` 조건을 판정해 상위 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:modded_current_run_paths_for_mode_switch",
+      "type": "function",
+      "name": "modded_current_run_paths_for_mode_switch",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        327,
+        343
+      ],
+      "summary": "`modded_current_run_paths_for_mode_switch` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:current_run_cleanup_candidates_for_profile",
+      "type": "function",
+      "name": "current_run_cleanup_candidates_for_profile",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        345,
+        367
+      ],
+      "summary": "`current_run_cleanup_candidates_for_profile` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:current_run_quarantine_candidates_for_profile",
+      "type": "function",
+      "name": "current_run_quarantine_candidates_for_profile",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        369,
+        381
+      ],
+      "summary": "`current_run_quarantine_candidates_for_profile` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:current_run_candidates_for_profile",
+      "type": "function",
+      "name": "current_run_candidates_for_profile",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        383,
+        396
+      ],
+      "summary": "`current_run_candidates_for_profile` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:steam_cloud_current_run_paths_with_prefix",
+      "type": "function",
+      "name": "steam_cloud_current_run_paths_with_prefix",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        414,
+        436
+      ],
+      "summary": "`steam_cloud_current_run_paths_with_prefix` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:clear_current_run_steam_cloud_cache_entries",
+      "type": "function",
+      "name": "clear_current_run_steam_cloud_cache_entries",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        438,
+        463
+      ],
+      "summary": "`clear_current_run_steam_cloud_cache_entries` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:remove_current_run_entries_from_vdf",
+      "type": "function",
+      "name": "remove_current_run_entries_from_vdf",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        465,
+        496
+      ],
+      "summary": "`remove_current_run_entries_from_vdf` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:is_current_run_vdf_key",
+      "type": "function",
+      "name": "is_current_run_vdf_key",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        498,
+        509
+      ],
+      "summary": "`is_current_run_vdf_key` 조건을 판정해 상위 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:steam_userdata_roots",
+      "type": "function",
+      "name": "steam_userdata_roots",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        520,
+        539
+      ],
+      "summary": "`steam_userdata_roots` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:steam_root_from_game_dir",
+      "type": "function",
+      "name": "steam_root_from_game_dir",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        541,
+        559
+      ],
+      "summary": "`steam_root_from_game_dir` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:current_run_character_ids",
+      "type": "function",
+      "name": "current_run_character_ids",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        578,
+        599
+      ],
+      "summary": "`current_run_character_ids` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:is_vanilla_character_id",
+      "type": "function",
+      "name": "is_vanilla_character_id",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        601,
+        612
+      ],
+      "summary": "`is_vanilla_character_id` 조건을 판정해 상위 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:unique_backup_file",
+      "type": "function",
+      "name": "unique_backup_file",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        619,
+        640
+      ],
+      "summary": "`unique_backup_file` 세이브 데이터를 보존하거나 실행 모드 사이에서 안전하게 연결합니다.",
+      "tags": [
+        "backup",
+        "persistence",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:backup_vanilla_saves",
+      "type": "function",
+      "name": "backup_vanilla_saves",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        642,
+        669
+      ],
+      "summary": "`backup_vanilla_saves` 세이브 데이터를 보존하거나 실행 모드 사이에서 안전하게 연결합니다.",
+      "tags": [
+        "backup",
+        "persistence",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:backup_modded_saves",
+      "type": "function",
+      "name": "backup_modded_saves",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        671,
+        689
+      ],
+      "summary": "`backup_modded_saves` 세이브 데이터를 보존하거나 실행 모드 사이에서 안전하게 연결합니다.",
+      "tags": [
+        "backup",
+        "persistence",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:prune_backups",
+      "type": "function",
+      "name": "prune_backups",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        691,
+        711
+      ],
+      "summary": "`prune_backups` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:unique_snapshot_dir",
+      "type": "function",
+      "name": "unique_snapshot_dir",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        713,
+        722
+      ],
+      "summary": "`unique_snapshot_dir` 세이브 데이터를 보존하거나 실행 모드 사이에서 안전하게 연결합니다.",
+      "tags": [
+        "backup",
+        "persistence",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:replace_path",
+      "type": "function",
+      "name": "replace_path",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        724,
+        735
+      ],
+      "summary": "`replace_path` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:copy_path",
+      "type": "function",
+      "name": "copy_path",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        737,
+        748
+      ],
+      "summary": "`copy_path` 파일시스템 항목의 이동·복사·삭제 수명주기를 안전하게 처리합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:path_size",
+      "type": "function",
+      "name": "path_size",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        768,
+        780
+      ],
+      "summary": "`path_size` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/save_backup.rs:parse_backup_id",
+      "type": "function",
+      "name": "parse_backup_id",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        786,
+        796
+      ],
+      "summary": "`parse_backup_id` 원시 입력을 해석하거나 정규화해 일관된 내부 표현으로 변환합니다.",
+      "tags": [
+        "parsing",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/save_backup.rs:SaveKind",
+      "type": "class",
+      "name": "SaveKind",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        13,
+        16
+      ],
+      "summary": "`SaveKind`는 바닐라·모드 세이브를 스냅샷으로 백업·복원·정리하고 current run 및 Steam Cloud cache를 안전하게 전환합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "state-model",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src/save_backup.rs:SaveBackupEntry",
+      "type": "class",
+      "name": "SaveBackupEntry",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        43,
+        49
+      ],
+      "summary": "`SaveBackupEntry`는 바닐라·모드 세이브를 스냅샷으로 백업·복원·정리하고 current run 및 Steam Cloud cache를 안전하게 전환합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/save_backup.rs:SaveBackupReport",
+      "type": "class",
+      "name": "SaveBackupReport",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        52,
+        57
+      ],
+      "summary": "`SaveBackupReport`는 바닐라·모드 세이브를 스냅샷으로 백업·복원·정리하고 current run 및 Steam Cloud cache를 안전하게 전환합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/save_backup.rs:CurrentRunCleanupReport",
+      "type": "class",
+      "name": "CurrentRunCleanupReport",
+      "filePath": "src/save_backup.rs",
+      "lineRange": [
+        60,
+        64
+      ],
+      "summary": "`CurrentRunCleanupReport`는 바닐라·모드 세이브를 스냅샷으로 백업·복원·정리하고 current run 및 Steam Cloud cache를 안전하게 전환합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/state.rs",
+      "type": "file",
+      "name": "state.rs",
+      "filePath": "src/state.rs",
+      "summary": "모드 fingerprint 상태와 사용자가 원하는 활성 모드 key를 읽고 쓰며 신규·변경 모드를 판별합니다.",
+      "tags": [
+        "state-management",
+        "fingerprint",
+        "persistence",
+        "rust"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/state.rs:detect_changes",
+      "type": "function",
+      "name": "detect_changes",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        21,
+        59
+      ],
+      "summary": "`detect_changes` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/state.rs:write_state",
+      "type": "function",
+      "name": "write_state",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        61,
+        112
+      ],
+      "summary": "`write_state` 현재 상태를 직렬화해 지정된 저장소에 기록합니다.",
+      "tags": [
+        "serialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/state.rs:read_mod_state_index",
+      "type": "function",
+      "name": "read_mod_state_index",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        114,
+        119
+      ],
+      "summary": "`read_mod_state_index` 데이터를 읽고 파싱해 상위 서비스가 사용할 구조로 복원합니다.",
+      "tags": [
+        "deserialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/state.rs:mod_state_key",
+      "type": "function",
+      "name": "mod_state_key",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        121,
+        123
+      ],
+      "summary": "`mod_state_key` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/state.rs:desired_active_mods_path",
+      "type": "function",
+      "name": "desired_active_mods_path",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        125,
+        127
+      ],
+      "summary": "`desired_active_mods_path` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/state.rs:desired_active_mod_keys",
+      "type": "function",
+      "name": "desired_active_mod_keys",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        129,
+        143
+      ],
+      "summary": "`desired_active_mod_keys` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/state.rs:read_desired_active_mod_keys",
+      "type": "function",
+      "name": "read_desired_active_mod_keys",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        145,
+        157
+      ],
+      "summary": "`read_desired_active_mod_keys` 데이터를 읽고 파싱해 상위 서비스가 사용할 구조로 복원합니다.",
+      "tags": [
+        "deserialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/state.rs:write_desired_active_mod_keys",
+      "type": "function",
+      "name": "write_desired_active_mod_keys",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        159,
+        168
+      ],
+      "summary": "`write_desired_active_mod_keys` 현재 상태를 직렬화해 지정된 저장소에 기록합니다.",
+      "tags": [
+        "serialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/state.rs:mod_record_state_key",
+      "type": "function",
+      "name": "mod_record_state_key",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        170,
+        172
+      ],
+      "summary": "`mod_record_state_key` 항목을 안정적으로 식별하거나 변경 여부를 비교할 값을 계산합니다.",
+      "tags": [
+        "identity",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/state.rs:read_state",
+      "type": "function",
+      "name": "read_state",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        174,
+        220
+      ],
+      "summary": "`read_state` 데이터를 읽고 파싱해 상위 서비스가 사용할 구조로 복원합니다.",
+      "tags": [
+        "deserialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/state.rs:is_game_disabled_path",
+      "type": "function",
+      "name": "is_game_disabled_path",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        237,
+        247
+      ],
+      "summary": "`is_game_disabled_path` 조건을 판정해 상위 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/state.rs:ModStateEntry",
+      "type": "class",
+      "name": "ModStateEntry",
+      "filePath": "src/state.rs",
+      "lineRange": [
+        11,
+        19
+      ],
+      "summary": "`ModStateEntry`는 모드 fingerprint 상태와 사용자가 원하는 활성 모드 key를 읽고 쓰며 신규·변경 모드를 판별합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "domain",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/text_ui.rs",
+      "type": "file",
+      "name": "text_ui.rs",
+      "filePath": "src/text_ui.rs",
+      "summary": "대화형 텍스트 메뉴에서 스캔, 프리셋, 모드 보관소와 게임 실행 명령을 안내하고 처리합니다.",
+      "tags": [
+        "text-ui",
+        "cli",
+        "interaction",
+        "rust"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Rust의 Result 기반 오류 전파와 소유권을 활용해 파일시스템 중심 워크플로를 명시적으로 구성합니다."
+    },
+    {
+      "id": "function:src/text_ui.rs:run",
+      "type": "function",
+      "name": "run",
+      "filePath": "src/text_ui.rs",
+      "lineRange": [
+        7,
+        57
+      ],
+      "summary": "`run` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/text_ui.rs:print_dashboard",
+      "type": "function",
+      "name": "print_dashboard",
+      "filePath": "src/text_ui.rs",
+      "lineRange": [
+        59,
+        84
+      ],
+      "summary": "`print_dashboard` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/text_ui.rs:vault_menu",
+      "type": "function",
+      "name": "vault_menu",
+      "filePath": "src/text_ui.rs",
+      "lineRange": [
+        86,
+        125
+      ],
+      "summary": "`vault_menu` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/text_ui.rs:preset_menu",
+      "type": "function",
+      "name": "preset_menu",
+      "filePath": "src/text_ui.rs",
+      "lineRange": [
+        127,
+        171
+      ],
+      "summary": "`preset_menu` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/text_ui.rs:translation_menu",
+      "type": "function",
+      "name": "translation_menu",
+      "filePath": "src/text_ui.rs",
+      "lineRange": [
+        173,
+        229
+      ],
+      "summary": "`translation_menu` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/text_ui.rs:launch_menu",
+      "type": "function",
+      "name": "launch_menu",
+      "filePath": "src/text_ui.rs",
+      "lineRange": [
+        231,
+        267
+      ],
+      "summary": "`launch_menu` 게임 또는 보조 프로세스의 상태 확인과 실행 흐름을 담당합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/text_ui.rs:tools_status",
+      "type": "function",
+      "name": "tools_status",
+      "filePath": "src/text_ui.rs",
+      "lineRange": [
+        269,
+        285
+      ],
+      "summary": "`tools_status` 게임 또는 보조 프로세스의 상태 확인과 실행 흐름을 담당합니다.",
+      "tags": [
+        "process-management",
+        "runtime",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/text_ui.rs:prompt",
+      "type": "function",
+      "name": "prompt",
+      "filePath": "src/text_ui.rs",
+      "lineRange": [
+        287,
+        298
+      ],
+      "summary": "`prompt` 관련 도메인 규칙을 구현하고 상위 서비스가 사용할 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/process.rs",
+      "target": "function:src/process.rs:hidden_command",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/process.rs",
+      "target": "function:src/process.rs:hidden_command",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/process.rs",
+      "target": "function:src/process.rs:powershell_expand_archive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/process.rs",
+      "target": "function:src/process.rs:powershell_expand_archive",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/process.rs",
+      "target": "function:src/process.rs:powershell_compress_directory_contents",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/process.rs",
+      "target": "function:src/process.rs:powershell_compress_directory_contents",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:as_str",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:as_str",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:label",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:label",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:backup_before_launch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:backup_before_launch",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:list_backups",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:list_backups",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:restore_backup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:restore_backup",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:delete_backup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:delete_backup",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:ensure_modded_profiles",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:ensure_modded_profiles",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:quarantine_modded_current_runs_for_vanilla",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:quarantine_modded_current_runs_for_vanilla",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:bridge_modded_current_runs_for_modded_launch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:bridge_modded_current_runs_for_modded_launch",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:clear_current_runs_for_mode_switch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:clear_current_runs_for_mode_switch",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:has_modded_current_run_for_mode_switch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:has_modded_current_run_for_mode_switch",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:modded_current_run_paths_for_mode_switch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:modded_current_run_paths_for_mode_switch",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:current_run_cleanup_candidates_for_profile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:current_run_quarantine_candidates_for_profile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:current_run_candidates_for_profile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:steam_cloud_current_run_paths_with_prefix",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:clear_current_run_steam_cloud_cache_entries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:remove_current_run_entries_from_vdf",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:is_current_run_vdf_key",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:steam_userdata_roots",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:steam_root_from_game_dir",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:current_run_character_ids",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:is_vanilla_character_id",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:unique_backup_file",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:backup_vanilla_saves",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:backup_modded_saves",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:prune_backups",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:unique_snapshot_dir",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:replace_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:copy_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:path_size",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "function:src/save_backup.rs:parse_backup_id",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "class:src/save_backup.rs:SaveKind",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "class:src/save_backup.rs:SaveKind",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "class:src/save_backup.rs:SaveBackupEntry",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "class:src/save_backup.rs:SaveBackupEntry",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "class:src/save_backup.rs:SaveBackupReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "class:src/save_backup.rs:SaveBackupReport",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "class:src/save_backup.rs:CurrentRunCleanupReport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "class:src/save_backup.rs:CurrentRunCleanupReport",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:detect_changes",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:detect_changes",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:write_state",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:write_state",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:read_mod_state_index",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:read_mod_state_index",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:mod_state_key",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:mod_state_key",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:desired_active_mods_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:desired_active_mods_path",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:desired_active_mod_keys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:desired_active_mod_keys",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:read_desired_active_mod_keys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:read_desired_active_mod_keys",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:write_desired_active_mod_keys",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:write_desired_active_mod_keys",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:mod_record_state_key",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:mod_record_state_key",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:read_state",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "function:src/state.rs:is_game_disabled_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "class:src/state.rs:ModStateEntry",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "class:src/state.rs:ModStateEntry",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "function:src/text_ui.rs:run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "function:src/text_ui.rs:run",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "function:src/text_ui.rs:print_dashboard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "function:src/text_ui.rs:vault_menu",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "function:src/text_ui.rs:preset_menu",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "function:src/text_ui.rs:translation_menu",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "function:src/text_ui.rs:launch_menu",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "function:src/text_ui.rs:tools_status",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "function:src/text_ui.rs:prompt",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "file:src/config.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/save_backup.rs",
+      "target": "file:src/error.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "file:src/domain.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/state.rs",
+      "target": "file:src/error.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "file:src/app.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "file:src/error.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/text_ui.rs",
+      "target": "file:src/vault.rs",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:src/save_backup.rs:backup_before_launch",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:list_backups",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:ensure_modded_profiles",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:quarantine_modded_current_runs_for_vanilla",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:clear_current_runs_for_mode_switch",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:clear_current_run_steam_cloud_cache_entries",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:backup_vanilla_saves",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:backup_modded_saves",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:unique_snapshot_dir",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:copy_path",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/save_backup.rs:path_size",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:detect_changes",
+      "target": "function:src/domain.rs:as_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:detect_changes",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:write_state",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:write_state",
+      "target": "function:src/domain.rs:as_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:write_state",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:desired_active_mod_keys",
+      "target": "function:src/domain.rs:stable_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:read_desired_active_mod_keys",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:write_desired_active_mod_keys",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:read_state",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/state.rs:read_state",
+      "target": "function:src/domain.rs:from_key",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:run",
+      "target": "function:src/app.rs:ensure_workspace_dirs",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:run",
+      "target": "function:src/app.rs:scan_and_update_state",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:run",
+      "target": "function:src/app.rs:disable_all_mods",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:print_dashboard",
+      "target": "function:src/app.rs:scan",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:print_dashboard",
+      "target": "function:src/app.rs:launch_status",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:vault_menu",
+      "target": "function:src/app.rs:list_vault",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:vault_menu",
+      "target": "function:src/app.rs:import_mod",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:vault_menu",
+      "target": "function:src/app.rs:new",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:preset_menu",
+      "target": "function:src/app.rs:list_presets",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:preset_menu",
+      "target": "function:src/app.rs:save_preset",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:preset_menu",
+      "target": "function:src/app.rs:apply_preset",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:translation_menu",
+      "target": "function:src/app.rs:list_translation_workspaces",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:translation_menu",
+      "target": "function:src/app.rs:extract_translation",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:translation_menu",
+      "target": "function:src/app.rs:new",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:translation_menu",
+      "target": "function:src/app.rs:merge_translation",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:launch_menu",
+      "target": "function:src/app.rs:launch_status",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:launch_menu",
+      "target": "function:src/app.rs:launch_current",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:launch_menu",
+      "target": "function:src/app.rs:launch_vanilla",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:tools_status",
+      "target": "function:src/app.rs:vendor_tools",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:prompt",
+      "target": "function:src/error.rs:io",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/text_ui.rs:prompt",
+      "target": "function:src/app.rs:new",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

@@ -1,0 +1,1408 @@
+{
+  "nodes": [
+    {
+      "id": "file:src-tauri/src/services/settings.rs",
+      "type": "file",
+      "name": "settings.rs",
+      "filePath": "src-tauri/src/services/settings.rs",
+      "summary": "UI 설정을 검증하고 TSV 상태 파일에 저장하며 게임·세이브·번역 작업 경로를 AppConfig에 반영합니다.",
+      "tags": [
+        "settings",
+        "configuration",
+        "validation",
+        "tauri-service"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/src/services/settings.rs:save_settings",
+      "type": "function",
+      "name": "save_settings",
+      "filePath": "src-tauri/src/services/settings.rs",
+      "lineRange": [
+        1,
+        49
+      ],
+      "summary": "`save_settings` 서비스 상태나 분석 결과를 직렬화해 저장합니다.",
+      "tags": [
+        "serialization",
+        "persistence",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/settings.rs:save_mod_view_mode",
+      "type": "function",
+      "name": "save_mod_view_mode",
+      "filePath": "src-tauri/src/services/settings.rs",
+      "lineRange": [
+        51,
+        57
+      ],
+      "summary": "`save_mod_view_mode` 서비스 상태나 분석 결과를 직렬화해 저장합니다.",
+      "tags": [
+        "serialization",
+        "persistence",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/settings.rs:read_ui_settings",
+      "type": "function",
+      "name": "read_ui_settings",
+      "filePath": "src-tauri/src/services/settings.rs",
+      "lineRange": [
+        59,
+        134
+      ],
+      "summary": "`read_ui_settings` 저장된 데이터를 읽고 frontend 또는 상위 서비스가 사용할 구조로 복원합니다.",
+      "tags": [
+        "deserialization",
+        "file-io",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/src/services/settings.rs:write_ui_settings",
+      "type": "function",
+      "name": "write_ui_settings",
+      "filePath": "src-tauri/src/services/settings.rs",
+      "lineRange": [
+        143,
+        167
+      ],
+      "summary": "`write_ui_settings` 서비스 상태나 분석 결과를 직렬화해 저장합니다.",
+      "tags": [
+        "serialization",
+        "persistence",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/src/services/tests.rs",
+      "type": "file",
+      "name": "tests.rs",
+      "filePath": "src-tauri/src/services/tests.rs",
+      "summary": "대시보드, 설정, 삭제·복원, 번역 미리보기, JSON 시트와 PCK 서비스 동작을 검증하는 통합 테스트 모음입니다.",
+      "tags": [
+        "test",
+        "tauri-service",
+        "integration",
+        "regression"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src-tauri/src/services/translation_preview.rs",
+      "type": "file",
+      "name": "translation_preview.rs",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "summary": "모드 resource를 추출하고 선택한 번역 node의 source/translated 작업공간과 번역 시트를 준비합니다.",
+      "tags": [
+        "translation-preview",
+        "extraction",
+        "workspace",
+        "tauri-service"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:extract_translation",
+      "type": "function",
+      "name": "extract_translation",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        1,
+        37
+      ],
+      "summary": "`extract_translation` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:clear_translation_extract_cache",
+      "type": "function",
+      "name": "clear_translation_extract_cache",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        39,
+        53
+      ],
+      "summary": "`clear_translation_extract_cache` 관리 대상 파일과 cache의 수명주기 작업을 안전하게 수행합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:clear_translation_extract_cache_for_record",
+      "type": "function",
+      "name": "clear_translation_extract_cache_for_record",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        55,
+        76
+      ],
+      "summary": "`clear_translation_extract_cache_for_record` 관리 대상 파일과 cache의 수명주기 작업을 안전하게 수행합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:extract_mod_files",
+      "type": "function",
+      "name": "extract_mod_files",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        83,
+        105
+      ],
+      "summary": "`extract_mod_files` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:full_extract_scan_root",
+      "type": "function",
+      "name": "full_extract_scan_root",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        107,
+        122
+      ],
+      "summary": "`full_extract_scan_root` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:copy_connected_translation_patch_files",
+      "type": "function",
+      "name": "copy_connected_translation_patch_files",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        148,
+        229
+      ],
+      "summary": "`copy_connected_translation_patch_files` 관리 대상 파일과 cache의 수명주기 작업을 안전하게 수행합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:pck_stem_from_source_or_scan_root",
+      "type": "function",
+      "name": "pck_stem_from_source_or_scan_root",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        249,
+        264
+      ],
+      "summary": "`pck_stem_from_source_or_scan_root` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:translation_patch_targets_base",
+      "type": "function",
+      "name": "translation_patch_targets_base",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        281,
+        310
+      ],
+      "summary": "`translation_patch_targets_base` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:translation_match_tokens",
+      "type": "function",
+      "name": "translation_match_tokens",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        312,
+        330
+      ],
+      "summary": "`translation_match_tokens` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:target_language_relative_path",
+      "type": "function",
+      "name": "target_language_relative_path",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        332,
+        341
+      ],
+      "summary": "`target_language_relative_path` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:copy_resource_relative_if_exists",
+      "type": "function",
+      "name": "copy_resource_relative_if_exists",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        343,
+        357
+      ],
+      "summary": "`copy_resource_relative_if_exists` 관리 대상 파일과 cache의 수명주기 작업을 안전하게 수행합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:find_resource_file_by_relative",
+      "type": "function",
+      "name": "find_resource_file_by_relative",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        359,
+        379
+      ],
+      "summary": "`find_resource_file_by_relative` 관련 경로와 레코드를 순회해 서비스 처리 대상을 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:selected_extract_paths",
+      "type": "function",
+      "name": "selected_extract_paths",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        381,
+        394
+      ],
+      "summary": "`selected_extract_paths` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:collect_matching_extract_paths",
+      "type": "function",
+      "name": "collect_matching_extract_paths",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        396,
+        420
+      ],
+      "summary": "`collect_matching_extract_paths` 관련 경로와 레코드를 순회해 서비스 처리 대상을 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:copy_extract_path",
+      "type": "function",
+      "name": "copy_extract_path",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        422,
+        439
+      ],
+      "summary": "`copy_extract_path` 관리 대상 파일과 cache의 수명주기 작업을 안전하게 수행합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:extract_display_path",
+      "type": "function",
+      "name": "extract_display_path",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        441,
+        451
+      ],
+      "summary": "`extract_display_path` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview.rs:prepare_translation_node",
+      "type": "function",
+      "name": "prepare_translation_node",
+      "filePath": "src-tauri/src/services/translation_preview.rs",
+      "lineRange": [
+        463,
+        716
+      ],
+      "summary": "`prepare_translation_node` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "type": "file",
+      "name": "extraction_cache.rs",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "summary": "archive와 PCK를 외부 도구로 확장하고 fingerprint 기반 미리보기 cache 및 payload 탐색을 관리합니다.",
+      "tags": [
+        "extraction-cache",
+        "pck",
+        "archive",
+        "filesystem"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:extraction_scan_root",
+      "type": "function",
+      "name": "extraction_scan_root",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        1,
+        59
+      ],
+      "summary": "`extraction_scan_root` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:full_extraction_scan_root",
+      "type": "function",
+      "name": "full_extraction_scan_root",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        61,
+        84
+      ],
+      "summary": "`full_extraction_scan_root` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:source_has_pck_payload",
+      "type": "function",
+      "name": "source_has_pck_payload",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        90,
+        116
+      ],
+      "summary": "`source_has_pck_payload` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:find_first_pck_file",
+      "type": "function",
+      "name": "find_first_pck_file",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        118,
+        143
+      ],
+      "summary": "`find_first_pck_file` 관련 경로와 레코드를 순회해 서비스 처리 대상을 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:parse_pck_resource_paths",
+      "type": "function",
+      "name": "parse_pck_resource_paths",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        145,
+        174
+      ],
+      "summary": "`parse_pck_resource_paths` 입력과 경로 단서를 해석해 일관된 내부 값으로 결정합니다.",
+      "tags": [
+        "resolution",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:resource_path_after_marker",
+      "type": "function",
+      "name": "resource_path_after_marker",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        176,
+        187
+      ],
+      "summary": "`resource_path_after_marker` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:list_pck_resource_paths",
+      "type": "function",
+      "name": "list_pck_resource_paths",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        189,
+        215
+      ],
+      "summary": "`list_pck_resource_paths` 관련 경로와 레코드를 순회해 서비스 처리 대상을 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:directory_preview_has_pck_contents",
+      "type": "function",
+      "name": "directory_preview_has_pck_contents",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        217,
+        242
+      ],
+      "summary": "`directory_preview_has_pck_contents` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_directory_preview",
+      "type": "function",
+      "name": "expand_directory_preview",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        244,
+        281
+      ],
+      "summary": "`expand_directory_preview` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:compact_language_preview_cache",
+      "type": "function",
+      "name": "compact_language_preview_cache",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        283,
+        306
+      ],
+      "summary": "`compact_language_preview_cache` 재사용 가능한 작업 결과와 cache 메타데이터를 관리합니다.",
+      "tags": [
+        "cache-management",
+        "state",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:collect_preview_metadata_files",
+      "type": "function",
+      "name": "collect_preview_metadata_files",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        308,
+        324
+      ],
+      "summary": "`collect_preview_metadata_files` 관련 경로와 레코드를 순회해 서비스 처리 대상을 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:is_preview_metadata_file",
+      "type": "function",
+      "name": "is_preview_metadata_file",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        326,
+        341
+      ],
+      "summary": "`is_preview_metadata_file` 조건을 판정해 서비스 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "predicate",
+        "validation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:remove_unkept_preview_files",
+      "type": "function",
+      "name": "remove_unkept_preview_files",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        353,
+        369
+      ],
+      "summary": "`remove_unkept_preview_files` 관리 대상 파일과 cache의 수명주기 작업을 안전하게 수행합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:remove_preview_file",
+      "type": "function",
+      "name": "remove_preview_file",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        371,
+        381
+      ],
+      "summary": "`remove_preview_file` 관리 대상 파일과 cache의 수명주기 작업을 안전하게 수행합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:remove_empty_preview_dirs",
+      "type": "function",
+      "name": "remove_empty_preview_dirs",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        383,
+        403
+      ],
+      "summary": "`remove_empty_preview_dirs` 관리 대상 파일과 cache의 수명주기 작업을 안전하게 수행합니다.",
+      "tags": [
+        "filesystem",
+        "lifecycle",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:extraction_source_for_record",
+      "type": "function",
+      "name": "extraction_source_for_record",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        406,
+        420
+      ],
+      "summary": "`extraction_source_for_record` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:preferred_extractable_payload",
+      "type": "function",
+      "name": "preferred_extractable_payload",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        434,
+        444
+      ],
+      "summary": "`preferred_extractable_payload` 입력과 경로 단서를 해석해 일관된 내부 값으로 결정합니다.",
+      "tags": [
+        "resolution",
+        "utility",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:collect_extractable_payloads",
+      "type": "function",
+      "name": "collect_extractable_payloads",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        446,
+        477
+      ],
+      "summary": "`collect_extractable_payloads` 관련 경로와 레코드를 순회해 서비스 처리 대상을 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:first_active_payload",
+      "type": "function",
+      "name": "first_active_payload",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        479,
+        492
+      ],
+      "summary": "`first_active_payload` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:is_supported_archive_path",
+      "type": "function",
+      "name": "is_supported_archive_path",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        501,
+        511
+      ],
+      "summary": "`is_supported_archive_path` 조건을 판정해 서비스 워크플로의 분기 기준을 제공합니다.",
+      "tags": [
+        "predicate",
+        "validation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_source",
+      "type": "function",
+      "name": "expand_source",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        524,
+        534
+      ],
+      "summary": "`expand_source` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_with_7z",
+      "type": "function",
+      "name": "expand_with_7z",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        549,
+        567
+      ],
+      "summary": "`expand_with_7z` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:collect_pck_files",
+      "type": "function",
+      "name": "collect_pck_files",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        579,
+        603
+      ],
+      "summary": "`collect_pck_files` 관련 경로와 레코드를 순회해 서비스 처리 대상을 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_pck",
+      "type": "function",
+      "name": "expand_pck",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        605,
+        640
+      ],
+      "summary": "`expand_pck` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_zip_archive",
+      "type": "function",
+      "name": "expand_zip_archive",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        649,
+        659
+      ],
+      "summary": "`expand_zip_archive` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:stable_resource_id",
+      "type": "function",
+      "name": "stable_resource_id",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "lineRange": [
+        677,
+        700
+      ],
+      "summary": "`stable_resource_id` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "type": "file",
+      "name": "extraction_tree.rs",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "summary": "번역·하드코딩 후보를 표시하는 제한된 계층형 extraction tree DTO를 파일 경로에서 구성합니다.",
+      "tags": [
+        "extraction-tree",
+        "translation-preview",
+        "filesystem",
+        "dto"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:extraction_tree",
+      "type": "function",
+      "name": "extraction_tree",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "lineRange": [
+        1,
+        103
+      ],
+      "summary": "`extraction_tree` 번역 또는 모드 데이터를 변환해 다음 단계의 결과물을 생성합니다.",
+      "tags": [
+        "workflow",
+        "transformation",
+        "rust"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:collect_preview_files",
+      "type": "function",
+      "name": "collect_preview_files",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "lineRange": [
+        105,
+        132
+      ],
+      "summary": "`collect_preview_files` 관련 경로와 레코드를 순회해 서비스 처리 대상을 수집합니다.",
+      "tags": [
+        "discovery",
+        "filesystem",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:insert_display",
+      "type": "function",
+      "name": "insert_display",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "lineRange": [
+        167,
+        181
+      ],
+      "summary": "`insert_display` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:insert_components",
+      "type": "function",
+      "name": "insert_components",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "lineRange": [
+        183,
+        223
+      ],
+      "summary": "`insert_components` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:into_dto",
+      "type": "function",
+      "name": "into_dto",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "lineRange": [
+        232,
+        250
+      ],
+      "summary": "`into_dto` 코어 도메인 값을 frontend 전송용 DTO로 변환합니다.",
+      "tags": [
+        "dashboard",
+        "dto-mapping",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:tree_source_paths",
+      "type": "function",
+      "name": "tree_source_paths",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "lineRange": [
+        271,
+        284
+      ],
+      "summary": "`tree_source_paths` 관련 Tauri 서비스의 도메인 규칙을 구현하고 처리 결과를 반환합니다.",
+      "tags": [
+        "domain-logic",
+        "service",
+        "rust"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src-tauri/src/services/translation_preview/extraction_tree.rs:TreeNodeBuilder",
+      "type": "class",
+      "name": "TreeNodeBuilder",
+      "filePath": "src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "lineRange": [
+        134,
+        140
+      ],
+      "summary": "`TreeNodeBuilder`는 번역·하드코딩 후보를 표시하는 제한된 계층형 extraction tree DTO를 파일 경로에서 구성합니다.에 필요한 상태와 값을 표현하는 Rust 타입입니다.",
+      "tags": [
+        "data-model",
+        "rust-type",
+        "translation",
+        "rust"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src-tauri/src/services/settings.rs",
+      "target": "function:src-tauri/src/services/settings.rs:save_settings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/settings.rs",
+      "target": "function:src-tauri/src/services/settings.rs:save_settings",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src-tauri/src/services/settings.rs",
+      "target": "function:src-tauri/src/services/settings.rs:save_mod_view_mode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/settings.rs",
+      "target": "function:src-tauri/src/services/settings.rs:save_mod_view_mode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src-tauri/src/services/settings.rs",
+      "target": "function:src-tauri/src/services/settings.rs:read_ui_settings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/settings.rs",
+      "target": "function:src-tauri/src/services/settings.rs:write_ui_settings",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:extract_translation",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:extract_translation",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:clear_translation_extract_cache",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:clear_translation_extract_cache",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:clear_translation_extract_cache_for_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:extract_mod_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:full_extract_scan_root",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:copy_connected_translation_patch_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:pck_stem_from_source_or_scan_root",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:translation_patch_targets_base",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:translation_match_tokens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:target_language_relative_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:copy_resource_relative_if_exists",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:find_resource_file_by_relative",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:selected_extract_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:collect_matching_extract_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:copy_extract_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:extract_display_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:prepare_translation_node",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview.rs",
+      "target": "function:src-tauri/src/services/translation_preview.rs:prepare_translation_node",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:extraction_scan_root",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:full_extraction_scan_root",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:source_has_pck_payload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:find_first_pck_file",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:parse_pck_resource_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:resource_path_after_marker",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:list_pck_resource_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:directory_preview_has_pck_contents",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_directory_preview",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:compact_language_preview_cache",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:collect_preview_metadata_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:is_preview_metadata_file",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:remove_unkept_preview_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:remove_preview_file",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:remove_empty_preview_dirs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:extraction_source_for_record",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:preferred_extractable_payload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:collect_extractable_payloads",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:first_active_payload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:is_supported_archive_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_source",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_with_7z",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:collect_pck_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_pck",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:expand_zip_archive",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_cache.rs:stable_resource_id",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:extraction_tree",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:collect_preview_files",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:insert_display",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:insert_components",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:into_dto",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "target": "function:src-tauri/src/services/translation_preview/extraction_tree.rs:tree_source_paths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src-tauri/src/services/translation_preview/extraction_tree.rs",
+      "target": "class:src-tauri/src/services/translation_preview/extraction_tree.rs:TreeNodeBuilder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    }
+  ]
+}

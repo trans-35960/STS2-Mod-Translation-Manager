@@ -1,0 +1,1071 @@
+{
+  "scriptCompleted": true,
+  "entryPointCandidates": [
+    {
+      "id": "document:README.md",
+      "score": 5,
+      "name": "README.md",
+      "summary": "Slay the Spire 2 mod의 한국어 번역·관리 desktop app을 소개하고 screenshot, 주요 기능, 개발 환경, CLI 사용법과 주의사항을 설명한다."
+    },
+    {
+      "id": "file:src-tauri/src/commands/mod.rs",
+      "score": 4,
+      "name": "mod.rs",
+      "summary": "Frontend가 호출하는 mod, 설정, backup, 번역 관련 Tauri command adapter를 정의한다. 무거운 JSON 작업은 blocking task로 넘기고 실제 처리는 service layer에 위임한다."
+    },
+    {
+      "id": "file:src-tauri/src/main.rs",
+      "score": 4,
+      "name": "main.rs",
+      "summary": "Tauri binary의 module root이자 진입점으로 backend module을 선언하고 app::run을 호출한다."
+    },
+    {
+      "id": "file:src/main.rs",
+      "score": 4,
+      "name": "main.rs",
+      "summary": "CLI binary 진입점으로 환경 인자를 core cli runner에 전달하고 실패를 stderr와 nonzero exit code로 보고한다."
+    },
+    {
+      "id": "file:src-tauri/src/services/mod.rs",
+      "score": 3,
+      "name": "mod.rs",
+      "summary": "핵심 library와 DTO·filesystem helper를 결합하고 세분화된 service 구현 파일을 include하는 Tauri service composition root다."
+    }
+  ],
+  "fanInRanking": [
+    {
+      "id": "file:web/types.ts",
+      "fanIn": 36,
+      "name": "types.ts"
+    },
+    {
+      "id": "file:src/error.rs",
+      "fanIn": 17,
+      "name": "error.rs"
+    },
+    {
+      "id": "file:web/features/mods/modUtils.ts",
+      "fanIn": 15,
+      "name": "modUtils.ts"
+    },
+    {
+      "id": "file:web/api/tauri.ts",
+      "fanIn": 13,
+      "name": "tauri.ts"
+    },
+    {
+      "id": "file:web/features/translation/translationUtils.ts",
+      "fanIn": 12,
+      "name": "translationUtils.ts"
+    },
+    {
+      "id": "file:web/utils/runtime.ts",
+      "fanIn": 12,
+      "name": "runtime.ts"
+    },
+    {
+      "id": "file:web/utils/logging.ts",
+      "fanIn": 11,
+      "name": "logging.ts"
+    },
+    {
+      "id": "file:web/i18n.ts",
+      "fanIn": 9,
+      "name": "i18n.ts"
+    },
+    {
+      "id": "file:src/domain.rs",
+      "fanIn": 8,
+      "name": "domain.rs"
+    },
+    {
+      "id": "file:web/components/Common.tsx",
+      "fanIn": 7,
+      "name": "Common.tsx"
+    },
+    {
+      "id": "file:web/hooks/translation/types.ts",
+      "fanIn": 6,
+      "name": "types.ts"
+    },
+    {
+      "id": "file:src/config.rs",
+      "fanIn": 5,
+      "name": "config.rs"
+    },
+    {
+      "id": "file:src/process.rs",
+      "fanIn": 5,
+      "name": "process.rs"
+    },
+    {
+      "id": "file:src/vault.rs",
+      "fanIn": 5,
+      "name": "vault.rs"
+    },
+    {
+      "id": "config:package.json",
+      "fanIn": 4,
+      "name": "package.json"
+    },
+    {
+      "id": "file:src/discovery.rs",
+      "fanIn": 4,
+      "name": "discovery.rs"
+    },
+    {
+      "id": "file:web/constants.ts",
+      "fanIn": 4,
+      "name": "constants.ts"
+    },
+    {
+      "id": "file:web/features/translation/TranslationToolsTypes.ts",
+      "fanIn": 4,
+      "name": "TranslationToolsTypes.ts"
+    },
+    {
+      "id": "file:web/previewData.ts",
+      "fanIn": 4,
+      "name": "previewData.ts"
+    },
+    {
+      "id": "file:src-tauri/src/dto.rs",
+      "fanIn": 3,
+      "name": "dto.rs"
+    }
+  ],
+  "fanOutRanking": [
+    {
+      "id": "file:src-tauri/src/commands/mod.rs",
+      "fanOut": 92,
+      "name": "mod.rs"
+    },
+    {
+      "id": "file:web/features/mods/modUtils.ts",
+      "fanOut": 92,
+      "name": "modUtils.ts"
+    },
+    {
+      "id": "file:web/features/translation/translationUtils.ts",
+      "fanOut": 79,
+      "name": "translationUtils.ts"
+    },
+    {
+      "id": "file:src-tauri/src/dto.rs",
+      "fanOut": 78,
+      "name": "dto.rs"
+    },
+    {
+      "id": "file:src/app.rs",
+      "fanOut": 71,
+      "name": "app.rs"
+    },
+    {
+      "id": "file:src-tauri/src/services/dashboard.rs",
+      "fanOut": 67,
+      "name": "dashboard.rs"
+    },
+    {
+      "id": "file:src-tauri/src/services/json_sheet.rs",
+      "fanOut": 54,
+      "name": "json_sheet.rs"
+    },
+    {
+      "id": "file:src/save_backup.rs",
+      "fanOut": 54,
+      "name": "save_backup.rs"
+    },
+    {
+      "id": "file:src/preset.rs",
+      "fanOut": 37,
+      "name": "preset.rs"
+    },
+    {
+      "id": "file:src/vault.rs",
+      "fanOut": 37,
+      "name": "vault.rs"
+    },
+    {
+      "id": "file:src/json_translation/tests.rs",
+      "fanOut": 36,
+      "name": "tests.rs"
+    },
+    {
+      "id": "file:src/cli.rs",
+      "fanOut": 35,
+      "name": "cli.rs"
+    },
+    {
+      "id": "file:src/translation.rs",
+      "fanOut": 35,
+      "name": "translation.rs"
+    },
+    {
+      "id": "file:src-tauri/src/services/deleted_mods.rs",
+      "fanOut": 34,
+      "name": "deleted_mods.rs"
+    },
+    {
+      "id": "file:src-tauri/src/services/pck.rs",
+      "fanOut": 32,
+      "name": "pck.rs"
+    },
+    {
+      "id": "file:src/json_translation/slots.rs",
+      "fanOut": 29,
+      "name": "slots.rs"
+    },
+    {
+      "id": "file:src/domain.rs",
+      "fanOut": 28,
+      "name": "domain.rs"
+    },
+    {
+      "id": "file:src/launcher.rs",
+      "fanOut": 28,
+      "name": "launcher.rs"
+    },
+    {
+      "id": "file:src-tauri/src/services/translation_preview/extraction_cache.rs",
+      "fanOut": 26,
+      "name": "extraction_cache.rs"
+    },
+    {
+      "id": "file:src-tauri/src/services/translation_preview/language_preview.rs",
+      "fanOut": 26,
+      "name": "language_preview.rs"
+    }
+  ],
+  "bfsTraversal": {
+    "startNode": "file:src-tauri/src/commands/mod.rs",
+    "order": [
+      "file:src-tauri/src/commands/mod.rs",
+      "file:src-tauri/src/dto.rs"
+    ],
+    "depthMap": {
+      "file:src-tauri/src/commands/mod.rs": 0,
+      "file:src-tauri/src/dto.rs": 1
+    },
+    "byDepth": {
+      "0": [
+        "file:src-tauri/src/commands/mod.rs"
+      ],
+      "1": [
+        "file:src-tauri/src/dto.rs"
+      ]
+    }
+  },
+  "nonCodeFiles": {
+    "documentation": [
+      {
+        "id": "document:AGENTS.md",
+        "name": "AGENTS.md",
+        "type": "document",
+        "summary": "Release 대상, GitHub 인증 주의사항, 사전 검증 command와 commit 제외 경로를 규정하는 agent 작업 지침이다."
+      },
+      {
+        "id": "document:README.md",
+        "name": "README.md",
+        "type": "document",
+        "summary": "Slay the Spire 2 mod의 한국어 번역·관리 desktop app을 소개하고 screenshot, 주요 기능, 개발 환경, CLI 사용법과 주의사항을 설명한다."
+      },
+      {
+        "id": "document:THIRD_PARTY_NOTICES.md",
+        "name": "THIRD_PARTY_NOTICES.md",
+        "type": "document",
+        "summary": "배포물에 포함되는 7-Zip, Godot PCK Explorer, Mbed TLS 구성요소의 license와 source 고지를 제공한다."
+      }
+    ],
+    "infrastructure": [],
+    "data": [],
+    "config": [
+      {
+        "id": "config:.understand-anything/config.json",
+        "name": "config.json",
+        "type": "config",
+        "summary": "Understand-Anything 지식 그래프의 출력 언어를 한국어로 지정합니다."
+      },
+      {
+        "id": "config:Cargo.toml",
+        "name": "Cargo.toml",
+        "type": "config",
+        "summary": "핵심 Rust package의 이름·version·edition과 Serde 직렬화 dependency를 선언한다."
+      },
+      {
+        "id": "config:package.json",
+        "name": "package.json",
+        "type": "config",
+        "summary": "React 19, Tauri 2, Vite 7 frontend dependency와 개발·build·preview·E2E script를 정의한다."
+      },
+      {
+        "id": "config:src-tauri/capabilities/default.json",
+        "name": "default.json",
+        "type": "config",
+        "summary": "메인 데스크톱 창에 창 제어와 파일 열기 dialog 권한을 부여하는 Tauri capability 정책입니다."
+      },
+      {
+        "id": "config:src-tauri/Cargo.toml",
+        "name": "Cargo.toml",
+        "type": "config",
+        "summary": "Tauri 데스크톱 crate의 패키지 정보와 Serde, Tauri 플러그인, 코어 crate 의존성을 선언합니다."
+      },
+      {
+        "id": "config:src-tauri/tauri.conf.json",
+        "name": "tauri.conf.json",
+        "type": "config",
+        "summary": "Tauri product metadata, Vite build command, custom window 크기, CSP와 Windows bundle resource를 정의한다."
+      },
+      {
+        "id": "config:tsconfig.json",
+        "name": "tsconfig.json",
+        "type": "config",
+        "summary": "web directory를 대상으로 strict TypeScript, ES2020, React JSX, noEmit compilation을 설정한다."
+      }
+    ]
+  },
+  "clusters": [],
+  "layers": {
+    "count": 8,
+    "list": [
+      {
+        "id": "layer:frontend-ui",
+        "name": "React UI",
+        "description": "React component, page, application shell과 영역별 CSS를 결합해 mod 관리·설정·번역 workflow를 화면에 제공한다."
+      },
+      {
+        "id": "layer:frontend-services",
+        "name": "Frontend 상태·통합",
+        "description": "Custom React hook과 Tauri API bridge가 dashboard, mod, 설정, 번역 session의 상태와 native command 호출을 조정한다."
+      },
+      {
+        "id": "layer:frontend-shared",
+        "name": "Frontend 공용 모델·유틸리티",
+        "description": "TypeScript domain contract, 상수, localization, preview fixture와 logging·storage·변환 helper를 frontend 전반에 제공한다."
+      },
+      {
+        "id": "layer:tauri-boundary",
+        "name": "Tauri 애플리케이션 경계",
+        "description": "Tauri startup, command adapter, DTO와 filesystem 경계가 React 요청을 Rust service 호출과 직렬화 응답으로 연결한다."
+      },
+      {
+        "id": "layer:tauri-services",
+        "name": "Tauri 서비스·번역 엔진",
+        "description": "Dashboard 구성, 설정·진단, mod lifecycle, PCK 처리와 translation preview·sheet workflow를 desktop service로 구현한다."
+      },
+      {
+        "id": "layer:core",
+        "name": "핵심 도메인·CLI",
+        "description": "Mod discovery·상태·vault·preset·launch·backup과 JSON 번역 domain 로직을 재사용 가능한 Rust library와 CLI로 제공한다."
+      },
+      {
+        "id": "layer:project-support",
+        "name": "설정·빌드·검증",
+        "description": "Rust·Node·Tauri 설정, release·contract·quality·E2E script와 repository·analysis 보조 설정을 관리한다."
+      },
+      {
+        "id": "layer:documentation",
+        "name": "문서",
+        "description": "사용법·개발 환경, agent 작업 규칙과 third-party license 고지를 프로젝트 운영자와 사용자에게 설명한다."
+      }
+    ]
+  },
+  "nodeSummaryIndex": {
+    "config:.understand-anything/config.json": {
+      "name": "config.json",
+      "type": "config",
+      "summary": "Understand-Anything 지식 그래프의 출력 언어를 한국어로 지정합니다."
+    },
+    "config:Cargo.toml": {
+      "name": "Cargo.toml",
+      "type": "config",
+      "summary": "핵심 Rust package의 이름·version·edition과 Serde 직렬화 dependency를 선언한다."
+    },
+    "config:package.json": {
+      "name": "package.json",
+      "type": "config",
+      "summary": "React 19, Tauri 2, Vite 7 frontend dependency와 개발·build·preview·E2E script를 정의한다."
+    },
+    "config:src-tauri/capabilities/default.json": {
+      "name": "default.json",
+      "type": "config",
+      "summary": "메인 데스크톱 창에 창 제어와 파일 열기 dialog 권한을 부여하는 Tauri capability 정책입니다."
+    },
+    "config:src-tauri/Cargo.toml": {
+      "name": "Cargo.toml",
+      "type": "config",
+      "summary": "Tauri 데스크톱 crate의 패키지 정보와 Serde, Tauri 플러그인, 코어 crate 의존성을 선언합니다."
+    },
+    "config:src-tauri/tauri.conf.json": {
+      "name": "tauri.conf.json",
+      "type": "config",
+      "summary": "Tauri product metadata, Vite build command, custom window 크기, CSP와 Windows bundle resource를 정의한다."
+    },
+    "config:tsconfig.json": {
+      "name": "tsconfig.json",
+      "type": "config",
+      "summary": "web directory를 대상으로 strict TypeScript, ES2020, React JSX, noEmit compilation을 설정한다."
+    },
+    "document:AGENTS.md": {
+      "name": "AGENTS.md",
+      "type": "document",
+      "summary": "Release 대상, GitHub 인증 주의사항, 사전 검증 command와 commit 제외 경로를 규정하는 agent 작업 지침이다."
+    },
+    "document:README.md": {
+      "name": "README.md",
+      "type": "document",
+      "summary": "Slay the Spire 2 mod의 한국어 번역·관리 desktop app을 소개하고 screenshot, 주요 기능, 개발 환경, CLI 사용법과 주의사항을 설명한다."
+    },
+    "document:THIRD_PARTY_NOTICES.md": {
+      "name": "THIRD_PARTY_NOTICES.md",
+      "type": "document",
+      "summary": "배포물에 포함되는 7-Zip, Godot PCK Explorer, Mbed TLS 구성요소의 license와 source 고지를 제공한다."
+    },
+    "file:.gitattributes": {
+      "name": ".gitattributes",
+      "type": "file",
+      "summary": "저장소 텍스트 파일의 LF 개행을 고정하고 이미지·실행 파일·동적 라이브러리를 binary로 분류합니다."
+    },
+    "file:.nvmrc": {
+      "name": ".nvmrc",
+      "type": "file",
+      "summary": "프런트엔드 도구 실행에 사용할 Node.js 22.12.0 버전을 고정합니다."
+    },
+    "file:.understand-anything/.understandignore": {
+      "name": ".understandignore",
+      "type": "file",
+      "summary": "지식 그래프 분석에서 로컬 상태, 생성물, vendor, sample과 asset 경로를 제외하는 범위를 정의합니다."
+    },
+    "file:index.html": {
+      "name": "index.html",
+      "type": "file",
+      "summary": "React application mount point와 초기 loading placeholder를 제공하고 web/main.tsx module을 불러오는 Vite HTML entry다."
+    },
+    "file:replace.cjs": {
+      "name": "replace.cjs",
+      "type": "file",
+      "summary": "로컬 SettingsPage.tsx의 경로·도구·로그 섹션을 접이식 details UI로 일괄 치환하는 일회성 마이그레이션 스크립트입니다."
+    },
+    "file:scripts/build-release.ps1": {
+      "name": "build-release.ps1",
+      "type": "file",
+      "summary": "Rust test·release build와 Tauri build를 실행하고 CLI smoke check 후 portable Windows zip을 조립한다. Repository root 경계와 실행 중 binary를 확인해 위험한 overwrite를 막는다."
+    },
+    "file:scripts/check-tauri-contract.ps1": {
+      "name": "check-tauri-contract.ps1",
+      "type": "file",
+      "summary": "Rust Tauri command 목록과 TypeScript CommandArgs·CommandResult key를 추출해 양방향 불일치를 실패로 처리한다."
+    },
+    "file:scripts/check.ps1": {
+      "name": "check.ps1",
+      "type": "file",
+      "summary": "Root와 Tauri crate의 test·clippy, command contract, TypeScript·Vite build를 순차 실행하는 local quality gate다."
+    },
+    "file:scripts/e2e-smoke.ps1": {
+      "name": "e2e-smoke.ps1",
+      "type": "file",
+      "summary": "Release Tauri app을 필요 시 build하고 focus 없는 hidden window로 실행해 조기 종료 여부를 확인한 뒤 process를 정리한다."
+    },
+    "file:src-tauri/build.rs": {
+      "name": "build.rs",
+      "type": "file",
+      "summary": "Tauri 빌드 스크립트를 호출해 데스크톱 애플리케이션용 생성 단계와 리소스 처리를 수행합니다."
+    },
+    "file:src-tauri/src/app.rs": {
+      "name": "app.rs",
+      "type": "file",
+      "summary": "Tauri builder에 frontend command와 dialog·window-state plugin을 등록하고 runtime 경로를 초기화한다. E2E 환경에서는 main window를 숨긴 채 application lifecycle을 시작한다."
+    },
+    "file:src-tauri/src/commands/mod.rs": {
+      "name": "mod.rs",
+      "type": "file",
+      "summary": "Frontend가 호출하는 mod, 설정, backup, 번역 관련 Tauri command adapter를 정의한다. 무거운 JSON 작업은 blocking task로 넘기고 실제 처리는 service layer에 위임한다."
+    },
+    "file:src-tauri/src/dto.rs": {
+      "name": "dto.rs",
+      "type": "file",
+      "summary": "Dashboard, mod, 설정, 진단, backup, JSON 번역 workflow의 직렬화 DTO를 한곳에 정의한다. Rust service 결과를 TypeScript UI contract에 맞는 data shape으로 노출한다."
+    },
+    "file:src-tauri/src/fs_ops.rs": {
+      "name": "fs_ops.rs",
+      "type": "file",
+      "summary": "운영체제 기본 file browser 열기와 안전한 이동·복사·교체·삭제 작업을 제공한다. Rename 실패 시 copy 후 원본 제거로 fallback한다."
+    },
+    "file:src-tauri/src/main.rs": {
+      "name": "main.rs",
+      "type": "file",
+      "summary": "Tauri binary의 module root이자 진입점으로 backend module을 선언하고 app::run을 호출한다."
+    },
+    "file:src-tauri/src/services/cache_cleanup.rs": {
+      "name": "cache_cleanup.rs",
+      "type": "file",
+      "summary": "번역 추출·드롭 미리보기·작업공간 cache 사용량을 계산하고 고아 또는 중복 payload를 정리합니다."
+    },
+    "file:src-tauri/src/services/common.rs": {
+      "name": "common.rs",
+      "type": "file",
+      "summary": "Tauri 서비스가 공유하는 런타임 경로, App 구성, DTO 보조 타입, 성능 추적과 공통 경로 유틸리티를 제공합니다."
+    },
+    "file:src-tauri/src/services/dashboard.rs": {
+      "name": "dashboard.rs",
+      "type": "file",
+      "summary": "대시보드 로드와 모드 가져오기·전환·복구·프리셋·실행 동작을 조정하고 최신 DashboardDto를 구성합니다."
+    },
+    "file:src-tauri/src/services/dashboard/activation.rs": {
+      "name": "activation.rs",
+      "type": "file",
+      "summary": "전체 스캔 결과에서 안정 key가 일치하는 모드 레코드를 찾는 dashboard 활성화 보조 로직입니다."
+    },
+    "file:src-tauri/src/services/dashboard/dto_maps.rs": {
+      "name": "dto_maps.rs",
+      "type": "file",
+      "summary": "코어 도메인의 프리셋·번역 작업·백업·실행·도구 보고서를 frontend DTO로 변환합니다."
+    },
+    "file:src-tauri/src/services/dashboard/mod_rows.rs": {
+      "name": "mod_rows.rs",
+      "type": "file",
+      "summary": "스캔 레코드를 dashboard 모드 행으로 통합하고 manifest, 번역 상태, 의존성 및 패치 관계를 해석합니다."
+    },
+    "file:src-tauri/src/services/dashboard/setup_status.rs": {
+      "name": "setup_status.rs",
+      "type": "file",
+      "summary": "필수 경로와 중첩 모드 배치를 검사해 초기 설정 문제 및 안전 경고를 생성합니다."
+    },
+    "file:src-tauri/src/services/deleted_mods.rs": {
+      "name": "deleted_mods.rs",
+      "type": "file",
+      "summary": "삭제 모드를 격리 저장하고 tombstone index, 보존 기간, 복원 및 일괄 비우기 수명주기를 관리합니다."
+    },
+    "file:src-tauri/src/services/json_sheet.rs": {
+      "name": "json_sheet.rs",
+      "type": "file",
+      "summary": "JSON 번역 시트 생성·저장·검증·가져오기·내보내기와 번역 적용 및 PCK 재패키징 흐름을 연결합니다."
+    },
+    "file:src-tauri/src/services/json_sheet/dto.rs": {
+      "name": "dto.rs",
+      "type": "file",
+      "summary": "JSON 번역 도메인 타입과 frontend DTO 사이의 상태·보고서·항목 변환을 담당합니다."
+    },
+    "file:src-tauri/src/services/logs_diagnostics.rs": {
+      "name": "logs_diagnostics.rs",
+      "type": "file",
+      "summary": "게임 로그의 제한된 tail을 읽고 설정·모드·의존성·백업 상태에서 문제 해결 진단을 생성합니다."
+    },
+    "file:src-tauri/src/services/mod.rs": {
+      "name": "mod.rs",
+      "type": "file",
+      "summary": "핵심 library와 DTO·filesystem helper를 결합하고 세분화된 service 구현 파일을 include하는 Tauri service composition root다."
+    },
+    "file:src-tauri/src/services/pck.rs": {
+      "name": "pck.rs",
+      "type": "file",
+      "summary": "번역 payload를 Godot PCK에 패치하고 archive 모드를 다시 설치하거나 독립 번역 패치 모드로 내보냅니다."
+    },
+    "file:src-tauri/src/services/settings.rs": {
+      "name": "settings.rs",
+      "type": "file",
+      "summary": "UI 설정을 검증하고 TSV 상태 파일에 저장하며 게임·세이브·번역 작업 경로를 AppConfig에 반영합니다."
+    },
+    "file:src-tauri/src/services/tests.rs": {
+      "name": "tests.rs",
+      "type": "file",
+      "summary": "대시보드, 설정, 삭제·복원, 번역 미리보기, JSON 시트와 PCK 서비스 동작을 검증하는 통합 테스트 모음입니다."
+    },
+    "file:src-tauri/src/services/translation_preview.rs": {
+      "name": "translation_preview.rs",
+      "type": "file",
+      "summary": "모드 resource를 추출하고 선택한 번역 node의 source/translated 작업공간과 번역 시트를 준비합니다."
+    },
+    "file:src-tauri/src/services/translation_preview/extraction_cache.rs": {
+      "name": "extraction_cache.rs",
+      "type": "file",
+      "summary": "archive와 PCK를 외부 도구로 확장하고 fingerprint 기반 미리보기 cache 및 payload 탐색을 관리합니다."
+    },
+    "file:src-tauri/src/services/translation_preview/extraction_tree.rs": {
+      "name": "extraction_tree.rs",
+      "type": "file",
+      "summary": "번역·하드코딩 후보를 표시하는 제한된 계층형 extraction tree DTO를 파일 경로에서 구성합니다."
+    },
+    "file:src-tauri/src/services/translation_preview/language_preview.rs": {
+      "name": "language_preview.rs",
+      "type": "file",
+      "summary": "Mod resource와 PCK를 scan해 언어별 file·key 수와 sample path를 계산하고 번역 상태·추출 대상을 판단한다. 결과를 extractor signature와 함께 cache해 반복 dashboard scan 비용을 줄인다."
+    },
+    "file:src-tauri/src/services/translation_preview/manifest.rs": {
+      "name": "manifest.rs",
+      "type": "file",
+      "summary": "JSON comment를 허용해 mod manifest 후보를 읽고 metadata, dependency, translation patch target 정보를 병합·정규화한다."
+    },
+    "file:src-tauri/src/services/translation_preview/resource_paths.rs": {
+      "name": "resource_paths.rs",
+      "type": "file",
+      "summary": "Localization·hardcoded resource 선택, target language file 복사와 translation memory sheet 탐색을 담당한다. PCK와 filesystem 경로를 공통 표시·비교 형태로 정규화한다."
+    },
+    "file:src/app.rs": {
+      "name": "app.rs",
+      "type": "file",
+      "summary": "모드 스캔, 활성 상태, 프리셋, 번역 작업, 세이브 백업과 게임 실행을 하나의 App 파사드로 조정하는 핵심 애플리케이션 서비스입니다."
+    },
+    "file:src/cli.rs": {
+      "name": "cli.rs",
+      "type": "file",
+      "summary": "명령행 인수를 해석하고 App 기능을 호출한 뒤 사용자용 결과를 출력하는 CLI 명령 처리 계층입니다."
+    },
+    "file:src/config.rs": {
+      "name": "config.rs",
+      "type": "file",
+      "summary": "워크스페이스 경로와 게임·세이브·외부 모드 관리자의 기본 위치를 구성하고 Steam 설치 정보를 탐지합니다."
+    },
+    "file:src/discovery.rs": {
+      "name": "discovery.rs",
+      "type": "file",
+      "summary": "모드 디렉터리를 순회해 모드 종류, 이름, 버전 힌트와 파일 크기·수정 시각 fingerprint를 생성합니다."
+    },
+    "file:src/domain.rs": {
+      "name": "domain.rs",
+      "type": "file",
+      "summary": "모드 소스와 종류, 스캔 결과, 변경 내역 등 코어 계층이 공유하는 도메인 타입을 정의합니다."
+    },
+    "file:src/error.rs": {
+      "name": "error.rs",
+      "type": "file",
+      "summary": "경로를 포함한 I/O 오류와 잘못된 명령을 일관된 형태로 전달하는 애플리케이션 오류 타입을 정의합니다."
+    },
+    "file:src/json_translation/apply.rs": {
+      "name": "apply.rs",
+      "type": "file",
+      "summary": "번역 시트 값을 단일 JSON 또는 다중 localization 파일에 반영하고 결과 파일을 직렬화합니다."
+    },
+    "file:src/json_translation/hardcoded.rs": {
+      "name": "hardcoded.rs",
+      "type": "file",
+      "summary": ".NET 메타데이터와 UTF-16 바이너리에서 하드코딩 문자열을 추출하고 용량 제약을 지키며 번역값을 패치합니다."
+    },
+    "file:src/json_translation/import.rs": {
+      "name": "import.rs",
+      "type": "file",
+      "summary": "CSV와 여러 compact JSON 형식의 번역값을 읽어 안정된 slot/key 매핑으로 번역 시트에 병합합니다."
+    },
+    "file:src/json_translation/language_path.rs": {
+      "name": "language_path.rs",
+      "type": "file",
+      "summary": "localization 경로의 언어 코드를 판별·교체하고 대상 언어 파일에서 기존 번역값을 수집합니다."
+    },
+    "file:src/json_translation/mod.rs": {
+      "name": "mod.rs",
+      "type": "file",
+      "summary": "JSON 번역 하위 모듈을 선언하고 공개 API를 다시 노출하는 Rust 모듈 barrel입니다."
+    },
+    "file:src/json_translation/sheet.rs": {
+      "name": "sheet.rs",
+      "type": "file",
+      "summary": "원본 JSON을 평탄화해 번역 시트를 생성·갱신하고 상태, 누락값, 구조 토큰과 하드코딩 용량을 검증합니다."
+    },
+    "file:src/json_translation/slots.rs": {
+      "name": "slots.rs",
+      "type": "file",
+      "summary": "번역 항목에 안정된 slot ID를 부여하고 파일별 compact 번역·검증 맵을 생성합니다."
+    },
+    "file:src/json_translation/source_json.rs": {
+      "name": "source_json.rs",
+      "type": "file",
+      "summary": "단일 JSON이나 디렉터리의 번역 JSON 파일을 읽고 JSON Pointer 기반 key/value 맵으로 평탄화합니다."
+    },
+    "file:src/json_translation/tests.rs": {
+      "name": "tests.rs",
+      "type": "file",
+      "summary": "시트 생성·재계산·검증·가져오기·내보내기·적용과 하드코딩 문자열 처리를 폭넓게 검증하는 회귀 테스트 모음입니다."
+    },
+    "file:src/json_translation/types.rs": {
+      "name": "types.rs",
+      "type": "file",
+      "summary": "JSON 번역 시트, 항목 상태, 검증 문제와 작업 보고서의 직렬화 가능한 도메인 타입을 정의합니다."
+    },
+    "file:src/launcher.rs": {
+      "name": "launcher.rs",
+      "type": "file",
+      "summary": "게임과 Steam 실행 파일을 찾고 실행 상태를 확인하며 현재 또는 바닐라 모드로 프로세스를 시작합니다."
+    },
+    "file:src/lib.rs": {
+      "name": "lib.rs",
+      "type": "file",
+      "summary": "코어 crate의 공개 모듈 구성을 선언하는 Rust 라이브러리 진입점입니다."
+    },
+    "file:src/main.rs": {
+      "name": "main.rs",
+      "type": "file",
+      "summary": "CLI binary 진입점으로 환경 인자를 core cli runner에 전달하고 실패를 stderr와 nonzero exit code로 보고한다."
+    },
+    "file:src/path_guard.rs": {
+      "name": "path_guard.rs",
+      "type": "file",
+      "summary": "삭제·교체 대상이 허용된 root 내부인지 검증하고 canonical path 기준으로 위험한 경로 조작을 차단합니다."
+    },
+    "file:src/preset.rs": {
+      "name": "preset.rs",
+      "type": "file",
+      "summary": "활성 모드 구성을 프리셋으로 저장·적용하고 관련 모드 파일을 포함한 archive를 가져오거나 내보냅니다."
+    },
+    "file:src/process.rs": {
+      "name": "process.rs",
+      "type": "file",
+      "summary": "Windows 콘솔 창을 숨긴 외부 명령 실행기와 PowerShell archive 압축·해제 도우미를 제공합니다."
+    },
+    "file:src/save_backup.rs": {
+      "name": "save_backup.rs",
+      "type": "file",
+      "summary": "바닐라·모드 세이브를 스냅샷으로 백업·복원·정리하고 current run 및 Steam Cloud cache를 안전하게 전환합니다."
+    },
+    "file:src/state.rs": {
+      "name": "state.rs",
+      "type": "file",
+      "summary": "모드 fingerprint 상태와 사용자가 원하는 활성 모드 key를 읽고 쓰며 신규·변경 모드를 판별합니다."
+    },
+    "file:src/text_ui.rs": {
+      "name": "text_ui.rs",
+      "type": "file",
+      "summary": "대화형 텍스트 메뉴에서 스캔, 프리셋, 모드 보관소와 게임 실행 명령을 안내하고 처리합니다."
+    },
+    "file:src/translation.rs": {
+      "name": "translation.rs",
+      "type": "file",
+      "summary": "번역 후보 파일을 탐지하고 archive/PCK를 확장해 작업공간을 만들며 번역 결과를 대상 경로에 병합합니다."
+    },
+    "file:src/vault.rs": {
+      "name": "vault.rs",
+      "type": "file",
+      "summary": "게임 mods와 비활성 저장소 사이에서 모드를 이동·복사하고 충돌을 피하며 일괄 활성화 상태를 관리합니다."
+    },
+    "file:src/vendor_tools.rs": {
+      "name": "vendor_tools.rs",
+      "type": "file",
+      "summary": "번들된 7-Zip과 Godot PCK Explorer 실행 파일의 경로와 사용 가능 상태를 보고합니다."
+    },
+    "file:vite.config.ts": {
+      "name": "vite.config.ts",
+      "type": "file",
+      "summary": "React plugin과 고정 localhost port를 사용하는 Vite development server·build 설정을 정의한다."
+    },
+    "file:web/api/tauri.ts": {
+      "name": "tauri.ts",
+      "type": "file",
+      "summary": "Tauri command 호출과 파일 열기·저장 대화상자, 현재 앱 창 접근을 타입 안전한 API로 감싼다. React UI와 Rust backend 사이의 네이티브 경계를 한곳에서 관리한다."
+    },
+    "file:web/components/AppShell.tsx": {
+      "name": "AppShell.tsx",
+      "type": "file",
+      "summary": "로딩 화면, 작업 진행 modal, 앱 메뉴와 window control, 통계 필터 등 데스크톱 shell의 공통 UI를 제공한다. Preview runtime과 실제 Tauri window 동작을 함께 처리한다."
+    },
+    "file:web/components/Common.tsx": {
+      "name": "Common.tsx",
+      "type": "file",
+      "summary": "여러 화면에서 공유하는 출처 태그, 아이콘 버튼, 상태 배지와 pill 컴포넌트를 제공한다."
+    },
+    "file:web/components/TooltipLayer.tsx": {
+      "name": "TooltipLayer.tsx",
+      "type": "file",
+      "summary": "data-tooltip 속성을 pointer와 focus 이벤트로 감지해 document portal에 전역 tooltip을 표시한다. 화면 경계와 대상 위치를 반영해 tooltip 좌표를 보정한다."
+    },
+    "file:web/constants.ts": {
+      "name": "constants.ts",
+      "type": "file",
+      "summary": "기본 UI 설정, localStorage key, startup loading 단계 문구를 중앙에서 정의한다. 설정과 복원 로직이 공유하는 안정적인 기본값을 제공한다."
+    },
+    "file:web/features/mods/DroppedModConfirmModal.tsx": {
+      "name": "DroppedModConfirmModal.tsx",
+      "type": "file",
+      "summary": "드롭된 mod preview를 설치된 mod와 경로·이름 token으로 대조하고 신규 설치, 건너뛰기, 교체 결정을 받는 modal을 구현한다. 정확 일치와 관련 후보를 구분해 안전한 import 선택을 돕는다."
+    },
+    "file:web/features/mods/ExtractModal.tsx": {
+      "name": "ExtractModal.tsx",
+      "type": "file",
+      "summary": "모드 번역 리소스의 추출 경로와 파일 트리를 선택하고 전체 또는 개별 노드 추출을 실행하는 확인 모달을 구현한다."
+    },
+    "file:web/features/mods/ImportMenu.tsx": {
+      "name": "ImportMenu.tsx",
+      "type": "file",
+      "summary": "폴더, 압축 파일, Vortex 다운로드에서 모드를 가져오는 동작을 묶은 팝오버 메뉴를 제공한다."
+    },
+    "file:web/features/mods/ModBadges.tsx": {
+      "name": "ModBadges.tsx",
+      "type": "file",
+      "summary": "모드의 대표 언어와 사용 가능한 언어 목록을 키 수 및 대상 언어 상태와 함께 배지로 표시한다."
+    },
+    "file:web/features/mods/ModConfirmModal.tsx": {
+      "name": "ModConfirmModal.tsx",
+      "type": "file",
+      "summary": "모드 활성화·비활성화 등 작업 전에 설명과 영향 항목을 보여 주고 사용자의 확인 응답을 전달하는 공통 modal이다."
+    },
+    "file:web/features/mods/ModRows.tsx": {
+      "name": "ModRows.tsx",
+      "type": "file",
+      "summary": "상세·간단 보기의 모드 및 모드 그룹 행을 렌더링하고 선택, 활성화, 번역, 추출, 삭제 동작을 연결한다."
+    },
+    "file:web/features/mods/ModsPage.tsx": {
+      "name": "ModsPage.tsx",
+      "type": "file",
+      "summary": "모드 검색·필터·정렬·그룹화·선택과 프리셋, 가져오기, 실행 및 열 너비 상태를 총괄하는 메인 관리 화면이다."
+    },
+    "file:web/features/mods/ModTranslationActions.tsx": {
+      "name": "ModTranslationActions.tsx",
+      "type": "file",
+      "summary": "자동 감지 언어가 없는 모드에서 번역 리소스 경로를 파일 트리 또는 수동 입력으로 고르는 UI를 제공한다."
+    },
+    "file:web/features/mods/modUtils.ts": {
+      "name": "modUtils.ts",
+      "type": "file",
+      "summary": "모드 그룹화, 검색·필터·정렬, 의존성·버전 병합, 언어 추천, 날짜·경로 표시를 지원하는 도메인 유틸리티 모음이다."
+    },
+    "file:web/features/mods/PresetMenu.tsx": {
+      "name": "PresetMenu.tsx",
+      "type": "file",
+      "summary": "활성 모드 프리셋의 저장·선택·적용과 아카이브 가져오기·내보내기를 제어하는 메뉴를 구현한다."
+    },
+    "file:web/features/settings/SettingsPage.tsx": {
+      "name": "SettingsPage.tsx",
+      "type": "file",
+      "summary": "게임·번역 경로와 보존 정책 설정, 설치 진단, 삭제 mod 복원, save backup, 앱·게임 log를 한 화면에서 관리한다. 위험한 정리 작업에는 확인 절차와 상태별 안내를 제공한다."
+    },
+    "file:web/features/translation/LogToasts.tsx": {
+      "name": "LogToasts.tsx",
+      "type": "file",
+      "summary": "번역 적용 결과와 중요 log를 사용자에게 toast로 표시하고 dismiss 동작을 제공한다. 일반 log 가운데 경고·오류 성격의 항목만 선별한다."
+    },
+    "file:web/features/translation/TranslationActionsPanel.tsx": {
+      "name": "TranslationActionsPanel.tsx",
+      "type": "file",
+      "summary": "번역 작업 헤더와 프로젝트·언어·비교·내보내기·적용 작업을 제공하는 사이드 액션 패널을 구성한다."
+    },
+    "file:web/features/translation/TranslationProjectTree.tsx": {
+      "name": "TranslationProjectTree.tsx",
+      "type": "file",
+      "summary": "번역 프로젝트의 파일 트리를 탐색하고 노드 선택 및 JSON 복사 컨텍스트 메뉴를 제공한다."
+    },
+    "file:web/features/translation/TranslationSheetTable.tsx": {
+      "name": "TranslationSheetTable.tsx",
+      "type": "file",
+      "summary": "번역 시트의 검색·치환·선택·검증 경고·붙여넣기 충돌과 행 편집기를 제공하는 대형 테이블 컴포넌트다."
+    },
+    "file:web/features/translation/TranslationStartPage.tsx": {
+      "name": "TranslationStartPage.tsx",
+      "type": "file",
+      "summary": "번역 가능한 모드와 리소스 경로를 검색·그룹화하여 새 번역 작업을 시작하는 선택 화면을 구현한다."
+    },
+    "file:web/features/translation/TranslationToolsPage.tsx": {
+      "name": "TranslationToolsPage.tsx",
+      "type": "file",
+      "summary": "번역 작업 헤더, 액션 패널, 시트 테이블을 조합하고 번역 유틸리티의 공개 진입점을 재노출한다."
+    },
+    "file:web/features/translation/TranslationToolsTypes.ts": {
+      "name": "TranslationToolsTypes.ts",
+      "type": "file",
+      "summary": "번역 도구 페이지의 props, 열 설정, 필터 및 표시 행 계약을 정의한다."
+    },
+    "file:web/features/translation/translationUtils.ts": {
+      "name": "translationUtils.ts",
+      "type": "file",
+      "summary": "번역 키·경로·언어 정규화, 프로젝트 트리, 구조화 붙여넣기, slot ID 및 비교 키를 처리하는 핵심 유틸리티다."
+    },
+    "file:web/features/translation/TranslationWidgets.tsx": {
+      "name": "TranslationWidgets.tsx",
+      "type": "file",
+      "summary": "적용 결과, 비교 값, 붙여넣기 후보, 프로젝트 요약, 크기 조절 헤더와 자동 높이 입력기를 제공한다."
+    },
+    "file:web/features/translation/useTranslationSessionState.ts": {
+      "name": "useTranslationSessionState.ts",
+      "type": "file",
+      "summary": "번역 작업의 sheet, 검증, 비교, 선택 상태를 React state로 구성하고 localStorage에서 session을 복원·저장한다. 복원 성공 여부에 따라 화면 이동과 log 기록도 조정한다."
+    },
+    "file:web/features/translation/useTranslationToolsUiState.ts": {
+      "name": "useTranslationToolsUiState.ts",
+      "type": "file",
+      "summary": "번역 시트에서 언어 옵션, 통계, 프로젝트 트리, 필터·검색 결과와 열 크기 조절 상태를 파생하는 React hook이다."
+    },
+    "file:web/hooks/translation/types.ts": {
+      "name": "types.ts",
+      "type": "file",
+      "summary": "번역 action hook들이 공유하는 state setter, command runner, 전체 parameter contract를 정의한다. 여러 hook 사이의 상태 의존성을 하나의 TypeScript type surface로 통일한다."
+    },
+    "file:web/hooks/translation/useJsonToolRunner.ts": {
+      "name": "useJsonToolRunner.ts",
+      "type": "file",
+      "summary": "JSON 번역 command를 Tauri backend에서 실행하고 결과 종류에 따라 sheet, report, validation, project state를 갱신한다. Preview runtime fallback과 busy·error·toast lifecycle도 함께 관리한다."
+    },
+    "file:web/hooks/translation/useTranslationCompareActions.ts": {
+      "name": "useTranslationCompareActions.ts",
+      "type": "file",
+      "summary": "원본·번역 언어 비교 값을 필요할 때 backend에서 불러오고 cache 유효성을 검사한다. 비교 언어 toggle과 자동 reload를 통해 sheet의 다국어 대조 상태를 유지한다."
+    },
+    "file:web/hooks/translation/useTranslationIoActions.ts": {
+      "name": "useTranslationIoActions.ts",
+      "type": "file",
+      "summary": "번역 sheet 저장, CSV·축약 JSON export, 값 import, patch mod export를 담당한다. 언어 일치와 validation을 확인하고 저장 전후 entry 상태를 보존·정규화한다."
+    },
+    "file:web/hooks/translation/useTranslationSessionActions.ts": {
+      "name": "useTranslationSessionActions.ts",
+      "type": "file",
+      "summary": "mod resource를 번역 도구로 열고 session을 닫거나 source·target 언어를 전환하는 workflow를 제공한다. 필요한 추출과 backend 준비를 수행한 뒤 관련 UI state를 일관되게 초기화한다."
+    },
+    "file:web/hooks/translation/useTranslationSheetActions.ts": {
+      "name": "useTranslationSheetActions.ts",
+      "type": "file",
+      "summary": "번역 entry 편집, row 선택·복사, tabular paste와 구조화 JSON paste, paste candidate 적용·해제를 처리한다. entry 변경 시 번역 상태와 후보 cache를 함께 갱신한다."
+    },
+    "file:web/hooks/useAppActions.ts": {
+      "name": "useAppActions.ts",
+      "type": "file",
+      "summary": "공통 Tauri action 실행과 path 열기 동작을 busy state, log, dashboard refresh와 함께 감싼다. Browser preview에서는 네이티브 호출 대신 안전하게 안내한다."
+    },
+    "file:web/hooks/useAppLogs.ts": {
+      "name": "useAppLogs.ts",
+      "type": "file",
+      "summary": "시간표시를 붙인 최근 앱 log를 bounded React state로 유지하고 append 함수를 노출한다."
+    },
+    "file:web/hooks/useDashboardLoader.ts": {
+      "name": "useDashboardLoader.ts",
+      "type": "file",
+      "summary": "dashboard와 설정을 초기 load·refresh하고 preset·target language 기본값을 동기화한다. 문서 visibility와 window focus 복귀 시 재조회하며 setup issue가 있으면 설정 화면으로 안내한다."
+    },
+    "file:web/hooks/useModActions.ts": {
+      "name": "useModActions.ts",
+      "type": "file",
+      "summary": "mod 활성화, dependency 연쇄 처리, 삭제, preset 적용, 게임 실행과 추출 경로 선택을 조정한다. Toggle batch를 낙관적으로 반영하고 짧은 시간 동안 합쳐 backend 호출 횟수를 줄인다."
+    },
+    "file:web/hooks/useSettingsActions.ts": {
+      "name": "useSettingsActions.ts",
+      "type": "file",
+      "summary": "설정 저장, 게임 log 조회, 각종 경로 선택과 설치·save·삭제 항목 유지보수 action을 제공한다. 확인이 필요한 작업과 Tauri dialog·command error 처리를 한곳에서 조정한다."
+    },
+    "file:web/hooks/useTranslationActions.ts": {
+      "name": "useTranslationActions.ts",
+      "type": "file",
+      "summary": "번역 runner, sheet 편집, I/O, 비교, session hook을 하나의 action facade로 합친다. 적용·patch export 전 validation 경고 확인과 sheet fingerprint 기반 재확인을 관리한다."
+    },
+    "file:web/i18n.ts": {
+      "name": "i18n.ts",
+      "type": "file",
+      "summary": "모드 관리와 번역 도구 전반에서 사용하는 한국어·영어 UI 라벨 사전을 정의한다."
+    },
+    "file:web/main.tsx": {
+      "name": "main.tsx",
+      "type": "file",
+      "summary": "React application의 최상위 composition root로 dashboard, mod, 설정, 번역 hook과 page component를 연결한다. Tauri drag-and-drop mod import, 외부 mod prompt, modal과 global busy·log 상태를 총괄한다."
+    },
+    "file:web/previewData.ts": {
+      "name": "previewData.ts",
+      "type": "file",
+      "summary": "Browser preview에서 사용하는 dashboard, game log, JSON sheet·validation, translation project의 현실적인 fixture를 제공한다. Tauri 없이 UI와 translation flow를 점검할 수 있게 한다."
+    },
+    "file:web/styles.css": {
+      "name": "styles.css",
+      "type": "file",
+      "summary": "영역별 15개 stylesheet를 순서대로 import하고 validation issue용 공통 outline rule을 추가하는 CSS entry point다."
+    },
+    "file:web/styles/01-base.css": {
+      "name": "01-base.css",
+      "type": "file",
+      "summary": "전역 color token, typography, box sizing과 body·button·input의 기본 표현을 정의해 전체 UI의 시각적 기반을 만든다."
+    },
+    "file:web/styles/02-shell.css": {
+      "name": "02-shell.css",
+      "type": "file",
+      "summary": "Desktop app shell, sidebar, workspace와 navigation 영역의 고정 높이·scroll·layout을 정의한다."
+    },
+    "file:web/styles/03-dashboard.css": {
+      "name": "03-dashboard.css",
+      "type": "file",
+      "summary": "Dashboard와 translation tool page의 grid, 통계 card, PCK 적용 progress overlay를 배치한다."
+    },
+    "file:web/styles/04-mods.css": {
+      "name": "04-mods.css",
+      "type": "file",
+      "summary": "Mod toolbar, filter, 상세·간단 table row, badge와 action 영역을 포함한 mod 관리 화면 전반을 스타일링한다."
+    },
+    "file:web/styles/05-translation-workflow.css": {
+      "name": "05-translation-workflow.css",
+      "type": "file",
+      "summary": "Preset·settings·translation tool의 양쪽 panel layout과 form, action, project tree workflow를 구성한다."
+    },
+    "file:web/styles/06-translation-sheet.css": {
+      "name": "06-translation-sheet.css",
+      "type": "file",
+      "summary": "Translation sheet 결과, validation card, 비교 column, editable row와 paste candidate UI를 정밀하게 스타일링한다."
+    },
+    "file:web/styles/07-settings.css": {
+      "name": "07-settings.css",
+      "type": "file",
+      "summary": "Preset card, 설정 section, 진단·삭제 mod·save backup 관리 panel과 control을 스타일링한다."
+    },
+    "file:web/styles/08-logs.css": {
+      "name": "08-logs.css",
+      "type": "file",
+      "summary": "앱·게임 log viewer, monospace message, tone별 색상과 toast notification 표현을 정의한다."
+    },
+    "file:web/styles/09-modal-tree.css": {
+      "name": "09-modal-tree.css",
+      "type": "file",
+      "summary": "Modal backdrop·dialog와 translation extraction tree, 선택 row, nested node control의 구조와 상태를 표현한다."
+    },
+    "file:web/styles/10-ui-refresh-overrides.css": {
+      "name": "10-ui-refresh-overrides.css",
+      "type": "file",
+      "summary": "새 color palette와 spacing·component 표현을 기존 stylesheet 위에 덮어써 UI refresh 디자인을 일괄 적용한다."
+    },
+    "file:web/styles/11-responsive.css": {
+      "name": "11-responsive.css",
+      "type": "file",
+      "summary": "중간 폭 viewport에서 통계, toolbar, mod grid column과 translation layout을 재배치하는 responsive breakpoint를 제공한다."
+    },
+    "file:web/styles/12-loading.css": {
+      "name": "12-loading.css",
+      "type": "file",
+      "summary": "Startup loading screen과 busy progress modal의 overlay, card, spinner, 단계 indicator를 스타일링한다."
+    },
+    "file:web/styles/13-menu-titlebar.css": {
+      "name": "13-menu-titlebar.css",
+      "type": "file",
+      "summary": "상단 app menu bar, page tab과 native window control을 포함한 custom desktop titlebar layout을 정의한다."
+    },
+    "file:web/styles/14-mobile.css": {
+      "name": "14-mobile.css",
+      "type": "file",
+      "summary": "720px·560px 이하에서 panel을 단일 column으로 바꾸고 menu, content, control 크기를 줄이는 mobile 대응 규칙이다."
+    },
+    "file:web/styles/15-tooltips.css": {
+      "name": "15-tooltips.css",
+      "type": "file",
+      "summary": "Portal 기반 floating tooltip의 위치, 색상, 크기와 transition을 정의하고 기본 pseudo-tooltip을 비활성화한다."
+    },
+    "file:web/types.ts": {
+      "name": "types.ts",
+      "type": "file",
+      "summary": "mod, preset, dashboard, 설정, 진단, backup, 번역 sheet와 project 등 frontend 전역 domain model을 정의한다. Rust backend 응답과 React UI 사이의 공통 data contract 역할을 한다."
+    },
+    "file:web/utils/logging.ts": {
+      "name": "logging.ts",
+      "type": "file",
+      "summary": "예외와 command 인자를 안전하고 짧은 log 문자열로 변환하고, log tone·toast 여부·JSON command label을 판정한다. 성공 문구의 0건 실패 표현을 제거해 오분류를 줄인다."
+    },
+    "file:web/utils/runtime.ts": {
+      "name": "runtime.ts",
+      "type": "file",
+      "summary": "Tauri runtime marker를 확인해 현재 UI가 desktop native 환경인지 browser preview인지 판별한다."
+    },
+    "file:web/utils/setup.ts": {
+      "name": "setup.ts",
+      "type": "file",
+      "summary": "dashboard setup issue 가운데 blocking 항목을 추리고 사용자 안내용 요약 문자열을 만든다."
+    },
+    "file:web/utils/storage.ts": {
+      "name": "storage.ts",
+      "type": "file",
+      "summary": "번역 session, mod view mode, table column 폭을 localStorage에 안전하게 읽고 쓴다. 완료된 적용 결과 제거와 column 기본값 merge로 오래된 저장값을 정규화한다."
+    },
+    "file:web/vite-env.d.ts": {
+      "name": "vite-env.d.ts",
+      "type": "file",
+      "summary": "Vite client ambient type을 frontend TypeScript compilation에 포함하는 reference declaration이다."
+    }
+  },
+  "totalNodes": 139,
+  "totalEdges": 1968
+}

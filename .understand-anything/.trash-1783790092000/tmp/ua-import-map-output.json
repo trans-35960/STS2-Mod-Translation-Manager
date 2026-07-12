@@ -1,0 +1,469 @@
+{
+  "scriptCompleted": true,
+  "stats": {
+    "filesScanned": 139,
+    "filesWithImports": 61,
+    "totalEdges": 259
+  },
+  "importMap": {
+    ".gitattributes": [],
+    ".nvmrc": [],
+    ".understand-anything/.understandignore": [],
+    ".understand-anything/config.json": [],
+    "AGENTS.md": [],
+    "Cargo.toml": [],
+    "index.html": [],
+    "package.json": [],
+    "README.md": [],
+    "replace.cjs": [],
+    "scripts/build-release.ps1": [],
+    "scripts/check-tauri-contract.ps1": [],
+    "scripts/check.ps1": [],
+    "scripts/e2e-smoke.ps1": [],
+    "src-tauri/build.rs": [],
+    "src-tauri/capabilities/default.json": [],
+    "src-tauri/Cargo.toml": [],
+    "src-tauri/src/app.rs": [],
+    "src-tauri/src/commands/mod.rs": [
+      "src-tauri/src/dto.rs"
+    ],
+    "src-tauri/src/dto.rs": [],
+    "src-tauri/src/fs_ops.rs": [],
+    "src-tauri/src/main.rs": [
+      "src-tauri/src/app.rs",
+      "src-tauri/src/commands/mod.rs",
+      "src-tauri/src/dto.rs",
+      "src-tauri/src/fs_ops.rs",
+      "src-tauri/src/services/mod.rs"
+    ],
+    "src-tauri/src/services/cache_cleanup.rs": [],
+    "src-tauri/src/services/common.rs": [],
+    "src-tauri/src/services/dashboard.rs": [],
+    "src-tauri/src/services/dashboard/activation.rs": [],
+    "src-tauri/src/services/dashboard/dto_maps.rs": [],
+    "src-tauri/src/services/dashboard/mod_rows.rs": [],
+    "src-tauri/src/services/dashboard/setup_status.rs": [],
+    "src-tauri/src/services/deleted_mods.rs": [],
+    "src-tauri/src/services/json_sheet.rs": [],
+    "src-tauri/src/services/json_sheet/dto.rs": [],
+    "src-tauri/src/services/logs_diagnostics.rs": [],
+    "src-tauri/src/services/mod.rs": [
+      "src-tauri/src/dto.rs",
+      "src-tauri/src/fs_ops.rs"
+    ],
+    "src-tauri/src/services/pck.rs": [],
+    "src-tauri/src/services/settings.rs": [],
+    "src-tauri/src/services/tests.rs": [],
+    "src-tauri/src/services/translation_preview.rs": [],
+    "src-tauri/src/services/translation_preview/extraction_cache.rs": [],
+    "src-tauri/src/services/translation_preview/extraction_tree.rs": [],
+    "src-tauri/src/services/translation_preview/language_preview.rs": [],
+    "src-tauri/src/services/translation_preview/manifest.rs": [],
+    "src-tauri/src/services/translation_preview/resource_paths.rs": [],
+    "src-tauri/tauri.conf.json": [],
+    "src/app.rs": [
+      "src/config.rs",
+      "src/discovery.rs",
+      "src/domain.rs",
+      "src/error.rs",
+      "src/launcher.rs",
+      "src/preset.rs",
+      "src/state.rs",
+      "src/translation.rs",
+      "src/vault.rs",
+      "src/vendor_tools.rs"
+    ],
+    "src/cli.rs": [
+      "src/app.rs",
+      "src/config.rs",
+      "src/domain.rs",
+      "src/error.rs",
+      "src/launcher.rs",
+      "src/preset.rs",
+      "src/translation.rs",
+      "src/vault.rs",
+      "src/vendor_tools.rs"
+    ],
+    "src/config.rs": [],
+    "src/discovery.rs": [
+      "src/domain.rs",
+      "src/error.rs"
+    ],
+    "src/domain.rs": [],
+    "src/error.rs": [],
+    "src/json_translation/apply.rs": [
+      "src/error.rs"
+    ],
+    "src/json_translation/hardcoded.rs": [
+      "src/error.rs"
+    ],
+    "src/json_translation/import.rs": [
+      "src/error.rs"
+    ],
+    "src/json_translation/language_path.rs": [
+      "src/error.rs"
+    ],
+    "src/json_translation/mod.rs": [
+      "src/json_translation/apply.rs",
+      "src/json_translation/hardcoded.rs",
+      "src/json_translation/import.rs",
+      "src/json_translation/language_path.rs",
+      "src/json_translation/sheet.rs",
+      "src/json_translation/slots.rs",
+      "src/json_translation/source_json.rs",
+      "src/json_translation/tests.rs",
+      "src/json_translation/types.rs"
+    ],
+    "src/json_translation/sheet.rs": [
+      "src/error.rs"
+    ],
+    "src/json_translation/slots.rs": [],
+    "src/json_translation/source_json.rs": [
+      "src/error.rs"
+    ],
+    "src/json_translation/tests.rs": [],
+    "src/json_translation/types.rs": [],
+    "src/launcher.rs": [
+      "src/config.rs",
+      "src/error.rs",
+      "src/process.rs"
+    ],
+    "src/lib.rs": [
+      "src/app.rs",
+      "src/cli.rs",
+      "src/config.rs",
+      "src/discovery.rs",
+      "src/domain.rs",
+      "src/error.rs",
+      "src/json_translation/mod.rs",
+      "src/launcher.rs",
+      "src/path_guard.rs",
+      "src/preset.rs",
+      "src/process.rs",
+      "src/save_backup.rs",
+      "src/state.rs",
+      "src/text_ui.rs",
+      "src/translation.rs",
+      "src/vault.rs",
+      "src/vendor_tools.rs"
+    ],
+    "src/main.rs": [],
+    "src/path_guard.rs": [],
+    "src/preset.rs": [
+      "src/discovery.rs",
+      "src/domain.rs",
+      "src/error.rs",
+      "src/process.rs",
+      "src/vault.rs"
+    ],
+    "src/process.rs": [],
+    "src/save_backup.rs": [
+      "src/config.rs",
+      "src/error.rs"
+    ],
+    "src/state.rs": [
+      "src/domain.rs",
+      "src/error.rs"
+    ],
+    "src/text_ui.rs": [
+      "src/app.rs",
+      "src/error.rs",
+      "src/vault.rs"
+    ],
+    "src/translation.rs": [
+      "src/domain.rs",
+      "src/error.rs",
+      "src/json_translation/mod.rs",
+      "src/process.rs"
+    ],
+    "src/vault.rs": [
+      "src/discovery.rs",
+      "src/domain.rs",
+      "src/error.rs",
+      "src/process.rs"
+    ],
+    "src/vendor_tools.rs": [],
+    "THIRD_PARTY_NOTICES.md": [],
+    "tsconfig.json": [],
+    "vite.config.ts": [],
+    "web/api/tauri.ts": [
+      "web/types.ts"
+    ],
+    "web/components/AppShell.tsx": [
+      "web/api/tauri.ts",
+      "web/i18n.ts",
+      "web/types.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/components/Common.tsx": [],
+    "web/components/TooltipLayer.tsx": [],
+    "web/constants.ts": [
+      "web/types.ts"
+    ],
+    "web/features/mods/DroppedModConfirmModal.tsx": [
+      "web/features/mods/modUtils.ts",
+      "web/types.ts"
+    ],
+    "web/features/mods/ExtractModal.tsx": [
+      "web/features/mods/modUtils.ts",
+      "web/i18n.ts",
+      "web/types.ts"
+    ],
+    "web/features/mods/ImportMenu.tsx": [],
+    "web/features/mods/ModBadges.tsx": [
+      "web/components/Common.tsx",
+      "web/features/mods/modUtils.ts",
+      "web/types.ts"
+    ],
+    "web/features/mods/ModConfirmModal.tsx": [
+      "web/hooks/useModActions.ts"
+    ],
+    "web/features/mods/ModRows.tsx": [
+      "web/components/Common.tsx",
+      "web/features/mods/ModBadges.tsx",
+      "web/features/mods/ModTranslationActions.tsx",
+      "web/features/mods/modUtils.ts",
+      "web/i18n.ts",
+      "web/types.ts"
+    ],
+    "web/features/mods/ModsPage.tsx": [
+      "web/api/tauri.ts",
+      "web/features/mods/ExtractModal.tsx",
+      "web/features/mods/ImportMenu.tsx",
+      "web/features/mods/ModRows.tsx",
+      "web/features/mods/modUtils.ts",
+      "web/features/mods/PresetMenu.tsx",
+      "web/i18n.ts",
+      "web/types.ts",
+      "web/utils/runtime.ts",
+      "web/utils/storage.ts"
+    ],
+    "web/features/mods/ModTranslationActions.tsx": [
+      "web/features/mods/modUtils.ts",
+      "web/types.ts"
+    ],
+    "web/features/mods/modUtils.ts": [
+      "web/types.ts"
+    ],
+    "web/features/mods/PresetMenu.tsx": [
+      "web/i18n.ts",
+      "web/types.ts"
+    ],
+    "web/features/settings/SettingsPage.tsx": [
+      "web/components/AppShell.tsx",
+      "web/components/Common.tsx",
+      "web/features/mods/modUtils.ts",
+      "web/i18n.ts",
+      "web/types.ts",
+      "web/utils/logging.ts"
+    ],
+    "web/features/translation/LogToasts.tsx": [
+      "web/types.ts",
+      "web/utils/logging.ts"
+    ],
+    "web/features/translation/TranslationActionsPanel.tsx": [
+      "web/features/mods/modUtils.ts",
+      "web/features/translation/TranslationProjectTree.tsx",
+      "web/features/translation/TranslationToolsTypes.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/features/translation/TranslationWidgets.tsx",
+      "web/types.ts"
+    ],
+    "web/features/translation/TranslationProjectTree.tsx": [
+      "web/components/Common.tsx",
+      "web/features/translation/translationUtils.ts"
+    ],
+    "web/features/translation/TranslationSheetTable.tsx": [
+      "web/components/AppShell.tsx",
+      "web/components/Common.tsx",
+      "web/features/mods/modUtils.ts",
+      "web/features/translation/TranslationToolsTypes.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/features/translation/TranslationWidgets.tsx",
+      "web/types.ts"
+    ],
+    "web/features/translation/TranslationStartPage.tsx": [
+      "web/components/Common.tsx",
+      "web/features/mods/modUtils.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/i18n.ts",
+      "web/types.ts"
+    ],
+    "web/features/translation/TranslationToolsPage.tsx": [
+      "web/features/translation/TranslationActionsPanel.tsx",
+      "web/features/translation/TranslationSheetTable.tsx",
+      "web/features/translation/TranslationStartPage.tsx",
+      "web/features/translation/TranslationToolsTypes.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/features/translation/useTranslationToolsUiState.ts"
+    ],
+    "web/features/translation/TranslationToolsTypes.ts": [
+      "web/i18n.ts",
+      "web/types.ts"
+    ],
+    "web/features/translation/translationUtils.ts": [
+      "web/types.ts"
+    ],
+    "web/features/translation/TranslationWidgets.tsx": [
+      "web/components/Common.tsx",
+      "web/features/mods/modUtils.ts",
+      "web/types.ts"
+    ],
+    "web/features/translation/useTranslationSessionState.ts": [
+      "web/types.ts",
+      "web/utils/storage.ts"
+    ],
+    "web/features/translation/useTranslationToolsUiState.ts": [
+      "web/features/mods/modUtils.ts",
+      "web/features/translation/TranslationToolsTypes.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/types.ts"
+    ],
+    "web/hooks/translation/types.ts": [
+      "web/api/tauri.ts",
+      "web/types.ts"
+    ],
+    "web/hooks/translation/useJsonToolRunner.ts": [
+      "web/api/tauri.ts",
+      "web/features/translation/LogToasts.tsx",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/previewData.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/translation/useTranslationCompareActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/mods/modUtils.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/translation/useTranslationIoActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/translation/useTranslationSessionActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/mods/modUtils.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/previewData.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/translation/useTranslationSheetActions.ts": [
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/types.ts"
+    ],
+    "web/hooks/useAppActions.ts": [
+      "web/api/tauri.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/useAppLogs.ts": [],
+    "web/hooks/useDashboardLoader.ts": [
+      "web/api/tauri.ts",
+      "web/constants.ts",
+      "web/previewData.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts",
+      "web/utils/setup.ts"
+    ],
+    "web/hooks/useModActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/mods/modUtils.ts",
+      "web/types.ts",
+      "web/utils/runtime.ts",
+      "web/utils/setup.ts"
+    ],
+    "web/hooks/useSettingsActions.ts": [
+      "web/api/tauri.ts",
+      "web/constants.ts",
+      "web/previewData.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/hooks/useTranslationActions.ts": [
+      "web/api/tauri.ts",
+      "web/features/translation/translationUtils.ts",
+      "web/hooks/translation/types.ts",
+      "web/hooks/translation/useJsonToolRunner.ts",
+      "web/hooks/translation/useTranslationCompareActions.ts",
+      "web/hooks/translation/useTranslationIoActions.ts",
+      "web/hooks/translation/useTranslationSessionActions.ts",
+      "web/hooks/translation/useTranslationSheetActions.ts",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/i18n.ts": [],
+    "web/main.tsx": [
+      "web/api/tauri.ts",
+      "web/components/AppShell.tsx",
+      "web/components/TooltipLayer.tsx",
+      "web/constants.ts",
+      "web/features/mods/DroppedModConfirmModal.tsx",
+      "web/features/mods/ModConfirmModal.tsx",
+      "web/features/mods/ModsPage.tsx",
+      "web/features/settings/SettingsPage.tsx",
+      "web/features/translation/LogToasts.tsx",
+      "web/features/translation/TranslationToolsPage.tsx",
+      "web/features/translation/useTranslationSessionState.ts",
+      "web/hooks/useAppActions.ts",
+      "web/hooks/useAppLogs.ts",
+      "web/hooks/useDashboardLoader.ts",
+      "web/hooks/useModActions.ts",
+      "web/hooks/useSettingsActions.ts",
+      "web/hooks/useTranslationActions.ts",
+      "web/i18n.ts",
+      "web/styles.css",
+      "web/types.ts",
+      "web/utils/logging.ts",
+      "web/utils/runtime.ts"
+    ],
+    "web/previewData.ts": [
+      "web/types.ts"
+    ],
+    "web/styles.css": [],
+    "web/styles/01-base.css": [],
+    "web/styles/02-shell.css": [],
+    "web/styles/03-dashboard.css": [],
+    "web/styles/04-mods.css": [],
+    "web/styles/05-translation-workflow.css": [],
+    "web/styles/06-translation-sheet.css": [],
+    "web/styles/07-settings.css": [],
+    "web/styles/08-logs.css": [],
+    "web/styles/09-modal-tree.css": [],
+    "web/styles/10-ui-refresh-overrides.css": [],
+    "web/styles/11-responsive.css": [],
+    "web/styles/12-loading.css": [],
+    "web/styles/13-menu-titlebar.css": [],
+    "web/styles/14-mobile.css": [],
+    "web/styles/15-tooltips.css": [],
+    "web/types.ts": [],
+    "web/utils/logging.ts": [
+      "web/types.ts"
+    ],
+    "web/utils/runtime.ts": [],
+    "web/utils/setup.ts": [
+      "web/types.ts"
+    ],
+    "web/utils/storage.ts": [
+      "web/constants.ts",
+      "web/types.ts"
+    ],
+    "web/vite-env.d.ts": []
+  }
+}

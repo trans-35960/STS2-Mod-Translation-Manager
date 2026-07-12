@@ -1,0 +1,60 @@
+{
+  "projectRoot": "D:/github/STS2-Mod-Translation-Manager",
+  "batchFiles": [
+    {
+      "path": "src-tauri/src/app.rs",
+      "language": "rust",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src-tauri/src/commands/mod.rs",
+      "language": "rust",
+      "sizeLines": 332,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src-tauri/src/dto.rs",
+      "language": "rust",
+      "sizeLines": 410,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src-tauri/src/fs_ops.rs",
+      "language": "rust",
+      "sizeLines": 128,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src-tauri/src/main.rs",
+      "language": "rust",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src-tauri/src/services/mod.rs",
+      "language": "rust",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "src-tauri/src/app.rs": [],
+    "src-tauri/src/commands/mod.rs": [
+      "src-tauri/src/dto.rs"
+    ],
+    "src-tauri/src/dto.rs": [],
+    "src-tauri/src/fs_ops.rs": [],
+    "src-tauri/src/main.rs": [
+      "src-tauri/src/app.rs",
+      "src-tauri/src/commands/mod.rs",
+      "src-tauri/src/dto.rs",
+      "src-tauri/src/fs_ops.rs",
+      "src-tauri/src/services/mod.rs"
+    ],
+    "src-tauri/src/services/mod.rs": [
+      "src-tauri/src/dto.rs",
+      "src-tauri/src/fs_ops.rs"
+    ]
+  }
+}

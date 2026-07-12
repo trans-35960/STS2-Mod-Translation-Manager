@@ -1,0 +1,80 @@
+[
+  {
+    "order": 1,
+    "title": "프로젝트 개요",
+    "description": "README에서 이 프로젝트가 Slay the Spire 2 모드를 한국어로 번역하고 안전하게 관리하는 Windows 데스크톱 앱임을 먼저 확인합니다. 주요 기능과 개발·CLI 사용법을 훑으면 이후 React, Tauri, Rust 계층이 해결하는 문제를 한눈에 연결할 수 있습니다.",
+    "nodeIds": ["document:README.md"]
+  },
+  {
+    "order": 2,
+    "title": "React 화면 구성",
+    "description": "이제 web/main.tsx에서 대시보드와 각 feature 화면이 어떻게 하나의 애플리케이션으로 조립되는지 살펴봅니다. ModsPage는 모드 관리 흐름을, TranslationToolsPage는 번역 작업 헤더·패널·시트 편집기를 대표하므로 UI의 두 핵심 사용자 여정을 함께 보여 줍니다.",
+    "nodeIds": ["file:web/main.tsx", "file:web/features/mods/ModsPage.tsx", "file:web/features/translation/TranslationToolsPage.tsx"],
+    "languageLesson": "React의 composition root는 화면 자체보다 state와 callback을 feature component에 연결하는 역할을 맡습니다. Custom hook으로 동작을 분리하면 큰 화면도 사용자 흐름별로 읽을 수 있습니다."
+  },
+  {
+    "order": 3,
+    "title": "프런트엔드 상태",
+    "description": "화면 아래에서는 대시보드 로드, 모드 변경, 번역 action facade와 번역 session 복구가 각각 custom hook으로 나뉩니다. 이 단계는 사용자 입력이 낙관적 모드 토글, 검증·저장, localStorage session으로 이어진 뒤 다시 화면 상태를 갱신하는 경로를 설명합니다.",
+    "nodeIds": ["file:web/hooks/useDashboardLoader.ts", "file:web/hooks/useModActions.ts", "file:web/hooks/useTranslationActions.ts", "file:web/features/translation/useTranslationSessionState.ts"]
+  },
+  {
+    "order": 4,
+    "title": "네이티브 호출 경계",
+    "description": "프런트엔드 전역 타입은 Rust 응답과 React 화면이 공유하는 dashboard, mod, 설정, 번역 시트 계약을 정의합니다. tauri.ts는 그 계약 위에서 command, 파일 대화상자와 창 API를 타입 안전하게 감싸므로 웹 코드가 네이티브 구현 세부사항에 직접 의존하지 않게 합니다.",
+    "nodeIds": ["file:web/types.ts", "file:web/api/tauri.ts"],
+    "languageLesson": "TypeScript의 mapped type과 generic command wrapper는 command 이름에 맞는 인자·반환 타입을 컴파일 시점에 연결해 IPC 계약 오류를 줄입니다."
+  },
+  {
+    "order": 5,
+    "title": "Tauri 부트스트랩",
+    "description": "Rust 데스크톱 binary는 main.rs에서 시작해 app.rs의 Tauri builder로 진입합니다. 여기서 command와 dialog·window-state plugin, runtime 경로 및 창 생명주기가 등록되고 tauri.conf.json이 Vite 빌드와 Windows 번들·보안 정책을 보완합니다.",
+    "nodeIds": ["file:src-tauri/src/main.rs", "file:src-tauri/src/app.rs", "config:src-tauri/tauri.conf.json"],
+    "languageLesson": "Tauri는 웹 UI를 로컬 WebView에서 실행하되 Rust command를 명시적으로 등록해 네이티브 권한 경계를 형성합니다."
+  },
+  {
+    "order": 6,
+    "title": "Command와 DTO",
+    "description": "등록된 command adapter는 프런트엔드 요청을 받아 무거운 JSON 작업을 blocking task로 분리하고 service 계층에 위임합니다. dto.rs는 service 결과를 TypeScript가 기대하는 직렬화 형태로 변환하므로 Step 4의 계약이 실제 Rust 경계에서 완성됩니다.",
+    "nodeIds": ["file:src-tauri/src/commands/mod.rs", "file:src-tauri/src/dto.rs"],
+    "languageLesson": "Rust의 Serde DTO는 내부 도메인 타입과 외부 IPC 표현을 분리합니다. 이 경계를 유지하면 코어 모델을 바꾸면서도 UI 계약을 안정적으로 관리할 수 있습니다."
+  },
+  {
+    "order": 7,
+    "title": "Tauri 서비스 계층",
+    "description": "서비스 composition root 아래에서 dashboard는 스캔·모드 전환·프리셋·실행을, json_sheet는 번역 시트와 적용 흐름을 조정합니다. translation_preview는 리소스 추출과 작업공간 준비를 맡아 command 계층과 코어 Rust 기능 사이의 애플리케이션 서비스를 형성합니다.",
+    "nodeIds": ["file:src-tauri/src/services/mod.rs", "file:src-tauri/src/services/dashboard.rs", "file:src-tauri/src/services/json_sheet.rs", "file:src-tauri/src/services/translation_preview.rs"]
+  },
+  {
+    "order": 8,
+    "title": "핵심 Rust 도메인",
+    "description": "Tauri 서비스가 의존하는 코어 crate는 lib.rs에서 공개 모듈을 정리하고 App 파사드로 스캔, 활성 상태, 프리셋, 백업과 실행을 조정합니다. domain.rs의 공통 타입과 config.rs의 경로·Steam 탐지가 네이티브 UI와 CLI가 함께 재사용하는 기반을 만듭니다.",
+    "nodeIds": ["file:src/lib.rs", "file:src/app.rs", "file:src/domain.rs", "file:src/config.rs"],
+    "languageLesson": "Rust workspace에서 UI와 무관한 기능을 library crate에 두면 Tauri binary와 CLI binary가 동일한 소유권·오류 처리 규칙 아래 코드를 공유할 수 있습니다."
+  },
+  {
+    "order": 9,
+    "title": "번역 처리 엔진",
+    "description": "코어 번역 모듈은 archive와 PCK에서 후보 파일을 찾고 작업공간을 만든 뒤 번역 결과를 대상 경로에 병합합니다. JSON 번역 하위 모듈은 시트 API를 묶고, Tauri의 PCK 서비스는 완성된 payload를 게임 패키지 또는 독립 번역 패치 모드로 내보냅니다.",
+    "nodeIds": ["file:src/translation.rs", "file:src/json_translation/mod.rs", "file:src-tauri/src/services/pck.rs"]
+  },
+  {
+    "order": 10,
+    "title": "CLI 재사용 경로",
+    "description": "데스크톱 앱 외에도 src/main.rs가 CLI binary를 시작하고 cli.rs가 인수를 해석해 같은 코어 App 기능을 호출합니다. 이 경로를 읽으면 UI 없이 자동화·진단할 수 있는 기능과 코어 crate 분리의 실질적 이점을 확인할 수 있습니다.",
+    "nodeIds": ["file:src/main.rs", "file:src/cli.rs"]
+  },
+  {
+    "order": 11,
+    "title": "회귀 테스트 전략",
+    "description": "Tauri 서비스 통합 테스트는 dashboard, 설정, 삭제·복원, 번역 미리보기와 PCK 흐름을 경계 수준에서 검증합니다. 코어 JSON 번역 테스트는 시트 생성·재계산·검증·가져오기·내보내기·적용을 폭넓게 고정해 Step 9의 데이터 변환을 보호합니다.",
+    "nodeIds": ["file:src-tauri/src/services/tests.rs", "file:src/json_translation/tests.rs"]
+  },
+  {
+    "order": 12,
+    "title": "빌드와 릴리스",
+    "description": "마지막으로 package.json과 두 Cargo manifest에서 React/Vite, 코어 Rust, Tauri crate의 빌드 경계를 확인합니다. build-release.ps1은 테스트와 release·Tauri 빌드, CLI smoke check를 거쳐 Windows portable zip을 조립하므로 전체 투어의 계층이 실제 배포물로 결합되는 지점입니다.",
+    "nodeIds": ["config:package.json", "config:Cargo.toml", "config:src-tauri/Cargo.toml", "file:scripts/build-release.ps1"],
+    "languageLesson": "Tauri 빌드는 프런트엔드 bundle과 Rust binary를 함께 패키징합니다. 별도 core crate와 desktop crate의 manifest를 분리하면 CLI와 GUI의 의존성 및 배포 산출물을 독립적으로 관리할 수 있습니다."
+  }
+]

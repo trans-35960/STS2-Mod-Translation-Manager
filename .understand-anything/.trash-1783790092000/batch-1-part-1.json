@@ -1,0 +1,1362 @@
+{
+  "nodes": [
+    {
+      "id": "file:web/api/tauri.ts",
+      "type": "file",
+      "name": "tauri.ts",
+      "filePath": "web/api/tauri.ts",
+      "summary": "Tauri command 호출과 파일 열기·저장 대화상자, 현재 앱 창 접근을 타입 안전한 API로 감싼다. React UI와 Rust backend 사이의 네이티브 경계를 한곳에서 관리한다.",
+      "tags": [
+        "tauri",
+        "native-bridge",
+        "api-wrapper",
+        "type-safety"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "CommandArgs와 CommandResult 제네릭 매핑으로 command별 인자와 반환 타입을 컴파일 시점에 연결한다."
+    },
+    {
+      "id": "function:web/api/tauri.ts:invokeCommand",
+      "type": "function",
+      "name": "invokeCommand",
+      "filePath": "web/api/tauri.ts",
+      "lineRange": [
+        180,
+        185
+      ],
+      "summary": "Command 이름에 맞는 인자와 반환 type을 보존하면서 Rust backend의 Tauri command를 호출한다.",
+      "tags": [
+        "api-wrapper",
+        "tauri",
+        "native-bridge"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/api/tauri.ts:openDialog",
+      "type": "function",
+      "name": "openDialog",
+      "filePath": "web/api/tauri.ts",
+      "lineRange": [
+        187,
+        189
+      ],
+      "summary": "Tauri open dialog option을 전달하고 선택된 파일 또는 directory 경로를 반환한다.",
+      "tags": [
+        "api-wrapper",
+        "tauri",
+        "native-bridge"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/api/tauri.ts:saveDialog",
+      "type": "function",
+      "name": "saveDialog",
+      "filePath": "web/api/tauri.ts",
+      "lineRange": [
+        191,
+        193
+      ],
+      "summary": "Tauri save dialog를 열어 사용자가 선택한 저장 경로를 반환한다.",
+      "tags": [
+        "api-wrapper",
+        "tauri",
+        "native-bridge"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/api/tauri.ts:getAppWindow",
+      "type": "function",
+      "name": "getAppWindow",
+      "filePath": "web/api/tauri.ts",
+      "lineRange": [
+        195,
+        197
+      ],
+      "summary": "현재 Tauri webview가 속한 app window handle을 가져온다.",
+      "tags": [
+        "api-wrapper",
+        "tauri",
+        "native-bridge"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/components/AppShell.tsx",
+      "type": "file",
+      "name": "AppShell.tsx",
+      "filePath": "web/components/AppShell.tsx",
+      "summary": "로딩 화면, 작업 진행 modal, 앱 메뉴와 window control, 통계 필터 등 데스크톱 shell의 공통 UI를 제공한다. Preview runtime과 실제 Tauri window 동작을 함께 처리한다.",
+      "tags": [
+        "component",
+        "app-shell",
+        "window-management",
+        "navigation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:LoadingScreen",
+      "type": "function",
+      "name": "LoadingScreen",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        18,
+        36
+      ],
+      "summary": "Startup 단계 문구와 spinner를 표시해 dashboard 준비 상태를 사용자에게 알린다.",
+      "tags": [
+        "component",
+        "react",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:BusyProgressModal",
+      "type": "function",
+      "name": "BusyProgressModal",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        38,
+        64
+      ],
+      "summary": "현재 busy message를 단계별 진행 정보로 변환해 blocking progress modal을 렌더링한다.",
+      "tags": [
+        "component",
+        "react",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:busyProgress",
+      "type": "function",
+      "name": "busyProgress",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        66,
+        111
+      ],
+      "summary": "Busy 문자열의 prefix를 해석해 현재 단계와 전체 단계 목록을 계산한다.",
+      "tags": [
+        "utility",
+        "formatting",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:AppMenuBar",
+      "type": "function",
+      "name": "AppMenuBar",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        113,
+        156
+      ],
+      "summary": "현재 page에 맞는 navigation tab, app title, native window control을 포함한 상단 menu bar를 구성한다.",
+      "tags": [
+        "component",
+        "react",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:MenuTab",
+      "type": "function",
+      "name": "MenuTab",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        165,
+        179
+      ],
+      "summary": "선택 상태와 click handler를 반영한 app navigation tab button을 렌더링한다.",
+      "tags": [
+        "component",
+        "react",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:WindowControls",
+      "type": "function",
+      "name": "WindowControls",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        181,
+        231
+      ],
+      "summary": "Window maximize 상태를 resize·move event와 동기화하고 최소화·최대화·닫기 control을 제공한다.",
+      "tags": [
+        "component",
+        "react",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:runWindowAction",
+      "type": "function",
+      "name": "runWindowAction",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        233,
+        247
+      ],
+      "summary": "Preview runtime을 차단한 뒤 현재 Tauri window에 minimize, maximize, close action을 실행한다.",
+      "tags": [
+        "function",
+        "business-logic",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:Segmented",
+      "type": "function",
+      "name": "Segmented",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        249,
+        256
+      ],
+      "summary": "선택된 값을 강조하고 변경 callback을 전달하는 재사용 가능한 segmented control을 렌더링한다.",
+      "tags": [
+        "component",
+        "react",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:StatsGrid",
+      "type": "function",
+      "name": "StatsGrid",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        258,
+        287
+      ],
+      "summary": "Dashboard 통계 값을 filter 가능한 card 집합으로 바꾸고 선택 상태를 관리한다.",
+      "tags": [
+        "component",
+        "react",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/components/AppShell.tsx:Stat",
+      "type": "function",
+      "name": "Stat",
+      "filePath": "web/components/AppShell.tsx",
+      "lineRange": [
+        289,
+        324
+      ],
+      "summary": "Label, value, tone, detail을 가진 단일 통계 tile을 button 또는 표시 전용 card로 렌더링한다.",
+      "tags": [
+        "component",
+        "react",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/components/TooltipLayer.tsx",
+      "type": "file",
+      "name": "TooltipLayer.tsx",
+      "filePath": "web/components/TooltipLayer.tsx",
+      "summary": "data-tooltip 속성을 pointer와 focus 이벤트로 감지해 document portal에 전역 tooltip을 표시한다. 화면 경계와 대상 위치를 반영해 tooltip 좌표를 보정한다.",
+      "tags": [
+        "component",
+        "tooltip",
+        "portal",
+        "accessibility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/components/TooltipLayer.tsx:TooltipLayer",
+      "type": "function",
+      "name": "TooltipLayer",
+      "filePath": "web/components/TooltipLayer.tsx",
+      "lineRange": [
+        18,
+        115
+      ],
+      "summary": "Pointer·focus event로 tooltip target을 추적하고 viewport 안에 보정한 위치로 portal tooltip을 렌더링한다.",
+      "tags": [
+        "component",
+        "react",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/constants.ts",
+      "type": "file",
+      "name": "constants.ts",
+      "filePath": "web/constants.ts",
+      "summary": "기본 UI 설정, localStorage key, startup loading 단계 문구를 중앙에서 정의한다. 설정과 복원 로직이 공유하는 안정적인 기본값을 제공한다.",
+      "tags": [
+        "configuration",
+        "constants",
+        "defaults",
+        "local-storage"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "type": "file",
+      "name": "DroppedModConfirmModal.tsx",
+      "filePath": "web/features/mods/DroppedModConfirmModal.tsx",
+      "summary": "드롭된 mod preview를 설치된 mod와 경로·이름 token으로 대조하고 신규 설치, 건너뛰기, 교체 결정을 받는 modal을 구현한다. 정확 일치와 관련 후보를 구분해 안전한 import 선택을 돕는다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "matching",
+        "confirmation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/mods/DroppedModConfirmModal.tsx:DroppedModConfirmModal",
+      "type": "function",
+      "name": "DroppedModConfirmModal",
+      "filePath": "web/features/mods/DroppedModConfirmModal.tsx",
+      "lineRange": [
+        20,
+        134
+      ],
+      "summary": "드롭된 각 mod의 match 후보와 metadata를 보여 주고 import·skip·replace 결정을 수집해 전달한다.",
+      "tags": [
+        "component",
+        "react",
+        "mod-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/mods/DroppedModConfirmModal.tsx:buildDroppedRow",
+      "type": "function",
+      "name": "buildDroppedRow",
+      "filePath": "web/features/mods/DroppedModConfirmModal.tsx",
+      "lineRange": [
+        136,
+        155
+      ],
+      "summary": "Dropped preview를 설치 mod 목록과 대조해 정확, 교체 가능, 관련 match로 분류한 표시 row를 만든다.",
+      "tags": [
+        "utility",
+        "data-processing",
+        "mod-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/DroppedModConfirmModal.tsx:droppedModPreviewHasRelatedMatch",
+      "type": "function",
+      "name": "droppedModPreviewHasRelatedMatch",
+      "filePath": "web/features/mods/DroppedModConfirmModal.tsx",
+      "lineRange": [
+        157,
+        159
+      ],
+      "summary": "Dropped preview가 기존 mod와 관련 match를 하나 이상 갖는지 계산한다.",
+      "tags": [
+        "function",
+        "business-logic",
+        "mod-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/DroppedModConfirmModal.tsx:modRowAsDroppedModPreview",
+      "type": "function",
+      "name": "modRowAsDroppedModPreview",
+      "filePath": "web/features/mods/DroppedModConfirmModal.tsx",
+      "lineRange": [
+        161,
+        172
+      ],
+      "summary": "설치된 mod row를 외부 mod prompt에 재사용할 수 있는 dropped preview 형태로 변환한다.",
+      "tags": [
+        "function",
+        "business-logic",
+        "mod-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/DroppedModConfirmModal.tsx:droppedMatchTokens",
+      "type": "function",
+      "name": "droppedMatchTokens",
+      "filePath": "web/features/mods/DroppedModConfirmModal.tsx",
+      "lineRange": [
+        183,
+        193
+      ],
+      "summary": "Mod key, 이름, group, manifest 정보를 여러 정규화 variant로 확장해 match token 집합을 만든다.",
+      "tags": [
+        "function",
+        "business-logic",
+        "mod-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/DroppedModConfirmModal.tsx:previewAsModRow",
+      "type": "function",
+      "name": "previewAsModRow",
+      "filePath": "web/features/mods/DroppedModConfirmModal.tsx",
+      "lineRange": [
+        216,
+        256
+      ],
+      "summary": "Dropped preview의 제한된 metadata를 matching에 필요한 ModRow 구조로 투영한다.",
+      "tags": [
+        "function",
+        "business-logic",
+        "mod-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/DroppedModConfirmModal.tsx:kindLabel",
+      "type": "function",
+      "name": "kindLabel",
+      "filePath": "web/features/mods/DroppedModConfirmModal.tsx",
+      "lineRange": [
+        269,
+        280
+      ],
+      "summary": "Dropped source kind를 사용자에게 표시할 한국어 label로 변환한다.",
+      "tags": [
+        "utility",
+        "formatting",
+        "mod-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/features/mods/ModConfirmModal.tsx",
+      "type": "file",
+      "name": "ModConfirmModal.tsx",
+      "filePath": "web/features/mods/ModConfirmModal.tsx",
+      "summary": "모드 활성화·비활성화 등 작업 전에 설명과 영향 항목을 보여 주고 사용자의 확인 응답을 전달하는 공통 modal이다.",
+      "tags": [
+        "component",
+        "mod-management",
+        "confirmation",
+        "dialog"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/mods/ModConfirmModal.tsx:ModConfirmModal",
+      "type": "function",
+      "name": "ModConfirmModal",
+      "filePath": "web/features/mods/ModConfirmModal.tsx",
+      "lineRange": [
+        4,
+        45
+      ],
+      "summary": "Mod action 설명과 영향 목록을 modal에 표시하고 확인 또는 취소 응답을 callback으로 전달한다.",
+      "tags": [
+        "component",
+        "react",
+        "mod-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/features/settings/SettingsPage.tsx",
+      "type": "file",
+      "name": "SettingsPage.tsx",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "summary": "게임·번역 경로와 보존 정책 설정, 설치 진단, 삭제 mod 복원, save backup, 앱·게임 log를 한 화면에서 관리한다. 위험한 정리 작업에는 확인 절차와 상태별 안내를 제공한다.",
+      "tags": [
+        "component",
+        "settings",
+        "diagnostics",
+        "backup-management",
+        "logging"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:SettingsPage",
+      "type": "function",
+      "name": "SettingsPage",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        32,
+        375
+      ],
+      "summary": "설정 form과 유지보수 panel을 조합하고 draft 변경, 경로 선택, 진단·정리 action을 각 section에 연결한다.",
+      "tags": [
+        "component",
+        "react",
+        "settings"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:SetupIssuesPanel",
+      "type": "function",
+      "name": "SetupIssuesPanel",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        377,
+        397
+      ],
+      "summary": "현재 setup issue 목록을 심각도와 메시지 중심의 안내 panel로 렌더링한다.",
+      "tags": [
+        "component",
+        "react",
+        "settings"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:TroubleshootPanel",
+      "type": "function",
+      "name": "TroubleshootPanel",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        399,
+        472
+      ],
+      "summary": "진단 결과를 category와 severity별로 표시하고 가능한 자동 복구 또는 경로 열기 action을 제공한다.",
+      "tags": [
+        "component",
+        "react",
+        "settings"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:diagnosticCategoryLabel",
+      "type": "function",
+      "name": "diagnosticCategoryLabel",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        489,
+        506
+      ],
+      "summary": "Backend diagnostic category 값을 사용자 친화적인 한국어 분류명으로 변환한다.",
+      "tags": [
+        "utility",
+        "formatting",
+        "settings"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:DeletedModsPanel",
+      "type": "function",
+      "name": "DeletedModsPanel",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        508,
+        572
+      ],
+      "summary": "최근 삭제된 mod의 크기·보존일·경로를 보여 주고 개별 복원과 전체 비우기 작업을 제공한다.",
+      "tags": [
+        "component",
+        "react",
+        "settings"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:SaveBackupsPanel",
+      "type": "function",
+      "name": "SaveBackupsPanel",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        574,
+        740
+      ],
+      "summary": "Local·remote save backup을 set으로 묶어 선택하고 생성, 복원, 일괄 삭제할 수 있는 관리 UI를 렌더링한다.",
+      "tags": [
+        "component",
+        "react",
+        "settings"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:SaveBackupSlot",
+      "type": "function",
+      "name": "SaveBackupSlot",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        742,
+        781
+      ],
+      "summary": "단일 save backup의 종류, 시각, 크기, 경로와 복원 action을 표시한다.",
+      "tags": [
+        "component",
+        "react",
+        "settings"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:groupSaveBackups",
+      "type": "function",
+      "name": "groupSaveBackups",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        792,
+        820
+      ],
+      "summary": "생성 시간이 가까운 local·remote backup을 짝지어 선택 가능한 backup set으로 정렬·집계한다.",
+      "tags": [
+        "utility",
+        "data-processing",
+        "settings"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:LogsPanel",
+      "type": "function",
+      "name": "LogsPanel",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        839,
+        846
+      ],
+      "summary": "앱 log를 tone class와 함께 시간 역순 목록으로 렌더링한다.",
+      "tags": [
+        "component",
+        "react",
+        "settings"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/settings/SettingsPage.tsx:GameLogsPanel",
+      "type": "function",
+      "name": "GameLogsPanel",
+      "filePath": "web/features/settings/SettingsPage.tsx",
+      "lineRange": [
+        848,
+        884
+      ],
+      "summary": "존재하는 game log 내용과 metadata를 표시하고 누락된 log 경로를 별도로 안내한다.",
+      "tags": [
+        "component",
+        "react",
+        "settings"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/features/translation/LogToasts.tsx",
+      "type": "file",
+      "name": "LogToasts.tsx",
+      "filePath": "web/features/translation/LogToasts.tsx",
+      "summary": "번역 적용 결과와 중요 log를 사용자에게 toast로 표시하고 dismiss 동작을 제공한다. 일반 log 가운데 경고·오류 성격의 항목만 선별한다.",
+      "tags": [
+        "component",
+        "translation",
+        "toast",
+        "logging"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/translation/LogToasts.tsx:ApplyStatusToast",
+      "type": "function",
+      "name": "ApplyStatusToast",
+      "filePath": "web/features/translation/LogToasts.tsx",
+      "lineRange": [
+        4,
+        24
+      ],
+      "summary": "번역 적용 결과의 성공·실패 상태와 상세 message를 dismiss 가능한 toast로 표시한다.",
+      "tags": [
+        "component",
+        "react",
+        "translation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/LogToasts.tsx:LogToasts",
+      "type": "function",
+      "name": "LogToasts",
+      "filePath": "web/features/translation/LogToasts.tsx",
+      "lineRange": [
+        26,
+        56
+      ],
+      "summary": "최근 log 중 toast 대상만 골라 tone별 알림으로 렌더링하고 적용 결과 toast와 함께 배치한다.",
+      "tags": [
+        "component",
+        "react",
+        "translation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/LogToasts.tsx:isAlertApplyResult",
+      "type": "function",
+      "name": "isAlertApplyResult",
+      "filePath": "web/features/translation/LogToasts.tsx",
+      "lineRange": [
+        58,
+        60
+      ],
+      "summary": "적용 결과가 사용자에게 별도 alert toast로 보여야 하는 상태인지 판별한다.",
+      "tags": [
+        "utility",
+        "validation",
+        "translation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/features/translation/LogToasts.tsx:isAlertLog",
+      "type": "function",
+      "name": "isAlertLog",
+      "filePath": "web/features/translation/LogToasts.tsx",
+      "lineRange": [
+        62,
+        64
+      ],
+      "summary": "Log classifier를 이용해 해당 message가 toast 대상인지 판별한다.",
+      "tags": [
+        "utility",
+        "validation",
+        "translation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/features/translation/useTranslationSessionState.ts",
+      "type": "file",
+      "name": "useTranslationSessionState.ts",
+      "filePath": "web/features/translation/useTranslationSessionState.ts",
+      "summary": "번역 작업의 sheet, 검증, 비교, 선택 상태를 React state로 구성하고 localStorage에서 session을 복원·저장한다. 복원 성공 여부에 따라 화면 이동과 log 기록도 조정한다.",
+      "tags": [
+        "hook",
+        "translation",
+        "session-state",
+        "persistence"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/features/translation/useTranslationSessionState.ts:useTranslationSessionState",
+      "type": "function",
+      "name": "useTranslationSessionState",
+      "filePath": "web/features/translation/useTranslationSessionState.ts",
+      "lineRange": [
+        13,
+        139
+      ],
+      "summary": "번역 session 관련 state를 만들고 저장된 session 복원, 변경 시 persistence, page 전환과 복원 log를 관리한다.",
+      "tags": [
+        "hook",
+        "react",
+        "translation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/hooks/translation/types.ts",
+      "type": "file",
+      "name": "types.ts",
+      "filePath": "web/hooks/translation/types.ts",
+      "summary": "번역 action hook들이 공유하는 state setter, command runner, 전체 parameter contract를 정의한다. 여러 hook 사이의 상태 의존성을 하나의 TypeScript type surface로 통일한다.",
+      "tags": [
+        "type-definition",
+        "translation",
+        "hook-contract",
+        "type-safety"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "React Dispatch와 indexed access type을 이용해 hook parameter와 Tauri command 인자를 강하게 연결한다."
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:web/api/tauri.ts",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/api/tauri.ts",
+      "target": "function:web/api/tauri.ts:invokeCommand",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/api/tauri.ts",
+      "target": "function:web/api/tauri.ts:invokeCommand",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/api/tauri.ts",
+      "target": "function:web/api/tauri.ts:openDialog",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/api/tauri.ts",
+      "target": "function:web/api/tauri.ts:openDialog",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/api/tauri.ts",
+      "target": "function:web/api/tauri.ts:saveDialog",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/api/tauri.ts",
+      "target": "function:web/api/tauri.ts:saveDialog",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/api/tauri.ts",
+      "target": "function:web/api/tauri.ts:getAppWindow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/api/tauri.ts",
+      "target": "function:web/api/tauri.ts:getAppWindow",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "file:web/api/tauri.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "file:web/i18n.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "file:web/utils/runtime.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:LoadingScreen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:LoadingScreen",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:BusyProgressModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:BusyProgressModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:busyProgress",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:AppMenuBar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:AppMenuBar",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:MenuTab",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:WindowControls",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:runWindowAction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:Segmented",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:Segmented",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:StatsGrid",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:StatsGrid",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:Stat",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/AppShell.tsx",
+      "target": "function:web/components/AppShell.tsx:Stat",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/components/TooltipLayer.tsx",
+      "target": "function:web/components/TooltipLayer.tsx:TooltipLayer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/components/TooltipLayer.tsx",
+      "target": "function:web/components/TooltipLayer.tsx:TooltipLayer",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/constants.ts",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "file:web/features/mods/modUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:DroppedModConfirmModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:DroppedModConfirmModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:buildDroppedRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:droppedModPreviewHasRelatedMatch",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:droppedModPreviewHasRelatedMatch",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:modRowAsDroppedModPreview",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:modRowAsDroppedModPreview",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:droppedMatchTokens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:previewAsModRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/DroppedModConfirmModal.tsx",
+      "target": "function:web/features/mods/DroppedModConfirmModal.tsx:kindLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModConfirmModal.tsx",
+      "target": "file:web/hooks/useModActions.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/mods/ModConfirmModal.tsx",
+      "target": "function:web/features/mods/ModConfirmModal.tsx:ModConfirmModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/mods/ModConfirmModal.tsx",
+      "target": "function:web/features/mods/ModConfirmModal.tsx:ModConfirmModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "file:web/components/AppShell.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "file:web/components/Common.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "file:web/features/mods/modUtils.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "file:web/i18n.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "file:web/utils/logging.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:SettingsPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:SettingsPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:SetupIssuesPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:TroubleshootPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:diagnosticCategoryLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:DeletedModsPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:SaveBackupsPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:SaveBackupSlot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:groupSaveBackups",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:LogsPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:LogsPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:GameLogsPanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/settings/SettingsPage.tsx",
+      "target": "function:web/features/settings/SettingsPage.tsx:GameLogsPanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/LogToasts.tsx",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/LogToasts.tsx",
+      "target": "file:web/utils/logging.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/LogToasts.tsx",
+      "target": "function:web/features/translation/LogToasts.tsx:ApplyStatusToast",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/LogToasts.tsx",
+      "target": "function:web/features/translation/LogToasts.tsx:LogToasts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/LogToasts.tsx",
+      "target": "function:web/features/translation/LogToasts.tsx:LogToasts",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/LogToasts.tsx",
+      "target": "function:web/features/translation/LogToasts.tsx:isAlertApplyResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/LogToasts.tsx",
+      "target": "function:web/features/translation/LogToasts.tsx:isAlertApplyResult",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/LogToasts.tsx",
+      "target": "function:web/features/translation/LogToasts.tsx:isAlertLog",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/LogToasts.tsx",
+      "target": "function:web/features/translation/LogToasts.tsx:isAlertLog",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/features/translation/useTranslationSessionState.ts",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/useTranslationSessionState.ts",
+      "target": "file:web/utils/storage.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/features/translation/useTranslationSessionState.ts",
+      "target": "function:web/features/translation/useTranslationSessionState.ts:useTranslationSessionState",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:web/features/translation/useTranslationSessionState.ts",
+      "target": "function:web/features/translation/useTranslationSessionState.ts:useTranslationSessionState",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:web/hooks/translation/types.ts",
+      "target": "file:web/api/tauri.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/hooks/translation/types.ts",
+      "target": "file:web/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}
