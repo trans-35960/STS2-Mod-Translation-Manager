@@ -8,6 +8,7 @@
 /.vite-dev.*.log
 /.codex
 /.codex-local/
+/.understand-anything/
 /logs
 /backups
 /presets
