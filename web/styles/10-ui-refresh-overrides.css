@@ -966,3 +966,16 @@ select {
   overflow: visible;
   align-items: start;
 }
+
+/* Save / validate / apply carry a label next to the icon. */
+.translation-work-actions .toolbar-icon-button.labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: auto;
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+

@@ -99,26 +99,35 @@ export function TranslationWorkHeader({
         <button className="toolbar-icon-button" aria-label="시트 열기" data-tooltip="시트 열기" onClick={props.onLoad} disabled={!sheetPath || Boolean(props.busy)}>
           <FolderOpen size={15} />
         </button>
-        <button className="toolbar-icon-button dark" aria-label="저장" data-tooltip="저장" onClick={props.onSave} disabled={!canUseCurrentSheet || !sheetPath || Boolean(props.busy)}>
+        <button
+          className="toolbar-icon-button dark labeled"
+          aria-label="저장"
+          data-tooltip="시트 저장 (Ctrl+S)"
+          onClick={props.onSave}
+          disabled={!canUseCurrentSheet || !sheetPath || Boolean(props.busy)}
+        >
           <Save size={15} />
+          저장
         </button>
         <button
-          className="toolbar-icon-button"
+          className="toolbar-icon-button labeled"
           aria-label={validating ? "검증 중..." : t.validateSheet}
           data-tooltip={validating ? "검증 중..." : t.validateSheet}
           onClick={props.onValidate}
           disabled={!sheetPath || !currentSheetMatchesTarget || Boolean(props.busy)}
         >
           {validating ? <Loader2 size={15} className="spin-icon" /> : <CheckCircle2 size={15} />}
+          검증
         </button>
         <button
-          className="toolbar-icon-button primary"
+          className="toolbar-icon-button primary labeled"
           aria-label={props.busy === "apply_json_translation_sheet" || props.busy === "save_json_translation_sheet" ? "번역 파일 적용 중..." : "번역 저장/적용"}
           data-tooltip={props.busy === "apply_json_translation_sheet" || props.busy === "save_json_translation_sheet" ? "번역 파일 적용 중..." : "번역 저장/적용"}
           onClick={props.onApply}
           disabled={!sheetPath || !props.translatedOutputPath || !currentSheetMatchesTarget || filledTranslations === 0 || Boolean(props.busy)}
         >
           {props.busy === "apply_json_translation_sheet" || props.busy === "save_json_translation_sheet" ? <Loader2 size={15} className="spin-icon" /> : <UploadCloud size={15} />}
+          적용
         </button>
         {canExportPatchMod && (
           <button
