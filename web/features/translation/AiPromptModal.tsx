@@ -63,6 +63,7 @@ export function AiPromptModal({
   const [copiedParts, setCopiedParts] = React.useState<Set<number>>(() => new Set());
   const [pasteReport, setPasteReport] = React.useState<PasteReport | null>(null);
   const [busy, setBusy] = React.useState(false);
+  const [tab, setTab] = React.useState<"settings" | "terms" | "parts">("settings");
   const [error, setError] = React.useState("");
   const previewRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -83,6 +84,7 @@ export function AiPromptModal({
         if (settings.include_prompt != null) setIncludePrompt(settings.include_prompt);
         if (settings.only_empty != null) setOnlyEmpty(settings.only_empty);
         if (settings.max_chars != null && settings.max_chars >= 500) setMaxChars(settings.max_chars);
+        setTab(settings.terms.length > 0 ? "parts" : settings.mod_description || settings.extra_instructions ? "terms" : "settings");
         setLoaded(true);
       })
       .catch((reason) => !cancelled && setError(String(reason)));
@@ -280,7 +282,7 @@ export function AiPromptModal({
         <header>
           <h2>AI 프롬프트 만들기</h2>
           <p>
-            파트를 복사해 웹 AI 채팅에 붙여넣고, 받은 JSON 답변은 아래 "답변 붙여넣기" 칸에 붙여넣으세요.
+            ① 모드 정보를 정하고 ② 용어를 먼저 확정한 뒤 ③ 본문을 파트별로 번역하세요.
             {projectKey && (
               <span className="ai-prompt-save-state">
                 {saveState === "saving" ? " · 저장 중" : saveState === "saved" ? " · 이 모드 설정 저장됨" : " · 입력 내용은 이 모드에 자동 저장"}
@@ -288,148 +290,174 @@ export function AiPromptModal({
             )}
           </p>
         </header>
+        <div className="ai-prompt-tabs" role="tablist">
+          {(
+            [
+              ["settings", "① 설정", description.trim() ? "배경 있음" : "배경 없음"],
+              ["terms", "② 용어", `모드 용어 ${settings.terms.length}개`],
+              ["parts", "③ 본문 파트", result ? `완료 ${doneParts}/${result.parts.length}` : "파트 만들기 전"],
+            ] as const
+          ).map(([value, label, status]) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === value}
+              className={tab === value ? "active" : ""}
+              key={value}
+              onClick={() => setTab(value)}
+            >
+              <strong>{label}</strong>
+              <small>{status}</small>
+            </button>
+          ))}
+        </div>
 
-        <label className="modal-field">
-          <span>모드 배경 (컨셉, 캐릭터, 세계관, 주의할 표현)</span>
-          <textarea
-            rows={3}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="예: Fate 시리즈 크로스오버. 아르토리아는 기사왕으로 위엄 있는 말투."
-          />
-        </label>
-        <label className="modal-field">
-          <span>어조</span>
-          <select value={tone} onChange={(event) => setTone(event.target.value)}>
-            {TONE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="modal-field">
-          <span>이 모드 전용 용어 (한 줄에 `원문 = 번역`, 여러 번역은 `/`로 구분 · 검증에도 사용)</span>
-          <textarea
-            rows={3}
-            value={termsText}
-            onChange={(event) => setTermsText(event.target.value)}
-            placeholder={"Artoria = 아르토리아\nNoble Phantasm = 보구"}
-          />
-        </label>
-        <TermCandidatesPanel
-          sheet={sheet}
-          projectKey={projectKey}
-          context={{
-            modName: projectInfo?.modName ?? "",
-            modDescription: settings.mod_description,
-            tone,
-            extraInstructions: settings.extra_instructions,
-            maxChars: budgetOf(maxChars),
-          }}
-          registeredSources={registeredSources}
-          onAddTerms={addTerms}
-        />
-        <label className="modal-field">
-          <span>추가 지시 (한 줄에 하나, 모든 파트에 들어감)</span>
-          <textarea
-            rows={2}
-            value={extraInstructions}
-            onChange={(event) => setExtraInstructions(event.target.value)}
-            placeholder={"기술 이름은 처음 나올 때 원문을 괄호로 병기\n캐릭터 이름은 음역"}
-          />
-        </label>
-
-        <div className="ai-prompt-options">
-          <label className="inline-check">
-            <input type="checkbox" checked={includePrompt} onChange={(event) => setIncludePrompt(event.target.checked)} />
-            <span>프롬프트 포함</span>
+        <div className="ai-prompt-tab" role="tabpanel" hidden={tab !== "settings"}>
+          <label className="modal-field">
+            <span>모드 배경 (컨셉, 캐릭터, 세계관, 주의할 표현)</span>
+            <textarea
+              rows={3}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="예: Fate 시리즈 크로스오버. 아르토리아는 기사왕으로 위엄 있는 말투."
+            />
           </label>
-          <label className="inline-check">
-            <input type="checkbox" checked={onlyEmpty} onChange={(event) => setOnlyEmpty(event.target.checked)} />
-            <span>빈 값만</span>
+          <label className="modal-field">
+            <span>어조</span>
+            <select value={tone} onChange={(event) => setTone(event.target.value)}>
+              {TONE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
-          <label className="ai-prompt-max">
-            <span>파트당 최대</span>
-            <input type="number" min={500} step={500} value={maxChars} onChange={(event) => setMaxChars(Number(event.target.value))} />
-            <span>자</span>
+          <label className="modal-field">
+            <span>추가 지시 (한 줄에 하나, 모든 파트에 들어감)</span>
+            <textarea
+              rows={2}
+              value={extraInstructions}
+              onChange={(event) => setExtraInstructions(event.target.value)}
+              placeholder={"기술 이름은 처음 나올 때 원문을 괄호로 병기\n캐릭터 이름은 음역"}
+            />
           </label>
-          <button type="button" className="primary icon-button-text compact" onClick={() => void buildParts()} disabled={busy}>
-            {busy ? <Loader2 className="spin-icon" size={15} /> : <Sparkles size={15} />}
-            파트 만들기
-          </button>
+        </div>
+        <div className="ai-prompt-tab" role="tabpanel" hidden={tab !== "terms"}>
+          <p className="ai-prompt-tab-hint">후보를 뽑아 번역어를 정하고 "용어에 추가"하면, 본문 파트마다 용어집으로 들어가고 검증에도 쓰입니다.</p>
+          <label className="modal-field">
+            <span>이 모드 전용 용어 (한 줄에 `원문 = 번역`, 여러 번역은 `/`로 구분 · 검증에도 사용)</span>
+            <textarea
+              rows={3}
+              value={termsText}
+              onChange={(event) => setTermsText(event.target.value)}
+              placeholder={"Artoria = 아르토리아\nNoble Phantasm = 보구"}
+            />
+          </label>
+          <TermCandidatesPanel
+            sheet={sheet}
+            projectKey={projectKey}
+            context={{
+              modName: projectInfo?.modName ?? "",
+              modDescription: settings.mod_description,
+              tone,
+              extraInstructions: settings.extra_instructions,
+              maxChars: budgetOf(maxChars),
+            }}
+            registeredSources={registeredSources}
+            onAddTerms={addTerms}
+          />
+        </div>
+        <div className="ai-prompt-tab" role="tabpanel" hidden={tab !== "parts"}>
+          <div className="ai-prompt-options">
+            <label className="inline-check">
+              <input type="checkbox" checked={includePrompt} onChange={(event) => setIncludePrompt(event.target.checked)} />
+              <span>프롬프트 포함</span>
+            </label>
+            <label className="inline-check">
+              <input type="checkbox" checked={onlyEmpty} onChange={(event) => setOnlyEmpty(event.target.checked)} />
+              <span>빈 값만</span>
+            </label>
+            <label className="ai-prompt-max">
+              <span>파트당 최대</span>
+              <input type="number" min={500} step={500} value={maxChars} onChange={(event) => setMaxChars(Number(event.target.value))} />
+              <span>자</span>
+            </label>
+            <button type="button" className="primary icon-button-text compact" onClick={() => void buildParts()} disabled={busy}>
+              {busy ? <Loader2 className="spin-icon" size={15} /> : <Sparkles size={15} />}
+              파트 만들기
+            </button>
+          </div>
+          {result && (
+            <div className="ai-prompt-result">
+              {result.parts.length === 0 ? (
+                <p className="inline-warning">내보낼 항목이 없습니다.</p>
+              ) : (
+                <>
+                  <div className="ai-prompt-parts" role="list">
+                    {result.parts.map((part, index) => {
+                      const translated = partProgress[index] ?? 0;
+                      const done = translated === part.slots.length;
+                      return (
+                        <div
+                          className={[
+                            "ai-prompt-part",
+                            index === selectedPart ? "selected" : "",
+                            done ? "done" : translated > 0 ? "partial" : "",
+                            copiedParts.has(index) ? "copied" : "",
+                          ].filter(Boolean).join(" ")}
+                          key={index}
+                          role="listitem"
+                        >
+                          <button type="button" className="ai-prompt-part-label" onClick={() => setSelectedPart(index)}>
+                            <strong>
+                              파트 {index + 1}/{result.parts.length}
+                              {done && <CircleCheck size={13} aria-label="완료" />}
+                            </strong>
+                            <small>
+                              번역 {translated}/{part.slots.length} · {part.chars.toLocaleString()}자
+                              {part.terms > 0 ? ` · 용어 ${part.terms}` : ""}
+                              {part.oversized ? " · 한도 초과" : ""}
+                            </small>
+                          </button>
+                          <button
+                            type="button"
+                            className="toolbar-icon-button"
+                            aria-label={`파트 ${index + 1} 복사`}
+                            data-tooltip={copiedParts.has(index) ? "복사함" : "복사"}
+                            onClick={() => void copyPart(index)}
+                          >
+                            {copiedParts.has(index) ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="ai-prompt-summary">
+                    전체 {result.total_rows.toLocaleString()}행 · 완료 파트 {doneParts}/{result.parts.length} · 복사함 {copiedParts.size}/{result.parts.length}
+                  </p>
+                  <label className="modal-field ai-prompt-answer">
+                    <span>답변 붙여넣기 (Ctrl+V 하면 바로 시트에 적용)</span>
+                    <textarea
+                      data-own-paste
+                      rows={2}
+                      value=""
+                      onChange={() => undefined}
+                      onPaste={(event) => {
+                        event.preventDefault();
+                        applyAnswer(event.clipboardData.getData("text/plain"));
+                      }}
+                      placeholder="AI가 준 ```json ... ``` 답변을 그대로 붙여넣으세요."
+                    />
+                  </label>
+                  {pasteReport && <p className={`ai-prompt-paste-report ${pasteReport.tone}`}>{pasteReport.message}</p>}
+                  {preview && <textarea ref={previewRef} className="ai-prompt-preview" readOnly value={preview.text} aria-label="선택한 파트 미리보기" />}
+                </>
+              )}
+            </div>
+          )}
         </div>
         {!projectKey && <p className="inline-warning">프로젝트 정보가 없어 이 모드 설정을 저장하지 못합니다.</p>}
         {error && <p className="inline-warning">{error}</p>}
-
-        {result && (
-          <div className="ai-prompt-result">
-            {result.parts.length === 0 ? (
-              <p className="inline-warning">내보낼 항목이 없습니다.</p>
-            ) : (
-              <>
-                <div className="ai-prompt-parts" role="list">
-                  {result.parts.map((part, index) => {
-                    const translated = partProgress[index] ?? 0;
-                    const done = translated === part.slots.length;
-                    return (
-                      <div
-                        className={[
-                          "ai-prompt-part",
-                          index === selectedPart ? "selected" : "",
-                          done ? "done" : translated > 0 ? "partial" : "",
-                          copiedParts.has(index) ? "copied" : "",
-                        ].filter(Boolean).join(" ")}
-                        key={index}
-                        role="listitem"
-                      >
-                        <button type="button" className="ai-prompt-part-label" onClick={() => setSelectedPart(index)}>
-                          <strong>
-                            파트 {index + 1}/{result.parts.length}
-                            {done && <CircleCheck size={13} aria-label="완료" />}
-                          </strong>
-                          <small>
-                            번역 {translated}/{part.slots.length} · {part.chars.toLocaleString()}자
-                            {part.terms > 0 ? ` · 용어 ${part.terms}` : ""}
-                            {part.oversized ? " · 한도 초과" : ""}
-                          </small>
-                        </button>
-                        <button
-                          type="button"
-                          className="toolbar-icon-button"
-                          aria-label={`파트 ${index + 1} 복사`}
-                          data-tooltip={copiedParts.has(index) ? "복사함" : "복사"}
-                          onClick={() => void copyPart(index)}
-                        >
-                          {copiedParts.has(index) ? <Check size={14} /> : <Copy size={14} />}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="ai-prompt-summary">
-                  전체 {result.total_rows.toLocaleString()}행 · 완료 파트 {doneParts}/{result.parts.length} · 복사함 {copiedParts.size}/{result.parts.length}
-                </p>
-                <label className="modal-field ai-prompt-answer">
-                  <span>답변 붙여넣기 (Ctrl+V 하면 바로 시트에 적용)</span>
-                  <textarea
-                    data-own-paste
-                    rows={2}
-                    value=""
-                    onChange={() => undefined}
-                    onPaste={(event) => {
-                      event.preventDefault();
-                      applyAnswer(event.clipboardData.getData("text/plain"));
-                    }}
-                    placeholder="AI가 준 ```json ... ``` 답변을 그대로 붙여넣으세요."
-                  />
-                </label>
-                {pasteReport && <p className={`ai-prompt-paste-report ${pasteReport.tone}`}>{pasteReport.message}</p>}
-                {preview && <textarea ref={previewRef} className="ai-prompt-preview" readOnly value={preview.text} aria-label="선택한 파트 미리보기" />}
-              </>
-            )}
-          </div>
-        )}
 
         <footer>
           <button type="button" className="icon-button-text compact" onClick={onClose}>
