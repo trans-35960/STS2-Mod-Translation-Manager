@@ -15,6 +15,7 @@ import { ExtractConfirmModal, ModsPage } from "./features/mods/ModsPage";
 import { ModConfirmModal } from "./features/mods/ModConfirmModal";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { LogToasts } from "./features/translation/LogToasts";
+import { countUnsavedChanges } from "./features/translation/translationUtils";
 import { TranslationToolsPage } from "./features/translation/TranslationToolsPage";
 import { useTranslationSessionState } from "./features/translation/useTranslationSessionState";
 import { useAppActions } from "./hooks/useAppActions";
@@ -79,6 +80,8 @@ function App() {
     setJsonPckTargetPath,
     jsonSheet,
     setJsonSheet,
+    setJsonSheetDraft,
+    savedSheet,
     jsonReport,
     setJsonReport,
     jsonValidation,
@@ -103,6 +106,10 @@ function App() {
     setPasteCandidatesByKey,
     clearStoredSession,
   } = useTranslationSessionState({ appendLog, setPage });
+  const unsavedTranslationChanges = React.useMemo(
+    () => countUnsavedChanges(jsonSheet, savedSheet),
+    [jsonSheet, savedSheet],
+  );
 
   const {
     dashboard,
@@ -268,6 +275,7 @@ function App() {
     setJsonPckTargetPath,
     setJsonReport,
     setJsonSheet,
+    setJsonSheetDraft,
     setJsonSource,
     setJsonTargetLanguage,
     setJsonToolError,
@@ -615,6 +623,7 @@ function App() {
               onSelectRow={selectTranslationRow}
               onCopySelected={copySelectedTranslations}
               onSave={saveEditedTranslationSheet}
+              unsavedChanges={unsavedTranslationChanges}
               onExportCsv={exportTranslationCsv}
               onExportPatchMod={exportTranslationPatchMod}
               onExportShortJson={exportTranslationShortJson}

@@ -38,6 +38,7 @@ export function useTranslationIoActions({
   setJsonPckTargetPath,
   setJsonReport,
   setJsonSheet,
+  setJsonSheetDraft,
   setJsonValidation,
   setPasteCandidatesByKey,
 }: TranslationActionsParams) {
@@ -270,7 +271,7 @@ export function useTranslationIoActions({
         inputPath,
         sheet: jsonSheet,
       });
-      setJsonSheet(preservePendingTranslationStatuses(jsonSheet, result.sheet));
+      setJsonSheetDraft(preservePendingTranslationStatuses(jsonSheet, result.sheet));
       setJsonReport(result.report);
       setJsonValidation(null);
       setJsonApplyResult(null);

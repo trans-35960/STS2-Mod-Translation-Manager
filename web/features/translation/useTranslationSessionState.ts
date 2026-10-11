@@ -8,6 +8,8 @@ import type {
   PasteCandidate,
   TranslationProjectInfo,
 } from "../../types";
+import { invokeCommand } from "../../api/tauri";
+import { isPreviewRuntime } from "../../utils/runtime";
 import { readStoredTranslationSession, writeStoredTranslationSession } from "../../utils/storage";
 
 export function useTranslationSessionState({
@@ -22,7 +24,17 @@ export function useTranslationSessionState({
   const [jsonOutputSheet, setJsonOutputSheet] = React.useState("");
   const [jsonTranslatedOutput, setJsonTranslatedOutput] = React.useState("");
   const [jsonPckTargetPath, setJsonPckTargetPath] = React.useState("");
-  const [jsonSheet, setJsonSheet] = React.useState<JsonTranslationSheet | null>(null);
+  const [jsonSheet, setJsonSheetDraft] = React.useState<JsonTranslationSheet | null>(null);
+  // The sheet as it is on disk, to count unsaved edits. Values set directly
+  // (load, create, recalculate, save) come from the backend and match the
+  // file; functional updates are edits.
+  const [savedSheet, setSavedSheet] = React.useState<JsonTranslationSheet | null>(null);
+  const setJsonSheet = React.useCallback<React.Dispatch<React.SetStateAction<JsonTranslationSheet | null>>>((next) => {
+    if (typeof next !== "function") {
+      setSavedSheet(next);
+    }
+    setJsonSheetDraft(next);
+  }, []);
   const [jsonReport, setJsonReport] = React.useState<JsonSheetReport | null>(null);
   const [jsonValidation, setJsonValidation] = React.useState<JsonValidation | null>(null);
   const [jsonApplyResult, setJsonApplyResult] = React.useState<ApplyResultState | null>(null);
@@ -44,7 +56,16 @@ export function useTranslationSessionState({
       setJsonOutputSheet(session.outputSheetPath);
       setJsonTranslatedOutput(session.translatedOutputPath);
       setJsonPckTargetPath(session.pckTargetPath);
-      setJsonSheet(session.sheet);
+      setJsonSheetDraft(session.sheet);
+      // The restored sheet may hold unsaved edits; compare against the file.
+      const sheetPath = session.outputSheetPath || session.existingSheetPath;
+      if (session.sheet && sheetPath && !isPreviewRuntime()) {
+        invokeCommand("load_json_translation_sheet", { sheetPath })
+          .then((saved) => setSavedSheet(saved))
+          .catch(() => setSavedSheet(session.sheet));
+      } else {
+        setSavedSheet(session.sheet);
+      }
       setJsonReport(session.report);
       setJsonValidation(session.validation);
       setJsonApplyResult(session.applyResult);
@@ -115,6 +136,8 @@ export function useTranslationSessionState({
     setJsonPckTargetPath,
     jsonSheet,
     setJsonSheet,
+    setJsonSheetDraft,
+    savedSheet,
     jsonReport,
     setJsonReport,
     jsonValidation,

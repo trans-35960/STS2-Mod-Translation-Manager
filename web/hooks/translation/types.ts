@@ -51,6 +51,8 @@ export type TranslationActionsParams = {
   setJsonPckTargetPath: StateSetter<string>;
   setJsonReport: StateSetter<JsonSheetReport | null>;
   setJsonSheet: StateSetter<JsonTranslationSheet | null>;
+  /** Sets the sheet without treating it as saved (in-memory results). */
+  setJsonSheetDraft: StateSetter<JsonTranslationSheet | null>;
   setJsonSource: StateSetter<string>;
   setJsonTargetLanguage: StateSetter<string>;
   setJsonToolError: StateSetter<string>;

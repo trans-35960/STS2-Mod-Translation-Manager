@@ -52,6 +52,8 @@ export type TranslationToolsPageProps = {
   onSelectRow: (index: number, event: React.MouseEvent) => void;
   onCopySelected: () => void;
   onSave: () => void;
+  /** Entries changed since the sheet was last loaded or saved. */
+  unsavedChanges: number;
   onExportCsv: () => void;
   onExportPatchMod: () => void;
   onExportShortJson: (options: boolean | { aiKit?: boolean; changeOnly?: boolean; onlyEmpty?: boolean; scopePath?: string; warningOnly?: boolean }) => void;

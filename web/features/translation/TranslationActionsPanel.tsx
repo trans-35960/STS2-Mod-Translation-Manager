@@ -61,6 +61,11 @@ export function TranslationWorkHeader({
         <summary>
           <span>현재 작업</span>
           <strong>{workTitle}</strong>
+          {props.sheet && (
+            <em className={props.unsavedChanges > 0 ? "save-state unsaved" : "save-state"}>
+              {props.unsavedChanges > 0 ? `저장 안 됨 · ${props.unsavedChanges}개 변경` : "저장됨"}
+            </em>
+          )}
         </summary>
         <ProjectSummary
           title={props.projectInfo?.modName || projectNameFromPath(props.sheet?.source_path ?? t.translationTools)}

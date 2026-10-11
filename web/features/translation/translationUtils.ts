@@ -466,3 +466,19 @@ export function projectNameFromPath(path: string): string {
 export function translationProjectKey(project: { modKey?: string; modName?: string } | null | undefined): string {
   return (project?.modKey || project?.modName || "").trim();
 }
+
+/** Entries whose translation differs from the saved sheet (added/removed entries count too). */
+export function countUnsavedChanges(sheet: JsonTranslationSheet | null, saved: JsonTranslationSheet | null): number {
+  if (!sheet || !saved || sheet === saved) {
+    return 0;
+  }
+  const savedValues = new Map(saved.entries.map((entry) => [entry.key, entry.translated_value]));
+  let changes = Math.abs(saved.entries.length - sheet.entries.length);
+  for (const entry of sheet.entries) {
+    const value = savedValues.get(entry.key);
+    if (value !== undefined && value !== entry.translated_value) {
+      changes += 1;
+    }
+  }
+  return changes;
+}

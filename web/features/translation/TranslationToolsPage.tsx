@@ -1,3 +1,4 @@
+import React from "react";
 import { Loader2 } from "lucide-react";
 import { TranslationActionsPanel, TranslationWorkHeader } from "./TranslationActionsPanel";
 import { TranslationSheetTable } from "./TranslationSheetTable";
@@ -37,10 +38,47 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
     ui.showEntryCondition("warning");
   }
 
+  function closeWithConfirmation() {
+    if (
+      props.unsavedChanges > 0 &&
+      !window.confirm(`저장하지 않은 변경 ${props.unsavedChanges}개가 있습니다. 저장하지 않고 닫을까요?`)
+    ) {
+      return;
+    }
+    props.onCloseSession();
+  }
+
+  // Ctrl+S saves, Ctrl+F jumps to the sheet search.
+  const shortcutState = React.useRef({ props, canSave: false });
+  shortcutState.current = { props, canSave: Boolean(props.sheet && ui.sheetPath && !props.busy) };
+  React.useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === "s") {
+        event.preventDefault();
+        if (shortcutState.current.canSave) {
+          shortcutState.current.props.onSave();
+        }
+      } else if (key === "f") {
+        const search = document.getElementById("translation-entry-search") as HTMLInputElement | null;
+        if (search) {
+          event.preventDefault();
+          search.focus();
+          search.select();
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     <div className="translation-tool-page">
       <TranslationWorkHeader
-        props={{ ...props, onValidate: validateAndShowWarnings }}
+        props={{ ...props, onValidate: validateAndShowWarnings, onCloseSession: closeWithConfirmation }}
         sheetPath={ui.sheetPath}
         filledTranslations={ui.filledTranslations}
       />

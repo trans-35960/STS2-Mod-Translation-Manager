@@ -160,6 +160,31 @@ export function TranslationSheetTable({
     }
     return fixes;
   }, [allValidationItems, props.sheet]);
+  // F8 / Shift+F8 walk through warned entries in sheet order.
+  const warningKeysInOrder = React.useMemo(() => {
+    const order = new Map((props.sheet?.entries ?? []).map((entry, entryIndex) => [entry.key, entryIndex]));
+    return [...new Set(allValidationItems.map((issue) => issue.key))]
+      .filter((key) => order.has(key))
+      .sort((left, right) => (order.get(left) ?? 0) - (order.get(right) ?? 0));
+  }, [allValidationItems, props.sheet]);
+  const warningCursorRef = React.useRef(-1);
+  React.useEffect(() => {
+    warningCursorRef.current = -1;
+  }, [warningKeysInOrder]);
+  React.useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "F8" || warningKeysInOrder.length === 0) {
+        return;
+      }
+      event.preventDefault();
+      const count = warningKeysInOrder.length;
+      const step = event.shiftKey ? -1 : 1;
+      warningCursorRef.current = (warningCursorRef.current + step + count) % count;
+      revealEntryKey(warningKeysInOrder[warningCursorRef.current]);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [revealEntryKey, warningKeysInOrder]);
   const issuesByEntryKey = React.useMemo(() => {
     const map = new Map<string, DisplayValidationIssue[]>();
     for (const issue of allValidationItems) {
@@ -451,6 +476,8 @@ export function TranslationSheetTable({
             <label className="sheet-search">
               <span>검색</span>
               <input
+                id="translation-entry-search"
+                title="Ctrl+F"
                 value={entrySearch}
                 onChange={(event) => setEntrySearch(event.target.value)}
                 placeholder="id / 원본 / 번역 검색"
