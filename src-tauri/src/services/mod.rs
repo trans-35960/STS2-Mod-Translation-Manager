@@ -10,13 +10,17 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use sts2_mod_manager::ai_prompt::{
+    DEFAULT_PROMPT_MAX_CHARS, PromptOptions, build_prompt_parts, read_project_settings,
+    write_project_settings,
+};
 use sts2_mod_manager::app::App;
 use sts2_mod_manager::config::AppConfig;
 use sts2_mod_manager::discovery::scan_mod_directory;
 use sts2_mod_manager::domain::{ModFingerprint, ModKind, ModRecord, ModSource, ScanSummary};
 use sts2_mod_manager::glossary::{
     GlossaryTerm, JOSA_ISSUE_KIND, glossary_issues, is_korean_language, korean_josa_issues,
-    load_game_glossary, read_user_glossary, sheet_glossary_terms,
+    load_game_glossary, merge_glossary_terms, read_user_glossary, sheet_glossary_terms,
     sheet_source_language as glossary_source_language, write_user_glossary,
 };
 use sts2_mod_manager::json_translation::{

@@ -6,6 +6,7 @@ import {
   pathMatchesProjectNode,
   splitSheetKey,
   translationLanguagesMatch,
+  translationProjectKey,
 } from "../../features/translation/translationUtils";
 import type { ShortJsonExport } from "../../types";
 import { formatCommandError } from "../../utils/logging";
@@ -202,6 +203,7 @@ export function useTranslationIoActions({
           sheet: jsonSheet,
           onlyEmpty,
           includeKeys: shouldLimitKeys ? includeKeys : undefined,
+          projectKey: translationProjectKey(translationProject) || null,
         });
         appendLog(
           `AI 작업 키트 내보내기 완료: ${kit.rows}행, 용어 ${kit.glossary_terms}개 (${kit.output_path}, ${kit.guide_path}, ${kit.glossary_path}). ` +

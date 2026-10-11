@@ -291,3 +291,100 @@
 }
 
 /* 2026 compact desktop refresh based on the accepted mod manager reference. */
+
+.ai-prompt-modal {
+  width: min(760px, 100%);
+}
+
+.ai-prompt-modal .modal-field textarea,
+.ai-prompt-modal .modal-field select {
+  width: 100%;
+  min-width: 0;
+}
+
+.ai-prompt-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #e7eeeb;
+}
+
+.ai-prompt-max {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ai-prompt-max input {
+  width: 90px;
+}
+
+.ai-prompt-options .primary {
+  margin-left: auto;
+}
+
+.ai-prompt-result {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #e7eeeb;
+  padding-top: 10px;
+}
+
+.ai-prompt-parts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.ai-prompt-part {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 4px 4px 0;
+}
+
+.ai-prompt-part.selected {
+  border-color: var(--accent);
+}
+
+.ai-prompt-part.copied {
+  background: #f0fdf4;
+}
+
+.ai-prompt-part-label {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 2px 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ai-prompt-part-label small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.ai-prompt-preview {
+  width: 100%;
+  min-height: 180px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.ai-prompt-summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}

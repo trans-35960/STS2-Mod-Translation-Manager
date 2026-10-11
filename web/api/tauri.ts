@@ -15,6 +15,8 @@ import type {
   JsonValidation,
   GlossaryInfo,
   AiKitExport,
+  AiPromptParts,
+  ProjectTranslationSettings,
   GlossaryTerm,
   LanguageCompareValue,
   ModDeleteRequest,
@@ -86,8 +88,8 @@ export type CommandArgs = {
     targetLanguage?: string | null;
   };
   load_json_translation_sheet: { sheetPath: string };
-  validate_json_translation_sheet: { sheetPath: string };
-  validate_json_translation_sheet_data: { sheet: JsonTranslationSheet };
+  validate_json_translation_sheet: { sheetPath: string; projectKey?: string | null };
+  validate_json_translation_sheet_data: { sheet: JsonTranslationSheet; projectKey?: string | null };
   load_translation_glossary: { sourcePath: string; targetLanguage: string };
   save_user_glossary: { targetLanguage: string; terms: GlossaryTerm[] };
   export_ai_translation_kit: {
@@ -95,6 +97,22 @@ export type CommandArgs = {
     sheet: JsonTranslationSheet;
     onlyEmpty?: boolean | null;
     includeKeys?: string[] | null;
+    projectKey?: string | null;
+  };
+  load_project_translation_settings: { projectKey: string };
+  save_project_translation_settings: { projectKey: string; settings: ProjectTranslationSettings };
+  build_ai_prompt_parts: {
+    sheet: JsonTranslationSheet;
+    request: {
+      projectKey?: string | null;
+      modName: string;
+      modDescription: string;
+      tone: string;
+      includePrompt: boolean;
+      maxChars: number;
+      onlyEmpty: boolean;
+      includeKeys?: string[] | null;
+    };
   };
   save_json_translation_sheet: { sheetPath: string; sheet: JsonTranslationSheet };
   export_json_translation_csv: { outputPath: string; sheet: JsonTranslationSheet };
@@ -166,6 +184,9 @@ export type CommandResult = {
   load_translation_glossary: GlossaryInfo;
   save_user_glossary: GlossaryTerm[];
   export_ai_translation_kit: AiKitExport;
+  load_project_translation_settings: ProjectTranslationSettings;
+  save_project_translation_settings: null;
+  build_ai_prompt_parts: AiPromptParts;
   save_json_translation_sheet: JsonSheetAction;
   export_json_translation_csv: JsonCsvExport;
   export_json_translation_short_json: ShortJsonExport;

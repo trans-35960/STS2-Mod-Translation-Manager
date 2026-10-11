@@ -360,6 +360,40 @@ pub(crate) struct GlossaryTermDto {
     pub(crate) targets: Vec<String>,
 }
 
+pub(crate) use sts2_mod_manager::ai_prompt::ProjectTranslationSettings;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AiPromptRequestDto {
+    pub(crate) project_key: Option<String>,
+    #[serde(default)]
+    pub(crate) mod_name: String,
+    #[serde(default)]
+    pub(crate) mod_description: String,
+    #[serde(default)]
+    pub(crate) tone: String,
+    pub(crate) include_prompt: bool,
+    pub(crate) max_chars: Option<usize>,
+    #[serde(default)]
+    pub(crate) only_empty: bool,
+    pub(crate) include_keys: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct AiPromptPartDto {
+    pub(crate) text: String,
+    pub(crate) rows: usize,
+    pub(crate) chars: usize,
+    pub(crate) terms: usize,
+    pub(crate) oversized: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct AiPromptPartsDto {
+    pub(crate) parts: Vec<AiPromptPartDto>,
+    pub(crate) total_rows: usize,
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct AiKitExportDto {
     pub(crate) output_path: String,

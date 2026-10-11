@@ -1,4 +1,7 @@
-fn sheet_glossary_issues(sheet: &JsonTranslationSheet) -> Vec<JsonValidationIssueDto> {
+fn sheet_glossary_issues(
+    sheet: &JsonTranslationSheet,
+    project_key: Option<&str>,
+) -> Vec<JsonValidationIssueDto> {
     let config = configured_config();
     let target_language = sheet.target_language.trim().to_lowercase();
     if target_language.is_empty() {
@@ -9,7 +12,7 @@ fn sheet_glossary_issues(sheet: &JsonTranslationSheet) -> Vec<JsonValidationIssu
             .ok()
             .flatten()
     });
-    let user_terms = read_user_glossary(&config.state_dir, &target_language).unwrap_or_default();
+    let user_terms = combined_user_terms(&config, &target_language, project_key);
     let mut issues = glossary_issues(sheet, game.as_deref(), &user_terms)
         .into_iter()
         .map(|issue| JsonValidationIssueDto {
@@ -105,6 +108,7 @@ pub(crate) fn export_ai_translation_kit(
     sheet: JsonSheetDto,
     only_empty: Option<bool>,
     include_keys: Option<Vec<String>>,
+    project_key: Option<String>,
 ) -> Result<AiKitExportDto, String> {
     let json_path = PathBuf::from(output_path.trim());
     if json_path.as_os_str().is_empty() {
@@ -135,7 +139,7 @@ pub(crate) fn export_ai_translation_kit(
             .ok()
             .flatten()
     });
-    let user_terms = read_user_glossary(&config.state_dir, &target_language).unwrap_or_default();
+    let user_terms = combined_user_terms(&config, &target_language, project_key.as_deref());
     let terms = sheet_glossary_terms(&domain, game.as_deref(), &user_terms, include_keys.as_ref());
 
     let stem = json_path
@@ -221,4 +225,78 @@ fn ai_translation_guide(
         );
     }
     guide
+}
+
+/// Mod-specific terms first, then the language-wide user glossary.
+fn combined_user_terms(
+    config: &AppConfig,
+    target_language: &str,
+    project_key: Option<&str>,
+) -> Vec<GlossaryTerm> {
+    let language_terms = read_user_glossary(&config.state_dir, target_language).unwrap_or_default();
+    let project_terms = project_key
+        .filter(|key| !key.trim().is_empty())
+        .and_then(|key| read_project_settings(&config.state_dir, key).ok())
+        .map(|settings| settings.glossary_terms())
+        .unwrap_or_default();
+    merge_glossary_terms(&project_terms, &language_terms)
+}
+
+pub(crate) fn load_project_translation_settings(
+    project_key: String,
+) -> Result<ProjectTranslationSettings, String> {
+    let config = configured_config();
+    read_project_settings(&config.state_dir, &project_key).map_err(|error| error.to_string())
+}
+
+pub(crate) fn save_project_translation_settings(
+    project_key: String,
+    settings: ProjectTranslationSettings,
+) -> Result<(), String> {
+    let config = configured_config();
+    write_project_settings(&config.state_dir, &project_key, &settings)
+        .map_err(|error| error.to_string())
+}
+
+pub(crate) fn build_ai_prompt_parts(
+    sheet: JsonSheetDto,
+    request: AiPromptRequestDto,
+) -> Result<AiPromptPartsDto, String> {
+    let domain = json_sheet_from_dto(sheet)?;
+    let config = configured_config();
+    let source_language = glossary_source_language(&domain);
+    let target_language = domain.target_language.trim().to_lowercase();
+    let game = config.game_pck_path().and_then(|pck| {
+        load_game_glossary(&pck, &source_language, &target_language)
+            .ok()
+            .flatten()
+    });
+    let user_terms = combined_user_terms(&config, &target_language, request.project_key.as_deref());
+    let include_keys = request
+        .include_keys
+        .map(|keys| keys.into_iter().collect::<BTreeSet<_>>());
+    let options = PromptOptions {
+        include_prompt: request.include_prompt,
+        max_chars: request.max_chars.unwrap_or(DEFAULT_PROMPT_MAX_CHARS),
+        only_empty: request.only_empty,
+        include_keys: include_keys.as_ref(),
+        source_language: &source_language,
+        mod_name: &request.mod_name,
+        mod_description: &request.mod_description,
+        tone: &request.tone,
+    };
+    let parts = build_prompt_parts(&domain, game.as_deref(), &user_terms, &options);
+    Ok(AiPromptPartsDto {
+        total_rows: parts.iter().map(|part| part.rows).sum(),
+        parts: parts
+            .into_iter()
+            .map(|part| AiPromptPartDto {
+                text: part.text,
+                rows: part.rows,
+                chars: part.chars,
+                terms: part.terms,
+                oversized: part.oversized,
+            })
+            .collect(),
+    })
 }

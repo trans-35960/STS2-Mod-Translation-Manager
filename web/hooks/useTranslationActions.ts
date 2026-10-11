@@ -1,6 +1,6 @@
 import React from "react";
 import { invokeCommand } from "../api/tauri";
-import { translationLanguagesMatch } from "../features/translation/translationUtils";
+import { translationLanguagesMatch, translationProjectKey } from "../features/translation/translationUtils";
 import type { JsonValidation } from "../types";
 import { formatError } from "../utils/logging";
 import { isPreviewRuntime } from "../utils/runtime";
@@ -44,6 +44,7 @@ export function useTranslationActions(params: TranslationActionsParams) {
     try {
       const result = await invokeCommand("validate_json_translation_sheet_data", {
         sheet: params.jsonSheet,
+        projectKey: translationProjectKey(params.translationProject) || null,
       });
       if (requestId === validationRequestId.current) {
         lastValidatedSheetRef.current = params.jsonSheet;
@@ -123,6 +124,7 @@ export function useTranslationActions(params: TranslationActionsParams) {
     }
     return runJsonTool("validate_json_translation_sheet", {
       sheetPath: params.jsonOutputSheet || params.jsonExistingSheet,
+      projectKey: translationProjectKey(params.translationProject) || null,
     });
   }
 
@@ -161,6 +163,7 @@ export function useTranslationActions(params: TranslationActionsParams) {
     try {
       const result = await invokeCommand("validate_json_translation_sheet", {
         sheetPath,
+        projectKey: translationProjectKey(params.translationProject) || null,
       });
       params.setJsonValidation(result);
       if (result.valid) {

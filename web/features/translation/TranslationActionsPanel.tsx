@@ -1,8 +1,10 @@
 import React from "react";
+import { AiPromptModal } from "./AiPromptModal";
 import { GlossaryPanel } from "./GlossaryPanel";
 import {
   AlertTriangle,
   Bot,
+  MessageSquareText,
   CheckCircle2,
   FileDown,
   FileJson,
@@ -174,6 +176,7 @@ export function TranslationActionsPanel({
   const changeEntryCount = props.sheet?.entries.filter((entry) => entry.status === "new" || entry.status === "updated").length ?? 0;
   const currentSheetMatchesTarget = !props.sheet || translationLanguagesMatch(props.sheet.target_language, props.targetLanguage);
   const canUseCurrentSheet = Boolean(props.sheet && currentSheetMatchesTarget);
+  const [aiPromptOpen, setAiPromptOpen] = React.useState(false);
   return (
     <section className="tool-form">
       <div className="tool-control-stack">
@@ -324,6 +327,15 @@ export function TranslationActionsPanel({
             </button>
             <button
               className="toolbar-icon-button"
+              aria-label="AI 프롬프트 만들기"
+              data-tooltip="AI 프롬프트 만들기 (웹 채팅용, 파트 분할)"
+              onClick={() => setAiPromptOpen(true)}
+              disabled={!canUseCurrentSheet || Boolean(props.busy)}
+            >
+              <MessageSquareText size={15} />
+            </button>
+            <button
+              className="toolbar-icon-button"
               aria-label="AI 작업 키트"
               data-tooltip="AI 작업 키트 (번역 JSON + 규칙 안내 + 용어집)"
               onClick={() => props.onExportShortJson({ aiKit: true, onlyEmpty: exportOnlyEmpty })}
@@ -361,6 +373,19 @@ export function TranslationActionsPanel({
           </div>
         </details>
       </div>
+      {aiPromptOpen && props.sheet && (
+        <AiPromptModal
+          sheet={props.sheet}
+          projectInfo={props.projectInfo ?? null}
+          onlyEmptyDefault={exportOnlyEmpty}
+          onClose={() => setAiPromptOpen(false)}
+          onTermsSaved={() => {
+            if (props.validation) {
+              void props.onValidate();
+            }
+          }}
+        />
+      )}
       <TranslationProjectTree
         tree={projectTree}
         selectedPath={activeProjectPath}

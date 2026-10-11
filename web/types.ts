@@ -452,3 +452,22 @@ export type GlossaryInfo = {
   game_terms: number;
   user_terms: GlossaryTerm[];
 };
+
+export type ProjectTranslationSettings = {
+  mod_description: string;
+  tone: string;
+  terms: GlossaryTerm[];
+};
+
+export type AiPromptPart = {
+  text: string;
+  rows: number;
+  chars: number;
+  terms: number;
+  oversized: boolean;
+};
+
+export type AiPromptParts = {
+  parts: AiPromptPart[];
+  total_rows: number;
+};

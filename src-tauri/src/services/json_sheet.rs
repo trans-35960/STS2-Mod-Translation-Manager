@@ -126,20 +126,22 @@ pub(crate) fn load_json_translation_sheet(sheet_path: String) -> Result<JsonShee
 
 pub(crate) fn validate_json_translation_sheet(
     sheet_path: String,
+    project_key: Option<String>,
 ) -> Result<JsonValidationDto, String> {
     let path = PathBuf::from(sheet_path.trim());
     let report = validate_sheet(&path).map_err(|error| error.to_string())?;
     let glossary = read_sheet(&path)
-        .map(|sheet| sheet_glossary_issues(&sheet))
+        .map(|sheet| sheet_glossary_issues(&sheet, project_key.as_deref()))
         .unwrap_or_default();
     Ok(json_validation_dto(report, glossary))
 }
 
 pub(crate) fn validate_json_translation_sheet_data(
     sheet: JsonSheetDto,
+    project_key: Option<String>,
 ) -> Result<JsonValidationDto, String> {
     let domain = json_sheet_from_dto(sheet)?;
-    let glossary = sheet_glossary_issues(&domain);
+    let glossary = sheet_glossary_issues(&domain, project_key.as_deref());
     Ok(json_validation_dto(validate_translation_sheet(&domain), glossary))
 }
 

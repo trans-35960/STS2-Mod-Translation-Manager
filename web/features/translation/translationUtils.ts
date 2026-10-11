@@ -446,3 +446,8 @@ export function rollupProjectNode(node: TranslationProjectNode) {
 export function projectNameFromPath(path: string): string {
   return path.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? "translation";
 }
+
+/** Stable id for per-mod settings such as the mod glossary and AI prompt context. */
+export function translationProjectKey(project: { modKey?: string; modName?: string } | null | undefined): string {
+  return (project?.modKey || project?.modName || "").trim();
+}

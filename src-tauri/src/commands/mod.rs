@@ -257,15 +257,19 @@ pub(crate) async fn load_json_translation_sheet(
 #[tauri::command]
 pub(crate) async fn validate_json_translation_sheet(
     sheet_path: String,
+    project_key: Option<String>,
 ) -> Result<JsonValidationDto, String> {
-    run_blocking(move || crate::services::validate_json_translation_sheet(sheet_path)).await
+    run_blocking(move || crate::services::validate_json_translation_sheet(sheet_path, project_key))
+        .await
 }
 
 #[tauri::command]
 pub(crate) async fn validate_json_translation_sheet_data(
     sheet: JsonSheetDto,
+    project_key: Option<String>,
 ) -> Result<JsonValidationDto, String> {
-    run_blocking(move || crate::services::validate_json_translation_sheet_data(sheet)).await
+    run_blocking(move || crate::services::validate_json_translation_sheet_data(sheet, project_key))
+        .await
 }
 
 #[tauri::command]
@@ -283,11 +287,42 @@ pub(crate) async fn export_ai_translation_kit(
     sheet: JsonSheetDto,
     only_empty: Option<bool>,
     include_keys: Option<Vec<String>>,
+    project_key: Option<String>,
 ) -> Result<AiKitExportDto, String> {
     run_blocking(move || {
-        crate::services::export_ai_translation_kit(output_path, sheet, only_empty, include_keys)
+        crate::services::export_ai_translation_kit(
+            output_path,
+            sheet,
+            only_empty,
+            include_keys,
+            project_key,
+        )
     })
     .await
+}
+
+#[tauri::command]
+pub(crate) async fn load_project_translation_settings(
+    project_key: String,
+) -> Result<ProjectTranslationSettings, String> {
+    run_blocking(move || crate::services::load_project_translation_settings(project_key)).await
+}
+
+#[tauri::command]
+pub(crate) async fn save_project_translation_settings(
+    project_key: String,
+    settings: ProjectTranslationSettings,
+) -> Result<(), String> {
+    run_blocking(move || crate::services::save_project_translation_settings(project_key, settings))
+        .await
+}
+
+#[tauri::command]
+pub(crate) async fn build_ai_prompt_parts(
+    sheet: JsonSheetDto,
+    request: AiPromptRequestDto,
+) -> Result<AiPromptPartsDto, String> {
+    run_blocking(move || crate::services::build_ai_prompt_parts(sheet, request)).await
 }
 
 #[tauri::command]

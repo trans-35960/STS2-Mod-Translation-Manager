@@ -614,6 +614,52 @@ pub fn sheet_glossary_terms(
     terms
 }
 
+/// Glossary terms that apply to one source text: user terms found as whole
+/// words, then official names of highlighted terms. A user term overrides the
+/// game name for the same word.
+pub fn entry_glossary_terms<'a>(
+    source: &str,
+    game: Option<&'a GameGlossary>,
+    user_terms: &'a [GlossaryTerm],
+) -> Vec<&'a GlossaryTerm> {
+    let source_lower = source.to_lowercase();
+    let mut seen = HashSet::new();
+    let mut terms = Vec::new();
+    for term in user_terms {
+        let lower = term.source.to_lowercase();
+        if contains_word(&source_lower, &lower) && seen.insert(lower) {
+            terms.push(term);
+        }
+    }
+    if let Some(game) = game {
+        for span in highlight_spans(source) {
+            if has_markup(span.content) {
+                continue;
+            }
+            if let Some(term) = game.lookup(span.content) {
+                if seen.insert(term.source.to_lowercase()) {
+                    terms.push(term);
+                }
+            }
+        }
+    }
+    terms
+}
+
+/// Project terms first so they win over language-wide terms for the same word.
+pub fn merge_glossary_terms(
+    primary: &[GlossaryTerm],
+    secondary: &[GlossaryTerm],
+) -> Vec<GlossaryTerm> {
+    let mut seen = HashSet::new();
+    primary
+        .iter()
+        .chain(secondary)
+        .filter(|term| seen.insert(term.source.to_lowercase()))
+        .cloned()
+        .collect()
+}
+
 fn should_check(entry: &JsonTranslationEntry) -> bool {
     entry.status != JsonTranslationStatus::Removed
         && !entry.translated_value.trim().is_empty()
@@ -895,5 +941,39 @@ mod tests {
         let terms = sheet_glossary_terms(&sheet, Some(&game), &[], Some(&only_first));
         assert_eq!(terms.len(), 1);
         assert_eq!(terms[0].targets, vec!["단도".to_string()]);
+    }
+
+    #[test]
+    fn entry_terms_prefer_user_terms_and_merge_by_source() {
+        let game = game();
+        let user = vec![GlossaryTerm {
+            source: "Vulnerable".to_string(),
+            targets: vec!["취약함".to_string()],
+        }];
+        let terms = entry_glossary_terms(
+            "Apply [gold]Vulnerable[/gold] and [gold]Shiv[/gold].",
+            Some(&game),
+            &user,
+        );
+        let pairs = terms
+            .iter()
+            .map(|term| (term.source.as_str(), term.targets[0].as_str()))
+            .collect::<Vec<_>>();
+        assert_eq!(pairs, vec![("Vulnerable", "취약함"), ("Shiv", "단도")]);
+
+        let project = vec![GlossaryTerm {
+            source: "artoria".to_string(),
+            targets: vec!["알트리아".to_string()],
+        }];
+        let language = vec![
+            GlossaryTerm {
+                source: "Artoria".to_string(),
+                targets: vec!["아르토리아".to_string()],
+            },
+            user[0].clone(),
+        ];
+        let merged = merge_glossary_terms(&project, &language);
+        assert_eq!(merged.len(), 2);
+        assert_eq!(merged[0].targets, vec!["알트리아".to_string()]);
     }
 }

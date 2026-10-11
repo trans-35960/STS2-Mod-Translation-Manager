@@ -1329,6 +1329,7 @@ Packed file: Shadowverse/localization/eng/cards.json
             json_sheet_dto(sheet),
             None,
             None,
+            None,
         )
         .expect("export ai kit");
 
