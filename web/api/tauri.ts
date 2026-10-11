@@ -103,6 +103,7 @@ export type CommandArgs = {
   load_project_translation_settings: { projectKey: string };
   save_project_translation_settings: { projectKey: string; settings: ProjectTranslationSettings };
   extract_term_candidates: { sheet: JsonTranslationSheet; projectKey?: string | null };
+  export_ai_prompt_parts: { outputPath: string; parts: string[]; format: "txt" | "txt_parts" | "pdf"; fontSize?: number | null };
   build_term_prompt: {
     sheet: JsonTranslationSheet;
     request: {
@@ -203,6 +204,7 @@ export type CommandResult = {
   build_ai_prompt_parts: AiPromptParts;
   extract_term_candidates: TermCandidate[];
   build_term_prompt: AiPromptParts;
+  export_ai_prompt_parts: string[];
   save_json_translation_sheet: JsonSheetAction;
   export_json_translation_csv: JsonCsvExport;
   export_json_translation_short_json: ShortJsonExport;

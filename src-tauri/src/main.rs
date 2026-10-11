@@ -4,6 +4,7 @@ mod app;
 mod commands;
 mod dto;
 mod fs_ops;
+mod prompt_pdf;
 mod services;
 
 fn main() {

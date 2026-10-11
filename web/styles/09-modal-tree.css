@@ -747,3 +747,18 @@
   color: var(--muted);
   font-size: 11px;
 }
+
+.ai-prompt-export {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-prompt-export > span {
+  margin-right: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+

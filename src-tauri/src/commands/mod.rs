@@ -334,6 +334,19 @@ pub(crate) async fn build_term_prompt(
 }
 
 #[tauri::command]
+pub(crate) async fn export_ai_prompt_parts(
+    output_path: String,
+    parts: Vec<String>,
+    format: String,
+    font_size: Option<f32>,
+) -> Result<Vec<String>, String> {
+    run_blocking(move || {
+        crate::services::export_ai_prompt_parts(output_path, parts, format, font_size)
+    })
+    .await
+}
+
+#[tauri::command]
 pub(crate) async fn build_ai_prompt_parts(
     sheet: JsonSheetDto,
     request: AiPromptRequestDto,

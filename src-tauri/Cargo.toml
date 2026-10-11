@@ -13,3 +13,5 @@ tauri = { version = "2.7.0", features = [] }
 tauri-plugin-dialog = "2.4.0"
 tauri-plugin-window-state = "2.4.1"
 sts2_mod_manager = { path = ".." }
+krilla = { version = "0.7.0", default-features = false, features = ["simple-text"] }
+ttf-parser = "0.25.1"

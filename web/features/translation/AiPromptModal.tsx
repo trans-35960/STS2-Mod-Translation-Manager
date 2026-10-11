@@ -1,6 +1,6 @@
 import React from "react";
-import { Check, CircleCheck, Copy, Loader2, Sparkles, X } from "lucide-react";
-import { invokeCommand } from "../../api/tauri";
+import { Check, CircleCheck, Copy, FileDown, FileText, Files, Loader2, Sparkles, X } from "lucide-react";
+import { invokeCommand, saveDialog } from "../../api/tauri";
 import type { AiPromptParts, GlossaryTerm, JsonTranslationSheet, ProjectTranslationSettings, TranslationProjectInfo } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
 import { TermCandidatesPanel } from "./TermCandidatesPanel";
@@ -63,6 +63,7 @@ export function AiPromptModal({
   const [selectedPart, setSelectedPart] = React.useState(0);
   const [copiedParts, setCopiedParts] = React.useState<Set<number>>(() => new Set());
   const [pasteReport, setPasteReport] = React.useState<PasteReport | null>(null);
+  const [exportMessage, setExportMessage] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [tab, setTab] = React.useState<"settings" | "terms" | "parts">("settings");
   const [error, setError] = React.useState("");
@@ -201,6 +202,7 @@ export function AiPromptModal({
       setSelectedPart(0);
       setCopiedParts(new Set());
       setPasteReport(null);
+      setExportMessage("");
     } catch (reason) {
       setError(String(reason));
     } finally {
@@ -228,6 +230,47 @@ export function AiPromptModal({
         previewRef.current?.select();
       });
       setError("클립보드에 쓰지 못했습니다. 미리보기 내용을 선택해 두었으니 Ctrl+C로 복사하세요.");
+    }
+  }
+
+  async function exportParts(format: "txt" | "txt_parts" | "pdf") {
+    if (!result || result.parts.length === 0) {
+      return;
+    }
+    const extension = format === "pdf" ? "pdf" : "txt";
+    const base = `${projectInfo?.modName || "translation"}.${sheet.target_language || "kor"}.prompt`;
+    setError("");
+    setExportMessage("");
+    try {
+      const outputPath = isPreviewRuntime()
+        ? `translation_work/${base}.${extension}`
+        : await saveDialog({
+            title: format === "txt" ? "프롬프트 파트를 한 파일로 내보내기" : "프롬프트 파트별 파일 내보내기 (이름 뒤에 .partNN이 붙습니다)",
+            defaultPath: `${base}.${extension}`,
+            filters: [{ name: extension.toUpperCase(), extensions: [extension] }],
+          });
+      if (!outputPath || Array.isArray(outputPath)) {
+        return;
+      }
+      setBusy(true);
+      const written = isPreviewRuntime()
+        ? format === "txt"
+          ? [outputPath]
+          : result.parts.map((_, index) => outputPath.replace(/\.(txt|pdf)$/i, `.part${String(index + 1).padStart(2, "0")}.$1`))
+        : await invokeCommand("export_ai_prompt_parts", {
+            outputPath,
+            parts: result.parts.map((part) => part.text),
+            format,
+          });
+      setExportMessage(
+        written.length === 1
+          ? `내보냈습니다: ${written[0]}`
+          : `파일 ${written.length}개를 내보냈습니다: ${written[0]} … ${fileName(written[written.length - 1])}`,
+      );
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -434,6 +477,28 @@ export function AiPromptModal({
                   <p className="ai-prompt-summary">
                     전체 {result.total_rows.toLocaleString()}행 · 완료 파트 {doneParts}/{result.parts.length} · 복사함 {copiedParts.size}/{result.parts.length}
                   </p>
+                  <div className="ai-prompt-export">
+                    <span>모두 내보내기</span>
+                    <button type="button" className="icon-button-text compact" disabled={busy} onClick={() => void exportParts("txt")}>
+                      <FileText size={14} />
+                      TXT 한 파일
+                    </button>
+                    <button type="button" className="icon-button-text compact" disabled={busy} onClick={() => void exportParts("txt_parts")}>
+                      <Files size={14} />
+                      TXT 파트별
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button-text compact"
+                      disabled={busy}
+                      title="파트마다 작은 글씨(7pt) PDF를 만듭니다. Gemini처럼 PDF를 페이지 단위로 계산하는 AI에 파일로 올리면 입력 토큰이 줄 수 있습니다."
+                      onClick={() => void exportParts("pdf")}
+                    >
+                      <FileDown size={14} />
+                      PDF 파트별
+                    </button>
+                  </div>
+                  {exportMessage && <p className="ai-prompt-paste-report good">{exportMessage}</p>}
                   <label className="modal-field ai-prompt-answer">
                     <span>답변 붙여넣기 (Ctrl+V 하면 바로 시트에 적용)</span>
                     <textarea
@@ -467,6 +532,10 @@ export function AiPromptModal({
       </section>
     </div>
   );
+}
+
+function fileName(path: string) {
+  return path.split(/[\\/]/).pop() ?? path;
 }
 
 function slotKey(file: string, id: string) {

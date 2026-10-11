@@ -392,3 +392,65 @@ pub(crate) fn build_term_prompt(
             .collect(),
     })
 }
+
+/// Writes prompt parts for pasting or uploading elsewhere: `txt` puts every
+/// part in one file, `txt_parts` and `pdf` write one file per part next to
+/// `output_path` (`name.part01.txt`). Returns the written paths.
+pub(crate) fn export_ai_prompt_parts(
+    output_path: String,
+    parts: Vec<String>,
+    format: String,
+    font_size: Option<f32>,
+) -> Result<Vec<String>, String> {
+    let output_path = PathBuf::from(output_path.trim());
+    if output_path.as_os_str().is_empty() {
+        return Err("내보낼 경로를 선택하세요.".to_string());
+    }
+    if parts.is_empty() {
+        return Err("내보낼 파트가 없습니다.".to_string());
+    }
+    let parent = output_path
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from("."));
+    fs::create_dir_all(&parent).map_err(|error| error.to_string())?;
+    let total = parts.len();
+
+    if format == "txt" {
+        let content = parts
+            .iter()
+            .enumerate()
+            .map(|(index, text)| format!("===== 파트 {}/{total} =====\n\n{}\n", index + 1, text.trim_end()))
+            .collect::<Vec<_>>()
+            .join("\n");
+        fs::write(&output_path, content).map_err(|error| error.to_string())?;
+        return Ok(vec![display_path(&output_path)]);
+    }
+
+    let (extension, pdf) = match format.as_str() {
+        "txt_parts" => ("txt", false),
+        "pdf" => ("pdf", true),
+        other => return Err(format!("알 수 없는 내보내기 형식: {other}")),
+    };
+    let stem = output_path
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or("prompt")
+        .to_string();
+    let digits = total.to_string().len().max(2);
+    let mut written = Vec::with_capacity(total);
+    for (index, text) in parts.iter().enumerate() {
+        let path = parent.join(format!("{stem}.part{:0digits$}.{extension}", index + 1));
+        if pdf {
+            let bytes = crate::prompt_pdf::render_text_pdf(
+                text,
+                font_size.unwrap_or(crate::prompt_pdf::DEFAULT_PDF_FONT_SIZE),
+            )?;
+            fs::write(&path, bytes).map_err(|error| error.to_string())?;
+        } else {
+            fs::write(&path, text).map_err(|error| error.to_string())?;
+        }
+        written.push(display_path(&path));
+    }
+    Ok(written)
+}

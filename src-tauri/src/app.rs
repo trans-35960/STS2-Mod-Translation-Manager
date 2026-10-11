@@ -52,6 +52,7 @@ pub fn run() {
             commands::build_ai_prompt_parts,
             commands::extract_term_candidates,
             commands::build_term_prompt,
+            commands::export_ai_prompt_parts,
             commands::save_json_translation_sheet,
             commands::export_json_translation_csv,
             commands::export_json_translation_short_json,
