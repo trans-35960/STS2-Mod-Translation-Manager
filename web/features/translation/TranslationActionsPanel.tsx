@@ -180,6 +180,93 @@ export function TranslationActionsPanel({
   return (
     <section className="tool-form">
       <div className="tool-control-stack">
+        <section className="work-tools-card" aria-label="작업 도구">
+          <div className="work-tools-primary">
+            <button
+              type="button"
+              className="primary icon-button-text compact"
+              onClick={() => setAiPromptOpen(true)}
+              disabled={!canUseCurrentSheet || Boolean(props.busy)}
+              title="웹 AI 채팅용 프롬프트를 파트별로 만들고 답변을 받아 적용합니다."
+            >
+              <MessageSquareText size={15} />
+              AI 프롬프트
+            </button>
+            <button
+              type="button"
+              className="icon-button-text compact"
+              onClick={() => props.onExportShortJson(exportOnlyEmpty)}
+              disabled={!canUseCurrentSheet || Boolean(props.busy)}
+              title="번역할 원문을 id 기반 JSON으로 내보냅니다."
+            >
+              <FileJson size={15} />
+              번역용 JSON
+            </button>
+            <button
+              type="button"
+              className="icon-button-text compact"
+              onClick={props.onImportValues}
+              disabled={!canUseCurrentSheet || Boolean(props.busy)}
+              title="번역된 CSV/JSON 파일을 불러와 id로 매칭합니다."
+            >
+              <FileUp size={15} />
+              가져오기
+            </button>
+          </div>
+          <label className="inline-check export-option">
+            <input type="checkbox" checked={exportOnlyEmpty} onChange={(event) => setExportOnlyEmpty(event.target.checked)} />
+            <span>빈 값만 내보내기</span>
+          </label>
+          <div className="work-tools-secondary">
+            <button type="button" onClick={props.onExportCsv} disabled={!canUseCurrentSheet || Boolean(props.busy)}>
+              <FileDown size={13} />
+              CSV 내보내기
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onExportShortJson({ aiKit: true, onlyEmpty: exportOnlyEmpty })}
+              disabled={!canUseCurrentSheet || Boolean(props.busy)}
+              title="번역 JSON + 규칙 안내 + 용어집 파일을 함께 내보냅니다."
+            >
+              <Bot size={13} />
+              AI 작업 키트
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onExportShortJson({ changeOnly: true })}
+              disabled={!canUseCurrentSheet || changeEntryCount === 0 || Boolean(props.busy)}
+            >
+              <FileJson size={13} />
+              신규/변경 JSON
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onExportShortJson({ warningOnly: true })}
+              disabled={!canUseCurrentSheet || validationWarningCount === 0 || Boolean(props.busy)}
+            >
+              <AlertTriangle size={13} />
+              검증 오류 JSON
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onExportShortJson({ scopePath: activeProjectPath ?? undefined })}
+              disabled={!canUseCurrentSheet || !activeProjectPath || Boolean(props.busy)}
+              title="아래 프로젝트 파일 목록에서 선택한 파일만 내보냅니다."
+            >
+              <FileJson size={13} />
+              선택 파일 JSON
+            </button>
+          </div>
+        </section>
+        {canUseCurrentSheet && filledTranslations === 0 && (
+          <p className="inline-warning">번역값이 0개입니다. 표의 translated_value에 직접 입력하거나 CSV/JSON 매칭 후 적용할 수 있습니다.</p>
+        )}
+        {props.toolError && (
+          <article className="validation-card warn tool-error-card">
+            <strong>오류</strong>
+            <span>{props.toolError}</span>
+          </article>
+        )}
         <article className="target-language-note language-route-card">
           <div className="language-route-header">
             <strong>언어 경로</strong>
@@ -267,6 +354,16 @@ export function TranslationActionsPanel({
             </div>
           </section>
         )}
+        <GlossaryPanel
+          sourcePath={props.sheet?.source_path ?? props.sourcePath}
+          targetLanguage={props.sheet?.target_language ?? props.targetLanguage}
+          disabled={Boolean(props.busy)}
+          onSaved={() => {
+            if (canUseCurrentSheet) {
+              void props.onValidate();
+            }
+          }}
+        />
         <details className="path-details">
           <summary>경로/고급 설정</summary>
           <label>
@@ -289,88 +386,6 @@ export function TranslationActionsPanel({
             <span>PCK 내부 삽입 경로</span>
             <input value={props.pckTargetPath} onChange={(event) => props.setPckTargetPath(event.target.value)} placeholder="AkiSister/localization/kor" />
           </label>
-        </details>
-        {canUseCurrentSheet && filledTranslations === 0 && (
-          <p className="inline-warning">번역값이 0개입니다. 표의 translated_value에 직접 입력하거나 CSV/JSON 매칭 후 적용할 수 있습니다.</p>
-        )}
-        {props.toolError && (
-          <article className="validation-card warn tool-error-card">
-            <strong>오류</strong>
-            <span>{props.toolError}</span>
-          </article>
-        )}
-        <GlossaryPanel
-          sourcePath={props.sheet?.source_path ?? props.sourcePath}
-          targetLanguage={props.sheet?.target_language ?? props.targetLanguage}
-          disabled={Boolean(props.busy)}
-          onSaved={() => {
-            if (canUseCurrentSheet) {
-              void props.onValidate();
-            }
-          }}
-        />
-        <details className="action-details">
-          <summary>가져오기/내보내기</summary>
-          <label className="inline-check export-option">
-            <input type="checkbox" checked={exportOnlyEmpty} onChange={(event) => setExportOnlyEmpty(event.target.checked)} />
-            <span>번역용 JSON은 빈 값만 내보내기</span>
-          </label>
-          <div className="compact-action-row">
-            <button className="toolbar-icon-button" aria-label="CSV/JSON 매칭" data-tooltip="CSV/JSON 매칭" onClick={props.onImportValues} disabled={!canUseCurrentSheet || Boolean(props.busy)}>
-              <FileUp size={15} />
-            </button>
-            <button className="toolbar-icon-button" aria-label="CSV 내보내기" data-tooltip="CSV 내보내기" onClick={props.onExportCsv} disabled={!canUseCurrentSheet || Boolean(props.busy)}>
-              <FileDown size={15} />
-            </button>
-            <button className="toolbar-icon-button" aria-label="번역용 JSON" data-tooltip="번역용 JSON" onClick={() => props.onExportShortJson(exportOnlyEmpty)} disabled={!canUseCurrentSheet || Boolean(props.busy)}>
-              <FileJson size={15} />
-            </button>
-            <button
-              className="toolbar-icon-button"
-              aria-label="AI 프롬프트 만들기"
-              data-tooltip="AI 프롬프트 만들기 (웹 채팅용, 파트 분할)"
-              onClick={() => setAiPromptOpen(true)}
-              disabled={!canUseCurrentSheet || Boolean(props.busy)}
-            >
-              <MessageSquareText size={15} />
-            </button>
-            <button
-              className="toolbar-icon-button"
-              aria-label="AI 작업 키트"
-              data-tooltip="AI 작업 키트 (번역 JSON + 규칙 안내 + 용어집)"
-              onClick={() => props.onExportShortJson({ aiKit: true, onlyEmpty: exportOnlyEmpty })}
-              disabled={!canUseCurrentSheet || Boolean(props.busy)}
-            >
-              <Bot size={15} />
-            </button>
-            <button
-              className="toolbar-icon-button"
-              aria-label="선택한 프로젝트 파일 JSON"
-              data-tooltip="선택한 프로젝트 파일 JSON"
-              onClick={() => props.onExportShortJson({ scopePath: activeProjectPath ?? undefined })}
-              disabled={!canUseCurrentSheet || !activeProjectPath || Boolean(props.busy)}
-            >
-              <FileJson size={15} />
-            </button>
-            <button
-              className="toolbar-icon-button"
-              aria-label="검증 오류 JSON"
-              data-tooltip="검증 오류 JSON"
-              onClick={() => props.onExportShortJson({ warningOnly: true })}
-              disabled={!canUseCurrentSheet || validationWarningCount === 0 || Boolean(props.busy)}
-            >
-              <AlertTriangle size={15} />
-            </button>
-            <button
-              className="toolbar-icon-button"
-              aria-label="신규/변경 JSON"
-              data-tooltip="신규/변경 JSON"
-              onClick={() => props.onExportShortJson({ changeOnly: true })}
-              disabled={!canUseCurrentSheet || changeEntryCount === 0 || Boolean(props.busy)}
-            >
-              <FileJson size={15} />
-            </button>
-          </div>
         </details>
       </div>
       {aiPromptOpen && props.sheet && (
