@@ -322,6 +322,7 @@ export function AiPromptModal({
   }
 
   const preview = result?.parts[selectedPart];
+  const untranslatedTerms = terms.filter((term) => term.targets.length === 0).length;
   const doneParts = partProgress.filter((count, index) => result && count === result.parts[index].slots.length).length;
   return (
     <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -341,7 +342,7 @@ export function AiPromptModal({
           {(
             [
               ["settings", "① 설정", description.trim() ? "배경 있음" : "배경 없음"],
-              ["terms", "② 용어", `모드 용어 ${settings.terms.length}개`],
+              ["terms", "② 용어", `모드 용어 ${settings.terms.length}개${untranslatedTerms > 0 ? ` · 빈 번역 ${untranslatedTerms}` : ""}`],
               ["parts", "③ 본문 파트", result ? `완료 ${doneParts}/${result.parts.length}` : "파트 만들기 전"],
             ] as const
           ).map(([value, label, status]) => (
@@ -393,7 +394,7 @@ export function AiPromptModal({
           <p className="ai-prompt-tab-hint">후보를 뽑아 번역어를 정하고 "용어에 추가"하면, 본문 파트마다 용어집으로 들어가고 검증에도 쓰입니다.</p>
           <div className="modal-field">
             <span>이 모드 전용 용어 {terms.length}개 (본문 파트와 검증에 사용 · 왼쪽 용어집에도 표시)</span>
-            <TermTableEditor terms={terms} onChange={setTerms} emptyText="아직 모드 용어가 없습니다." />
+            <TermTableEditor terms={terms} onChange={setTerms} keepUntranslated emptyText="아직 모드 용어가 없습니다." />
           </div>
           <TermCandidatesPanel
             sheet={sheet}

@@ -125,6 +125,7 @@ export function GlossaryPanel({
             </h4>
             <TermTableEditor
               compact
+              keepUntranslated
               terms={modTerms}
               onChange={(terms) => {
                 setModTerms(terms);

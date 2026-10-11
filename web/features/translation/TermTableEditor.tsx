@@ -10,17 +10,20 @@ const FILTER_THRESHOLD = 12;
 /**
  * Edits `원문 → 번역` terms as a table, or as JSON (`{"원문": "번역"}`) for
  * bulk edits. Pasting a JSON object or `원문 = 번역` lines into any cell adds
- * those terms instead of filling the cell.
+ * those terms instead of filling the cell. With `keepUntranslated`, terms
+ * without a translation are kept (to fill in later) and can be listed alone.
  */
 export function TermTableEditor({
   terms,
   onChange,
   compact = false,
+  keepUntranslated = false,
   emptyText = "등록된 용어가 없습니다.",
 }: {
   terms: GlossaryTerm[];
   onChange: (terms: GlossaryTerm[]) => void;
   compact?: boolean;
+  keepUntranslated?: boolean;
   emptyText?: string;
 }) {
   const nextId = React.useRef(0);
@@ -34,6 +37,9 @@ export function TermTableEditor({
   const [jsonError, setJsonError] = React.useState("");
   const [filter, setFilter] = React.useState("");
   const [notice, setNotice] = React.useState("");
+  // Rows shown by the "빈 번역" filter, fixed when it is turned on so a row
+  // does not vanish while its translation is being typed.
+  const [untranslatedIds, setUntranslatedIds] = React.useState<Set<number> | null>(null);
   const emitted = React.useRef(termsSignature(terms));
 
   // Follow outside changes (loading, terms added elsewhere) but not our own edits.
@@ -42,12 +48,13 @@ export function TermTableEditor({
     if (signature !== emitted.current) {
       emitted.current = signature;
       setRows(toRows(terms));
+      setUntranslatedIds(null);
     }
   }, [terms, toRows]);
 
   function commit(next: Row[]) {
     setRows(next);
-    const parsed = rowsToTerms(next);
+    const parsed = rowsToTerms(next, keepUntranslated);
     emitted.current = termsSignature(parsed);
     onChange(parsed);
   }
@@ -61,6 +68,7 @@ export function TermTableEditor({
     const kept = rows.filter((row) => !bySource.has(row.source.trim().toLowerCase()));
     commit([...kept.filter((row) => row.source.trim() || row.targets.trim()), ...toRows(added)]);
     setFilter("");
+    setUntranslatedIds(null);
     setNotice(`용어 ${added.length}개를 넣었습니다.`);
   }
 
@@ -69,7 +77,7 @@ export function TermTableEditor({
     if (!/[\n{]/.test(text.trim())) {
       return;
     }
-    const parsed = parseTermsInput(text);
+    const parsed = parseTermsInput(text, keepUntranslated);
     if (parsed && parsed.length > 0) {
       event.preventDefault();
       merge(parsed);
@@ -77,27 +85,31 @@ export function TermTableEditor({
   }
 
   function openJson() {
-    setJsonText(formatTermsJson(rowsToTerms(rows)));
+    setJsonText(formatTermsJson(rowsToTerms(rows, keepUntranslated)));
     setJsonError("");
     setMode("json");
   }
 
   function applyJson() {
-    const parsed = parseTermsInput(jsonText);
+    const parsed = parseTermsInput(jsonText, keepUntranslated);
     if (parsed === null) {
       setJsonError('JSON을 읽지 못했습니다. {"원문": "번역"} 또는 {"원문": ["번역1", "번역2"]} 형식으로 적어 주세요.');
       return;
     }
     commit(toRows(parsed));
+    setUntranslatedIds(null);
     setMode("table");
     setNotice(`용어 ${parsed.length}개로 바꿨습니다.`);
   }
 
   const query = filter.trim().toLowerCase();
-  const visible = query
-    ? rows.filter((row) => row.source.toLowerCase().includes(query) || row.targets.toLowerCase().includes(query))
-    : rows;
+  const visible = rows.filter(
+    (row) =>
+      (!untranslatedIds || untranslatedIds.has(row.id)) &&
+      (!query || row.source.toLowerCase().includes(query) || row.targets.toLowerCase().includes(query)),
+  );
   const filled = rows.filter((row) => row.source.trim()).length;
+  const untranslated = rows.filter((row) => row.source.trim() && !row.targets.trim()).length;
 
   return (
     <div className={compact ? "term-table compact" : "term-table"}>
@@ -113,6 +125,21 @@ export function TermTableEditor({
         </div>
         {mode === "table" && rows.length > FILTER_THRESHOLD && (
           <input className="term-table-filter" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder={`${filled}개 중 찾기`} aria-label="용어 찾기" />
+        )}
+        {mode === "table" && keepUntranslated && (untranslated > 0 || untranslatedIds) && (
+          <button
+            type="button"
+            className={untranslatedIds ? "term-table-untranslated active" : "term-table-untranslated"}
+            aria-pressed={Boolean(untranslatedIds)}
+            title="번역이 빈 용어만 봅니다. 번역은 비어 있으면 프롬프트와 검증에 쓰이지 않습니다."
+            onClick={() =>
+              setUntranslatedIds((current) =>
+                current ? null : new Set(rows.filter((row) => row.source.trim() && !row.targets.trim()).map((row) => row.id)),
+              )
+            }
+          >
+            빈 번역 {untranslated}
+          </button>
         )}
         {mode === "table" && (
           <button
@@ -155,7 +182,9 @@ export function TermTableEditor({
               </div>
             ))}
             {rows.length === 0 && <p className="term-table-empty">{emptyText} + 로 추가하거나 JSON을 칸에 붙여넣으세요.</p>}
-            {rows.length > 0 && visible.length === 0 && <p className="term-table-empty">"{filter}"에 맞는 용어가 없습니다.</p>}
+            {rows.length > 0 && visible.length === 0 && (
+              <p className="term-table-empty">{untranslatedIds && !query ? "번역이 빈 용어가 없습니다." : `"${filter}"에 맞는 용어가 없습니다.`}</p>
+            )}
           </div>
           {notice && <p className="term-table-notice">{notice}</p>}
         </>
@@ -185,13 +214,13 @@ export function TermTableEditor({
   );
 }
 
-function rowsToTerms(rows: Row[]): GlossaryTerm[] {
+function rowsToTerms(rows: Row[], keepUntranslated: boolean): GlossaryTerm[] {
   const seen = new Set<string>();
   const terms: GlossaryTerm[] = [];
   for (const row of rows) {
     const source = row.source.trim();
     const targets = splitTargets(row.targets);
-    if (!source || targets.length === 0 || seen.has(source.toLowerCase())) {
+    if (!source || (targets.length === 0 && !keepUntranslated) || seen.has(source.toLowerCase())) {
       continue;
     }
     seen.add(source.toLowerCase());
@@ -214,7 +243,7 @@ function termsSignature(terms: GlossaryTerm[]) {
 export function formatTermsJson(terms: GlossaryTerm[]) {
   const map: Record<string, string | string[]> = {};
   for (const term of terms) {
-    map[term.source] = term.targets.length === 1 ? term.targets[0] : term.targets;
+    map[term.source] = term.targets.length === 1 ? term.targets[0] : term.targets.length === 0 ? "" : term.targets;
   }
   return JSON.stringify(map, null, 2);
 }
@@ -222,16 +251,17 @@ export function formatTermsJson(terms: GlossaryTerm[]) {
 /**
  * Reads terms from JSON (`{"원문": "번역" | ["번역", ...]}` or
  * `[{"source", "target(s)"}]`, code fences allowed) or from `원문 = 번역`,
- * `원문 → 번역` or tab-separated lines. Returns null when nothing fits.
+ * `원문 → 번역` or tab-separated lines. Empty translations are kept only with
+ * `allowEmpty`. Returns null when nothing fits.
  */
-export function parseTermsInput(text: string): GlossaryTerm[] | null {
+export function parseTermsInput(text: string, allowEmpty = false): GlossaryTerm[] | null {
   const body = text.replace(/```[a-z]*\s*/gi, "").replace(/```/g, "").trim();
   if (!body) {
     return [];
   }
   if (body.startsWith("{") || body.startsWith("[")) {
     try {
-      return fromJson(JSON.parse(body));
+      return fromJson(JSON.parse(body), allowEmpty);
     } catch {
       // Fall through to line parsing (and fail there if it is broken JSON).
       if (body.startsWith("[") || /^\{\s*"/.test(body)) {
@@ -241,20 +271,20 @@ export function parseTermsInput(text: string): GlossaryTerm[] | null {
   }
   const terms: GlossaryTerm[] = [];
   for (const line of body.split("\n")) {
-    const match = line.match(/^\s*(.+?)\s*(?:=|→|->|\t)\s*(.+?)\s*,?\s*$/);
+    const match = line.match(/^\s*(.+?)\s*(?:=|→|->|\t)\s*(.*?)\s*,?\s*$/);
     if (!match) {
       continue;
     }
     const source = unquote(match[1]);
     const targets = splitTargets(unquote(match[2]));
-    if (source && targets.length > 0) {
+    if (source && (targets.length > 0 || allowEmpty)) {
       terms.push({ source, targets });
     }
   }
   return terms.length > 0 ? dedupe(terms) : null;
 }
 
-function fromJson(value: unknown): GlossaryTerm[] | null {
+function fromJson(value: unknown, allowEmpty: boolean): GlossaryTerm[] | null {
   const terms: GlossaryTerm[] = [];
   const toTargets = (raw: unknown) =>
     (Array.isArray(raw) ? raw : [raw]).flatMap((target) => (typeof target === "string" ? splitTargets(target) : []));
@@ -264,7 +294,7 @@ function fromJson(value: unknown): GlossaryTerm[] | null {
         const record = item as Record<string, unknown>;
         const source = typeof record.source === "string" ? record.source.trim() : "";
         const targets = toTargets(record.targets ?? record.target ?? record.translation);
-        if (source && targets.length > 0) {
+        if (source && (targets.length > 0 || allowEmpty)) {
           terms.push({ source, targets });
         }
       }
@@ -272,7 +302,7 @@ function fromJson(value: unknown): GlossaryTerm[] | null {
   } else if (value && typeof value === "object") {
     for (const [source, raw] of Object.entries(value as Record<string, unknown>)) {
       const targets = toTargets(raw);
-      if (source.trim() && targets.length > 0) {
+      if (source.trim() && (targets.length > 0 || allowEmpty)) {
         terms.push({ source: source.trim(), targets });
       }
     }

@@ -616,6 +616,7 @@
 
 .term-table-mode {
   display: inline-flex;
+  flex: 0 0 auto;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -623,6 +624,8 @@
 
 .term-table-mode button {
   display: inline-flex;
+  flex: 0 0 auto;
+  white-space: nowrap;
   align-items: center;
   gap: 4px;
   height: 26px;
@@ -642,8 +645,9 @@
 }
 
 .term-table-filter {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 1 180px;
+  width: 180px;
+  min-width: 70px;
   height: 26px;
   font-size: 12px;
 }
@@ -652,8 +656,24 @@
   margin-left: auto;
 }
 
-.term-table-filter + .toolbar-icon-button {
-  margin-left: 0;
+.term-table-untranslated {
+  flex: 0 0 auto;
+  height: 26px;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  background: #fffbeb;
+  padding: 0 8px;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.term-table-untranslated.active {
+  border-color: #b45309;
+  background: #b45309;
+  color: #fff;
 }
 
 .term-table-rows {
@@ -761,4 +781,3 @@
   font-size: 12px;
   font-weight: 700;
 }
-
