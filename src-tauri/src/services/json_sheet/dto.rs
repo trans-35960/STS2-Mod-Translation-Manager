@@ -87,6 +87,8 @@ fn json_validation_dto(
                 key: issue.key,
                 kind: issue.kind,
                 message: issue.message,
+                original: None,
+                suggestion: None,
             })
             .collect(),
         glossary_issues,

@@ -375,7 +375,7 @@ const basePreviewJsonSheet: JsonTranslationSheet = {
       key: "file://powers.json#/bash/description",
       previous_source_value: "Apply 1 [gold]Weak[/gold].",
       source_value: "Apply 2 Vulnerable.",
-      translated_value: "취약을 2 부여합니다.",
+      translated_value: "[gold]취약을[/gold] 2 부여합니다.",
       status: "updated",
     },
   ],
@@ -418,6 +418,13 @@ export const previewJsonValidation: JsonValidation = {
       key: "file://powers.json#/bash/description",
       kind: "glossary",
       message: "용어집: 'Vulnerable' → '취약'",
+    },
+    {
+      key: "file://powers.json#/bash/description",
+      kind: "josa",
+      message: "조사가 강조 태그 안에 있습니다: [gold]취약을[/gold] → [gold]취약[/gold]을",
+      original: "[gold]취약을[/gold] 2 부여합니다.",
+      suggestion: "[gold]취약[/gold]을 2 부여합니다.",
     },
   ],
   format_issues: [

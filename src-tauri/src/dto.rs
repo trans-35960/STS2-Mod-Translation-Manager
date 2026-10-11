@@ -350,7 +350,7 @@ pub(crate) struct JsonValidationDto {
     pub(crate) updated_entries: Vec<String>,
     pub(crate) removed_entries: Vec<String>,
     pub(crate) format_issues: Vec<JsonValidationIssueDto>,
-    /// Advisory term mismatches; they never make a sheet invalid.
+    /// Advisory term and particle issues; they never make a sheet invalid.
     pub(crate) glossary_issues: Vec<JsonValidationIssueDto>,
 }
 
@@ -374,6 +374,12 @@ pub(crate) struct JsonValidationIssueDto {
     pub(crate) key: String,
     pub(crate) kind: String,
     pub(crate) message: String,
+    /// The translation the suggestion was computed from; the fix only
+    /// applies while the value is unchanged.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) original: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) suggestion: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

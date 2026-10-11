@@ -148,6 +148,18 @@ export function TranslationSheetTable({
     () => summarizeValidationIssues(allValidationItems),
     [allValidationItems],
   );
+  const applicableFixes = React.useMemo(() => {
+    const entries = props.sheet?.entries ?? [];
+    const indexByKey = new Map(entries.map((entry, entryIndex) => [entry.key, entryIndex]));
+    const fixes: Array<{ index: number; value: string }> = [];
+    for (const issue of allValidationItems) {
+      const entryIndex = indexByKey.get(issue.key);
+      if (issue.suggestion != null && entryIndex !== undefined && entries[entryIndex].translated_value === issue.original) {
+        fixes.push({ index: entryIndex, value: issue.suggestion });
+      }
+    }
+    return fixes;
+  }, [allValidationItems, props.sheet]);
   const issuesByEntryKey = React.useMemo(() => {
     const map = new Map<string, DisplayValidationIssue[]>();
     for (const issue of allValidationItems) {
@@ -285,6 +297,16 @@ export function TranslationSheetTable({
                     {validationIssueLabel(item.kind)} <b>{item.count}</b>
                   </button>
                 ))}
+                {applicableFixes.length > 0 && (
+                  <button
+                    className="validation-fix-all"
+                    type="button"
+                    title="강조 태그 안의 조사를 태그 밖으로 옮깁니다."
+                    onClick={() => props.onReplaceEntries(applicableFixes)}
+                  >
+                    조사 위치 모두 고치기 <b>{applicableFixes.length}</b>
+                  </button>
+                )}
               </div>
               <div className="validation-issue-list">
                 {validationItems.map((issue, issueIndex) => (
@@ -640,6 +662,7 @@ const JsonEntryRow = React.memo(function JsonEntryRow({
 }: JsonEntryRowProps) {
   const issueKinds = React.useMemo(() => issues.map((issue) => issue.kind), [issues]);
   const whitespaceLabel = whitespaceValueLabel(entry.translated_value);
+  const fixIssue = issues.find((issue) => issue.suggestion != null && issue.original === entry.translated_value);
   const sourceCellClass = [
     "source-value-cell",
     issues.length > 0 ? "warning-source" : "",
@@ -689,6 +712,19 @@ const JsonEntryRow = React.memo(function JsonEntryRow({
             issues={issues}
             onSelect={onSelectValidationIssueKind}
           />
+        )}
+        {fixIssue?.suggestion != null && (
+          <button
+            className="issue-fix-button"
+            type="button"
+            title={fixIssue.message}
+            onClick={(event) => {
+              event.stopPropagation();
+              onEditEntry(index, fixIssue.suggestion ?? entry.translated_value);
+            }}
+          >
+            조사 위치 고치기
+          </button>
         )}
         {issues.length > 0 && (
           <div className="issue-match-preview" aria-label="translated_value 구조 경고 강조">
@@ -1101,6 +1137,8 @@ function validationIssueLabel(kind: string) {
       return "삭제됨";
     case "glossary":
       return "용어집";
+    case "josa":
+      return "조사";
     default:
       return kind;
   }

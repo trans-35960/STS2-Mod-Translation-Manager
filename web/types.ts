@@ -367,6 +367,10 @@ export type JsonValidationIssue = {
   key: string;
   kind: string;
   message: string;
+  /** Translation the suggestion was computed from. */
+  original?: string | null;
+  /** Corrected translation, applicable while the value still equals `original`. */
+  suggestion?: string | null;
 };
 
 export type JsonApply = {

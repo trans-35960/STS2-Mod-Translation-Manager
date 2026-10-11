@@ -15,13 +15,14 @@ use crate::json_translation::{
     JsonTranslationEntry, JsonTranslationSheet, JsonTranslationStatus, JsonValidationIssue,
 };
 use crate::pck_reader::read_pck_files;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::SystemTime;
 
 pub const GLOSSARY_ISSUE_KIND: &str = "glossary";
+pub const JOSA_ISSUE_KIND: &str = "josa";
 const GAME_LOCALIZATION_PREFIX: &str = "localization/";
 const DEFAULT_SOURCE_LANGUAGE: &str = "eng";
 const TITLE_KEY_SUFFIX: &str = ".title";
@@ -39,6 +40,8 @@ pub struct GameGlossary {
     pub source_language: String,
     pub target_language: String,
     terms: HashMap<String, GlossaryTerm>,
+    /// Every official target name, for recognizing terms in translations.
+    target_terms: HashSet<String>,
 }
 
 impl GameGlossary {
@@ -170,10 +173,15 @@ fn build_game_glossary(
             }
         }
     }
+    let target_terms = terms
+        .values()
+        .flat_map(|term| term.targets.iter().cloned())
+        .collect();
     GameGlossary {
         source_language: source_language.to_string(),
         target_language: target_language.to_string(),
         terms,
+        target_terms,
     }
 }
 
@@ -372,6 +380,202 @@ pub fn glossary_issues(
     issues
 }
 
+/// Korean particles, longest first so `으로` wins over `로`.
+const KOREAN_JOSA: &[&str] = &[
+    "으로부터",
+    "에서부터",
+    "으로서",
+    "으로써",
+    "에게서",
+    "에서는",
+    "에게는",
+    "으로는",
+    "에서",
+    "에게",
+    "한테",
+    "으로",
+    "께서",
+    "이나",
+    "이랑",
+    "까지",
+    "부터",
+    "보다",
+    "처럼",
+    "마다",
+    "이며",
+    "이고",
+    "과",
+    "와",
+    "을",
+    "를",
+    "이",
+    "가",
+    "은",
+    "는",
+    "의",
+    "에",
+    "로",
+    "도",
+    "만",
+];
+
+/// Single-syllable particles that rarely end a noun, so they are trusted
+/// without the source text confirming the term ("방어도" is a word, not
+/// "방어" + "도").
+const UNAMBIGUOUS_JOSA: &[&str] = &["을", "를", "은", "는", "과", "와", "에"];
+
+/// A translation whose highlight tags swallowed a Korean particle, such as
+/// `[gold]취약을[/gold]`, with the corrected value `[gold]취약[/gold]을`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JosaIssue {
+    pub key: String,
+    pub message: String,
+    pub original: String,
+    pub suggestion: String,
+}
+
+pub fn is_korean_language(language: &str) -> bool {
+    let language = language.trim().to_ascii_lowercase();
+    language == "kor"
+        || language == "ko"
+        || language.starts_with("ko-")
+        || language.starts_with("ko_")
+}
+
+/// Finds particles inside highlight tags. A highlighted word only counts as
+/// "term + particle" when the bare term is known: the official name of a term
+/// highlighted in this entry's source, any official or user glossary name
+/// (with an unambiguous particle), or a word this sheet highlights on its own
+/// elsewhere (with an unambiguous particle).
+pub fn korean_josa_issues(
+    sheet: &JsonTranslationSheet,
+    game: Option<&GameGlossary>,
+    user_terms: &[GlossaryTerm],
+) -> Vec<JosaIssue> {
+    if !is_korean_language(&sheet.target_language) {
+        return Vec::new();
+    }
+    let user_targets = user_terms
+        .iter()
+        .flat_map(|term| term.targets.iter().map(String::as_str))
+        .collect::<HashSet<_>>();
+    let standalone = sheet
+        .entries
+        .iter()
+        .flat_map(|entry| highlight_spans(&entry.translated_value))
+        .map(|span| span.content)
+        .collect::<HashSet<_>>();
+    let is_known_word = |word: &str| {
+        user_targets.contains(word) || game.is_some_and(|game| game.target_terms.contains(word))
+    };
+
+    let mut issues = Vec::new();
+    for entry in sheet.entries.iter().filter(|entry| should_check(entry)) {
+        let expected = game
+            .map(|game| {
+                highlight_spans(&entry.source_value)
+                    .into_iter()
+                    .filter(|span| !has_markup(span.content))
+                    .filter_map(|span| game.lookup(span.content))
+                    .flat_map(|term| term.targets.iter().map(String::as_str))
+                    .collect::<HashSet<_>>()
+            })
+            .unwrap_or_default();
+
+        let value = &entry.translated_value;
+        let mut suggestion = String::with_capacity(value.len() + 8);
+        let mut moved = Vec::new();
+        let mut cursor = 0;
+        for span in highlight_spans(value) {
+            let content = span.content;
+            if has_markup(content) || is_known_word(content) {
+                continue;
+            }
+            let Some(josa) = KOREAN_JOSA
+                .iter()
+                .find(|josa| content.len() > josa.len() && content.ends_with(*josa))
+            else {
+                continue;
+            };
+            let stem = &content[..content.len() - josa.len()];
+            let trusted = josa.chars().count() >= 2 || UNAMBIGUOUS_JOSA.contains(josa);
+            if !(expected.contains(stem)
+                || (trusted && (is_known_word(stem) || standalone.contains(stem))))
+            {
+                continue;
+            }
+            suggestion.push_str(&value[cursor..span.start]);
+            suggestion.push_str(&format!("[{0}]{stem}[/{0}]{josa}", span.tag));
+            cursor = span.end;
+            moved.push(format!(
+                "[{0}]{content}[/{0}] → [{0}]{stem}[/{0}]{josa}",
+                span.tag
+            ));
+        }
+        if moved.is_empty() {
+            continue;
+        }
+        suggestion.push_str(&value[cursor..]);
+        issues.push(JosaIssue {
+            key: entry.key.clone(),
+            message: format!("조사가 강조 태그 안에 있습니다: {}", moved.join(", ")),
+            original: value.clone(),
+            suggestion,
+        });
+    }
+    issues
+}
+
+struct HighlightSpan<'a> {
+    tag: &'a str,
+    content: &'a str,
+    /// Byte range of the whole `[tag]content[/tag]`.
+    start: usize,
+    end: usize,
+}
+
+/// Non-nested `[tag]...[/tag]` pairs with a lowercase ASCII tag name, the
+/// game's color/style markup (`gold`, `blue`, `green`, ...).
+fn highlight_spans(value: &str) -> Vec<HighlightSpan<'_>> {
+    let bytes = value.as_bytes();
+    let mut spans = Vec::new();
+    let mut cursor = 0;
+    while let Some(open) = value[cursor..].find('[').map(|index| cursor + index) {
+        let name_end = bytes[open + 1..]
+            .iter()
+            .position(|byte| !byte.is_ascii_lowercase())
+            .map(|offset| open + 1 + offset);
+        let Some(name_end) = name_end.filter(|end| *end > open + 1 && bytes[*end] == b']') else {
+            cursor = open + 1;
+            continue;
+        };
+        let tag = &value[open + 1..name_end];
+        let content_start = name_end + 1;
+        let close = format!("[/{tag}]");
+        let Some(content_end) = value[content_start..]
+            .find(&close)
+            .map(|index| content_start + index)
+        else {
+            cursor = content_start;
+            continue;
+        };
+        let content = &value[content_start..content_end];
+        if content.contains('[') {
+            cursor = content_start;
+            continue;
+        }
+        let end = content_end + close.len();
+        spans.push(HighlightSpan {
+            tag,
+            content,
+            start: open,
+            end,
+        });
+        cursor = end;
+    }
+    spans
+}
+
 fn should_check(entry: &JsonTranslationEntry) -> bool {
     entry.status != JsonTranslationStatus::Removed
         && !entry.translated_value.trim().is_empty()
@@ -562,5 +766,71 @@ mod tests {
         value.entries = vec![entry("x", "y")];
         value.entries[0].key = "file://Mod/localization/zhs/cards.json#/A".to_string();
         assert_eq!(sheet_source_language(&value), "zhs");
+    }
+
+    #[test]
+    fn moves_particles_out_of_highlight_tags() {
+        let game = game();
+        let sheet = sheet(vec![
+            // Source confirms the term, so even an ambiguous particle counts.
+            entry(
+                "Apply [gold]Vulnerable[/gold].",
+                "[gold]취약이[/gold] 부여되고 [gold]단도를[/gold] 얻습니다.",
+            ),
+            // Already correct.
+            entry(
+                "Apply [gold]Vulnerable[/gold].",
+                "[gold]취약[/gold]을 부여합니다.",
+            ),
+            // Particle-like ending without a known stem is left alone.
+            entry(
+                "Gain [gold]Block[/gold].",
+                "[gold]방어도[/gold]를 얻습니다.",
+            ),
+            // Known only from this sheet, with an unambiguous particle.
+            entry(
+                "[gold]Ammo[/gold] and [gold]Ammo[/gold].",
+                "[gold]탄약[/gold], [blue]탄약은[/blue] 소모됩니다.",
+            ),
+            // Ambiguous particle without confirmation from the source.
+            entry("[gold]Randomly[/gold] add.", "[gold]탄약도[/gold] 추가."),
+        ]);
+        let issues = korean_josa_issues(&sheet, Some(&game), &[]);
+        assert_eq!(issues.len(), 2, "{issues:#?}");
+        assert_eq!(issues[0].key, sheet.entries[0].key);
+        assert_eq!(
+            issues[0].suggestion,
+            "[gold]취약[/gold]이 부여되고 [gold]단도[/gold]를 얻습니다."
+        );
+        assert_eq!(
+            issues[1].suggestion,
+            "[gold]탄약[/gold], [blue]탄약[/blue]은 소모됩니다."
+        );
+
+        let mut japanese = sheet.clone();
+        japanese.target_language = "jpn".to_string();
+        assert!(korean_josa_issues(&japanese, Some(&game), &[]).is_empty());
+    }
+
+    #[test]
+    fn user_terms_mark_stems_for_particle_checks() {
+        let user = vec![GlossaryTerm {
+            source: "Artoria".to_string(),
+            targets: vec!["아르토리아".to_string()],
+        }];
+        let ambiguous = sheet(vec![entry(
+            "[gold]Artoria[/gold] attacks.",
+            "[gold]아르토리아가[/gold] 공격합니다.",
+        )]);
+        assert!(korean_josa_issues(&ambiguous, None, &user).is_empty());
+        let clear = sheet(vec![entry(
+            "[gold]Artoria[/gold] attacks.",
+            "[gold]아르토리아는[/gold] 공격합니다.",
+        )]);
+        let issues = korean_josa_issues(&clear, None, &user);
+        assert_eq!(
+            issues[0].suggestion,
+            "[gold]아르토리아[/gold]는 공격합니다."
+        );
     }
 }

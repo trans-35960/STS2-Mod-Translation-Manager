@@ -10,14 +10,28 @@ fn sheet_glossary_issues(sheet: &JsonTranslationSheet) -> Vec<JsonValidationIssu
             .flatten()
     });
     let user_terms = read_user_glossary(&config.state_dir, &target_language).unwrap_or_default();
-    glossary_issues(sheet, game.as_deref(), &user_terms)
+    let mut issues = glossary_issues(sheet, game.as_deref(), &user_terms)
         .into_iter()
         .map(|issue| JsonValidationIssueDto {
             key: issue.key,
             kind: issue.kind,
             message: issue.message,
+            original: None,
+            suggestion: None,
         })
-        .collect()
+        .collect::<Vec<_>>();
+    issues.extend(
+        korean_josa_issues(sheet, game.as_deref(), &user_terms)
+            .into_iter()
+            .map(|issue| JsonValidationIssueDto {
+                key: issue.key,
+                kind: JOSA_ISSUE_KIND.to_string(),
+                message: issue.message,
+                original: Some(issue.original),
+                suggestion: Some(issue.suggestion),
+            }),
+    );
+    issues
 }
 
 pub(crate) fn load_translation_glossary(
