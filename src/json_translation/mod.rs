@@ -2,6 +2,7 @@ mod apply;
 mod hardcoded;
 mod import;
 mod language_path;
+mod numbers;
 mod sheet;
 mod slots;
 mod source_json;
@@ -13,6 +14,7 @@ pub use hardcoded::{
     is_hardcoded_source_file, utf16le_byte_len,
 };
 pub use import::import_translations;
+pub use numbers::{NUMBER_ISSUE_KIND, number_mismatch_issues};
 pub use sheet::{
     create_or_update_sheet, read_sheet, validate_sheet, validate_translation_sheet, write_sheet,
 };

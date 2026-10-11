@@ -5,7 +5,9 @@ import {
   isTabularTranslationPaste,
   isStructuredTranslationJsonPaste,
   isTranslationSlotId,
+  normalizeSlotId,
   parsePastedTranslationJson,
+  slotIdIndex,
   splitSheetKey,
   structuredTranslationEntries,
   translationSlotEntries,
@@ -178,11 +180,16 @@ export function useTranslationSheetActions({
       return true;
     }
     const slotEntries = translationSlotEntries(jsonSheet);
-    const entryBySlot = new Map(slotEntries.map((slot) => [translationSlotKey(slot.compactFile, slot.id), slot.entry]));
+    // Ids are matched loosely (case, zero padding) because AI answers often
+    // reformat them.
+    const slotKeyOf = (file: string, id: string) => translationSlotKey(file, normalizeSlotId(id) ?? id);
+    const entryBySlot = new Map(slotEntries.map((slot) => [slotKeyOf(slot.compactFile, slot.id), slot.entry]));
     const entriesById = new Map<string, JsonTranslationEntry[]>();
     for (const slot of slotEntries) {
-      entriesById.set(slot.id, [...(entriesById.get(slot.id) ?? []), slot.entry]);
+      const id = normalizeSlotId(slot.id) ?? slot.id;
+      entriesById.set(id, [...(entriesById.get(id) ?? []), slot.entry]);
     }
+    const pastedIndexesByFile = new Map<string, Set<number>>();
     const values = new Map<string, string>();
     const candidates: Record<string, PasteCandidate> = {};
     const unmatchedIds: string[] = [];
@@ -199,9 +206,17 @@ export function useTranslationSheetActions({
           emptyIds.push(entry.id);
           continue;
         }
+        const normalizedId = normalizeSlotId(entry.id) ?? entry.id;
         const sheetEntry = entry.source
-          ? entryBySlot.get(translationSlotKey(compactTranslationFile(entry.source), entry.id))
-          : (entriesById.get(entry.id)?.length === 1 ? entriesById.get(entry.id)?.[0] : undefined);
+          ? entryBySlot.get(slotKeyOf(compactTranslationFile(entry.source), entry.id))
+          : (entriesById.get(normalizedId)?.length === 1 ? entriesById.get(normalizedId)?.[0] : undefined);
+        if (sheetEntry) {
+          const file = entry.source ? compactTranslationFile(entry.source) : "";
+          const index = slotIdIndex(entry.id);
+          if (index !== null) {
+            pastedIndexesByFile.set(file, (pastedIndexesByFile.get(file) ?? new Set()).add(index));
+          }
+        }
         if (!sheetEntry) {
           unmatchedIds.push(entry.source ? `${entry.source}:${entry.id}` : entry.id);
           continue;
@@ -218,21 +233,36 @@ export function useTranslationSheetActions({
         values.set(sheetEntry.key, entry.translated_value);
       }
     }
-    if (emptyIds.length > 0) {
-      appendLog(`빈 번역값이 있는 slot id: ${emptyIds.slice(0, 8).join(", ")}${emptyIds.length > 8 ? " ..." : ""}`);
-      return true;
-    }
-    if (duplicateIds.length > 0) {
-      appendLog(`중복 slot id: ${duplicateIds.slice(0, 8).join(", ")}${duplicateIds.length > 8 ? " ..." : ""}`);
-      return true;
-    }
-    if (unmatchedIds.length > 0 && values.size === 0 && Object.keys(candidates).length === 0) {
-      appendLog(`JSON 붙여넣기 실패: 현재 시트와 매칭되는 id가 없습니다. 미매칭 id: ${unmatchedIds.slice(0, 8).join(", ")}${unmatchedIds.length > 8 ? " ..." : ""}`);
-      return true;
-    }
+    const skippedNotes = [
+      emptyIds.length > 0 ? `빈 번역값 ${emptyIds.length}개: ${previewIds(emptyIds)}` : "",
+      duplicateIds.length > 0 ? `중복 id ${duplicateIds.length}개: ${previewIds(duplicateIds)}` : "",
+      unmatchedIds.length > 0 ? `시트에 없는 id ${unmatchedIds.length}개: ${previewIds(unmatchedIds)}` : "",
+    ].filter(Boolean);
     if (values.size === 0 && Object.keys(candidates).length === 0) {
-      appendLog("JSON 붙여넣기 실패: 적용할 번역값이 없습니다.");
+      appendLog(`JSON 붙여넣기 실패: 적용할 번역값이 없습니다.${skippedNotes.length > 0 ? ` ${skippedNotes.join(" / ")}` : ""}`);
       return true;
+    }
+    // Ids the answer skipped: empty entries inside the pasted id range of a
+    // file, which is how an AI answer for one prompt part usually looks.
+    const answeredKeys = new Set([...values.keys(), ...Object.keys(candidates)]);
+    const answeredIds = new Set(entries.map((entry) => (entry.id ? normalizeSlotId(entry.id) : null)).filter(Boolean));
+    const missingIds: string[] = [];
+    for (const slot of slotEntries) {
+      const indexes = pastedIndexesByFile.get(slot.compactFile) ?? pastedIndexesByFile.get("");
+      const index = slotIdIndex(slot.id);
+      if (
+        !indexes ||
+        index === null ||
+        answeredKeys.has(slot.entry.key) ||
+        answeredIds.has(normalizeSlotId(slot.id)) ||
+        slot.entry.translated_value.trim()
+      ) {
+        continue;
+      }
+      const sorted = [...indexes];
+      if (index > Math.min(...sorted) && index < Math.max(...sorted)) {
+        missingIds.push(`${slot.compactFile}:${slot.id}`);
+      }
     }
     setJsonApplyResult(null);
     setPasteCandidatesByKey((current) => ({ ...current, ...candidates }));
@@ -275,9 +305,18 @@ export function useTranslationSheetActions({
     if (unmatchedIds.length > 0) {
       summaryParts.push(`${unmatchedIds.length}개 id 미매칭`);
     }
+    if (emptyIds.length + duplicateIds.length > 0) {
+      summaryParts.push(`${emptyIds.length + duplicateIds.length}개 건너뜀`);
+    }
+    if (missingIds.length > 0) {
+      summaryParts.push(`답변에서 빠진 id ${missingIds.length}개`);
+    }
     appendLog(`JSON 붙여넣기 완료: ${summaryParts.join(" / ")}`);
-    if (unmatchedIds.length > 0) {
-      appendLog(`미매칭 id: ${unmatchedIds.slice(0, 8).join(", ")}${unmatchedIds.length > 8 ? " ..." : ""}`);
+    for (const note of skippedNotes) {
+      appendLog(`건너뜀 - ${note}`);
+    }
+    if (missingIds.length > 0) {
+      appendLog(`답변에서 빠진 id (같은 범위의 빈 항목): ${previewIds(missingIds)}`);
     }
     return true;
   }
@@ -434,4 +473,8 @@ function editedTranslationStatus(entry: JsonTranslationEntry, value: string): Js
     return entry.status;
   }
   return "ready";
+}
+
+function previewIds(ids: string[]) {
+  return `${ids.slice(0, 8).join(", ")}${ids.length > 8 ? " ..." : ""}`;
 }

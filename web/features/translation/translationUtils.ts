@@ -242,7 +242,22 @@ export function compactTranslationEntries(value: unknown): StructuredTranslation
 }
 
 export function isTranslationSlotId(value: string): boolean {
-  return /^k\d+-[0-9a-z]{2}$/i.test(value);
+  return normalizeSlotId(value) !== null;
+}
+
+/** `K0012-AB`, ` k12-ab ` and `k012-ab` all name slot 12 with checksum `ab`. */
+export function normalizeSlotId(value: string): string | null {
+  const match = value.trim().replace(/^["'`]|["'`]$/g, "").match(/^k(\d+)-([0-9a-z]{2})$/i);
+  if (!match) {
+    return null;
+  }
+  return `k${Number(match[1])}-${match[2].toLowerCase()}`;
+}
+
+/** The numeric part of a slot id (`k012-ab` → 12). */
+export function slotIdIndex(value: string): number | null {
+  const normalized = normalizeSlotId(value);
+  return normalized ? Number(normalized.slice(1, normalized.indexOf("-"))) : null;
 }
 
 export function translationSlotEntries(sheet: JsonTranslationSheet): TranslationSlot[] {

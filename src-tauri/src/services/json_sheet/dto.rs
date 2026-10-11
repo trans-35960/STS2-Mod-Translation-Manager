@@ -122,5 +122,6 @@ fn json_import_dto(report: JsonImportReport) -> JsonImportDto {
         input_path: display_path(&report.input_path),
         matched_entries: report.matched_entries,
         unmatched_entries: report.unmatched_entries,
+        skipped: report.skipped,
     }
 }

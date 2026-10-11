@@ -75,4 +75,6 @@ pub struct JsonImportReport {
     pub input_path: PathBuf,
     pub matched_entries: usize,
     pub unmatched_entries: usize,
+    /// Ids from the input that were skipped (empty, unknown, duplicate).
+    pub skipped: Vec<String>,
 }

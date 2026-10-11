@@ -27,8 +27,8 @@ use sts2_mod_manager::json_translation::{
     JsonImportReport, JsonSheetReport, JsonTranslationEntry, JsonTranslationSheet,
     JsonTranslationStatus, JsonValidationReport, apply_sheet, apply_sheet_to_target_language,
     compact_source_translation_map_with_keys, compact_validation_issue_translation_map_with_keys,
-    create_or_update_sheet, import_translations, is_hardcoded_source_file, read_sheet,
-    target_language_output_path, translation_slot_entries, validate_sheet,
+    create_or_update_sheet, import_translations, is_hardcoded_source_file, number_mismatch_issues,
+    read_sheet, target_language_output_path, translation_slot_entries, validate_sheet,
     validate_translation_sheet, write_sheet,
 };
 use sts2_mod_manager::launcher::{LaunchReport, LaunchStatus};

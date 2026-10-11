@@ -634,7 +634,8 @@
 }
 
 .row-warning-badges button.glossary,
-.row-warning-badges button.josa {
+.row-warning-badges button.josa,
+.row-warning-badges button.numbers {
   background: #e0f2fe;
   color: #0369a1;
 }

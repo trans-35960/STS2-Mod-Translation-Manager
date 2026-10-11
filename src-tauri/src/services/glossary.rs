@@ -2,18 +2,7 @@ fn sheet_glossary_issues(
     sheet: &JsonTranslationSheet,
     project_key: Option<&str>,
 ) -> Vec<JsonValidationIssueDto> {
-    let config = configured_config();
-    let target_language = sheet.target_language.trim().to_lowercase();
-    if target_language.is_empty() {
-        return Vec::new();
-    }
-    let game = config.game_pck_path().and_then(|pck| {
-        load_game_glossary(&pck, &glossary_source_language(sheet), &target_language)
-            .ok()
-            .flatten()
-    });
-    let user_terms = combined_user_terms(&config, &target_language, project_key);
-    let mut issues = glossary_issues(sheet, game.as_deref(), &user_terms)
+    let mut issues = number_mismatch_issues(sheet)
         .into_iter()
         .map(|issue| JsonValidationIssueDto {
             key: issue.key,
@@ -23,6 +12,28 @@ fn sheet_glossary_issues(
             suggestion: None,
         })
         .collect::<Vec<_>>();
+    let config = configured_config();
+    let target_language = sheet.target_language.trim().to_lowercase();
+    if target_language.is_empty() {
+        return issues;
+    }
+    let game = config.game_pck_path().and_then(|pck| {
+        load_game_glossary(&pck, &glossary_source_language(sheet), &target_language)
+            .ok()
+            .flatten()
+    });
+    let user_terms = combined_user_terms(&config, &target_language, project_key);
+    issues.extend(
+        glossary_issues(sheet, game.as_deref(), &user_terms)
+            .into_iter()
+            .map(|issue| JsonValidationIssueDto {
+                key: issue.key,
+                kind: issue.kind,
+                message: issue.message,
+                original: None,
+                suggestion: None,
+            }),
+    );
     issues.extend(
         korean_josa_issues(sheet, game.as_deref(), &user_terms)
             .into_iter()

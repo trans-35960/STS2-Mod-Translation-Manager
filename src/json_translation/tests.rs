@@ -1210,6 +1210,49 @@ fn rejects_unknown_or_empty_slot_ids() {
 }
 
 #[test]
+fn imports_matching_slot_ids_and_reports_the_rest() {
+    let fixture = TestDir::create("json_translation_lenient_slot_json");
+    let entry = |name: &str| JsonTranslationEntry {
+        key: format!("file://BaseLib/localization/eng/cards.json#/{name}"),
+        slot_id: None,
+        previous_source_value: None,
+        source_value: format!("Source {name}"),
+        translated_value: String::new(),
+        status: JsonTranslationStatus::New,
+    };
+    let sheet = JsonTranslationSheet {
+        source_path: fixture.path().join("source").display().to_string(),
+        target_language: "kor".to_string(),
+        updated_epoch: 1,
+        entries: vec![entry("a"), entry("b"), entry("c"), entry("d")],
+    };
+    let ids = translation_slot_entries(&sheet)
+        .into_iter()
+        .map(|slot| slot.id)
+        .collect::<Vec<_>>();
+    // Upper case and missing zero padding still match; the empty value, the
+    // unknown id and the second copy of an id are skipped.
+    let loose = ids[1].to_uppercase().replacen("K00", "K", 1);
+    let content = format!(
+        r#"{{"BaseLib/localization/eng/cards.json":{{"{}":"가","{loose}":"나","{}":"","k999-zz":"?"}},"cards.json":{{"{}":"다시"}}}}"#,
+        ids[0], ids[2], ids[0]
+    );
+    fixture.write_file("answer.json", &content);
+
+    let (updated, report) =
+        import_translations(&sheet, &fixture.path().join("answer.json")).expect("import");
+
+    assert_eq!(report.matched_entries, 2);
+    assert_eq!(updated.entries[0].translated_value, "가");
+    assert_eq!(updated.entries[1].translated_value, "나");
+    assert!(updated.entries[2].translated_value.is_empty());
+    let skipped = report.skipped.join(" | ");
+    assert!(skipped.contains("빈 번역값 1개"), "{skipped}");
+    assert!(skipped.contains("시트에 없는 id 1개"), "{skipped}");
+    assert!(skipped.contains("중복 id 1개"), "{skipped}");
+}
+
+#[test]
 fn imports_tree_translation_json_without_source_values() {
     let fixture = TestDir::create("json_translation_import_tree_json_without_source");
     let key = "file://BaseLib/localization/zhs/cards.json#/desc";

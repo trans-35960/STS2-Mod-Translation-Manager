@@ -452,6 +452,7 @@ pub(crate) struct JsonImportDto {
     pub(crate) input_path: String,
     pub(crate) matched_entries: usize,
     pub(crate) unmatched_entries: usize,
+    pub(crate) skipped: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]

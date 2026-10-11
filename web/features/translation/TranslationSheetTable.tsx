@@ -281,7 +281,7 @@ export function TranslationSheetTable({
               <ValidationMetric label="원본 변경" value={props.validation.updated_entries.length} tone={props.validation.updated_entries.length ? "warn" : "good"} />
               <ValidationMetric label="삭제됨" value={props.validation.removed_entries.length} />
               <ValidationMetric label="구조" value={props.validation.format_issues?.length ?? 0} tone={(props.validation.format_issues?.length ?? 0) ? "warn" : "good"} />
-              <ValidationMetric label="용어" value={props.validation.glossary_issues?.length ?? 0} tone={(props.validation.glossary_issues?.length ?? 0) ? "warn" : "good"} />
+              <ValidationMetric label="참고" value={props.validation.glossary_issues?.length ?? 0} tone={(props.validation.glossary_issues?.length ?? 0) ? "warn" : "good"} />
             </div>
           </div>
           {!validationCollapsed && validationItems.length > 0 && (
@@ -1139,6 +1139,8 @@ function validationIssueLabel(kind: string) {
       return "용어집";
     case "josa":
       return "조사";
+    case "numbers":
+      return "숫자";
     default:
       return kind;
   }

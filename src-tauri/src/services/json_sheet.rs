@@ -318,10 +318,20 @@ pub(crate) fn import_json_translation_values(
     let action_report = create_report_for_saved_sheet(Path::new("imported"), &imported);
     let import = json_import_dto(report);
     Ok(JsonSheetActionDto {
-        message: format!(
-            "번역 파일 매칭 완료: {}개 입력 / {}개 미매칭 ({})",
-            import.matched_entries, import.unmatched_entries, import.input_path
-        ),
+        message: if import.skipped.is_empty() {
+            format!(
+                "번역 파일 매칭 완료: {}개 입력 / {}개 미매칭 ({})",
+                import.matched_entries, import.unmatched_entries, import.input_path
+            )
+        } else {
+            format!(
+                "번역 파일 매칭 완료: {}개 입력 / {}개 미매칭 ({}). 건너뜀 - {}",
+                import.matched_entries,
+                import.unmatched_entries,
+                import.input_path,
+                import.skipped.join(" / ")
+            )
+        },
         report: json_report_dto(action_report),
         sheet: json_sheet_dto(imported),
     })
