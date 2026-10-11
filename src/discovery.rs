@@ -59,12 +59,27 @@ pub fn scan_mod_directory(path: &Path, source: ModSource) -> AppResult<Vec<ModRe
 pub const MOD_MANIFEST_FILE: &str = "mod_manifest.json";
 const WORKSHOP_MANIFEST_MAX_DEPTH: usize = 3;
 const LOCAL_MANIFEST_MAX_DEPTH: usize = 2;
+/// Manifests are a few hundred bytes; skip big JSON (localization, data).
+const MAX_MANIFEST_BYTES: u64 = 256 * 1024;
+/// Fields that, next to `id`, mark a JSON file as a mod manifest rather than
+/// some other data file that happens to have an `id`.
+const MANIFEST_HINT_FIELDS: &[&str] = &[
+    "has_dll",
+    "has_pck",
+    "pck_name",
+    "dependencies",
+    "affects_gameplay",
+    "min_game_version",
+    "version",
+    "author",
+    "name",
+];
 
 /// Scans a Steam Workshop content folder (`.../workshop/content/<appid>`).
 ///
-/// Each subscribed item is a numbered folder; like the game, every
-/// `mod_manifest.json` found inside it is treated as one mod, named by the
-/// manifest `id` because that is what the game's settings refer to.
+/// Each subscribed item is a numbered folder; like the game, every mod
+/// manifest found inside it is treated as one mod, named by the manifest `id`
+/// because that is what the game's settings refer to.
 pub fn scan_workshop_directory(path: &Path) -> AppResult<Vec<ModRecord>> {
     if !path.is_dir() {
         return Ok(Vec::new());
@@ -104,8 +119,8 @@ pub fn scan_workshop_directory(path: &Path) -> AppResult<Vec<ModRecord>> {
     Ok(mods)
 }
 
-/// Finds `mod_manifest.json` files below `root`, without descending further
-/// once a folder is known to be a mod root.
+/// Finds mod manifests below `root`, without descending further once a folder
+/// is known to be a mod root.
 pub fn find_mod_manifests(root: &Path, max_depth: usize) -> Vec<PathBuf> {
     let mut found = Vec::new();
     collect_mod_manifests(root, max_depth, &mut found);
@@ -114,8 +129,7 @@ pub fn find_mod_manifests(root: &Path, max_depth: usize) -> Vec<PathBuf> {
 }
 
 fn collect_mod_manifests(dir: &Path, depth_left: usize, found: &mut Vec<PathBuf>) {
-    let manifest = dir.join(MOD_MANIFEST_FILE);
-    if manifest.is_file() {
+    if let Some(manifest) = mod_manifest_in(dir) {
         found.push(manifest);
         return;
     }
@@ -130,6 +144,70 @@ fn collect_mod_manifests(dir: &Path, depth_left: usize, found: &mut Vec<PathBuf>
             collect_mod_manifests(&entry.path(), depth_left - 1, found);
         }
     }
+}
+
+/// The manifest of a mod folder, if it has one. The game accepts any `.json`
+/// with an `id` (newer mods ship `<ModId>.json` next to `<ModId>.dll`/`.pck`
+/// instead of `mod_manifest.json`). `mod_manifest.json` wins, then a JSON
+/// named like the folder's `.dll`/`.pck`, then the first manifest-like JSON.
+fn mod_manifest_in(dir: &Path) -> Option<PathBuf> {
+    let preferred = dir.join(MOD_MANIFEST_FILE);
+    if preferred.is_file() {
+        return Some(preferred);
+    }
+    let mut json_files = Vec::new();
+    let mut binary_stems = Vec::new();
+    for entry in fs::read_dir(dir).ok()?.flatten() {
+        let path = entry.path();
+        let Ok(metadata) = entry.metadata() else {
+            continue;
+        };
+        if !metadata.is_file() {
+            continue;
+        }
+        let extension = path
+            .extension()
+            .and_then(|value| value.to_str())
+            .map(str::to_ascii_lowercase);
+        match extension.as_deref() {
+            Some("json") if metadata.len() <= MAX_MANIFEST_BYTES => json_files.push(path),
+            Some("dll" | "pck") => {
+                if let Some(stem) = path.file_stem() {
+                    binary_stems.push(stem.to_string_lossy().to_ascii_lowercase());
+                }
+            }
+            _ => {}
+        }
+    }
+    json_files.sort();
+    let named_like_binary = |path: &PathBuf| {
+        path.file_stem()
+            .is_some_and(|stem| binary_stems.contains(&stem.to_string_lossy().to_ascii_lowercase()))
+    };
+    json_files
+        .iter()
+        .filter(|path| named_like_binary(path))
+        .chain(json_files.iter().filter(|path| !named_like_binary(path)))
+        .find(|path| looks_like_mod_manifest(path))
+        .cloned()
+}
+
+fn looks_like_mod_manifest(path: &Path) -> bool {
+    let Ok(text) = fs::read_to_string(path) else {
+        return false;
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(text.trim_start_matches('\u{feff}'))
+    else {
+        return false;
+    };
+    let has_id = value
+        .get("id")
+        .and_then(|id| id.as_str())
+        .is_some_and(|id| !id.trim().is_empty());
+    has_id
+        && MANIFEST_HINT_FIELDS
+            .iter()
+            .any(|field| value.get(field).is_some())
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -336,6 +414,50 @@ mod tests {
         assert_eq!(mods[1].version_hint.as_deref(), Some("0.6.7"));
         assert_eq!(mods[1].workshop_item_id().as_deref(), Some("3747602295"));
         assert_eq!(mods[1].path, fixture.path().join("3747602295"));
+    }
+
+    #[test]
+    fn finds_manifests_named_after_the_mod() {
+        let fixture = TestDir::create("finds_manifests_named_after_the_mod");
+        // `<ModId>.json` next to the binaries, at the item root or nested.
+        fixture.write_file(
+            "3811028356/MaidenSuccubus/MaidenSuccubus.json",
+            r#"{"id":"MaidenSuccubus","version":"0.1.0","has_dll":true}"#,
+        );
+        fixture.write_file("3811028356/MaidenSuccubus/MaidenSuccubus.dll", "dll");
+        fixture.write_file(
+            "3811206322/MEP SakurabaEma.json",
+            r#"{"id":"MEP SakurabaEma","version":"v0.5.9","has_pck":true}"#,
+        );
+        fixture.write_file("3811206322/MEP SakurabaEma.pck", "pck");
+        // A data file with an id is not a manifest, and a manifest stops the
+        // search so files below it are not treated as more mods.
+        fixture.write_file(
+            "3752522987/Sts2ModTranslator.json",
+            r#"{"id":"Sts2ModTranslator","has_dll":true}"#,
+        );
+        fixture.write_file(
+            "3752522987/Translations/overrides/x.json",
+            r#"{"id":"Nested","version":"1"}"#,
+        );
+        fixture.write_file("3700000000/Data/items.json", r#"{"id":"not-a-mod"}"#);
+
+        let mods = scan_workshop_directory(fixture.path()).expect("scan");
+        let names = mods
+            .iter()
+            .map(|record| record.name.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            names,
+            vec!["MaidenSuccubus", "MEP SakurabaEma", "Sts2ModTranslator"]
+        );
+        assert_eq!(mods[0].version_hint.as_deref(), Some("0.1.0"));
+        assert_eq!(
+            mods[0].path,
+            fixture.path().join("3811028356").join("MaidenSuccubus")
+        );
+        assert_eq!(mods[1].path, fixture.path().join("3811206322"));
     }
 
     struct TestDir {
