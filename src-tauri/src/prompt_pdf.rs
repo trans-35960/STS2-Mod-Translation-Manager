@@ -14,7 +14,7 @@ use std::sync::Arc;
 const PAGE_WIDTH: f32 = 595.0;
 const PAGE_HEIGHT: f32 = 842.0;
 const MARGIN: f32 = 28.0;
-pub(crate) const DEFAULT_PDF_FONT_SIZE: f32 = 7.0;
+pub(crate) const DEFAULT_PDF_FONT_SIZE: f32 = 5.5;
 const LINE_SPACING: f32 = 1.25;
 const TAB_WIDTH: usize = 4;
 
