@@ -3,6 +3,7 @@ import { Check, CircleCheck, Copy, Loader2, Sparkles, X } from "lucide-react";
 import { invokeCommand } from "../../api/tauri";
 import type { AiPromptParts, JsonTranslationSheet, ProjectTranslationSettings, TranslationProjectInfo } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
+import { TermCandidatesPanel } from "./TermCandidatesPanel";
 import {
   compactTranslationFile,
   normalizeSlotId,
@@ -148,6 +149,22 @@ export function AiPromptModal({
     () => result?.parts.map((part) => part.slots.filter((slot) => translatedSlots.has(slotKey(slot.file, slot.id))).length) ?? [],
     [result, translatedSlots],
   );
+
+  const registeredSources = React.useMemo(
+    () => new Set(settings.terms.map((term) => term.source.toLowerCase())),
+    [settings.terms],
+  );
+
+  /** Adds terms to the mod glossary text, replacing lines for the same source. */
+  function addTerms(terms: Array<{ source: string; target: string }>) {
+    setTermsText((current) => {
+      const added = new Set(terms.map((term) => term.source.toLowerCase()));
+      const kept = current
+        .split("\n")
+        .filter((line) => line.trim() && !added.has(line.split("=")[0].trim().toLowerCase()));
+      return [...kept, ...terms.map((term) => `${term.source} = ${term.target}`)].join("\n");
+    });
+  }
 
   async function buildParts() {
     setBusy(true);
@@ -300,6 +317,19 @@ export function AiPromptModal({
             placeholder={"Artoria = 아르토리아\nNoble Phantasm = 보구"}
           />
         </label>
+        <TermCandidatesPanel
+          sheet={sheet}
+          projectKey={projectKey}
+          context={{
+            modName: projectInfo?.modName ?? "",
+            modDescription: settings.mod_description,
+            tone,
+            extraInstructions: settings.extra_instructions,
+            maxChars: budgetOf(maxChars),
+          }}
+          registeredSources={registeredSources}
+          onAddTerms={addTerms}
+        />
         <label className="modal-field">
           <span>추가 지시 (한 줄에 하나, 모든 파트에 들어감)</span>
           <textarea

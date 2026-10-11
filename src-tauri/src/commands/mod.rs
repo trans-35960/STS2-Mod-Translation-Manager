@@ -318,6 +318,22 @@ pub(crate) async fn save_project_translation_settings(
 }
 
 #[tauri::command]
+pub(crate) async fn extract_term_candidates(
+    sheet: JsonSheetDto,
+    project_key: Option<String>,
+) -> Result<Vec<TermCandidateDto>, String> {
+    run_blocking(move || crate::services::extract_term_candidates(sheet, project_key)).await
+}
+
+#[tauri::command]
+pub(crate) async fn build_term_prompt(
+    sheet: JsonSheetDto,
+    request: TermPromptRequestDto,
+) -> Result<AiPromptPartsDto, String> {
+    run_blocking(move || crate::services::build_term_prompt(sheet, request)).await
+}
+
+#[tauri::command]
 pub(crate) async fn build_ai_prompt_parts(
     sheet: JsonSheetDto,
     request: AiPromptRequestDto,

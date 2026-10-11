@@ -317,3 +317,78 @@ pub(crate) fn build_ai_prompt_parts(
             .collect(),
     })
 }
+
+pub(crate) fn extract_term_candidates(
+    sheet: JsonSheetDto,
+    project_key: Option<String>,
+) -> Result<Vec<TermCandidateDto>, String> {
+    let domain = json_sheet_from_dto(sheet)?;
+    let config = configured_config();
+    let source_language = glossary_source_language(&domain);
+    let target_language = domain.target_language.trim().to_lowercase();
+    let game = config.game_pck_path().and_then(|pck| {
+        load_game_glossary(&pck, &source_language, &target_language)
+            .ok()
+            .flatten()
+    });
+    let known = combined_user_terms(&config, &target_language, project_key.as_deref());
+    Ok(
+        term_candidates(&domain, &source_language, game.as_deref(), &known)
+            .into_iter()
+            .map(|candidate| TermCandidateDto {
+                source: candidate.source,
+                count: candidate.count,
+                kinds: candidate.kinds.into_iter().map(str::to_string).collect(),
+                suggestions: candidate
+                    .suggestions
+                    .into_iter()
+                    .map(|(text, count)| TermSuggestionDto { text, count })
+                    .collect(),
+                shares_translation_with: candidate.shares_translation_with,
+                example: candidate.example,
+            })
+            .collect(),
+    )
+}
+
+pub(crate) fn build_term_prompt(
+    sheet: JsonSheetDto,
+    request: TermPromptRequestDto,
+) -> Result<AiPromptPartsDto, String> {
+    let domain = json_sheet_from_dto(sheet)?;
+    let source_language = glossary_source_language(&domain);
+    let terms = request
+        .terms
+        .iter()
+        .map(|term| TermToTranslate {
+            source: &term.source,
+            example: &term.example,
+        })
+        .collect::<Vec<_>>();
+    let options = PromptOptions {
+        include_prompt: true,
+        max_chars: request.max_chars.unwrap_or(DEFAULT_PROMPT_MAX_CHARS),
+        only_empty: false,
+        include_keys: None,
+        source_language: &source_language,
+        mod_name: &request.mod_name,
+        mod_description: &request.mod_description,
+        tone: &request.tone,
+        extra_instructions: &request.extra_instructions,
+    };
+    let parts = build_term_prompt_parts(&terms, &domain.target_language, &options);
+    Ok(AiPromptPartsDto {
+        total_rows: parts.iter().map(|part| part.rows).sum(),
+        parts: parts
+            .into_iter()
+            .map(|part| AiPromptPartDto {
+                text: part.text,
+                rows: part.rows,
+                chars: part.chars,
+                terms: part.terms,
+                oversized: part.oversized,
+                slots: Vec::new(),
+            })
+            .collect(),
+    })
+}

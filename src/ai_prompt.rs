@@ -366,7 +366,135 @@ fn render_part(
     text
 }
 
-fn tone_instruction(tone: &str, korean: bool) -> &'static str {
+/// One term to translate before the main pass, with a source line for context.
+pub struct TermToTranslate<'a> {
+    pub source: &'a str,
+    pub example: &'a str,
+}
+
+/// Prompts that ask for translations of the given terms only, so they can be
+/// fixed in the mod glossary before the sheet is translated. Split to the
+/// character budget like the main prompts.
+pub fn build_term_prompt_parts(
+    terms: &[TermToTranslate<'_>],
+    target_language: &str,
+    options: &PromptOptions<'_>,
+) -> Vec<PromptPart> {
+    if terms.is_empty() {
+        return Vec::new();
+    }
+    let max_chars = options.max_chars.max(MIN_PROMPT_MAX_CHARS);
+    let header_chars = render_term_part(&[], target_language, options, PART_LABEL_RESERVE, true)
+        .chars()
+        .count();
+    let mut groups: Vec<std::ops::Range<usize>> = Vec::new();
+    let mut start = 0;
+    let mut size = header_chars;
+    for (index, term) in terms.iter().enumerate() {
+        let cost = term_cost(term);
+        if index > start && size + cost > max_chars {
+            groups.push(start..index);
+            start = index;
+            size = header_chars + cost;
+        } else {
+            size += cost;
+        }
+    }
+    groups.push(start..terms.len());
+
+    let total = groups.len();
+    groups
+        .into_iter()
+        .enumerate()
+        .map(|(index, range)| {
+            let part_terms = &terms[range];
+            let label = format!("{}/{total}", index + 1);
+            let text = render_term_part(part_terms, target_language, options, &label, total > 1);
+            let chars = text.chars().count();
+            PromptPart {
+                rows: part_terms.len(),
+                chars,
+                terms: part_terms.len(),
+                oversized: part_terms.len() == 1 && chars > max_chars,
+                slots: Vec::new(),
+                text,
+            }
+        })
+        .collect()
+}
+
+fn term_cost(term: &TermToTranslate<'_>) -> usize {
+    // `- source: example\n` plus `  "source": "",\n` in the template.
+    term.source.chars().count() * 2 + term.example.chars().count() + 14
+}
+
+fn render_term_part(
+    terms: &[TermToTranslate<'_>],
+    target_language: &str,
+    options: &PromptOptions<'_>,
+    part_label: &str,
+    multipart: bool,
+) -> String {
+    let target = target_language.trim();
+    let korean = is_korean_language(target);
+    let mut text = String::from("너는 Slay the Spire 2 모드 전문 번역가다.\n\n## 작업\n");
+    text.push_str(&format!(
+        "- 아래 모드 용어를 원문 언어 `{}` → 대상 언어 `{target}`로 번역해 용어집을 만든다. 이 번역어는 이후 본문 번역 전체에 그대로 쓰인다.\n",
+        options.source_language
+    ));
+    if multipart {
+        text.push_str(&format!("- 이 요청은 전체 중 {part_label} 파트다.\n"));
+    }
+    text.push_str(
+        "- 캐릭터·지명 같은 고유명사는 음역하고, 게임 메커니즘 키워드는 짧고 일관된 게임 용어로 옮긴다. 예문으로 뜻을 확인한다.\n\
+- 서로 다른 원문 용어에는 서로 다른 번역어를 쓴다.\n\
+- 아래 JSON 템플릿의 **값만 채워** ```json 코드 블록으로 출력한다. 키는 바꾸거나 빼지 않는다. 설명은 쓰지 않는다.\n",
+    );
+
+    let mod_name = options.mod_name.trim();
+    let description = options.mod_description.trim();
+    if !mod_name.is_empty() || !description.is_empty() {
+        text.push_str("\n## 모드 정보\n");
+        if !mod_name.is_empty() {
+            text.push_str(&format!("- 모드: {mod_name}\n"));
+        }
+        if !description.is_empty() {
+            text.push_str(&format!("- 배경: {}\n", description.replace('\n', " ")));
+        }
+    }
+    text.push_str("\n## 어조\n");
+    text.push_str(&format!("- {}\n", tone_instruction(options.tone, korean)));
+    let extra = options.extra_instructions.trim();
+    if !extra.is_empty() {
+        text.push_str("\n## 추가 지시\n");
+        for line in extra.lines().map(str::trim).filter(|line| !line.is_empty()) {
+            if line.starts_with('-') {
+                text.push_str(&format!("{line}\n"));
+            } else {
+                text.push_str(&format!("- {line}\n"));
+            }
+        }
+    }
+
+    text.push_str("\n## 용어와 예문\n");
+    for term in terms {
+        if term.example.trim().is_empty() {
+            text.push_str(&format!("- {}\n", term.source));
+        } else {
+            text.push_str(&format!("- {}: {}\n", term.source, term.example.trim()));
+        }
+    }
+    let template = terms
+        .iter()
+        .map(|term| (term.source, ""))
+        .collect::<BTreeMap<_, _>>();
+    text.push_str("\n## JSON 템플릿\n```json\n");
+    text.push_str(&serde_json::to_string_pretty(&template).unwrap_or_default());
+    text.push_str("\n```\n");
+    text
+}
+
+pub(crate) fn tone_instruction(tone: &str, korean: bool) -> &'static str {
     match (tone, korean) {
         ("haeyo", true) => "부드러운 해요체로 쓴다. 카드·효과 설명도 해요체로 통일한다.",
         ("casual", true) => {
@@ -527,5 +655,39 @@ mod tests {
         assert!(project_settings_path(&dir, "../..").is_some_and(|path| path.starts_with(&dir)));
         assert_eq!(project_settings_path(&dir, "  "), None);
         let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn term_prompts_list_examples_and_a_template() {
+        let terms = (0..40)
+            .map(|index| format!("Term {index}"))
+            .collect::<Vec<_>>();
+        let examples = terms
+            .iter()
+            .map(|term| format!("Gain [gold]{term}[/gold] when you play a card."))
+            .collect::<Vec<_>>();
+        let inputs = terms
+            .iter()
+            .zip(&examples)
+            .map(|(source, example)| TermToTranslate { source, example })
+            .collect::<Vec<_>>();
+        let parts = build_term_prompt_parts(&inputs, "kor", &options(1500));
+        assert!(parts.len() > 1);
+        assert_eq!(parts.iter().map(|part| part.rows).sum::<usize>(), 40);
+        for part in &parts {
+            assert!(part.chars <= 1500, "{}", part.chars);
+            assert!(part.text.contains("- Term "));
+            let json = part
+                .text
+                .split("```json\n")
+                .last()
+                .unwrap()
+                .trim_end()
+                .trim_end_matches("```");
+            let value: serde_json::Value = serde_json::from_str(json).expect("template json");
+            assert_eq!(value.as_object().unwrap().len(), part.rows);
+            assert!(value.as_object().unwrap().values().all(|value| value == ""));
+        }
+        assert!(build_term_prompt_parts(&[], "kor", &options(1500)).is_empty());
     }
 }

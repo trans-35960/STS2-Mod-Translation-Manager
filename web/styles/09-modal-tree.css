@@ -435,3 +435,113 @@
 .ai-prompt-save-state {
   font-weight: 600;
 }
+
+.term-candidates {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.term-candidates-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.term-candidates-count,
+.term-candidates-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.term-prompt-parts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.term-prompt-parts button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.term-prompt-parts button.copied {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.term-prompt-parts textarea {
+  flex: 1 1 220px;
+  min-width: 0;
+  resize: none;
+  border-style: dashed;
+}
+
+.term-candidate-list {
+  display: grid;
+  gap: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.term-candidate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  border-radius: 4px;
+  padding: 3px 4px;
+  opacity: 0.7;
+}
+
+.term-candidate.checked {
+  background: #f8fafc;
+  opacity: 1;
+}
+
+.term-candidate-source {
+  display: grid;
+  min-width: 0;
+}
+
+.term-candidate-source strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.term-candidate-source small,
+.term-candidate-notes small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.term-candidate > input:not([type="checkbox"]) {
+  min-width: 0;
+}
+
+.term-candidate-notes {
+  display: grid;
+  min-width: 0;
+}
+
+.term-candidate-notes small.warn {
+  color: #b45309;
+  font-weight: 700;
+}
+

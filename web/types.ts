@@ -476,3 +476,12 @@ export type AiPromptParts = {
   parts: AiPromptPart[];
   total_rows: number;
 };
+
+export type TermCandidate = {
+  source: string;
+  count: number;
+  kinds: string[];
+  suggestions: Array<{ text: string; count: number }>;
+  shares_translation_with: string[];
+  example: string;
+};

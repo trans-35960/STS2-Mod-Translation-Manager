@@ -50,6 +50,8 @@ pub fn run() {
             commands::load_project_translation_settings,
             commands::save_project_translation_settings,
             commands::build_ai_prompt_parts,
+            commands::extract_term_candidates,
+            commands::build_term_prompt,
             commands::save_json_translation_sheet,
             commands::export_json_translation_csv,
             commands::export_json_translation_short_json,

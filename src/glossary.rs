@@ -55,7 +55,7 @@ impl GameGlossary {
 
     /// Looks up a highlighted phrase, allowing simple English plurals and
     /// possessives ("Shivs", "Osty's").
-    fn lookup(&self, phrase: &str) -> Option<&GlossaryTerm> {
+    pub(crate) fn lookup(&self, phrase: &str) -> Option<&GlossaryTerm> {
         let lower = phrase.trim().to_lowercase();
         let candidates = [
             Some(lower.as_str()),
@@ -198,7 +198,7 @@ fn string_map(data: &[u8]) -> Option<HashMap<String, String>> {
     )
 }
 
-fn has_markup(value: &str) -> bool {
+pub(crate) fn has_markup(value: &str) -> bool {
     value.contains(['[', ']', '{', '}', '<', '>'])
 }
 
@@ -381,7 +381,7 @@ pub fn glossary_issues(
 }
 
 /// Korean particles, longest first so `으로` wins over `로`.
-const KOREAN_JOSA: &[&str] = &[
+pub(crate) const KOREAN_JOSA: &[&str] = &[
     "으로부터",
     "에서부터",
     "으로서",
@@ -526,17 +526,17 @@ pub fn korean_josa_issues(
     issues
 }
 
-struct HighlightSpan<'a> {
-    tag: &'a str,
-    content: &'a str,
+pub(crate) struct HighlightSpan<'a> {
+    pub(crate) tag: &'a str,
+    pub(crate) content: &'a str,
     /// Byte range of the whole `[tag]content[/tag]`.
-    start: usize,
-    end: usize,
+    pub(crate) start: usize,
+    pub(crate) end: usize,
 }
 
 /// Non-nested `[tag]...[/tag]` pairs with a lowercase ASCII tag name, the
 /// game's color/style markup (`gold`, `blue`, `green`, ...).
-fn highlight_spans(value: &str) -> Vec<HighlightSpan<'_>> {
+pub(crate) fn highlight_spans(value: &str) -> Vec<HighlightSpan<'_>> {
     let bytes = value.as_bytes();
     let mut spans = Vec::new();
     let mut cursor = 0;
@@ -694,7 +694,7 @@ fn gold_spans(value: &str) -> Vec<&str> {
     spans
 }
 
-fn contains_word(haystack: &str, needle: &str) -> bool {
+pub(crate) fn contains_word(haystack: &str, needle: &str) -> bool {
     if needle.is_empty() {
         return false;
     }

@@ -16,6 +16,7 @@ import type {
   GlossaryInfo,
   AiKitExport,
   AiPromptParts,
+  TermCandidate,
   ProjectTranslationSettings,
   GlossaryTerm,
   LanguageCompareValue,
@@ -101,6 +102,18 @@ export type CommandArgs = {
   };
   load_project_translation_settings: { projectKey: string };
   save_project_translation_settings: { projectKey: string; settings: ProjectTranslationSettings };
+  extract_term_candidates: { sheet: JsonTranslationSheet; projectKey?: string | null };
+  build_term_prompt: {
+    sheet: JsonTranslationSheet;
+    request: {
+      modName: string;
+      modDescription: string;
+      tone: string;
+      extraInstructions: string;
+      maxChars: number;
+      terms: Array<{ source: string; example: string }>;
+    };
+  };
   build_ai_prompt_parts: {
     sheet: JsonTranslationSheet;
     request: {
@@ -188,6 +201,8 @@ export type CommandResult = {
   load_project_translation_settings: ProjectTranslationSettings;
   save_project_translation_settings: null;
   build_ai_prompt_parts: AiPromptParts;
+  extract_term_candidates: TermCandidate[];
+  build_term_prompt: AiPromptParts;
   save_json_translation_sheet: JsonSheetAction;
   export_json_translation_csv: JsonCsvExport;
   export_json_translation_short_json: ShortJsonExport;

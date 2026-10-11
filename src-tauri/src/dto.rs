@@ -382,6 +382,44 @@ pub(crate) struct AiPromptRequestDto {
 }
 
 #[derive(Debug, Serialize)]
+pub(crate) struct TermSuggestionDto {
+    pub(crate) text: String,
+    pub(crate) count: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct TermCandidateDto {
+    pub(crate) source: String,
+    pub(crate) count: usize,
+    pub(crate) kinds: Vec<String>,
+    pub(crate) suggestions: Vec<TermSuggestionDto>,
+    pub(crate) shares_translation_with: Vec<String>,
+    pub(crate) example: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct TermPromptTermDto {
+    pub(crate) source: String,
+    #[serde(default)]
+    pub(crate) example: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct TermPromptRequestDto {
+    #[serde(default)]
+    pub(crate) mod_name: String,
+    #[serde(default)]
+    pub(crate) mod_description: String,
+    #[serde(default)]
+    pub(crate) tone: String,
+    #[serde(default)]
+    pub(crate) extra_instructions: String,
+    pub(crate) max_chars: Option<usize>,
+    pub(crate) terms: Vec<TermPromptTermDto>,
+}
+
+#[derive(Debug, Serialize)]
 pub(crate) struct AiPromptPartDto {
     pub(crate) text: String,
     pub(crate) rows: usize,
