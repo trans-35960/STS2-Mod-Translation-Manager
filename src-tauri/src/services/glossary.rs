@@ -295,6 +295,7 @@ pub(crate) fn build_ai_prompt_parts(
         mod_name: &request.mod_name,
         mod_description: &request.mod_description,
         tone: &request.tone,
+        extra_instructions: &request.extra_instructions,
     };
     let parts = build_prompt_parts(&domain, game.as_deref(), &user_terms, &options);
     Ok(AiPromptPartsDto {
@@ -307,6 +308,11 @@ pub(crate) fn build_ai_prompt_parts(
                 chars: part.chars,
                 terms: part.terms,
                 oversized: part.oversized,
+                slots: part
+                    .slots
+                    .into_iter()
+                    .map(|(file, id)| AiPromptSlotDto { file, id })
+                    .collect(),
             })
             .collect(),
     })

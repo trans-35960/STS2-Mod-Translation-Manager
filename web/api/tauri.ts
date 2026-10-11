@@ -108,6 +108,7 @@ export type CommandArgs = {
       modName: string;
       modDescription: string;
       tone: string;
+      extraInstructions: string;
       includePrompt: boolean;
       maxChars: number;
       onlyEmpty: boolean;

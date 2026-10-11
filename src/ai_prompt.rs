@@ -25,6 +25,12 @@ pub struct ProjectTranslationSettings {
     pub mod_description: String,
     pub tone: String,
     pub terms: Vec<ProjectTerm>,
+    /// Free-form instructions appended to every prompt for this mod.
+    pub extra_instructions: String,
+    /// Last prompt options used for this mod.
+    pub include_prompt: Option<bool>,
+    pub only_empty: Option<bool>,
+    pub max_chars: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -105,6 +111,7 @@ pub struct PromptOptions<'a> {
     pub mod_name: &'a str,
     pub mod_description: &'a str,
     pub tone: &'a str,
+    pub extra_instructions: &'a str,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,6 +122,9 @@ pub struct PromptPart {
     pub terms: usize,
     /// A single entry is larger than the budget on its own.
     pub oversized: bool,
+    /// `(compact file, slot id)` of every entry in the part, so pasted
+    /// answers can be checked against it.
+    pub slots: Vec<(String, String)>,
 }
 
 struct PromptRow<'a> {
@@ -224,6 +234,10 @@ pub fn build_prompt_parts(
                 chars,
                 terms: part_terms.len(),
                 oversized: part_rows.len() == 1 && chars > max_chars,
+                slots: part_rows
+                    .iter()
+                    .map(|row| (row.file.clone(), row.id.clone()))
+                    .collect(),
                 text,
             }
         })
@@ -317,6 +331,28 @@ fn render_part(
         );
     }
 
+    let extra = options.extra_instructions.trim();
+    if !extra.is_empty() {
+        text.push_str(
+            "
+## 추가 지시
+",
+        );
+        for line in extra.lines().map(str::trim).filter(|line| !line.is_empty()) {
+            if line.starts_with('-') {
+                text.push_str(&format!(
+                    "{line}
+"
+                ));
+            } else {
+                text.push_str(&format!(
+                    "- {line}
+"
+                ));
+            }
+        }
+    }
+
     if !terms.is_empty() {
         text.push_str(glossary_heading());
         for term in terms {
@@ -389,6 +425,8 @@ mod tests {
             mod_name: "Sample",
             mod_description: "Fate crossover",
             tone: "official",
+            extra_instructions: "기술 이름은 원문 병기
+- 존댓말 금지",
         }
     }
 
@@ -405,6 +443,7 @@ mod tests {
         let parts = build_prompt_parts(&sheet, None, &artoria(), &options(1800));
         assert!(parts.len() > 1, "{}", parts.len());
         assert_eq!(parts.iter().map(|part| part.rows).sum::<usize>(), 60);
+        assert_eq!(parts.iter().map(|part| part.slots.len()).sum::<usize>(), 60);
         for (index, part) in parts.iter().enumerate() {
             assert!(part.chars <= 1800, "part {index} has {} chars", part.chars);
             assert!(
@@ -414,6 +453,12 @@ mod tests {
             assert!(part.text.contains("- Artoria → 아르토리아"));
             assert!(part.text.contains("Fate crossover"));
             assert!(part.text.contains("조사는 강조 태그 밖에"));
+            assert!(part.text.contains(
+                "## 추가 지시
+- 기술 이름은 원문 병기
+- 존댓말 금지
+"
+            ));
             let json = part
                 .text
                 .split("```json\n")
@@ -465,6 +510,10 @@ mod tests {
                 source: "Artoria".to_string(),
                 targets: vec!["아르토리아".to_string()],
             }],
+            extra_instructions: "대사는 반말".to_string(),
+            include_prompt: Some(false),
+            only_empty: Some(true),
+            max_chars: Some(8000),
         };
         write_project_settings(&dir, "workshop-123/../x", &settings).expect("write");
         assert_eq!(

@@ -1,12 +1,20 @@
 import React from "react";
-import { Check, Copy, Loader2, Sparkles, X } from "lucide-react";
+import { Check, CircleCheck, Copy, Loader2, Sparkles, X } from "lucide-react";
 import { invokeCommand } from "../../api/tauri";
 import type { AiPromptParts, JsonTranslationSheet, ProjectTranslationSettings, TranslationProjectInfo } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
-import { translationProjectKey } from "./translationUtils";
+import {
+  compactTranslationFile,
+  normalizeSlotId,
+  parsePastedTranslationJson,
+  structuredTranslationEntries,
+  translationProjectKey,
+  translationSlotEntries,
+} from "./translationUtils";
 
 const MAX_CHARS_STORAGE_KEY = "sts2.aiPrompt.maxChars.v1";
 const DEFAULT_MAX_CHARS = 5000;
+const AUTOSAVE_DELAY_MS = 600;
 
 const TONE_OPTIONS = [
   { value: "official", label: "게임 공식 번역체 (합니다체)" },
@@ -15,10 +23,13 @@ const TONE_OPTIONS = [
   { value: "source", label: "원문 어조 최대한 유지" },
 ];
 
+type PasteReport = { partIndex: number | null; message: string; tone: "good" | "warn" };
+
 /**
- * Builds copy-paste prompts for a web AI chat: instructions, mod background,
- * the glossary terms each part needs, and the data, split to a character
- * budget. Answers are pasted back into the sheet, which matches them by id.
+ * Builds copy-paste prompts for a web AI chat and takes the answers back:
+ * pasting an answer here applies it to the sheet and shows which part it
+ * covered and which ids it skipped. Everything typed here is remembered per
+ * mod and reused next time.
  */
 export function AiPromptModal({
   sheet,
@@ -26,30 +37,37 @@ export function AiPromptModal({
   onlyEmptyDefault,
   onClose,
   onTermsSaved,
+  onPasteAnswer,
 }: {
   sheet: JsonTranslationSheet;
   projectInfo: TranslationProjectInfo | null;
   onlyEmptyDefault: boolean;
   onClose: () => void;
   onTermsSaved: () => void;
+  onPasteAnswer: (text: string) => boolean;
 }) {
   const projectKey = translationProjectKey(projectInfo);
+  const [loaded, setLoaded] = React.useState(false);
   const [description, setDescription] = React.useState("");
   const [tone, setTone] = React.useState("official");
   const [termsText, setTermsText] = React.useState("");
-  const [savedTermsText, setSavedTermsText] = React.useState("");
+  const [extraInstructions, setExtraInstructions] = React.useState("");
   const [includePrompt, setIncludePrompt] = React.useState(true);
   const [onlyEmpty, setOnlyEmpty] = React.useState(onlyEmptyDefault);
   const [maxChars, setMaxChars] = React.useState(readStoredMaxChars);
+  const [saveState, setSaveState] = React.useState<"" | "saving" | "saved">("");
+  const savedTermsRef = React.useRef("");
   const [result, setResult] = React.useState<AiPromptParts | null>(null);
   const [selectedPart, setSelectedPart] = React.useState(0);
   const [copiedParts, setCopiedParts] = React.useState<Set<number>>(() => new Set());
+  const [pasteReport, setPasteReport] = React.useState<PasteReport | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const previewRef = React.useRef<HTMLTextAreaElement>(null);
 
   React.useEffect(() => {
     let cancelled = false;
+    setLoaded(false);
     loadSettings(projectKey)
       .then((settings) => {
         if (cancelled) {
@@ -59,7 +77,12 @@ export function AiPromptModal({
         setDescription(settings.mod_description || projectInfo?.description || "");
         setTone(settings.tone || "official");
         setTermsText(text);
-        setSavedTermsText(text);
+        savedTermsRef.current = text;
+        setExtraInstructions(settings.extra_instructions ?? "");
+        if (settings.include_prompt != null) setIncludePrompt(settings.include_prompt);
+        if (settings.only_empty != null) setOnlyEmpty(settings.only_empty);
+        if (settings.max_chars != null && settings.max_chars >= 500) setMaxChars(settings.max_chars);
+        setLoaded(true);
       })
       .catch((reason) => !cancelled && setError(String(reason)));
     return () => {
@@ -67,25 +90,74 @@ export function AiPromptModal({
     };
   }, [projectKey, projectInfo?.description]);
 
+  const settings = React.useMemo(
+    (): ProjectTranslationSettings => ({
+      mod_description: description.trim(),
+      tone,
+      terms: parseTerms(termsText),
+      extra_instructions: extraInstructions.trim(),
+      include_prompt: includePrompt,
+      only_empty: onlyEmpty,
+      max_chars: budgetOf(maxChars),
+    }),
+    [description, extraInstructions, includePrompt, maxChars, onlyEmpty, termsText, tone],
+  );
+
+  // Remember everything per mod as it is typed.
+  React.useEffect(() => {
+    if (!loaded || !projectKey || isPreviewRuntime()) {
+      return;
+    }
+    setSaveState("saving");
+    const timer = window.setTimeout(() => {
+      invokeCommand("save_project_translation_settings", { projectKey, settings })
+        .then(() => {
+          setSaveState("saved");
+          if (termsText !== savedTermsRef.current) {
+            savedTermsRef.current = termsText;
+            onTermsSaved();
+          }
+        })
+        .catch((reason) => {
+          setSaveState("");
+          setError(String(reason));
+        });
+    }, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+    // onTermsSaved is a fresh closure every render; only settings changes matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, projectKey, settings]);
+
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
+  // Live progress: how many of each part's entries the sheet has translated.
+  const translatedSlots = React.useMemo(() => {
+    const done = new Set<string>();
+    for (const slot of translationSlotEntries(sheet)) {
+      if (slot.entry.translated_value.trim()) {
+        done.add(slotKey(slot.compactFile, slot.id));
+      }
+    }
+    return done;
+  }, [sheet]);
+  const partProgress = React.useMemo(
+    () => result?.parts.map((part) => part.slots.filter((slot) => translatedSlots.has(slotKey(slot.file, slot.id))).length) ?? [],
+    [result, translatedSlots],
+  );
+
   async function buildParts() {
     setBusy(true);
     setError("");
     try {
-      const budget = Math.max(500, Math.round(maxChars) || DEFAULT_MAX_CHARS);
+      const budget = budgetOf(maxChars);
       try {
         window.localStorage.setItem(MAX_CHARS_STORAGE_KEY, String(budget));
       } catch {
         // Remembering the budget is only a convenience.
-      }
-      const settings: ProjectTranslationSettings = { mod_description: description.trim(), tone, terms: parseTerms(termsText) };
-      if (projectKey && !isPreviewRuntime()) {
-        await invokeCommand("save_project_translation_settings", { projectKey, settings });
       }
       const parts = isPreviewRuntime()
         ? previewParts(sheet, includePrompt, budget)
@@ -96,6 +168,7 @@ export function AiPromptModal({
               modName: projectInfo?.modName ?? "",
               modDescription: settings.mod_description,
               tone,
+              extraInstructions: settings.extra_instructions,
               includePrompt,
               maxChars: budget,
               onlyEmpty,
@@ -104,10 +177,7 @@ export function AiPromptModal({
       setResult(parts);
       setSelectedPart(0);
       setCopiedParts(new Set());
-      if (termsText !== savedTermsText) {
-        setSavedTermsText(termsText);
-        onTermsSaved();
-      }
+      setPasteReport(null);
     } catch (reason) {
       setError(String(reason));
     } finally {
@@ -138,13 +208,68 @@ export function AiPromptModal({
     }
   }
 
+  function applyAnswer(text: string) {
+    const parsed = parsePastedTranslationJson(text);
+    const answered = parsed === null ? [] : structuredTranslationEntries(parsed).filter((entry) => entry.id && entry.translated_value?.trim());
+    if (answered.length === 0) {
+      setPasteReport({ partIndex: null, message: "붙여넣은 내용에서 번역 JSON(k001-ab 형식 id)을 찾지 못했습니다.", tone: "warn" });
+      return;
+    }
+    const answeredKeys = new Set(
+      answered.map((entry) => slotKey(entry.source ? compactTranslationFile(entry.source) : "", entry.id ?? "")),
+    );
+    const answeredIds = new Set(answered.map((entry) => normalizeSlotId(entry.id ?? "") ?? entry.id ?? ""));
+    const covers = (slot: { file: string; id: string }) =>
+      answeredKeys.has(slotKey(slot.file, slot.id)) || answeredKeys.has(slotKey("", slot.id)) ||
+      (!answered.some((entry) => entry.source) && answeredIds.has(normalizeSlotId(slot.id) ?? slot.id));
+
+    // The part this answer belongs to is the one it overlaps most.
+    let partIndex: number | null = null;
+    let bestOverlap = 0;
+    result?.parts.forEach((part, index) => {
+      const overlap = part.slots.filter(covers).length;
+      if (overlap > bestOverlap) {
+        bestOverlap = overlap;
+        partIndex = index;
+      }
+    });
+
+    onPasteAnswer(text);
+
+    if (partIndex === null || !result) {
+      setPasteReport({ partIndex: null, message: `답변 ${answered.length}개를 시트에 붙여넣었습니다. (자세한 결과는 로그)`, tone: "good" });
+      return;
+    }
+    const part = result.parts[partIndex];
+    const missing = part.slots.filter((slot) => !covers(slot)).map((slot) => slot.id);
+    setSelectedPart(partIndex);
+    setPasteReport({
+      partIndex,
+      tone: missing.length === 0 ? "good" : "warn",
+      message:
+        `파트 ${partIndex + 1}/${result.parts.length} 답변: ${part.slots.length - missing.length}/${part.slots.length}개` +
+        (missing.length > 0
+          ? ` · 빠진 id ${missing.length}개: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? " ..." : ""}`
+          : " 모두 받음") +
+        ". 기존 번역과 다른 값은 시트의 충돌 후보로 들어갑니다.",
+    });
+  }
+
   const preview = result?.parts[selectedPart];
+  const doneParts = partProgress.filter((count, index) => result && count === result.parts[index].slots.length).length;
   return (
     <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="modal ai-prompt-modal" role="dialog" aria-modal="true" aria-label="AI 프롬프트 만들기">
         <header>
           <h2>AI 프롬프트 만들기</h2>
-          <p>웹 AI 채팅에 파트별로 붙여넣고, 받은 JSON 답변을 시트의 번역 칸에 붙여넣으면 ID로 매칭됩니다.</p>
+          <p>
+            파트를 복사해 웹 AI 채팅에 붙여넣고, 받은 JSON 답변은 아래 "답변 붙여넣기" 칸에 붙여넣으세요.
+            {projectKey && (
+              <span className="ai-prompt-save-state">
+                {saveState === "saving" ? " · 저장 중" : saveState === "saved" ? " · 이 모드 설정 저장됨" : " · 입력 내용은 이 모드에 자동 저장"}
+              </span>
+            )}
+          </p>
         </header>
 
         <label className="modal-field">
@@ -169,10 +294,19 @@ export function AiPromptModal({
         <label className="modal-field">
           <span>이 모드 전용 용어 (한 줄에 `원문 = 번역`, 여러 번역은 `/`로 구분 · 검증에도 사용)</span>
           <textarea
-            rows={4}
+            rows={3}
             value={termsText}
             onChange={(event) => setTermsText(event.target.value)}
             placeholder={"Artoria = 아르토리아\nNoble Phantasm = 보구"}
+          />
+        </label>
+        <label className="modal-field">
+          <span>추가 지시 (한 줄에 하나, 모든 파트에 들어감)</span>
+          <textarea
+            rows={2}
+            value={extraInstructions}
+            onChange={(event) => setExtraInstructions(event.target.value)}
+            placeholder={"기술 이름은 처음 나올 때 원문을 괄호로 병기\n캐릭터 이름은 음역"}
           />
         </label>
 
@@ -187,13 +321,7 @@ export function AiPromptModal({
           </label>
           <label className="ai-prompt-max">
             <span>파트당 최대</span>
-            <input
-              type="number"
-              min={500}
-              step={500}
-              value={maxChars}
-              onChange={(event) => setMaxChars(Number(event.target.value))}
-            />
+            <input type="number" min={500} step={500} value={maxChars} onChange={(event) => setMaxChars(Number(event.target.value))} />
             <span>자</span>
           </label>
           <button type="button" className="primary icon-button-text compact" onClick={() => void buildParts()} disabled={busy}>
@@ -201,7 +329,7 @@ export function AiPromptModal({
             파트 만들기
           </button>
         </div>
-        {!projectKey && <p className="inline-warning">프로젝트 정보가 없어 배경과 모드 용어를 저장하지 못합니다.</p>}
+        {!projectKey && <p className="inline-warning">프로젝트 정보가 없어 이 모드 설정을 저장하지 못합니다.</p>}
         {error && <p className="inline-warning">{error}</p>}
 
         {result && (
@@ -211,37 +339,63 @@ export function AiPromptModal({
             ) : (
               <>
                 <div className="ai-prompt-parts" role="list">
-                  {result.parts.map((part, index) => (
-                    <div
-                      className={["ai-prompt-part", index === selectedPart ? "selected" : "", copiedParts.has(index) ? "copied" : ""].filter(Boolean).join(" ")}
-                      key={index}
-                      role="listitem"
-                    >
-                      <button type="button" className="ai-prompt-part-label" onClick={() => setSelectedPart(index)}>
-                        <strong>
-                          파트 {index + 1}/{result.parts.length}
-                        </strong>
-                        <small>
-                          {part.chars.toLocaleString()}자 · {part.rows}행{part.terms > 0 ? ` · 용어 ${part.terms}` : ""}
-                          {part.oversized ? " · 한도 초과(단일 항목)" : ""}
-                        </small>
-                      </button>
-                      <button
-                        type="button"
-                        className="toolbar-icon-button"
-                        aria-label={`파트 ${index + 1} 복사`}
-                        data-tooltip="복사"
-                        onClick={() => void copyPart(index)}
+                  {result.parts.map((part, index) => {
+                    const translated = partProgress[index] ?? 0;
+                    const done = translated === part.slots.length;
+                    return (
+                      <div
+                        className={[
+                          "ai-prompt-part",
+                          index === selectedPart ? "selected" : "",
+                          done ? "done" : translated > 0 ? "partial" : "",
+                          copiedParts.has(index) ? "copied" : "",
+                        ].filter(Boolean).join(" ")}
+                        key={index}
+                        role="listitem"
                       >
-                        {copiedParts.has(index) ? <Check size={14} /> : <Copy size={14} />}
-                      </button>
-                    </div>
-                  ))}
+                        <button type="button" className="ai-prompt-part-label" onClick={() => setSelectedPart(index)}>
+                          <strong>
+                            파트 {index + 1}/{result.parts.length}
+                            {done && <CircleCheck size={13} aria-label="완료" />}
+                          </strong>
+                          <small>
+                            번역 {translated}/{part.slots.length} · {part.chars.toLocaleString()}자
+                            {part.terms > 0 ? ` · 용어 ${part.terms}` : ""}
+                            {part.oversized ? " · 한도 초과" : ""}
+                          </small>
+                        </button>
+                        <button
+                          type="button"
+                          className="toolbar-icon-button"
+                          aria-label={`파트 ${index + 1} 복사`}
+                          data-tooltip={copiedParts.has(index) ? "복사함" : "복사"}
+                          onClick={() => void copyPart(index)}
+                        >
+                          {copiedParts.has(index) ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-                {preview && <textarea ref={previewRef} className="ai-prompt-preview" readOnly value={preview.text} aria-label="선택한 파트 미리보기" />}
                 <p className="ai-prompt-summary">
-                  전체 {result.total_rows.toLocaleString()}행 · {result.parts.length}개 파트 · 복사함 {copiedParts.size}/{result.parts.length}
+                  전체 {result.total_rows.toLocaleString()}행 · 완료 파트 {doneParts}/{result.parts.length} · 복사함 {copiedParts.size}/{result.parts.length}
                 </p>
+                <label className="modal-field ai-prompt-answer">
+                  <span>답변 붙여넣기 (Ctrl+V 하면 바로 시트에 적용)</span>
+                  <textarea
+                    data-own-paste
+                    rows={2}
+                    value=""
+                    onChange={() => undefined}
+                    onPaste={(event) => {
+                      event.preventDefault();
+                      applyAnswer(event.clipboardData.getData("text/plain"));
+                    }}
+                    placeholder="AI가 준 ```json ... ``` 답변을 그대로 붙여넣으세요."
+                  />
+                </label>
+                {pasteReport && <p className={`ai-prompt-paste-report ${pasteReport.tone}`}>{pasteReport.message}</p>}
+                {preview && <textarea ref={previewRef} className="ai-prompt-preview" readOnly value={preview.text} aria-label="선택한 파트 미리보기" />}
               </>
             )}
           </div>
@@ -258,6 +412,14 @@ export function AiPromptModal({
   );
 }
 
+function slotKey(file: string, id: string) {
+  return `${file}\u0000${normalizeSlotId(id) ?? id}`;
+}
+
+function budgetOf(value: number) {
+  return Math.max(500, Math.round(value) || DEFAULT_MAX_CHARS);
+}
+
 function readStoredMaxChars() {
   try {
     const stored = Number(window.localStorage.getItem(MAX_CHARS_STORAGE_KEY));
@@ -269,7 +431,7 @@ function readStoredMaxChars() {
 
 async function loadSettings(projectKey: string): Promise<ProjectTranslationSettings> {
   if (!projectKey || isPreviewRuntime()) {
-    return { mod_description: "", tone: "official", terms: [] };
+    return { mod_description: "", tone: "official", terms: [], extra_instructions: "" };
   }
   return invokeCommand("load_project_translation_settings", { projectKey });
 }
@@ -298,16 +460,23 @@ function parseTerms(text: string): ProjectTranslationSettings["terms"] {
 }
 
 function previewParts(sheet: JsonTranslationSheet, includePrompt: boolean, budget: number): AiPromptParts {
-  const text = `${includePrompt ? "너는 Slay the Spire 2 모드 전문 번역가다.\n\n## 번역할 JSON\n```json\n" : ""}${JSON.stringify(
-    { "cards.json": Object.fromEntries(sheet.entries.slice(0, 3).map((entry, index) => [`k00${index + 1}`, entry.source_value])) },
-    null,
-    2,
-  )}${includePrompt ? "\n```" : ""}`;
-  return {
-    total_rows: sheet.entries.length,
-    parts: [
-      { text, rows: 3, chars: text.length, terms: 1, oversized: false },
-      { text: `${text}\n(미리보기 파트 2)`, rows: Math.max(0, sheet.entries.length - 3), chars: Math.min(budget, text.length + 12), terms: 0, oversized: false },
-    ],
-  };
+  const slots = translationSlotEntries(sheet);
+  const size = Math.max(1, Math.ceil(slots.length / 2));
+  const parts = [slots.slice(0, size), slots.slice(size)].filter((group) => group.length > 0).map((group) => {
+    const data: Record<string, Record<string, string>> = {};
+    for (const slot of group) {
+      (data[slot.compactFile] ??= {})[slot.id] = slot.entry.source_value;
+    }
+    const json = JSON.stringify(data, null, 2);
+    const text = includePrompt ? `너는 Slay the Spire 2 모드 전문 번역가다.\n\n## 번역할 JSON\n\`\`\`json\n${json}\n\`\`\`` : json;
+    return {
+      text,
+      rows: group.length,
+      chars: Math.min(budget, text.length),
+      terms: 0,
+      oversized: false,
+      slots: group.map((slot) => ({ file: slot.compactFile, id: slot.id })),
+    };
+  });
+  return { total_rows: slots.length, parts };
 }

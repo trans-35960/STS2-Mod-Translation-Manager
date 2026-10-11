@@ -372,6 +372,8 @@ pub(crate) struct AiPromptRequestDto {
     pub(crate) mod_description: String,
     #[serde(default)]
     pub(crate) tone: String,
+    #[serde(default)]
+    pub(crate) extra_instructions: String,
     pub(crate) include_prompt: bool,
     pub(crate) max_chars: Option<usize>,
     #[serde(default)]
@@ -386,6 +388,13 @@ pub(crate) struct AiPromptPartDto {
     pub(crate) chars: usize,
     pub(crate) terms: usize,
     pub(crate) oversized: bool,
+    pub(crate) slots: Vec<AiPromptSlotDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct AiPromptSlotDto {
+    pub(crate) file: String,
+    pub(crate) id: String,
 }
 
 #[derive(Debug, Serialize)]

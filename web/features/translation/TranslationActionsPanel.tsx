@@ -379,6 +379,7 @@ export function TranslationActionsPanel({
           projectInfo={props.projectInfo ?? null}
           onlyEmptyDefault={exportOnlyEmpty}
           onClose={() => setAiPromptOpen(false)}
+          onPasteAnswer={props.onPasteStructuredJson}
           onTermsSaved={() => {
             if (props.validation) {
               void props.onValidate();

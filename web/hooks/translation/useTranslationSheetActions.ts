@@ -326,6 +326,10 @@ export function useTranslationSheetActions({
       return;
     }
     const handlePaste = (event: ClipboardEvent) => {
+      // Inputs that handle JSON answers themselves (the AI prompt dialog).
+      if (event.target instanceof Element && event.target.closest("[data-own-paste]")) {
+        return;
+      }
       const text = event.clipboardData?.getData("text/plain") ?? "";
       if (!text || !isStructuredTranslationJsonPaste(text)) {
         return;

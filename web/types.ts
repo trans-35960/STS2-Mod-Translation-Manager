@@ -457,6 +457,10 @@ export type ProjectTranslationSettings = {
   mod_description: string;
   tone: string;
   terms: GlossaryTerm[];
+  extra_instructions: string;
+  include_prompt?: boolean | null;
+  only_empty?: boolean | null;
+  max_chars?: number | null;
 };
 
 export type AiPromptPart = {
@@ -465,6 +469,7 @@ export type AiPromptPart = {
   chars: number;
   terms: number;
   oversized: boolean;
+  slots: Array<{ file: string; id: string }>;
 };
 
 export type AiPromptParts = {
