@@ -599,3 +599,151 @@
 .term-candidate-source {
   cursor: help;
 }
+
+/* Term table editor (AI prompt terms tab, glossary panel) */
+.term-table,
+.modal-field > .term-table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.term-table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.term-table-mode {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.term-table-mode button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface);
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.term-table-mode button.active {
+  background: var(--ink, #0f172a);
+  color: #fff;
+}
+
+.term-table-filter {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+  font-size: 12px;
+}
+
+.term-table-toolbar .toolbar-icon-button {
+  margin-left: auto;
+}
+
+.term-table-filter + .toolbar-icon-button {
+  margin-left: 0;
+}
+
+.term-table-rows {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  max-height: 300px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.term-table.compact .term-table-rows {
+  max-height: 240px;
+}
+
+.term-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px;
+  gap: 4px;
+  align-items: center;
+}
+
+.term-table-row input {
+  min-width: 0;
+  height: 28px;
+  padding: 0 7px;
+  font-size: 12px;
+}
+
+.term-table .term-table-row .toolbar-icon-button,
+.term-table .term-table-toolbar .toolbar-icon-button {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+}
+
+.term-table-row.head {
+  position: sticky;
+  top: -4px;
+  z-index: 1;
+  background: var(--surface);
+  padding: 2px 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.term-table-row.head span {
+  padding-left: 7px;
+}
+
+.term-table-empty,
+.term-table-notice {
+  margin: 0;
+  padding: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.term-table-notice {
+  padding: 0;
+  color: #166534;
+  font-weight: 700;
+}
+
+.term-table-json {
+  display: grid;
+  gap: 6px;
+}
+
+.term-table-json textarea {
+  min-height: 160px;
+  font-family: var(--mono, ui-monospace, Consolas, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.term-table-json-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.term-table-json-actions small {
+  flex: 1 1 200px;
+  color: var(--muted);
+  font-size: 11px;
+}

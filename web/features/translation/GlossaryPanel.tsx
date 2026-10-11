@@ -1,41 +1,41 @@
 import React from "react";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Save } from "lucide-react";
 import { invokeCommand } from "../../api/tauri";
-import type { GlossaryInfo, GlossaryTerm } from "../../types";
+import type { GlossaryInfo, GlossaryTerm, ProjectTranslationSettings } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
-
-type DraftTerm = { id: number; source: string; targets: string };
-
-const TARGET_SEPARATOR = " / ";
+import { TermTableEditor } from "./TermTableEditor";
 
 /**
- * Shows which official game terms are checked and edits the user's own term
- * list for the current target language. Saving re-runs validation so the
- * sheet's glossary warnings update immediately.
+ * Shows which official game terms are checked and edits the two term lists
+ * the validator and AI prompts use: this mod's terms (shared with the AI
+ * prompt window) and the user's terms for the target language. Saving
+ * re-runs validation so the sheet's glossary warnings update immediately.
  */
 export function GlossaryPanel({
   sourcePath,
   targetLanguage,
+  projectKey,
+  refreshKey,
   disabled,
   onSaved,
 }: {
   sourcePath: string;
   targetLanguage: string;
+  /** Mod whose terms to show; empty when no project is open. */
+  projectKey: string;
+  /** Changes when the mod terms were edited elsewhere (AI prompt window). */
+  refreshKey: number;
   disabled: boolean;
   onSaved: () => void;
 }) {
   const [info, setInfo] = React.useState<GlossaryInfo | null>(null);
-  const [drafts, setDrafts] = React.useState<DraftTerm[]>([]);
-  const [dirty, setDirty] = React.useState(false);
+  const [userTerms, setUserTerms] = React.useState<GlossaryTerm[]>([]);
+  const [userDirty, setUserDirty] = React.useState(false);
+  const [projectSettings, setProjectSettings] = React.useState<ProjectTranslationSettings | null>(null);
+  const [modTerms, setModTerms] = React.useState<GlossaryTerm[]>([]);
+  const [modDirty, setModDirty] = React.useState(false);
   const [error, setError] = React.useState("");
   const [saving, setSaving] = React.useState(false);
-  const nextId = React.useRef(0);
-
-  const toDrafts = React.useCallback(
-    (terms: GlossaryTerm[]) =>
-      terms.map((term) => ({ id: nextId.current++, source: term.source, targets: term.targets.join(TARGET_SEPARATOR) })),
-    [],
-  );
 
   React.useEffect(() => {
     if (!targetLanguage.trim()) {
@@ -46,8 +46,8 @@ export function GlossaryPanel({
       .then((result) => {
         if (!cancelled) {
           setInfo(result);
-          setDrafts(toDrafts(result.user_terms));
-          setDirty(false);
+          setUserTerms(result.user_terms);
+          setUserDirty(false);
           setError("");
         }
       })
@@ -55,36 +55,41 @@ export function GlossaryPanel({
     return () => {
       cancelled = true;
     };
-  }, [sourcePath, targetLanguage, toDrafts]);
+  }, [sourcePath, targetLanguage]);
 
-  function updateDraft(id: number, field: "source" | "targets", value: string) {
-    setDrafts((current) => current.map((draft) => (draft.id === id ? { ...draft, [field]: value } : draft)));
-    setDirty(true);
-  }
-
-  function addDraft() {
-    setDrafts((current) => [...current, { id: nextId.current++, source: "", targets: "" }]);
-    setDirty(true);
-  }
-
-  function removeDraft(id: number) {
-    setDrafts((current) => current.filter((draft) => draft.id !== id));
-    setDirty(true);
-  }
+  React.useEffect(() => {
+    let cancelled = false;
+    loadProjectSettings(projectKey)
+      .then((settings) => {
+        if (!cancelled) {
+          setProjectSettings(settings);
+          setModTerms(settings?.terms ?? []);
+          setModDirty(false);
+        }
+      })
+      .catch((reason) => !cancelled && setError(String(reason)));
+    return () => {
+      cancelled = true;
+    };
+  }, [projectKey, refreshKey]);
 
   async function save() {
-    const terms = drafts
-      .map((draft) => ({
-        source: draft.source.trim(),
-        targets: draft.targets.split("/").map((target) => target.trim()).filter(Boolean),
-      }))
-      .filter((term) => term.source && term.targets.length > 0);
     setSaving(true);
     try {
-      const saved = isPreviewRuntime() ? terms : await invokeCommand("save_user_glossary", { targetLanguage, terms });
-      setDrafts(toDrafts(saved));
-      setInfo((current) => (current ? { ...current, user_terms: saved } : current));
-      setDirty(false);
+      if (modDirty && projectKey && projectSettings) {
+        const settings = { ...projectSettings, terms: modTerms };
+        if (!isPreviewRuntime()) {
+          await invokeCommand("save_project_translation_settings", { projectKey, settings });
+        }
+        setProjectSettings(settings);
+        setModDirty(false);
+      }
+      if (userDirty) {
+        const saved = isPreviewRuntime() ? userTerms : await invokeCommand("save_user_glossary", { targetLanguage, terms: userTerms });
+        setUserTerms(saved);
+        setInfo((current) => (current ? { ...current, user_terms: saved } : current));
+        setUserDirty(false);
+      }
       setError("");
       onSaved();
     } catch (reason) {
@@ -94,13 +99,14 @@ export function GlossaryPanel({
     }
   }
 
-  const userCount = info?.user_terms.length ?? 0;
+  const dirty = userDirty || modDirty;
   return (
     <details className="action-details glossary-details">
       <summary>
         용어집
         <small>
-          게임 {info?.game_terms.toLocaleString() ?? "-"} · 사용자 {userCount}
+          게임 {info?.game_terms.toLocaleString() ?? "-"}
+          {projectKey ? ` · 모드 ${modTerms.length}` : ""} · 사용자 {userTerms.length}
         </small>
       </summary>
       <div className="glossary-body">
@@ -110,39 +116,38 @@ export function GlossaryPanel({
               ? `원문의 [gold] 강조 용어를 게임 공식 ${info.target_language} 명칭과 비교합니다. (${info.source_language} → ${info.target_language})`
               : `게임 PCK에 ${info.source_language} → ${info.target_language} 공식 용어가 없습니다.`
             : "게임 PCK(SlayTheSpire2.pck)를 찾지 못해 사용자 용어만 검사합니다."}
-          {" "}사용자 용어는 원문 어디에 있든 검사하고, 같은 단어면 게임 명칭보다 우선합니다.
+          {" "}모드 용어 → 사용자 용어 → 게임 명칭 순으로 우선합니다.
         </p>
-        <div className="glossary-rows">
-          {drafts.map((draft) => (
-            <div className="glossary-row" key={draft.id}>
-              <input
-                aria-label="원문 용어"
-                placeholder="원문 (예: Artoria)"
-                value={draft.source}
-                onChange={(event) => updateDraft(draft.id, "source", event.target.value)}
-              />
-              <input
-                aria-label="번역 용어"
-                placeholder="번역 (여러 개는 / 로 구분)"
-                value={draft.targets}
-                onChange={(event) => updateDraft(draft.id, "targets", event.target.value)}
-              />
-              <button
-                className="toolbar-icon-button"
-                type="button"
-                aria-label="용어 삭제"
-                data-tooltip="용어 삭제"
-                onClick={() => removeDraft(draft.id)}
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
+        {projectKey && (
+          <section className="glossary-section">
+            <h4>
+              이 모드 용어 <small>AI 프롬프트 용어 탭과 같은 목록</small>
+            </h4>
+            <TermTableEditor
+              compact
+              terms={modTerms}
+              onChange={(terms) => {
+                setModTerms(terms);
+                setModDirty(true);
+              }}
+              emptyText="AI 프롬프트 ② 용어 탭에서 후보를 뽑아 넣을 수 있습니다."
+            />
+          </section>
+        )}
+        <section className="glossary-section">
+          <h4>
+            사용자 용어 <small>{targetLanguage || "대상 언어"}의 모든 모드에 적용</small>
+          </h4>
+          <TermTableEditor
+            compact
+            terms={userTerms}
+            onChange={(terms) => {
+              setUserTerms(terms);
+              setUserDirty(true);
+            }}
+          />
+        </section>
         <div className="compact-action-row">
-          <button className="toolbar-icon-button" type="button" aria-label="용어 추가" data-tooltip="용어 추가" onClick={addDraft}>
-            <Plus size={15} />
-          </button>
           <button
             className="toolbar-icon-button dark"
             type="button"
@@ -172,4 +177,22 @@ async function loadGlossary(sourcePath: string, targetLanguage: string): Promise
     };
   }
   return invokeCommand("load_translation_glossary", { sourcePath, targetLanguage });
+}
+
+async function loadProjectSettings(projectKey: string): Promise<ProjectTranslationSettings | null> {
+  if (!projectKey) {
+    return null;
+  }
+  if (isPreviewRuntime()) {
+    return {
+      mod_description: "",
+      tone: "official",
+      terms: [
+        { source: "Noble Phantasm", targets: ["보구"] },
+        { source: "Excalibur", targets: ["엑스칼리버"] },
+      ],
+      extra_instructions: "",
+    };
+  }
+  return invokeCommand("load_project_translation_settings", { projectKey });
 }

@@ -1,9 +1,10 @@
 import React from "react";
 import { Check, CircleCheck, Copy, Loader2, Sparkles, X } from "lucide-react";
 import { invokeCommand } from "../../api/tauri";
-import type { AiPromptParts, JsonTranslationSheet, ProjectTranslationSettings, TranslationProjectInfo } from "../../types";
+import type { AiPromptParts, GlossaryTerm, JsonTranslationSheet, ProjectTranslationSettings, TranslationProjectInfo } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
 import { TermCandidatesPanel } from "./TermCandidatesPanel";
+import { TermTableEditor } from "./TermTableEditor";
 import {
   compactTranslationFile,
   normalizeSlotId,
@@ -51,7 +52,7 @@ export function AiPromptModal({
   const [loaded, setLoaded] = React.useState(false);
   const [description, setDescription] = React.useState("");
   const [tone, setTone] = React.useState("official");
-  const [termsText, setTermsText] = React.useState("");
+  const [terms, setTerms] = React.useState<GlossaryTerm[]>([]);
   const [extraInstructions, setExtraInstructions] = React.useState("");
   const [includePrompt, setIncludePrompt] = React.useState(true);
   const [onlyEmpty, setOnlyEmpty] = React.useState(onlyEmptyDefault);
@@ -75,11 +76,10 @@ export function AiPromptModal({
         if (cancelled) {
           return;
         }
-        const text = formatTerms(settings.terms);
         setDescription(settings.mod_description || projectInfo?.description || "");
         setTone(settings.tone || "official");
-        setTermsText(text);
-        savedTermsRef.current = text;
+        setTerms(settings.terms);
+        savedTermsRef.current = JSON.stringify(settings.terms);
         setExtraInstructions(settings.extra_instructions ?? "");
         if (settings.include_prompt != null) setIncludePrompt(settings.include_prompt);
         if (settings.only_empty != null) setOnlyEmpty(settings.only_empty);
@@ -97,13 +97,13 @@ export function AiPromptModal({
     (): ProjectTranslationSettings => ({
       mod_description: description.trim(),
       tone,
-      terms: parseTerms(termsText),
+      terms,
       extra_instructions: extraInstructions.trim(),
       include_prompt: includePrompt,
       only_empty: onlyEmpty,
       max_chars: budgetOf(maxChars),
     }),
-    [description, extraInstructions, includePrompt, maxChars, onlyEmpty, termsText, tone],
+    [description, extraInstructions, includePrompt, maxChars, onlyEmpty, terms, tone],
   );
 
   // Remember everything per mod as it is typed.
@@ -116,8 +116,9 @@ export function AiPromptModal({
       invokeCommand("save_project_translation_settings", { projectKey, settings })
         .then(() => {
           setSaveState("saved");
-          if (termsText !== savedTermsRef.current) {
-            savedTermsRef.current = termsText;
+          const savedTerms = JSON.stringify(terms);
+          if (savedTerms !== savedTermsRef.current) {
+            savedTermsRef.current = savedTerms;
             onTermsSaved();
           }
         })
@@ -157,14 +158,17 @@ export function AiPromptModal({
     [settings.terms],
   );
 
-  /** Adds terms to the mod glossary text, replacing lines for the same source. */
-  function addTerms(terms: Array<{ source: string; target: string }>) {
-    setTermsText((current) => {
-      const added = new Set(terms.map((term) => term.source.toLowerCase()));
-      const kept = current
-        .split("\n")
-        .filter((line) => line.trim() && !added.has(line.split("=")[0].trim().toLowerCase()));
-      return [...kept, ...terms.map((term) => `${term.source} = ${term.target}`)].join("\n");
+  /** Adds terms to the mod glossary, replacing entries for the same source. */
+  function addTerms(added: Array<{ source: string; target: string }>) {
+    setTerms((current) => {
+      const sources = new Set(added.map((term) => term.source.toLowerCase()));
+      return [
+        ...current.filter((term) => !sources.has(term.source.toLowerCase())),
+        ...added.map((term) => ({
+          source: term.source,
+          targets: term.target.split("/").map((target) => target.trim()).filter(Boolean),
+        })),
+      ];
     });
   }
 
@@ -344,15 +348,10 @@ export function AiPromptModal({
         </div>
         <div className="ai-prompt-tab" role="tabpanel" hidden={tab !== "terms"}>
           <p className="ai-prompt-tab-hint">후보를 뽑아 번역어를 정하고 "용어에 추가"하면, 본문 파트마다 용어집으로 들어가고 검증에도 쓰입니다.</p>
-          <label className="modal-field">
-            <span>이 모드 전용 용어 (한 줄에 `원문 = 번역`, 여러 번역은 `/`로 구분 · 검증에도 사용)</span>
-            <textarea
-              rows={3}
-              value={termsText}
-              onChange={(event) => setTermsText(event.target.value)}
-              placeholder={"Artoria = 아르토리아\nNoble Phantasm = 보구"}
-            />
-          </label>
+          <div className="modal-field">
+            <span>이 모드 전용 용어 {terms.length}개 (본문 파트와 검증에 사용 · 왼쪽 용어집에도 표시)</span>
+            <TermTableEditor terms={terms} onChange={setTerms} emptyText="아직 모드 용어가 없습니다." />
+          </div>
           <TermCandidatesPanel
             sheet={sheet}
             projectKey={projectKey}
@@ -492,29 +491,6 @@ async function loadSettings(projectKey: string): Promise<ProjectTranslationSetti
     return { mod_description: "", tone: "official", terms: [], extra_instructions: "" };
   }
   return invokeCommand("load_project_translation_settings", { projectKey });
-}
-
-function formatTerms(terms: ProjectTranslationSettings["terms"]) {
-  return terms.map((term) => `${term.source} = ${term.targets.join(" / ")}`).join("\n");
-}
-
-function parseTerms(text: string): ProjectTranslationSettings["terms"] {
-  return text
-    .split("\n")
-    .map((line) => {
-      const separator = line.indexOf("=");
-      if (separator < 0) {
-        return null;
-      }
-      const source = line.slice(0, separator).trim();
-      const targets = line
-        .slice(separator + 1)
-        .split("/")
-        .map((target) => target.trim())
-        .filter(Boolean);
-      return source && targets.length > 0 ? { source, targets } : null;
-    })
-    .filter((term): term is ProjectTranslationSettings["terms"][number] => term !== null);
 }
 
 function previewParts(sheet: JsonTranslationSheet, includePrompt: boolean, budget: number): AiPromptParts {

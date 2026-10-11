@@ -348,22 +348,21 @@
   line-height: 1.5;
 }
 
-.glossary-rows {
+.glossary-section {
   display: grid;
   gap: 6px;
-  max-height: 260px;
-  overflow-y: auto;
 }
 
-.glossary-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 6px;
-  align-items: center;
+.glossary-section h4 {
+  margin: 0;
+  font-size: 12px;
 }
 
-.glossary-row input {
-  min-width: 0;
+.glossary-section h4 small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .glossary-details .compact-action-row {

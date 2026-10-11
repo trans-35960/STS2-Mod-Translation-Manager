@@ -30,6 +30,7 @@ import {
   languageFolderCode,
   projectNameFromPath,
   translationLanguagesMatch,
+  translationProjectKey,
   type TranslationProjectNode,
 } from "./translationUtils";
 
@@ -191,6 +192,8 @@ export function TranslationActionsPanel({
   const currentSheetMatchesTarget = !props.sheet || translationLanguagesMatch(props.sheet.target_language, props.targetLanguage);
   const canUseCurrentSheet = Boolean(props.sheet && currentSheetMatchesTarget);
   const [aiPromptOpen, setAiPromptOpen] = React.useState(false);
+  // Bumped when the AI prompt window saves mod terms, so the glossary reloads them.
+  const [modTermsVersion, setModTermsVersion] = React.useState(0);
   return (
     <section className="tool-form">
       <div className="tool-control-stack">
@@ -371,6 +374,8 @@ export function TranslationActionsPanel({
         <GlossaryPanel
           sourcePath={props.sheet?.source_path ?? props.sourcePath}
           targetLanguage={props.sheet?.target_language ?? props.targetLanguage}
+          projectKey={translationProjectKey(props.projectInfo ?? null)}
+          refreshKey={modTermsVersion}
           disabled={Boolean(props.busy)}
           onSaved={() => {
             if (canUseCurrentSheet) {
@@ -410,6 +415,7 @@ export function TranslationActionsPanel({
           onClose={() => setAiPromptOpen(false)}
           onPasteAnswer={props.onPasteStructuredJson}
           onTermsSaved={() => {
+            setModTermsVersion((version) => version + 1);
             if (props.validation) {
               void props.onValidate();
             }
