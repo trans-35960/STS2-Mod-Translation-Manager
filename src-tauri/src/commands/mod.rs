@@ -248,7 +248,9 @@ pub(crate) async fn recalculate_json_translation_sheet(
 }
 
 #[tauri::command]
-pub(crate) async fn load_json_translation_sheet(sheet_path: String) -> Result<JsonSheetDto, String> {
+pub(crate) async fn load_json_translation_sheet(
+    sheet_path: String,
+) -> Result<JsonSheetDto, String> {
     run_blocking(move || crate::services::load_json_translation_sheet(sheet_path)).await
 }
 
@@ -337,7 +339,8 @@ pub(crate) async fn compare_translation_language(
     sheet_path: String,
     sample_path: String,
 ) -> Result<Vec<LanguageCompareValueDto>, String> {
-    run_blocking(move || crate::services::compare_translation_language(sheet_path, sample_path)).await
+    run_blocking(move || crate::services::compare_translation_language(sheet_path, sample_path))
+        .await
 }
 
 #[tauri::command]
@@ -357,5 +360,6 @@ pub(crate) async fn export_translation_patch_mod(
     sheet_path: String,
     output_dir: String,
 ) -> Result<TranslationPatchExportDto, String> {
-    run_blocking(move || crate::services::export_translation_patch_mod(sheet_path, output_dir)).await
+    run_blocking(move || crate::services::export_translation_patch_mod(sheet_path, output_dir))
+        .await
 }

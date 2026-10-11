@@ -222,6 +222,8 @@ function previewAsModRow(item: DroppedModPreview): ModRow {
     active: false,
     managed: false,
     external: false,
+    workshop: false,
+    workshop_item_id: null,
     source_label: "drop",
     kind: item.kind,
     version_hint: item.version_hint,

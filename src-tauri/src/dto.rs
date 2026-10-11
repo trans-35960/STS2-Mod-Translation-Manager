@@ -30,6 +30,7 @@ pub(crate) struct PathsDto {
     pub(crate) state: String,
     pub(crate) vendor: String,
     pub(crate) external_manager_dirs: Vec<String>,
+    pub(crate) workshop_dirs: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -67,6 +68,7 @@ pub(crate) struct StatsDto {
     pub(crate) inactive_mods: usize,
     pub(crate) disabled_mods: usize,
     pub(crate) external_mods: usize,
+    pub(crate) workshop_mods: usize,
     pub(crate) presets: usize,
     pub(crate) translations: usize,
     pub(crate) detected_changes: usize,
@@ -102,6 +104,8 @@ pub(crate) struct ModRowDto {
     pub(crate) active: bool,
     pub(crate) managed: bool,
     pub(crate) external: bool,
+    pub(crate) workshop: bool,
+    pub(crate) workshop_item_id: Option<String>,
     pub(crate) source_label: String,
     pub(crate) kind: String,
     pub(crate) version_hint: Option<String>,

@@ -1143,6 +1143,7 @@ mod tests {
             mod_index_path: workspace.join("state/mod_index.tsv"),
             vendor_dir: workspace.join("vendor"),
             external_manager_dirs: Vec::new(),
+            workshop_dirs: Vec::new(),
         }
     }
 

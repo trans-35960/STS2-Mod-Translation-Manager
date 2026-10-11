@@ -327,6 +327,9 @@ export function StatsGrid({
       <Stat label={t.active} value={stats.active_mods} tone={stats.vanilla_safe ? "good" : "warn"} active={selected === "active"} onClick={() => toggle("active")} />
       <Stat label={t.inactive} value={stats.inactive_mods} tone={stats.inactive_mods > 0 ? "good" : undefined} active={selected === "inactive"} onClick={() => toggle("inactive")} />
       <Stat label={t.external} value={stats.external_mods} active={selected === "external"} onClick={() => toggle("external")} />
+      {stats.workshop_mods > 0 && (
+        <Stat label={t.workshop} value={stats.workshop_mods} active={selected === "workshop"} onClick={() => toggle("workshop")} />
+      )}
       <Stat
         label={t.changes}
         value={stats.detected_changes}

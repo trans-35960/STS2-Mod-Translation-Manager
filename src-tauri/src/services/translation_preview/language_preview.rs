@@ -26,6 +26,9 @@ fn source_labels(builder: &ModRowBuilder) -> String {
     if builder.external.is_some() {
         labels.push("Nexus/Vortex");
     }
+    if builder.workshop.is_some() {
+        labels.push("Steam 창작마당");
+    }
     labels.join(" + ")
 }
 

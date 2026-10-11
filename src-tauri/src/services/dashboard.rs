@@ -1294,6 +1294,7 @@ fn dashboard_stats(mods: &[ModRowDto], presets: usize, translations: usize) -> S
         inactive_mods: mods.iter().filter(|row| !row.active).count(),
         disabled_mods: mods.iter().filter(|row| row.managed).count(),
         external_mods: mods.iter().filter(|row| row.external).count(),
+        workshop_mods: mods.iter().filter(|row| row.workshop).count(),
         presets,
         translations,
         detected_changes: mods

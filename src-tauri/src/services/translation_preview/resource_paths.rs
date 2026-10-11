@@ -226,20 +226,7 @@ fn collect_hardcoded_files(root: &Path, files: &mut Vec<PathBuf>) {
 }
 
 fn hardcoded_file_has_strings(path: &Path) -> bool {
-    flatten_hardcoded_values(path)
-        .map(|values| {
-            values
-                .values()
-                .any(|value| looks_like_translatable_hardcoded_value(value))
-        })
-        .unwrap_or(false)
-}
-
-fn looks_like_translatable_hardcoded_value(value: &str) -> bool {
-    let trimmed = value.trim();
-    trimmed.chars().count() >= 4
-        && trimmed.chars().any(char::is_alphabetic)
-        && trimmed.chars().any(|character| character.is_whitespace() || ".:,;!?".contains(character))
+    has_translatable_hardcoded_values(path).unwrap_or(false)
 }
 
 fn language_dir_for_candidate(path: &Path) -> Option<PathBuf> {
@@ -345,11 +332,7 @@ fn translation_memory_candidate_keys(
     let Ok(summary) = app.scan_preview_report().map(|report| report.summary) else {
         return keys;
     };
-    for candidate in summary
-        .game_mods
-        .into_iter()
-        .chain(summary.disabled_mods)
-        .chain(summary.external_manager_mods)
+    for candidate in summary.into_records()
     {
         let candidate_key = candidate.stable_key();
         if candidate_key == current_key || keys.iter().any(|key| key == &candidate_key) {

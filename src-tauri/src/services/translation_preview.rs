@@ -163,11 +163,7 @@ fn copy_connected_translation_patch_files(
         .map_err(|error| error.to_string())?
         .summary;
     let mut report = ConnectedTranslationPatchCopy::default();
-    for candidate in summary
-        .game_mods
-        .into_iter()
-        .chain(summary.disabled_mods)
-        .chain(summary.external_manager_mods)
+    for candidate in summary.into_records()
     {
         if candidate.stable_key() == base_record.stable_key() {
             continue;

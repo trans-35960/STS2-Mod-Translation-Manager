@@ -948,11 +948,7 @@ fn remember_applied_language_preview(
         .scan_preview_report()
         .map_err(|error| error.to_string())?
         .summary;
-    let Some(record) = summary
-        .game_mods
-        .into_iter()
-        .chain(summary.disabled_mods)
-        .chain(summary.external_manager_mods)
+    let Some(record) = summary.into_records()
         .find(|record| record.stable_key() == mod_key)
     else {
         return Ok(());

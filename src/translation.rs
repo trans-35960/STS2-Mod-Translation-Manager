@@ -4,9 +4,11 @@ use crate::json_translation::{flatten_hardcoded_values, is_hardcoded_source_file
 #[cfg(test)]
 use crate::process::powershell_compress_directory_contents;
 use crate::process::{hidden_command, powershell_expand_archive};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
+use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -285,11 +287,32 @@ fn classify_translation_file(path: &Path, root: &Path) -> AppResult<Option<Trans
     }
 }
 
-fn has_translatable_hardcoded_values(path: &Path) -> AppResult<bool> {
-    let values = flatten_hardcoded_values(path)?;
-    Ok(values
+/// Whether a DLL/EXE carries user-facing strings worth translating.
+///
+/// Parsing the binary is the costliest step of listing mods, and the dashboard
+/// asks about the same files several times per refresh, so answers are kept for
+/// the process lifetime and reused while the file's size and mtime are unchanged.
+pub fn has_translatable_hardcoded_values(path: &Path) -> AppResult<bool> {
+    type Fingerprint = (u64, Option<SystemTime>);
+    static RESULTS: OnceLock<Mutex<HashMap<PathBuf, (Fingerprint, bool)>>> = OnceLock::new();
+
+    let metadata = fs::metadata(path).map_err(|source| AppError::io(path, source))?;
+    let fingerprint = (metadata.len(), metadata.modified().ok());
+    let results = RESULTS.get_or_init(Default::default);
+    if let Ok(results) = results.lock()
+        && let Some((cached_fingerprint, has_values)) = results.get(path)
+        && *cached_fingerprint == fingerprint
+    {
+        return Ok(*has_values);
+    }
+
+    let has_values = flatten_hardcoded_values(path)?
         .values()
-        .any(|value| looks_like_translatable_hardcoded_value(value)))
+        .any(|value| looks_like_translatable_hardcoded_value(value));
+    if let Ok(mut results) = results.lock() {
+        results.insert(path.to_path_buf(), (fingerprint, has_values));
+    }
+    Ok(has_values)
 }
 
 fn looks_like_translatable_hardcoded_value(value: &str) -> bool {

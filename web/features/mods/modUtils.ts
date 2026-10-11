@@ -15,7 +15,7 @@ import type {
 export function presetPreviewSummary(preset: Preset, mods: ModRow[]): string {
   const active = mods.filter((mod) => mod.active);
   const targetKeys = new Set(preset.mods.map((mod) => mod.key));
-  const availableKeys = new Set(mods.filter((mod) => mod.managed || mod.active || mod.external).map((mod) => mod.key));
+  const availableKeys = new Set(mods.filter((mod) => mod.managed || mod.active || mod.external || mod.workshop).map((mod) => mod.key));
   const missing = preset.mods.filter((mod) => !availableKeys.has(mod.key));
   const willEnable = preset.mods.filter((mod) => !active.some((row) => row.key === mod.key));
   const willDisable = active.filter((mod) => !targetKeys.has(mod.key));
@@ -257,6 +257,8 @@ function matchesStatFilter(mod: ModRow, statFilter: DashboardStatFilter): boolea
       return !mod.active;
     case "external":
       return mod.external;
+    case "workshop":
+      return mod.workshop;
     case "changed":
       return mod.update_state !== "clean";
     case "all":
@@ -287,7 +289,8 @@ function compareGroupActivationTarget(left: ModRow, right: ModRow): number {
 }
 
 function modIdentityKey(mod: ModRow): string {
-  const kind = mod.is_translation_patch ? `translation|${mod.key}` : "mod";
+  // Workshop copies load alongside local ones, so never fold them into one row.
+  const kind = mod.is_translation_patch ? `translation|${mod.key}` : mod.workshop ? `workshop|${mod.key}` : "mod";
   return `${modGroupName(mod).toLowerCase()}|${kind}|${displayModVersion(mod).toLowerCase()}`;
 }
 
@@ -320,6 +323,7 @@ function mergeModRows(left: ModRow, right: ModRow): ModRow {
     active: left.active || right.active,
     managed: left.managed || right.managed,
     external: left.external || right.external,
+    workshop: left.workshop || right.workshop,
     source_label: mergeTextLabels(left.source_label, right.source_label),
     update_state: mergeUpdateState(left.update_state, right.update_state),
     translation_state: primary.translation_state || secondary.translation_state,
@@ -434,6 +438,8 @@ function matchesModFilters(mod: ModRow, activeFilter: ActiveFilter, changeFilter
 }
 
 export function canDeleteMod(mod: ModRow): boolean {
+  // Steam restores workshop files, so those are only switched off, never deleted.
+  if (mod.workshop) return false;
   const source = mod.source_label.toLowerCase();
   return mod.active || mod.managed || mod.external || source.includes("게임") || source.includes("game") || source.includes("disabled") || source.includes("nexus") || source.includes("vortex");
 }

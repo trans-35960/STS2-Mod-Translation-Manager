@@ -1,5 +1,6 @@
+use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -7,6 +8,7 @@ pub enum ModSource {
     GameMods,
     Disabled,
     ExternalManager,
+    Workshop,
 }
 
 impl Display for ModSource {
@@ -15,6 +17,7 @@ impl Display for ModSource {
             Self::GameMods => formatter.write_str("game mods"),
             Self::Disabled => formatter.write_str("disabled mods"),
             Self::ExternalManager => formatter.write_str("external manager"),
+            Self::Workshop => formatter.write_str("steam workshop"),
         }
     }
 }
@@ -25,6 +28,7 @@ impl ModSource {
             Self::GameMods => "game",
             Self::Disabled => "disabled",
             Self::ExternalManager => "external",
+            Self::Workshop => "workshop",
         }
     }
 
@@ -33,6 +37,7 @@ impl ModSource {
             "game" => Some(Self::GameMods),
             "disabled" => Some(Self::Disabled),
             "external" => Some(Self::ExternalManager),
+            "workshop" => Some(Self::Workshop),
             _ => None,
         }
     }
@@ -73,23 +78,53 @@ pub struct ModRecord {
     pub fingerprint: ModFingerprint,
 }
 
+/// Key prefix that keeps Steam Workshop mods apart from same-named local copies:
+/// the game loads both, so they must stay separate rows with separate toggles.
+pub const WORKSHOP_KEY_PREFIX: &str = "workshop-";
+
 impl ModRecord {
     pub fn stable_key(&self) -> String {
-        self.name
-            .chars()
-            .map(|character| {
-                if character.is_ascii_alphanumeric() {
-                    character.to_ascii_lowercase()
-                } else {
-                    '-'
-                }
-            })
-            .collect::<String>()
-            .split('-')
-            .filter(|part| !part.is_empty())
-            .collect::<Vec<_>>()
-            .join("-")
+        let key = normalized_key(&self.name);
+        if self.source == ModSource::Workshop {
+            format!("{WORKSHOP_KEY_PREFIX}{key}")
+        } else {
+            key
+        }
     }
+
+    pub fn is_workshop(&self) -> bool {
+        self.source == ModSource::Workshop
+    }
+
+    /// Steam published file id, i.e. the `content/<appid>/<id>` folder above the manifest.
+    pub fn workshop_item_id(&self) -> Option<String> {
+        self.is_workshop()
+            .then(|| workshop_item_id_for_path(&self.path))
+            .flatten()
+    }
+}
+
+pub fn workshop_item_id_for_path(path: &Path) -> Option<String> {
+    path.ancestors()
+        .filter_map(|ancestor| ancestor.file_name()?.to_str())
+        .find(|name| name.len() >= 6 && name.chars().all(|character| character.is_ascii_digit()))
+        .map(str::to_string)
+}
+
+fn normalized_key(name: &str) -> String {
+    name.chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() {
+                character.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>()
+        .split('-')
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,20 +134,46 @@ pub struct TranslationCandidate {
     pub reason: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ScanSummary {
     pub game_mods: Vec<ModRecord>,
     pub disabled_mods: Vec<ModRecord>,
     pub external_manager_mods: Vec<ModRecord>,
+    pub workshop_mods: Vec<ModRecord>,
+    /// Workshop mod keys the game's settings.save marks `is_enabled: false`.
+    pub workshop_disabled_in_game: BTreeSet<String>,
 }
 
 impl ScanSummary {
     pub fn total_mods(&self) -> usize {
-        self.game_mods.len() + self.disabled_mods.len() + self.external_manager_mods.len()
+        self.game_mods.len()
+            + self.disabled_mods.len()
+            + self.external_manager_mods.len()
+            + self.workshop_mods.len()
     }
 
     pub fn is_vanilla_safe(&self) -> bool {
         self.game_mods.is_empty()
+    }
+
+    pub fn records(&self) -> impl Iterator<Item = &ModRecord> {
+        self.game_mods
+            .iter()
+            .chain(self.disabled_mods.iter())
+            .chain(self.external_manager_mods.iter())
+            .chain(self.workshop_mods.iter())
+    }
+
+    pub fn into_records(self) -> impl Iterator<Item = ModRecord> {
+        self.game_mods
+            .into_iter()
+            .chain(self.disabled_mods)
+            .chain(self.external_manager_mods)
+            .chain(self.workshop_mods)
+    }
+
+    pub fn workshop_enabled_in_game(&self, key: &str) -> bool {
+        !self.workshop_disabled_in_game.contains(key)
     }
 }
 

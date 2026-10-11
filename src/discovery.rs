@@ -48,6 +48,109 @@ pub fn scan_mod_directory(path: &Path, source: ModSource) -> AppResult<Vec<ModRe
     Ok(mods)
 }
 
+pub const MOD_MANIFEST_FILE: &str = "mod_manifest.json";
+const WORKSHOP_MANIFEST_MAX_DEPTH: usize = 3;
+
+/// Scans a Steam Workshop content folder (`.../workshop/content/<appid>`).
+///
+/// Each subscribed item is a numbered folder; like the game, every
+/// `mod_manifest.json` found inside it is treated as one mod, named by the
+/// manifest `id` because that is what the game's settings refer to.
+pub fn scan_workshop_directory(path: &Path) -> AppResult<Vec<ModRecord>> {
+    if !path.is_dir() {
+        return Ok(Vec::new());
+    }
+
+    let entries = fs::read_dir(path).map_err(|source| AppError::io(path, source))?;
+    let mut mods = Vec::new();
+    for entry in entries.flatten() {
+        if !entry.file_type().is_ok_and(|kind| kind.is_dir()) {
+            continue;
+        }
+        for manifest_path in find_mod_manifests(&entry.path(), WORKSHOP_MANIFEST_MAX_DEPTH) {
+            let Some(mod_dir) = manifest_path.parent() else {
+                continue;
+            };
+            let manifest = read_manifest_identity(&manifest_path);
+            let name = manifest
+                .id
+                .or_else(|| {
+                    mod_dir
+                        .file_name()
+                        .map(|name| name.to_string_lossy().to_string())
+                })
+                .unwrap_or_else(|| "unknown-mod".to_string());
+            mods.push(ModRecord {
+                version_hint: manifest.version.or_else(|| infer_version_hint(&name)),
+                name,
+                path: mod_dir.to_path_buf(),
+                source: ModSource::Workshop,
+                kind: ModKind::Directory,
+                fingerprint: fingerprint_directory(mod_dir)?,
+            });
+        }
+    }
+
+    mods.sort_by_key(|record| record.stable_key());
+    Ok(mods)
+}
+
+/// Finds `mod_manifest.json` files below `root`, without descending further
+/// once a folder is known to be a mod root.
+pub fn find_mod_manifests(root: &Path, max_depth: usize) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    collect_mod_manifests(root, max_depth, &mut found);
+    found.sort();
+    found
+}
+
+fn collect_mod_manifests(dir: &Path, depth_left: usize, found: &mut Vec<PathBuf>) {
+    let manifest = dir.join(MOD_MANIFEST_FILE);
+    if manifest.is_file() {
+        found.push(manifest);
+        return;
+    }
+    if depth_left == 0 {
+        return;
+    }
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        if entry.file_type().is_ok_and(|kind| kind.is_dir()) {
+            collect_mod_manifests(&entry.path(), depth_left - 1, found);
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct ManifestIdentity {
+    pub id: Option<String>,
+    pub version: Option<String>,
+}
+
+pub fn read_manifest_identity(manifest_path: &Path) -> ManifestIdentity {
+    let Ok(text) = fs::read_to_string(manifest_path) else {
+        return ManifestIdentity::default();
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(text.trim_start_matches('\u{feff}'))
+    else {
+        return ManifestIdentity::default();
+    };
+    let field = |key: &str| {
+        value
+            .get(key)
+            .and_then(|value| value.as_str())
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+    };
+    ManifestIdentity {
+        id: field("id"),
+        version: field("version"),
+    }
+}
+
 fn mod_display_name(path: &Path, kind: ModKind) -> String {
     let raw_name = if kind == ModKind::Directory {
         path.file_name()
@@ -185,6 +288,32 @@ mod tests {
 
         assert_eq!(mods.len(), 1);
         assert_eq!(mods[0].name, "BaseLib");
+    }
+
+    #[test]
+    fn scans_workshop_items_by_manifest_id() {
+        let fixture = TestDir::create("scans_workshop_items_by_manifest_id");
+        fixture.write_file(
+            "3747602295/mod_manifest.json",
+            r#"{"id":"STS2-RitsuLib","name":"RitsuLib","version":"0.6.7"}"#,
+        );
+        fixture.write_file("3747602295/STS2-RitsuLib.dll", "dll");
+        fixture.write_file(
+            "3780369635/LustTravel2/mod_manifest.json",
+            r#"{"id":"LustTravel2"}"#,
+        );
+        fixture.create_dir("3799999999/still-downloading");
+
+        let mods = scan_workshop_directory(fixture.path()).expect("scan");
+
+        assert_eq!(mods.len(), 2);
+        assert_eq!(mods[0].name, "LustTravel2");
+        assert_eq!(mods[0].stable_key(), "workshop-lusttravel2");
+        assert_eq!(mods[0].workshop_item_id().as_deref(), Some("3780369635"));
+        assert_eq!(mods[1].name, "STS2-RitsuLib");
+        assert_eq!(mods[1].version_hint.as_deref(), Some("0.6.7"));
+        assert_eq!(mods[1].workshop_item_id().as_deref(), Some("3747602295"));
+        assert_eq!(mods[1].path, fixture.path().join("3747602295"));
     }
 
     struct TestDir {

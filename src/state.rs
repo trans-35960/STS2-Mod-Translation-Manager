@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const DESIRED_ACTIVE_MODS_FILE: &str = "desired_active_mods.txt";
+const KNOWN_WORKSHOP_MODS_FILE: &str = "known_workshop_mods.txt";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModStateEntry {
@@ -26,12 +27,7 @@ pub fn detect_changes(summary: &ScanSummary, state_path: &Path) -> AppResult<Vec
         .collect::<HashMap<_, _>>();
 
     let mut changes = Vec::new();
-    for record in summary
-        .game_mods
-        .iter()
-        .chain(summary.disabled_mods.iter())
-        .chain(summary.external_manager_mods.iter())
-    {
+    for record in summary.records() {
         let key = record_state_key(record);
         match previous_by_key.get(&key) {
             None => changes.push(ModChange {
@@ -71,12 +67,7 @@ pub fn write_state(summary: &ScanSummary, state_path: &Path) -> AppResult<()> {
 
     let mut output =
         String::from("source\tkey\tbytes\tmodified_epoch\tregistered_epoch\tupdated_epoch\tpath\n");
-    for record in summary
-        .game_mods
-        .iter()
-        .chain(summary.disabled_mods.iter())
-        .chain(summary.external_manager_mods.iter())
-    {
+    for record in summary.records() {
         let key = record_state_key(record);
         let previous_record = previous.get(&key);
         let modified = epoch_seconds(record.fingerprint.modified)
@@ -131,18 +122,33 @@ pub fn desired_active_mod_keys(
     state_dir: &Path,
 ) -> AppResult<BTreeSet<String>> {
     let path = desired_active_mods_path(state_dir);
-    if path.exists() {
-        return read_desired_active_mod_keys(&path);
-    }
+    let mut desired = if path.exists() {
+        read_desired_active_mod_keys(&path)?
+    } else {
+        summary
+            .game_mods
+            .iter()
+            .map(|record| record.stable_key())
+            .collect()
+    };
 
-    Ok(summary
-        .game_mods
-        .iter()
-        .map(|record| record.stable_key())
-        .collect())
+    // Workshop mods appear without passing through this app, so until the user
+    // decides otherwise here, follow whatever the game itself has them set to.
+    let known_workshop = read_key_list(&state_dir.join(KNOWN_WORKSHOP_MODS_FILE))?;
+    for record in &summary.workshop_mods {
+        let key = record.stable_key();
+        if !known_workshop.contains(&key) && summary.workshop_enabled_in_game(&key) {
+            desired.insert(key);
+        }
+    }
+    Ok(desired)
 }
 
 pub fn read_desired_active_mod_keys(path: &Path) -> AppResult<BTreeSet<String>> {
+    read_key_list(path)
+}
+
+fn read_key_list(path: &Path) -> AppResult<BTreeSet<String>> {
     if !path.exists() {
         return Ok(BTreeSet::new());
     }
@@ -156,15 +162,44 @@ pub fn read_desired_active_mod_keys(path: &Path) -> AppResult<BTreeSet<String>> 
         .collect())
 }
 
-pub fn write_desired_active_mod_keys(keys: &BTreeSet<String>, state_dir: &Path) -> AppResult<()> {
+/// Persists the desired set. Every workshop mod in `summary` is also recorded as
+/// known, so its desired state is no longer seeded from the game's settings.
+pub fn write_desired_active_mod_keys(
+    keys: &BTreeSet<String>,
+    summary: &ScanSummary,
+    state_dir: &Path,
+) -> AppResult<()> {
     fs::create_dir_all(state_dir).map_err(|source| AppError::io(state_dir, source))?;
-    let path = desired_active_mods_path(state_dir);
-    let mut output = String::from("# Desired active mod keys. Applied when launching modded.\n");
+    write_key_list(
+        &desired_active_mods_path(state_dir),
+        "# Desired active mod keys. Applied when launching modded.",
+        keys,
+    )?;
+
+    if summary.workshop_mods.is_empty() {
+        return Ok(());
+    }
+    let known_path = state_dir.join(KNOWN_WORKSHOP_MODS_FILE);
+    let mut known = read_key_list(&known_path)?;
+    let before = known.len();
+    known.extend(summary.workshop_mods.iter().map(ModRecord::stable_key));
+    if known.len() == before {
+        return Ok(());
+    }
+    write_key_list(
+        &known_path,
+        "# Workshop mod keys whose desired state is managed by this app.",
+        &known,
+    )
+}
+
+fn write_key_list(path: &Path, header: &str, keys: &BTreeSet<String>) -> AppResult<()> {
+    let mut output = format!("{header}\n");
     for key in keys {
         output.push_str(key);
         output.push('\n');
     }
-    fs::write(&path, output).map_err(|source| AppError::io(&path, source))
+    fs::write(path, output).map_err(|source| AppError::io(path, source))
 }
 
 pub fn mod_record_state_key(record: &ModRecord) -> String {
@@ -280,6 +315,7 @@ mod tests {
             game_mods: Vec::new(),
             disabled_mods: Vec::new(),
             external_manager_mods: vec![record("Alpha-v1", 10)],
+            ..ScanSummary::default()
         };
         write_state(&first, &state_path).expect("write first state");
 
@@ -287,6 +323,7 @@ mod tests {
             game_mods: Vec::new(),
             disabled_mods: Vec::new(),
             external_manager_mods: vec![record("Alpha-v1", 20), record("Beta-v1", 5)],
+            ..ScanSummary::default()
         };
 
         let changes = detect_changes(&second, &state_path).expect("detect changes");
@@ -319,6 +356,7 @@ mod tests {
             game_mods: Vec::new(),
             disabled_mods: Vec::new(),
             external_manager_mods: vec![record("Alpha-v1", 20)],
+            ..ScanSummary::default()
         };
 
         write_state(&summary, &state_path).expect("write updated state");
@@ -343,6 +381,7 @@ mod tests {
             )],
             disabled_mods: Vec::new(),
             external_manager_mods: Vec::new(),
+            ..ScanSummary::default()
         };
         write_state(&first, &state_path).expect("write first state");
 
@@ -355,6 +394,7 @@ mod tests {
                 "C:/game/mods.disabled/Alpha-v1.zip",
             )],
             external_manager_mods: Vec::new(),
+            ..ScanSummary::default()
         };
 
         let changes = detect_changes(&second, &state_path).expect("detect changes");

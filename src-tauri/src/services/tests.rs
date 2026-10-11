@@ -799,6 +799,7 @@ Packed file: Shadowverse/localization/eng/cards.json
             game_mods: vec![active],
             disabled_mods: vec![disabled],
             external_manager_mods: Vec::new(),
+                    ..ScanSummary::default()
         });
 
         assert!(keys.contains("the-reaper-for-main-branch-412-0-43-1777465658"));
@@ -947,7 +948,8 @@ Packed file: Shadowverse/localization/eng/cards.json
         let mut desired = BTreeSet::new();
         desired.insert("deleted-mod".to_string());
         desired.insert("kept-mod".to_string());
-        write_desired_active_mod_keys(&desired, &config.state_dir).expect("write desired");
+        write_desired_active_mod_keys(&desired, &ScanSummary::default(), &config.state_dir)
+            .expect("write desired");
         let backup = config
             .state_dir
             .join("deleted_mods")
@@ -971,6 +973,7 @@ Packed file: Shadowverse/localization/eng/cards.json
             game_mods: Vec::new(),
             disabled_mods: Vec::new(),
             external_manager_mods: Vec::new(),
+                    ..ScanSummary::default()
         };
 
         let removed = prune_deleted_desired_mod_keys(&config, &summary).expect("prune desired");
@@ -1017,6 +1020,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                 },
             }],
             external_manager_mods: Vec::new(),
+                    ..ScanSummary::default()
         };
 
         let first_entry = delete_mod_entry(
@@ -1118,6 +1122,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     modified: None,
                 },
             }],
+                    ..ScanSummary::default()
         };
 
         assert!(!deleted_mod_keys_for_summary(&config, &summary).contains("new-download"));
@@ -1166,6 +1171,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                 },
             }],
             external_manager_mods: Vec::new(),
+            ..ScanSummary::default()
         };
 
         assert!(!deleted_mod_keys_for_summary(&config, &summary).contains("baselib-3-1-4"));
@@ -2218,7 +2224,7 @@ Packed file: Shadowverse/localization/eng/cards.json
             mod_index_path: root.join("state").join("mod_index.tsv"),
             vendor_dir: root.join("vendor"),
             external_manager_dirs: Vec::new(),
+            workshop_dirs: Vec::new(),
         }
     }
 }
-

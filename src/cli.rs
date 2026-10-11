@@ -496,6 +496,7 @@ fn print_scan_summary(summary: &ScanSummary) {
     print_mods("Game mods", &summary.game_mods);
     print_mods("Disabled mods", &summary.disabled_mods);
     print_mods("Nexus/Vortex", &summary.external_manager_mods);
+    print_mods("Steam Workshop", &summary.workshop_mods);
 }
 
 fn print_changes(changes: &[ModChange]) {

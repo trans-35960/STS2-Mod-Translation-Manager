@@ -104,6 +104,7 @@ function ModTableRow({
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
+          {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
           {mod.needs_recheck && <StatusBadge tone="danger">Recheck</StatusBadge>}
@@ -405,6 +406,7 @@ function SimpleModRow({
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
+          {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
           {mod.needs_recheck && <StatusBadge tone="danger">Recheck</StatusBadge>}

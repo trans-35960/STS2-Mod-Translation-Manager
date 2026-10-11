@@ -77,13 +77,15 @@ fn delete_mod_entry(
     if requested_path.as_os_str().is_empty() {
         return Err("삭제할 모드 경로가 없습니다.".to_string());
     }
-    let record = summary
-        .game_mods
-        .into_iter()
-        .chain(summary.disabled_mods)
-        .chain(summary.external_manager_mods)
+    let record = summary.into_records()
         .find(|record| record.stable_key() == key && same_path(&record.path, &requested_path))
         .ok_or_else(|| format!("{key} 모드를 현재 목록에서 찾지 못했습니다."))?;
+    if record.is_workshop() {
+        return Err(format!(
+            "{} 모드는 Steam 창작마당 구독 항목이라 삭제할 수 없습니다. 비활성화하거나 Steam에서 구독을 취소하세요.",
+            record.name
+        ));
+    }
     ensure_existing_deletable_mod_path(&record.path, config)?;
     let backup_path = move_mod_to_deleted_backup(&record.path, key, deleted_epoch, config)?;
     let entry = DeletedModEntry {
@@ -649,7 +651,7 @@ fn prune_deleted_desired_mod_keys(
     desired.retain(|key| !deleted.contains(key));
     let removed = before.saturating_sub(desired.len());
     if removed > 0 {
-        write_desired_active_mod_keys(&desired, &config.state_dir)
+        write_desired_active_mod_keys(&desired, summary, &config.state_dir)
             .map_err(|error| error.to_string())?;
     }
     Ok(removed)

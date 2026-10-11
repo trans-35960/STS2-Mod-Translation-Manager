@@ -3,7 +3,7 @@ export type Locale = "ko" | "en";
 export type ActiveFilter = "all" | "enabled" | "disabled";
 export type ChangeFilter = "all" | "changed" | "new" | "updated" | "clean";
 export type TranslationApplyFilter = "all" | "applied" | "notApplied";
-export type DashboardStatFilter = "all" | "active" | "inactive" | "external" | "changed";
+export type DashboardStatFilter = "all" | "active" | "inactive" | "external" | "workshop" | "changed";
 export type ModSort =
   | "name"
   | "registered"
@@ -87,6 +87,7 @@ export type Paths = {
   state: string;
   vendor: string;
   external_manager_dirs: string[];
+  workshop_dirs: string[];
 };
 
 export type Stats = {
@@ -94,6 +95,7 @@ export type Stats = {
   inactive_mods: number;
   disabled_mods: number;
   external_mods: number;
+  workshop_mods: number;
   presets: number;
   translations: number;
   detected_changes: number;
@@ -126,6 +128,8 @@ export type ModRow = {
   active: boolean;
   managed: boolean;
   external: boolean;
+  workshop: boolean;
+  workshop_item_id: string | null;
   source_label: string;
   kind: string;
   version_hint: string | null;

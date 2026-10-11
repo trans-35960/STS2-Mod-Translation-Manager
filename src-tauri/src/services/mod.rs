@@ -18,9 +18,9 @@ use sts2_mod_manager::json_translation::{
     JsonImportReport, JsonSheetReport, JsonTranslationEntry, JsonTranslationSheet,
     JsonTranslationStatus, JsonValidationReport, apply_sheet, apply_sheet_to_target_language,
     compact_source_translation_map_with_keys, compact_validation_issue_translation_map_with_keys,
-    create_or_update_sheet, flatten_hardcoded_values, import_translations,
-    is_hardcoded_source_file, read_sheet, target_language_output_path, translation_slot_entries,
-    validate_sheet, validate_translation_sheet, write_sheet,
+    create_or_update_sheet, import_translations, is_hardcoded_source_file, read_sheet,
+    target_language_output_path, translation_slot_entries, validate_sheet,
+    validate_translation_sheet, write_sheet,
 };
 use sts2_mod_manager::launcher::{LaunchReport, LaunchStatus};
 use sts2_mod_manager::path_guard::{ensure_existing_path_in_roots, ensure_path_in_roots};
@@ -31,7 +31,9 @@ use sts2_mod_manager::state::{
     ModStateEntry, desired_active_mod_keys, mod_record_state_key, read_mod_state_index,
     write_desired_active_mod_keys,
 };
-use sts2_mod_manager::translation::{TranslationWorkspace, scan_translation_candidates};
+use sts2_mod_manager::translation::{
+    TranslationWorkspace, has_translatable_hardcoded_values, scan_translation_candidates,
+};
 use sts2_mod_manager::vendor_tools::VendorTool;
 
 include!("common.rs");

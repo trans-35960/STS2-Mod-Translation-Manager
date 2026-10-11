@@ -16,6 +16,9 @@ fn mod_rows(
     for record in &report.summary.external_manager_mods {
         rows.entry(record.stable_key()).or_default().external = Some(record.clone());
     }
+    for record in &report.summary.workshop_mods {
+        rows.entry(record.stable_key()).or_default().workshop = Some(record.clone());
+    }
     trace.mark("group_records");
 
     let mut cache = read_language_preview_cache(config)?;
@@ -110,6 +113,7 @@ struct ModRowBuilder {
     active: Option<ModRecord>,
     disabled: Option<ModRecord>,
     external: Option<ModRecord>,
+    workshop: Option<ModRecord>,
 }
 
 struct ModRowBuildContext<'a> {
@@ -133,6 +137,7 @@ impl ModRowBuilder {
             .as_ref()
             .or(self.disabled.as_ref())
             .or(self.external.as_ref())
+            .or(self.workshop.as_ref())
             .expect("row has at least one source");
         let sources = source_labels(&self);
         let extraction_source = extraction_source_for_record(record);
@@ -242,6 +247,8 @@ impl ModRowBuilder {
             active: context.desired_active,
             managed: self.disabled.is_some(),
             external: self.external.is_some(),
+            workshop: self.workshop.is_some(),
+            workshop_item_id: record.workshop_item_id(),
             source_label: sources,
             kind: kind_label(record.kind).to_string(),
             version_hint,
@@ -284,6 +291,7 @@ impl ModRowBuilder {
             self.active.as_ref(),
             self.disabled.as_ref(),
             self.external.as_ref(),
+            self.workshop.as_ref(),
         ];
         let mut state = None;
         let mut reasons = BTreeSet::new();

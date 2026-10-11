@@ -385,6 +385,7 @@ mod tests {
             mod_index_path: root.join("modmanager/state/mod_index.tsv"),
             vendor_dir: root.join("modmanager/vendor"),
             external_manager_dirs: Vec::new(),
+            workshop_dirs: Vec::new(),
         };
 
         assert_eq!(resolve_game_exe(&config), Some(exe));
@@ -412,6 +413,7 @@ mod tests {
             mod_index_path: root.join("modmanager/state/mod_index.tsv"),
             vendor_dir: root.join("modmanager/vendor"),
             external_manager_dirs: Vec::new(),
+            workshop_dirs: Vec::new(),
         };
 
         assert_eq!(resolve_game_exe(&config), Some(exe));

@@ -1,7 +1,11 @@
 use crate::config::AppConfig;
-use crate::discovery::{existing_paths, scan_mod_directory};
-use crate::domain::{ModSource, ScanReport, ScanSummary};
+use crate::discovery::{
+    existing_paths, find_mod_manifests, read_manifest_identity, scan_mod_directory,
+    scan_workshop_directory,
+};
+use crate::domain::{ModRecord, ModSource, ScanReport, ScanSummary};
 use crate::error::{AppError, AppResult};
+use crate::game_settings::{self, GameModChange, SOURCE_MODS_DIRECTORY, SOURCE_WORKSHOP};
 use crate::launcher::{self, LaunchReport, LaunchStatus};
 use crate::preset::{self, Preset, PresetApplyReport, PresetExportReport, PresetImportReport};
 use crate::save_backup;
@@ -46,11 +50,38 @@ impl App {
             external_manager_mods.extend(scan_mod_directory(&path, ModSource::ExternalManager)?);
         }
 
+        let mut workshop_mods = Vec::new();
+        for path in &self.config.workshop_dirs {
+            workshop_mods.extend(scan_workshop_directory(path)?);
+        }
+        let workshop_disabled_in_game = self.workshop_disabled_in_game(&workshop_mods);
+
         Ok(ScanSummary {
             game_mods,
             disabled_mods,
             external_manager_mods,
+            workshop_mods,
+            workshop_disabled_in_game,
         })
+    }
+
+    fn workshop_disabled_in_game(&self, workshop_mods: &[ModRecord]) -> BTreeSet<String> {
+        if workshop_mods.is_empty() {
+            return BTreeSet::new();
+        }
+        let Some(settings_path) = self.config.game_settings_path() else {
+            return BTreeSet::new();
+        };
+        let disabled_ids = game_settings::read_mod_entries(&settings_path)
+            .into_iter()
+            .filter(|entry| entry.source == SOURCE_WORKSHOP && !entry.is_enabled)
+            .map(|entry| entry.id)
+            .collect::<BTreeSet<_>>();
+        workshop_mods
+            .iter()
+            .filter(|record| disabled_ids.contains(&record.name))
+            .map(|record| record.stable_key())
+            .collect()
     }
 
     pub fn scan_and_update_state(&self) -> AppResult<ScanReport> {
@@ -105,7 +136,7 @@ impl App {
                 desired.remove(key);
             }
         }
-        write_desired_active_mod_keys(&desired, &self.config.state_dir)
+        write_desired_active_mod_keys(&desired, &summary, &self.config.state_dir)
     }
 
     pub fn disable_all_mods(&self) -> AppResult<Vec<DisabledModAction>> {
@@ -204,6 +235,7 @@ impl App {
         let quarantined_current_runs =
             save_backup::quarantine_modded_current_runs_for_vanilla(&self.config)?;
         vault::disable_all(&self.config.game_mods_dir)?;
+        self.disable_all_workshop_mods_in_game()?;
         let mut report = launcher::launch(&self.config, true)?;
         report.save_backups_created = save_backup.created.len();
         report.seeded_modded_profiles = save_backup.seeded_modded_profiles;
@@ -261,7 +293,7 @@ impl App {
         let mut summary = self.scan()?;
         let mut desired = desired_active_mod_keys(&summary, &self.config.state_dir)?;
         if prune_unavailable_desired_mod_keys(&mut desired, &summary) {
-            write_desired_active_mod_keys(&desired, &self.config.state_dir)?;
+            write_desired_active_mod_keys(&desired, &summary, &self.config.state_dir)?;
         }
         let mut actions = Vec::new();
 
@@ -281,8 +313,13 @@ impl App {
             .map(|record| record.stable_key())
             .collect::<BTreeSet<_>>();
 
-        for key in desired {
-            if active_keys.contains(&key) {
+        let workshop_keys = summary
+            .workshop_mods
+            .iter()
+            .map(|record| record.stable_key())
+            .collect::<BTreeSet<_>>();
+        for key in desired.iter().cloned() {
+            if active_keys.contains(&key) || workshop_keys.contains(&key) {
                 continue;
             }
             if !summary
@@ -306,18 +343,83 @@ impl App {
                 )?);
             }
 
+            // enable_mod re-reads the disabled folder itself, and enabling one key
+            // never changes another key's availability, so no rescan is needed here.
             let action =
                 vault::enable_mod(&key, &self.config.game_mods_dir, &self.config.vendor_dir)?;
             actions.push(action);
             active_keys.insert(key);
-            summary = self.scan()?;
         }
 
         actions.extend(vault::normalize_active_archives(
             &self.config.game_mods_dir,
             &self.config.vendor_dir,
         )?);
+        self.sync_game_mod_settings(&desired, &summary.workshop_mods)?;
         Ok(actions)
+    }
+
+    /// Mirrors the desired state into the game's own enable list: workshop mods
+    /// can only be switched there, and a local mod sitting in `mods/` still will
+    /// not load if the game remembers it as disabled.
+    fn sync_game_mod_settings(
+        &self,
+        desired: &BTreeSet<String>,
+        workshop_mods: &[ModRecord],
+    ) -> AppResult<usize> {
+        let Some(settings_path) = self.config.game_settings_path() else {
+            return Ok(0);
+        };
+        let mut changes = workshop_mods
+            .iter()
+            .map(|record| GameModChange {
+                id: record.name.clone(),
+                source: SOURCE_WORKSHOP,
+                enabled: desired.contains(&record.stable_key()),
+            })
+            .collect::<Vec<_>>();
+
+        let disabled_local_ids = game_settings::read_mod_entries(&settings_path)
+            .into_iter()
+            .filter(|entry| entry.source == SOURCE_MODS_DIRECTORY && !entry.is_enabled)
+            .map(|entry| entry.id)
+            .collect::<BTreeSet<_>>();
+        if !disabled_local_ids.is_empty() {
+            let active_local_mods =
+                scan_mod_directory(&self.config.game_mods_dir, ModSource::GameMods)?;
+            for record in &active_local_mods {
+                for manifest in find_mod_manifests(&record.path, 3) {
+                    if let Some(id) = read_manifest_identity(&manifest).id
+                        && disabled_local_ids.contains(&id)
+                    {
+                        changes.push(GameModChange {
+                            id,
+                            source: SOURCE_MODS_DIRECTORY,
+                            enabled: true,
+                        });
+                    }
+                }
+            }
+        }
+
+        game_settings::apply_mod_changes(&settings_path, &self.config.save_backup_dir, &changes)
+    }
+
+    fn disable_all_workshop_mods_in_game(&self) -> AppResult<usize> {
+        let Some(settings_path) = self.config.game_settings_path() else {
+            return Ok(0);
+        };
+        let changes = self
+            .scan()?
+            .workshop_mods
+            .into_iter()
+            .map(|record| GameModChange {
+                id: record.name,
+                source: SOURCE_WORKSHOP,
+                enabled: false,
+            })
+            .collect::<Vec<_>>();
+        game_settings::apply_mod_changes(&settings_path, &self.config.save_backup_dir, &changes)
     }
 }
 
@@ -333,10 +435,7 @@ fn prune_unavailable_desired_mod_keys(
 
 fn available_mod_keys(summary: &ScanSummary) -> BTreeSet<String> {
     summary
-        .game_mods
-        .iter()
-        .chain(summary.disabled_mods.iter())
-        .chain(summary.external_manager_mods.iter())
+        .records()
         .map(|record| record.stable_key())
         .collect()
 }
@@ -398,6 +497,7 @@ mod tests {
             mod_index_path: workspace.join("state").join("mod_index.tsv"),
             vendor_dir: workspace.join("vendor"),
             external_manager_dirs: Vec::new(),
+            workshop_dirs: Vec::new(),
         };
         let app = App::new(config);
 
@@ -427,6 +527,7 @@ mod tests {
             mod_index_path: workspace.join("state").join("mod_index.tsv"),
             vendor_dir: workspace.join("vendor"),
             external_manager_dirs: Vec::new(),
+            workshop_dirs: Vec::new(),
         };
         fs::create_dir_all(config.game_dir.join("mods.disabled")).expect("create disabled");
         fs::write(
@@ -463,6 +564,7 @@ mod tests {
             mod_index_path: workspace.join("state").join("mod_index.tsv"),
             vendor_dir: workspace.join("vendor"),
             external_manager_dirs: Vec::new(),
+            workshop_dirs: Vec::new(),
         };
         fs::create_dir_all(config.game_mods_dir.as_path()).expect("create game mods");
         fs::create_dir_all(config.game_dir.join("mods.disabled")).expect("create disabled mods");
@@ -516,6 +618,7 @@ mod tests {
             mod_index_path: workspace.join("state").join("mod_index.tsv"),
             vendor_dir: workspace.join("vendor"),
             external_manager_dirs: vec![external_dir.clone()],
+            workshop_dirs: Vec::new(),
         };
         fs::create_dir_all(&external_dir).expect("create external");
         fs::write(external_dir.join("External-v1.jar"), "external").expect("write external mod");
@@ -551,6 +654,7 @@ mod tests {
             mod_index_path: workspace.join("state").join("mod_index.tsv"),
             vendor_dir: workspace.join("vendor"),
             external_manager_dirs: Vec::new(),
+            workshop_dirs: Vec::new(),
         };
         fs::create_dir_all(config.game_dir.join("mods.disabled")).expect("create disabled mods");
         fs::write(
@@ -573,6 +677,109 @@ mod tests {
         assert!(!desired.contains("missing-v1"));
         assert!(desired.contains("beta-v1"));
         assert!(config.game_mods_dir.join("Beta-v1.jar").exists());
+    }
+
+    #[test]
+    fn workshop_mods_follow_game_settings_until_toggled_and_sync_on_launch() {
+        let workspace = test_workspace("workshop_mods_follow_game_settings");
+        let workshop_dir = workspace.join("workshop").join("2868840");
+        let save_dir = workspace.join("saves");
+        let mut config = AppConfig::from_workspace(workspace.clone());
+        config.game_dir = workspace.join("game");
+        config.game_mods_dir = workspace.join("game").join("mods");
+        config.save_dir = Some(save_dir.clone());
+        config.save_backup_dir = workspace.join("backups");
+        config.external_manager_dirs = Vec::new();
+        config.workshop_dirs = vec![workshop_dir.clone()];
+        for (item, id) in [("3747602295", "STS2-RitsuLib"), ("3792205243", "MpLib")] {
+            fs::create_dir_all(workshop_dir.join(item)).expect("create item");
+            fs::write(
+                workshop_dir.join(item).join("mod_manifest.json"),
+                format!(r#"{{"id":"{id}"}}"#),
+            )
+            .expect("write manifest");
+        }
+        fs::create_dir_all(&save_dir).expect("create saves");
+        let settings_path = save_dir.join("settings.save");
+        fs::write(
+            &settings_path,
+            r#"{"mod_settings":{"mod_list":[
+                {"id":"MpLib","is_enabled":false,"source":"steam_workshop"}
+            ],"mods_enabled":true}}"#,
+        )
+        .expect("write settings");
+        let app = App::new(config.clone());
+
+        let desired =
+            desired_active_mod_keys(&app.scan().expect("scan"), &config.state_dir).expect("seed");
+        assert!(desired.contains("workshop-sts2-ritsulib"));
+        assert!(!desired.contains("workshop-mplib"));
+
+        app.set_mods_desired_active(&[
+            ("workshop-mplib".to_string(), true),
+            ("workshop-sts2-ritsulib".to_string(), false),
+        ])
+        .expect("toggle");
+        // Toggling is deferred: the game's settings stay untouched until launch.
+        let enabled = |id: &str| {
+            game_settings::read_mod_entries(&settings_path)
+                .into_iter()
+                .find(|entry| entry.id == id)
+                .map(|entry| entry.is_enabled)
+        };
+        assert_eq!(enabled("MpLib"), Some(false));
+
+        app.sync_desired_mods_for_launch().expect("sync");
+        assert_eq!(enabled("MpLib"), Some(true));
+        assert_eq!(enabled("STS2-RitsuLib"), Some(false));
+
+        // Once known, the app's choice wins over later in-game state.
+        let desired =
+            desired_active_mod_keys(&app.scan().expect("scan"), &config.state_dir).expect("read");
+        assert!(!desired.contains("workshop-sts2-ritsulib"));
+
+        app.disable_all_workshop_mods_in_game()
+            .expect("vanilla disable");
+        assert_eq!(enabled("MpLib"), Some(false));
+        assert_eq!(enabled("STS2-RitsuLib"), Some(false));
+    }
+
+    #[test]
+    fn launch_sync_reenables_local_mods_the_game_marked_disabled() {
+        let workspace = test_workspace("launch_sync_reenables_local_mods");
+        let save_dir = workspace.join("saves");
+        let mut config = AppConfig::from_workspace(workspace.clone());
+        config.game_dir = workspace.join("game");
+        config.game_mods_dir = workspace.join("game").join("mods");
+        config.save_dir = Some(save_dir.clone());
+        config.save_backup_dir = workspace.join("backups");
+        config.external_manager_dirs = Vec::new();
+        config.workshop_dirs = Vec::new();
+        fs::create_dir_all(config.game_mods_dir.join("BaseLib")).expect("create mod");
+        fs::write(
+            config
+                .game_mods_dir
+                .join("BaseLib")
+                .join("mod_manifest.json"),
+            r#"{"id":"BaseLib"}"#,
+        )
+        .expect("write manifest");
+        fs::create_dir_all(&save_dir).expect("create saves");
+        let settings_path = save_dir.join("settings.save");
+        fs::write(
+            &settings_path,
+            r#"{"mod_settings":{"mod_list":[
+                {"id":"BaseLib","is_enabled":false,"source":"mods_directory"}
+            ]}}"#,
+        )
+        .expect("write settings");
+        let app = App::new(config);
+
+        app.sync_desired_mods_for_launch().expect("sync");
+
+        let entries = game_settings::read_mod_entries(&settings_path);
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0].is_enabled);
     }
 
     fn test_workspace(name: &str) -> PathBuf {

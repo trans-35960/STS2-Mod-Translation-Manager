@@ -19,6 +19,11 @@ fn paths_dto(config: &AppConfig) -> PathsDto {
             .iter()
             .map(|path| display_path(path))
             .collect(),
+        workshop_dirs: config
+            .workshop_dirs
+            .iter()
+            .map(|path| display_path(path))
+            .collect(),
     }
 }
 

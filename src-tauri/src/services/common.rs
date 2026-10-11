@@ -282,6 +282,7 @@ fn connected_mod_keys(summary: &ScanSummary) -> BTreeSet<String> {
                 .filter(|record| !is_game_disabled_record(record)),
         )
         .chain(summary.external_manager_mods.iter())
+        .chain(summary.workshop_mods.iter())
         .map(ModRecord::stable_key)
         .collect()
 }

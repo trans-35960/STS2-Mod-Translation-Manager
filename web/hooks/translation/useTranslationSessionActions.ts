@@ -293,6 +293,8 @@ export function useTranslationSessionActions({
           active: false,
           managed: true,
           external: false,
+          workshop: false,
+          workshop_item_id: null,
           source_label: "",
           kind: "",
           version_hint: translationProject.version || null,

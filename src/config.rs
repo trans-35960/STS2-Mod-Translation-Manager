@@ -1,6 +1,9 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
+pub const STEAM_APP_ID: &str = "2868840";
+const GAME_SETTINGS_FILE: &str = "settings.save";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AppConfig {
     pub workspace_dir: PathBuf,
@@ -18,6 +21,8 @@ pub struct AppConfig {
     pub mod_index_path: PathBuf,
     pub vendor_dir: PathBuf,
     pub external_manager_dirs: Vec<PathBuf>,
+    /// Steam Workshop download folders (`steamapps/workshop/content/<appid>`).
+    pub workshop_dirs: Vec<PathBuf>,
 }
 
 impl AppConfig {
@@ -54,7 +59,15 @@ impl AppConfig {
             mod_index_path: workspace_dir.join("state").join("mod_index.tsv"),
             vendor_dir: workspace_dir.join("vendor"),
             external_manager_dirs: default_external_manager_dirs(),
+            workshop_dirs: default_workshop_dirs(),
         }
+    }
+
+    /// The game's own settings file, which holds the per-mod `is_enabled` list.
+    pub fn game_settings_path(&self) -> Option<PathBuf> {
+        self.save_dir
+            .as_deref()
+            .map(|save_dir| save_dir.join(GAME_SETTINGS_FILE))
     }
 
     pub fn managed_dirs(&self) -> [&Path; 6] {
@@ -125,7 +138,9 @@ fn looks_like_game_dir(path: &Path) -> bool {
 fn steam_game_dir() -> Option<PathBuf> {
     let steam_dir = steam_install_dir()?;
     for library in steam_library_dirs(&steam_dir) {
-        let manifest = library.join("steamapps").join("appmanifest_2868840.acf");
+        let manifest = library
+            .join("steamapps")
+            .join(format!("appmanifest_{STEAM_APP_ID}.acf"));
         if !manifest.exists() {
             continue;
         }
@@ -182,6 +197,28 @@ fn known_game_exe_names() -> [&'static str; 6] {
         "sts2.exe",
         "StS2.exe",
     ]
+}
+
+fn default_workshop_dirs() -> Vec<PathBuf> {
+    if let Some(paths) = env::var_os("STS2_WORKSHOP_DIRS") {
+        return split_env_paths(&paths);
+    }
+    let Some(steam_dir) = steam_install_dir() else {
+        return Vec::new();
+    };
+    steam_library_dirs(&steam_dir)
+        .into_iter()
+        .map(|library| workshop_content_dir(&library))
+        .filter(|path| path.is_dir())
+        .collect()
+}
+
+fn workshop_content_dir(library: &Path) -> PathBuf {
+    library
+        .join("steamapps")
+        .join("workshop")
+        .join("content")
+        .join(STEAM_APP_ID)
 }
 
 fn default_external_manager_dirs() -> Vec<PathBuf> {
