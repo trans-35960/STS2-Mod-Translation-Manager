@@ -184,12 +184,16 @@ pub fn extract_term_candidates(
                 .sort_by(|left, right| right.1.cmp(&left.1).then_with(|| left.0.cmp(&right.0)));
             let mention_count = lowered_sources
                 .iter()
-                .filter(|source| mentions(source, &lower))
+                .filter(|source| crate::glossary::mentions_term(source, &lower))
                 .count();
             let example = entries
                 .iter()
                 .find(|entry| {
-                    !is_name_entry(entry) && mentions(&entry.source_value.to_lowercase(), &lower)
+                    !is_name_entry(entry)
+                        && crate::glossary::mentions_term(
+                            &entry.source_value.to_lowercase(),
+                            &lower,
+                        )
                 })
                 .map(|entry| example_line(&entry.source_value))
                 .unwrap_or_default();
@@ -231,16 +235,6 @@ pub fn extract_term_candidates(
     });
     candidates.truncate(MAX_CANDIDATES);
     candidates
-}
-
-/// Whole-word match for spaced scripts; plain substring for CJK text,
-/// which has no spaces between words.
-fn mentions(source_lower: &str, term_lower: &str) -> bool {
-    if term_lower.chars().any(|ch| !ch.is_ascii()) {
-        source_lower.contains(term_lower)
-    } else {
-        crate::glossary::contains_word(source_lower, term_lower)
-    }
 }
 
 /// A short phrase worth treating as a term, or `None` for sentences,

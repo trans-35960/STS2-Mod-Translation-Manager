@@ -417,7 +417,9 @@ export const previewJsonValidation: JsonValidation = {
     {
       key: "file://powers.json#/bash/description",
       kind: "glossary",
-      message: "용어집: 'Vulnerable' → '취약'",
+      message: "용어집: 'Vulnerable' → '취약함' · 치환: 취약 → 취약함",
+      original: "[gold]취약을[/gold] 2 부여합니다.",
+      suggestion: "[gold]취약함을[/gold] 2 부여합니다.",
     },
     {
       key: "file://powers.json#/bash/description",

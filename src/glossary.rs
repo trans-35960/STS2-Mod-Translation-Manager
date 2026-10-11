@@ -11,9 +11,7 @@
 //! as whole words because the user chose them deliberately.
 
 use crate::error::{AppError, AppResult};
-use crate::json_translation::{
-    JsonTranslationEntry, JsonTranslationSheet, JsonTranslationStatus, JsonValidationIssue,
-};
+use crate::json_translation::{JsonTranslationEntry, JsonTranslationSheet, JsonTranslationStatus};
 use crate::pck_reader::read_pck_files;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs;
@@ -322,11 +320,22 @@ fn clean_cell(value: &str) -> String {
 
 /// Reports translations that do not use the expected name for a term found
 /// in the source text.
+/// A glossary mismatch, with a corrected translation when the term's
+/// highlighted spot in the translation could be found.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GlossaryIssue {
+    pub key: String,
+    pub message: String,
+    pub original: String,
+    pub suggestion: Option<String>,
+}
+
 pub fn glossary_issues(
     sheet: &JsonTranslationSheet,
     game: Option<&GameGlossary>,
     user_terms: &[GlossaryTerm],
-) -> Vec<JsonValidationIssue> {
+) -> Vec<GlossaryIssue> {
+    let korean = is_korean_language(&sheet.target_language);
     let user_terms = user_terms
         .iter()
         .map(|term| (term.source.to_lowercase(), term))
@@ -340,8 +349,15 @@ pub fn glossary_issues(
         let mut expected: Vec<&GlossaryTerm> = Vec::new();
         let mut seen = BTreeSet::new();
 
+        // Highlighted words may be plural ("[gold]Shivs[/gold]"); plain text
+        // must match the term exactly so other names ("Artorias") stay out.
+        let highlighted = highlight_spans(&entry.source_value);
         for (lower, term) in &user_terms {
-            if contains_word(&source_lower, lower) && seen.insert(lower.clone()) {
+            let named = mentions_term(&source_lower, lower)
+                || highlighted
+                    .iter()
+                    .any(|span| phrase_matches(span.content, &term.source));
+            if named && seen.insert(lower.clone()) {
                 expected.push(term);
             }
         }
@@ -361,23 +377,202 @@ pub fn glossary_issues(
         }
 
         let translated_lower = entry.translated_value.to_lowercase();
-        for term in expected
+        let missing = expected
             .into_iter()
             .filter(|term| !uses_any_target(&translated_lower, term))
             .take(MAX_ISSUES_PER_ENTRY)
-        {
-            issues.push(JsonValidationIssue {
+            .collect::<Vec<_>>();
+        if missing.is_empty() {
+            continue;
+        }
+        let fix = replace_term_variants(entry, &missing, korean);
+        for (index, term) in missing.iter().enumerate() {
+            let replaced = fix
+                .as_ref()
+                .and_then(|fix| {
+                    fix.replaced
+                        .iter()
+                        .find(|(source, _)| source == &term.source)
+                })
+                .map(|(_, variant)| format!(" · 치환: {variant} → {}", term.targets[0]))
+                .unwrap_or_default();
+            issues.push(GlossaryIssue {
                 key: entry.key.clone(),
-                kind: GLOSSARY_ISSUE_KIND.to_string(),
                 message: format!(
-                    "용어집: '{}' → '{}'",
+                    "용어집: '{}' → '{}'{replaced}",
                     term.source,
                     term.targets.join("' / '")
                 ),
+                original: entry.translated_value.clone(),
+                // One combined fix per entry, on its first issue.
+                suggestion: (index == 0)
+                    .then(|| fix.as_ref().map(|fix| fix.value.clone()))
+                    .flatten(),
             });
         }
     }
     issues
+}
+
+struct TermFix {
+    value: String,
+    /// `(term source, variant that was replaced)`
+    replaced: Vec<(String, String)>,
+}
+
+/// Rewrites the translation's highlighted spans that correspond (by tag
+/// order) to a missing term's highlight in the source, so a split
+/// translation ("위압 오라") becomes the glossary one ("위압감"). For Korean,
+/// a particle right after the term is re-chosen for the new final consonant.
+fn replace_term_variants(
+    entry: &JsonTranslationEntry,
+    missing: &[&GlossaryTerm],
+    korean: bool,
+) -> Option<TermFix> {
+    let source_spans = highlight_spans(&entry.source_value);
+    let target_spans = highlight_spans(&entry.translated_value);
+    let same_shape = !source_spans.is_empty()
+        && source_spans.len() == target_spans.len()
+        && source_spans
+            .iter()
+            .zip(&target_spans)
+            .all(|(left, right)| left.tag == right.tag);
+    if !same_shape {
+        return None;
+    }
+    let value = &entry.translated_value;
+    let mut output = String::with_capacity(value.len() + 8);
+    let mut replaced = Vec::new();
+    let mut cursor = 0;
+    for (source, target) in source_spans.iter().zip(&target_spans) {
+        let Some(term) = missing
+            .iter()
+            .find(|term| phrase_matches(source.content, &term.source))
+        else {
+            continue;
+        };
+        let canonical = term.targets[0].as_str();
+        let content = target.content.trim();
+        let (stem, inner_josa) = if korean {
+            split_trailing_josa(content)
+        } else {
+            (content, "")
+        };
+        if stem.is_empty() || stem == canonical || has_markup(stem) {
+            continue;
+        }
+        output.push_str(&value[cursor..target.start]);
+        let inner = if inner_josa.is_empty() {
+            String::new()
+        } else {
+            adjust_josa(canonical, inner_josa)
+        };
+        output.push_str(&format!("[{0}]{canonical}{inner}[/{0}]", target.tag));
+        cursor = target.end;
+        if korean && inner_josa.is_empty() {
+            if let Some(josa) = leading_josa(&value[cursor..]) {
+                output.push_str(&adjust_josa(canonical, josa));
+                cursor += josa.len();
+            }
+        }
+        replaced.push((term.source.clone(), stem.to_string()));
+    }
+    if replaced.is_empty() {
+        return None;
+    }
+    output.push_str(&value[cursor..]);
+    Some(TermFix {
+        value: output,
+        replaced,
+    })
+}
+
+/// Highlighted source text naming the term, allowing English plurals and
+/// possessives like the game glossary lookup does.
+fn phrase_matches(phrase: &str, term: &str) -> bool {
+    let phrase = phrase.trim().to_lowercase();
+    let term = term.trim().to_lowercase();
+    phrase == term
+        || [
+            phrase.strip_suffix("'s"),
+            phrase.strip_suffix("es"),
+            phrase.strip_suffix('s'),
+        ]
+        .into_iter()
+        .flatten()
+        .any(|candidate| candidate == term)
+}
+
+/// Whole-word match for spaced scripts; plain substring for CJK text, which
+/// has no spaces between words.
+pub(crate) fn mentions_term(source_lower: &str, term_lower: &str) -> bool {
+    if term_lower.chars().any(|ch| !ch.is_ascii()) {
+        !term_lower.is_empty() && source_lower.contains(term_lower)
+    } else {
+        contains_word(source_lower, term_lower)
+    }
+}
+
+/// Particle pairs chosen by the preceding final consonant:
+/// (after a consonant, after a vowel).
+const JOSA_PAIRS: &[(&str, &str)] = &[
+    ("으로서", "로서"),
+    ("으로써", "로써"),
+    ("으로는", "로는"),
+    ("으로", "로"),
+    ("이랑", "랑"),
+    ("이나", "나"),
+    ("을", "를"),
+    ("이", "가"),
+    ("은", "는"),
+    ("과", "와"),
+];
+
+fn split_trailing_josa(content: &str) -> (&str, &str) {
+    KOREAN_JOSA
+        .iter()
+        .find(|josa| content.len() > josa.len() + 3 && content.ends_with(*josa))
+        .map(|josa| {
+            (
+                content[..content.len() - josa.len()].trim_end(),
+                &content[content.len() - josa.len()..],
+            )
+        })
+        .unwrap_or((content, ""))
+}
+
+fn leading_josa(rest: &str) -> Option<&'static str> {
+    JOSA_PAIRS
+        .iter()
+        .flat_map(|(with, without)| [*with, *without])
+        .filter(|josa| rest.starts_with(josa))
+        .max_by_key(|josa| josa.len())
+}
+
+/// Re-chooses a particle for `word` (을/를, 이/가, 으로/로 ...). Unknown
+/// particles, or words not ending in a Hangul syllable, keep the particle.
+fn adjust_josa(word: &str, josa: &str) -> String {
+    let Some(&(with, without)) = JOSA_PAIRS
+        .iter()
+        .find(|(with, without)| *with == josa || *without == josa)
+    else {
+        return josa.to_string();
+    };
+    let Some(last) = word
+        .chars()
+        .last()
+        .filter(|ch| ('\u{AC00}'..='\u{D7A3}').contains(ch))
+    else {
+        return josa.to_string();
+    };
+    let final_consonant = (last as u32 - 0xAC00) % 28;
+    let uses_consonant_form = if with.starts_with('으') {
+        // ㄹ (index 8) takes 로 like a vowel does.
+        final_consonant != 0 && final_consonant != 8
+    } else {
+        final_consonant != 0
+    };
+    (if uses_consonant_form { with } else { without }).to_string()
 }
 
 /// Korean particles, longest first so `으로` wins over `로`.
@@ -627,7 +822,7 @@ pub fn entry_glossary_terms<'a>(
     let mut terms = Vec::new();
     for term in user_terms {
         let lower = term.source.to_lowercase();
-        if contains_word(&source_lower, &lower) && seen.insert(lower) {
+        if mentions_term(&source_lower, &lower) && seen.insert(lower) {
             terms.push(term);
         }
     }
@@ -782,7 +977,6 @@ mod tests {
         let issues = glossary_issues(&sheet, Some(&game), &[]);
         assert_eq!(issues.len(), 1);
         assert_eq!(issues[0].key, sheet.entries[1].key);
-        assert_eq!(issues[0].kind, GLOSSARY_ISSUE_KIND);
         assert!(issues[0].message.contains("취약"));
     }
 
@@ -975,5 +1169,74 @@ mod tests {
         let merged = merge_glossary_terms(&project, &language);
         assert_eq!(merged.len(), 2);
         assert_eq!(merged[0].targets, vec!["알트리아".to_string()]);
+    }
+
+    #[test]
+    fn suggests_replacing_split_translations_with_the_glossary_term() {
+        let user = vec![
+            GlossaryTerm {
+                source: "Intimidation Aura".to_string(),
+                targets: vec!["위압감".to_string()],
+            },
+            GlossaryTerm {
+                source: "Shiv".to_string(),
+                targets: vec!["단검".to_string()],
+            },
+        ];
+        let sheet = sheet(vec![
+            // Particle after the tag is re-chosen: 오라를 -> 위압감을.
+            entry(
+                "Gain [gold]Intimidation Aura[/gold].",
+                "[gold]위압 오라[/gold]를 얻습니다.",
+            ),
+            // Particle inside the tag, plural source, 으로 -> 로 after a vowel.
+            entry(
+                "Turn into [blue]Shivs[/blue] and [gold]Intimidation Aura[/gold].",
+                "[blue]단도로[/blue] 바꾸고 [gold]위압감[/gold]을 얻습니다.",
+            ),
+            // Tags do not line up: report only.
+            entry(
+                "Gain [gold]Intimidation Aura[/gold].",
+                "위압 오라를 얻습니다.",
+            ),
+        ]);
+        let issues = glossary_issues(&sheet, None, &user);
+        assert_eq!(issues.len(), 3, "{issues:#?}");
+        assert_eq!(
+            issues[0].suggestion.as_deref(),
+            Some("[gold]위압감[/gold]을 얻습니다.")
+        );
+        assert!(issues[0].message.contains("치환: 위압 오라 → 위압감"));
+        assert_eq!(
+            issues[1].suggestion.as_deref(),
+            Some("[blue]단검으로[/blue] 바꾸고 [gold]위압감[/gold]을 얻습니다.")
+        );
+        assert_eq!(issues[2].suggestion, None);
+    }
+
+    #[test]
+    fn particles_follow_the_final_consonant() {
+        assert_eq!(adjust_josa("위압감", "를"), "을");
+        assert_eq!(adjust_josa("단도", "을"), "를");
+        assert_eq!(adjust_josa("단검", "로"), "으로");
+        assert_eq!(adjust_josa("마을", "으로"), "로");
+        assert_eq!(adjust_josa("오라", "이"), "가");
+        assert_eq!(adjust_josa("Artoria", "을"), "을");
+        assert_eq!(adjust_josa("위압감", "의"), "의");
+    }
+
+    #[test]
+    fn user_terms_match_inside_cjk_sentences() {
+        let user = vec![GlossaryTerm {
+            source: "谦逊".to_string(),
+            targets: vec!["겸손".to_string()],
+        }];
+        let mut sheet = sheet(vec![entry(
+            "这张牌的谦逊改写尚未实现。",
+            "이 카드의 겸허 효과는 아직 없습니다.",
+        )]);
+        sheet.source_path = "Z:/mods/sample/localization/zhs".to_string();
+        let issues = glossary_issues(&sheet, None, &user);
+        assert_eq!(issues.len(), 1);
     }
 }

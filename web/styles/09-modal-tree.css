@@ -482,8 +482,9 @@
 }
 
 .term-prompt-parts textarea {
-  flex: 1 1 220px;
+  flex: 1 0 100%;
   min-width: 0;
+  min-height: 52px;
   resize: none;
   border-style: dashed;
 }
@@ -586,8 +587,15 @@
 }
 
 .ai-prompt-tab-hint {
-  margin: 8px 0 0;
+  margin: 10px 0 2px;
   color: var(--muted);
   font-size: 12px;
 }
 
+.ai-prompt-tabs {
+  margin-bottom: 6px;
+}
+
+.term-candidate-source {
+  cursor: help;
+}

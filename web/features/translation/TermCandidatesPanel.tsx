@@ -175,7 +175,7 @@ export function TermCandidatesPanel({
           ))}
           <textarea
             data-own-paste
-            rows={1}
+            rows={2}
             value=""
             onChange={() => undefined}
             onPaste={(event) => {
@@ -193,14 +193,14 @@ export function TermCandidatesPanel({
           {rows.map((row) => {
             const split = row.suggestions.length > 1;
             return (
-              <div className={row.checked ? "term-candidate checked" : "term-candidate"} key={row.source} title={row.example}>
+              <div className={row.checked ? "term-candidate checked" : "term-candidate"} key={row.source}>
                 <input
                   type="checkbox"
                   aria-label={`${row.source} 선택`}
                   checked={row.checked}
                   onChange={(event) => update(row.source, { checked: event.target.checked })}
                 />
-                <div className="term-candidate-source">
+                <div className="term-candidate-source" title={row.example ? `예문: ${row.example}` : undefined}>
                   <strong>{row.source}</strong>
                   <small>
                     {row.count}회 · {row.kinds.map((kind) => KIND_LABELS[kind] ?? kind).join("/")}

@@ -148,17 +148,25 @@ export function TranslationSheetTable({
     () => summarizeValidationIssues(allValidationItems),
     [allValidationItems],
   );
+  // Suggested corrections still valid for the current text, per issue kind.
+  // Kinds are applied separately because each fix was computed from the
+  // original text and would overwrite the other.
   const applicableFixes = React.useMemo(() => {
     const entries = props.sheet?.entries ?? [];
     const indexByKey = new Map(entries.map((entry, entryIndex) => [entry.key, entryIndex]));
-    const fixes: Array<{ index: number; value: string }> = [];
+    const byKind = new Map<string, Map<number, string>>();
     for (const issue of allValidationItems) {
       const entryIndex = indexByKey.get(issue.key);
       if (issue.suggestion != null && entryIndex !== undefined && entries[entryIndex].translated_value === issue.original) {
-        fixes.push({ index: entryIndex, value: issue.suggestion });
+        const fixes = byKind.get(issue.kind) ?? new Map<number, string>();
+        fixes.set(entryIndex, issue.suggestion);
+        byKind.set(issue.kind, fixes);
       }
     }
-    return fixes;
+    return [...byKind.entries()].map(([kind, fixes]) => ({
+      kind,
+      updates: [...fixes.entries()].map(([index, value]) => ({ index, value })),
+    }));
   }, [allValidationItems, props.sheet]);
   // F8 / Shift+F8 walk through warned entries in sheet order.
   const warningKeysInOrder = React.useMemo(() => {
@@ -322,16 +330,17 @@ export function TranslationSheetTable({
                     {validationIssueLabel(item.kind)} <b>{item.count}</b>
                   </button>
                 ))}
-                {applicableFixes.length > 0 && (
+                {applicableFixes.map((group) => (
                   <button
                     className="validation-fix-all"
                     type="button"
-                    title="강조 태그 안의 조사를 태그 밖으로 옮깁니다."
-                    onClick={() => props.onReplaceEntries(applicableFixes)}
+                    key={group.kind}
+                    title={fixAllTitle(group.kind)}
+                    onClick={() => props.onReplaceEntries(group.updates)}
                   >
-                    조사 위치 모두 고치기 <b>{applicableFixes.length}</b>
+                    {group.kind === "glossary" ? "용어 모두 치환" : "조사 위치 모두 고치기"} <b>{group.updates.length}</b>
                   </button>
-                )}
+                ))}
               </div>
               <div className="validation-issue-list">
                 {validationItems.map((issue, issueIndex) => (
@@ -750,7 +759,7 @@ const JsonEntryRow = React.memo(function JsonEntryRow({
               onEditEntry(index, fixIssue.suggestion ?? entry.translated_value);
             }}
           >
-            조사 위치 고치기
+            {fixLabel(fixIssue.kind)}
           </button>
         )}
         {issues.length > 0 && (
@@ -1140,6 +1149,16 @@ function summarizeValidationIssues(issues: DisplayValidationIssue[]) {
   return Array.from(counts.entries())
     .map(([kind, count]) => ({ kind, count }))
     .sort((left, right) => right.count - left.count || validationIssueLabel(left.kind).localeCompare(validationIssueLabel(right.kind)));
+}
+
+function fixLabel(kind: string) {
+  return kind === "glossary" ? "용어 치환" : "조사 위치 고치기";
+}
+
+function fixAllTitle(kind: string) {
+  return kind === "glossary"
+    ? "다르게 번역된 강조 용어를 용어집 번역어로 바꾸고 뒤의 조사를 받침에 맞춥니다."
+    : "강조 태그 안의 조사를 태그 밖으로 옮깁니다.";
 }
 
 function validationIssueLabel(kind: string) {

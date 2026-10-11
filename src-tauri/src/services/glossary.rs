@@ -28,10 +28,10 @@ fn sheet_glossary_issues(
             .into_iter()
             .map(|issue| JsonValidationIssueDto {
                 key: issue.key,
-                kind: issue.kind,
+                kind: GLOSSARY_ISSUE_KIND.to_string(),
                 message: issue.message,
-                original: None,
-                suggestion: None,
+                original: issue.suggestion.is_some().then_some(issue.original),
+                suggestion: issue.suggestion,
             }),
     );
     issues.extend(
