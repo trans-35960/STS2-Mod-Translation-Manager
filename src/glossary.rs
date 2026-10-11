@@ -90,10 +90,9 @@ pub fn load_game_glossary(
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     if let Some((cached_signature, glossary)) =
         cache.lock().ok().and_then(|cache| cache.get(&key).cloned())
+        && cached_signature == signature
     {
-        if cached_signature == signature {
-            return Ok(Some(glossary));
-        }
+        return Ok(Some(glossary));
     }
 
     let source_prefix = format!("{GAME_LOCALIZATION_PREFIX}{source_language}/");
@@ -469,11 +468,12 @@ fn replace_term_variants(
         };
         output.push_str(&format!("[{0}]{canonical}{inner}[/{0}]", target.tag));
         cursor = target.end;
-        if korean && inner_josa.is_empty() {
-            if let Some(josa) = leading_josa(&value[cursor..]) {
-                output.push_str(&adjust_josa(canonical, josa));
-                cursor += josa.len();
-            }
+        if korean
+            && inner_josa.is_empty()
+            && let Some(josa) = leading_josa(&value[cursor..])
+        {
+            output.push_str(&adjust_josa(canonical, josa));
+            cursor += josa.len();
         }
         replaced.push((term.source.clone(), stem.to_string()));
     }
@@ -506,7 +506,7 @@ fn phrase_matches(phrase: &str, term: &str) -> bool {
 /// Whole-word match for spaced scripts; plain substring for CJK text, which
 /// has no spaces between words.
 pub(crate) fn mentions_term(source_lower: &str, term_lower: &str) -> bool {
-    if term_lower.chars().any(|ch| !ch.is_ascii()) {
+    if !term_lower.is_ascii() {
         !term_lower.is_empty() && source_lower.contains(term_lower)
     } else {
         contains_word(source_lower, term_lower)
@@ -797,10 +797,10 @@ pub fn sheet_glossary_terms(
             if has_markup(span.content) {
                 continue;
             }
-            if let Some(term) = game.lookup(span.content) {
-                if seen.insert(term.source.to_lowercase()) {
-                    game_terms.push(term.clone());
-                }
+            if let Some(term) = game.lookup(span.content)
+                && seen.insert(term.source.to_lowercase())
+            {
+                game_terms.push(term.clone());
             }
         }
     }
@@ -831,10 +831,10 @@ pub fn entry_glossary_terms<'a>(
             if has_markup(span.content) {
                 continue;
             }
-            if let Some(term) = game.lookup(span.content) {
-                if seen.insert(term.source.to_lowercase()) {
-                    terms.push(term);
-                }
+            if let Some(term) = game.lookup(span.content)
+                && seen.insert(term.source.to_lowercase())
+            {
+                terms.push(term);
             }
         }
     }

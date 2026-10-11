@@ -173,7 +173,7 @@ pub fn extract_term_candidates(
         .into_iter()
         .filter(|(lower, builder)| {
             !known.contains(lower)
-                && !game.is_some_and(|game| game.lookup(&builder.display).is_some())
+                && game.is_none_or(|game| game.lookup(&builder.display).is_none())
                 && (builder.kinds.contains(&"title")
                     || builder.kinds.contains(&"capitalized")
                     || highlight_counts.get(lower).copied().unwrap_or(0) >= MIN_HIGHLIGHT_COUNT)

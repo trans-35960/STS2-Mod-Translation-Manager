@@ -88,12 +88,15 @@ pub fn extract_pck_files(
     Ok(Some(written))
 }
 
+/// `(path inside the archive, file bytes)`
+pub type PckFile = (String, Vec<u8>);
+
 /// Reads every entry accepted by `wanted` into memory, or `None` when the
 /// archive is unsupported.
 pub fn read_pck_files(
     pck_path: &Path,
     wanted: impl Fn(&str) -> bool,
-) -> AppResult<Option<Vec<(String, Vec<u8>)>>> {
+) -> AppResult<Option<Vec<PckFile>>> {
     let Some(entries) = read_pck_index(pck_path)? else {
         return Ok(None);
     };

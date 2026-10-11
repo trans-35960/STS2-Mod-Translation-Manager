@@ -11,7 +11,7 @@ function Get-RustCommandNames {
     $content = Get-Content $Path -Raw
     $matches = [regex]::Matches(
         $content,
-        '#\[tauri::command\]\s+pub\(crate\)\s+fn\s+([a-zA-Z0-9_]+)',
+        '#\[tauri::command\]\s+pub\(crate\)\s+(?:async\s+)?fn\s+([a-zA-Z0-9_]+)',
         [System.Text.RegularExpressions.RegexOptions]::Singleline
     )
     $matches | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique

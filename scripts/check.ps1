@@ -24,7 +24,12 @@ function Invoke-Step {
 
     Write-Host ""
     Write-Host "==> $Label"
+    $global:LASTEXITCODE = 0
     & $Command
+    # Native tools (cargo, node) report failure only through the exit code.
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Label failed (exit code $LASTEXITCODE)"
+    }
 }
 
 function Resolve-Node {

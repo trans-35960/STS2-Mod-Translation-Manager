@@ -146,9 +146,9 @@ pub fn build_prompt_parts(
     let rows = translation_slot_entries(sheet)
         .into_iter()
         .filter(|slot| {
-            !options
+            options
                 .include_keys
-                .is_some_and(|keys| !keys.contains(&slot.entry.key))
+                .is_none_or(|keys| keys.contains(&slot.entry.key))
         })
         .filter(|slot| !options.only_empty || slot.entry.translated_value.is_empty())
         .map(|slot| PromptRow {
