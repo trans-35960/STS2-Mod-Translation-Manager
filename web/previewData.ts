@@ -373,6 +373,7 @@ const basePreviewJsonSheet: JsonTranslationSheet = {
     },
     {
       key: "file://powers.json#/bash/description",
+      previous_source_value: "Apply 1 [gold]Weak[/gold].",
       source_value: "Apply 2 Vulnerable.",
       translated_value: "취약을 2 부여합니다.",
       status: "updated",

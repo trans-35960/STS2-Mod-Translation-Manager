@@ -44,6 +44,7 @@ import {
   whitespaceValueLabel,
 } from "./translationUtils";
 import { useVirtualRows } from "./useVirtualRows";
+import { diffSourceValues } from "./sourceDiff";
 import { normalizeLanguageTag } from "../mods/modUtils";
 
 const EMPTY_VALIDATION_ISSUES: DisplayValidationIssue[] = [];
@@ -713,9 +714,14 @@ const JsonEntryRow = React.memo(function JsonEntryRow({
           }))}
         />
       )}
-      <span className={sourceCellClass} title={entry.source_value}>
-        <HighlightedIssueText kinds={issueKinds} text={entry.source_value} query={searchHighlight} />
-      </span>
+      <div className="source-cell-stack">
+        <span className={sourceCellClass} title={entry.source_value}>
+          <HighlightedIssueText kinds={issueKinds} text={entry.source_value} query={searchHighlight} />
+        </span>
+        {entry.status === "updated" && entry.previous_source_value != null && entry.previous_source_value !== entry.source_value && (
+          <SourceChangePreview previous={entry.previous_source_value} current={entry.source_value} />
+        )}
+      </div>
       <code title={parts.file}>
         <HighlightedText text={parts.file} query={searchHighlight} />
       </code>
@@ -823,6 +829,26 @@ function areJsonEntryRowsEqual(
     previous.wrapSource === next.wrapSource &&
     previous.compareValuesByLanguage === next.compareValuesByLanguage &&
     previous.copiedIdKey === next.copiedIdKey
+  );
+}
+
+function SourceChangePreview({ previous, current }: { previous: string; current: string }) {
+  const segments = React.useMemo(() => diffSourceValues(previous, current), [previous, current]);
+  return (
+    <div className="source-diff-preview" aria-label="원문 변경 내용" title={`이전 원문: ${previous}`}>
+      <small>원문 변경</small>
+      <span>
+        {segments.map((segment, index) =>
+          segment.kind === "removed" ? (
+            <del key={index}>{segment.text}</del>
+          ) : segment.kind === "added" ? (
+            <ins key={index}>{segment.text}</ins>
+          ) : (
+            <React.Fragment key={index}>{segment.text}</React.Fragment>
+          ),
+        )}
+      </span>
+    </div>
   );
 }
 

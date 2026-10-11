@@ -604,6 +604,7 @@
 }
 
 .json-entry-row > span,
+.source-cell-stack > .source-value-cell,
 .json-entry-row code {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -732,6 +733,45 @@
   line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.source-cell-stack {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.source-diff-preview {
+  display: grid;
+  gap: 2px;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 6px;
+  background: #f3f7ff;
+  padding: 4px 6px;
+  color: #1e3a5f;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.source-diff-preview small {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.source-diff-preview del {
+  border-radius: 3px;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.source-diff-preview ins {
+  border-radius: 3px;
+  background: #dcfce7;
+  color: #166534;
+  text-decoration: none;
 }
 
 .source-value-cell.warning-source {
