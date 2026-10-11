@@ -8,6 +8,7 @@
 /.vite-dev.*.log
 /.codex
 /.codex-local/
+/.claude/
 /.understand-anything/
 /logs
 /backups
