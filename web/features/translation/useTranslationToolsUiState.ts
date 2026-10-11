@@ -26,7 +26,6 @@ import {
   type TranslationProjectNode,
 } from "./translationUtils";
 
-const loadMoreBatch = 120;
 const defaultColumns: TranslationColumns = {
   status: 76,
   id: 150,
@@ -44,7 +43,6 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
   const [entrySearch, setEntrySearch] = React.useState("");
   const [replaceSearch, setReplaceSearch] = React.useState("");
   const [replaceWith, setReplaceWith] = React.useState("");
-  const [visibleLimit, setVisibleLimit] = React.useState(loadMoreBatch);
   const [exportOnlyEmpty, setExportOnlyEmpty] = React.useState(false);
   const [showIds, setShowIds] = React.useState(true);
   const [columns, setColumns] = React.useState<TranslationColumns>(defaultColumns);
@@ -186,18 +184,14 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
       validationWarningKeys,
     ],
   );
-  const visibleEntries = filteredEntries.slice(0, visibleLimit);
+  const selectedRowSet = React.useMemo(() => new Set(props.selectedRows), [props.selectedRows]);
   const replaceTargetEntries =
-    props.selectedRows.length > 0
-      ? filteredEntries.filter(({ index }) => props.selectedRows.includes(index))
+    selectedRowSet.size > 0
+      ? filteredEntries.filter(({ index }) => selectedRowSet.has(index))
       : filteredEntries;
   const replaceMatchCount = replaceSearch
     ? replaceTargetEntries.filter(({ entry }) => entry.translated_value.includes(replaceSearch)).length
     : 0;
-
-  React.useEffect(() => {
-    setVisibleLimit(loadMoreBatch);
-  }, [activeProjectPath, entryFilter, entrySearch, props.sheet]);
 
   React.useEffect(() => {
     if (entryFilter === "conflict" && pasteCandidateCount === 0) {
@@ -245,10 +239,6 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     document.addEventListener("mouseup", onUp);
   }
 
-  function loadMoreVisibleEntries() {
-    setVisibleLimit((value) => Math.min(value + loadMoreBatch, filteredEntries.length));
-  }
-
   function showEntryCondition(filter: TranslationEntryFilter) {
     setActiveProjectPath(null);
     setEntrySearch("");
@@ -268,15 +258,10 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
       return;
     }
     const targetEntry = props.sheet.entries.find((entry) => entry.key === key);
-    const position = props.sheet.entries
-      .map((entry, index) => ({ entry, index }))
-      .filter(({ entry }) => entry.status === "removed" || isTranslatableEntry(entry))
-      .findIndex(({ entry }) => entry.key === key);
     setActiveProjectPath(null);
     setEntrySearch("");
     setValidationIssueKindFilter(null);
     setEntryFilter(targetEntry?.status === "removed" ? "removed" : "all");
-    setVisibleLimit(Math.max(loadMoreBatch, position + 1));
     setFocusEntryKey(key);
   }
 
@@ -301,17 +286,6 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
       return;
     }
     props.onReplaceEntries(updates);
-  }
-
-  function expandVisibleEntriesOnScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (visibleEntries.length >= filteredEntries.length) {
-      return;
-    }
-    const target = event.currentTarget;
-    const distanceToBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
-    if (distanceToBottom < 220) {
-      loadMoreVisibleEntries();
-    }
   }
 
   async function copyTreeJson(node: TranslationProjectNode) {
@@ -368,14 +342,11 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     sheetStats,
     projectTree,
     filteredEntries,
-    visibleEntries,
     replaceMatchCount,
     startColumnResize,
-    loadMoreVisibleEntries,
     showEntryCondition,
     showValidationIssueKind,
     replaceTranslatedValues,
-    expandVisibleEntriesOnScroll,
     copyTreeJson,
     focusEntryKey,
     revealEntryKey,

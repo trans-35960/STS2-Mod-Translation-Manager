@@ -8,6 +8,7 @@ pub mod game_settings;
 pub mod json_translation;
 pub mod launcher;
 pub mod path_guard;
+pub mod pck_reader;
 pub mod preset;
 pub mod process;
 pub mod save_backup;

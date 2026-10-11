@@ -24,6 +24,7 @@ use sts2_mod_manager::json_translation::{
 };
 use sts2_mod_manager::launcher::{LaunchReport, LaunchStatus};
 use sts2_mod_manager::path_guard::{ensure_existing_path_in_roots, ensure_path_in_roots};
+use sts2_mod_manager::pck_reader::extract_pck_files;
 use sts2_mod_manager::preset::{Preset, PresetApplyReport};
 use sts2_mod_manager::process::{hidden_command, powershell_expand_archive};
 use sts2_mod_manager::save_backup::{self, SaveBackupEntry};

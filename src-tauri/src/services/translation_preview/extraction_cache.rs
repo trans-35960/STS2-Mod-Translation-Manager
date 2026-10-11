@@ -11,7 +11,8 @@ fn extraction_scan_root(source: &Path, cache_key: &str, vendor_dir: &Path) -> Op
                 source.display(),
                 destination.display()
             ));
-            if !destination.exists() && !expand_directory_preview(source, &destination, vendor_dir)
+            if !destination.exists()
+                && !expand_directory_preview_for_translation(source, &destination, vendor_dir)
             {
                 append_performance_log(format!(
                     "extraction_scan_root stage=pck_directory_failed total={}ms source={}",
@@ -38,7 +39,14 @@ fn extraction_scan_root(source: &Path, cache_key: &str, vendor_dir: &Path) -> Op
             source.display(),
             destination.display()
         ));
-        if !destination.exists() && !expand_source(source, &destination, vendor_dir) {
+        let expand = || {
+            if is_pck_path(source) {
+                expand_pck_for_translation(source, &destination, vendor_dir)
+            } else {
+                expand_source(source, &destination, vendor_dir)
+            }
+        };
+        if !destination.exists() && !expand() {
             append_performance_log(format!(
                 "extraction_scan_root stage=extractable_failed total={}ms source={}",
                 started.elapsed().as_millis(),
@@ -242,6 +250,25 @@ fn directory_preview_has_pck_contents(destination: &Path) -> bool {
 }
 
 fn expand_directory_preview(source: &Path, destination: &Path, vendor_dir: &Path) -> bool {
+    expand_directory_preview_with(source, destination, vendor_dir, expand_pck)
+}
+
+/// Like [`expand_directory_preview`], but only unpacks what the compacted
+/// language cache keeps, which is far faster for asset-heavy packs.
+fn expand_directory_preview_for_translation(
+    source: &Path,
+    destination: &Path,
+    vendor_dir: &Path,
+) -> bool {
+    expand_directory_preview_with(source, destination, vendor_dir, expand_pck_for_translation)
+}
+
+fn expand_directory_preview_with(
+    source: &Path,
+    destination: &Path,
+    vendor_dir: &Path,
+    expand_one_pck: fn(&Path, &Path, &Path) -> bool,
+) -> bool {
     let started = Instant::now();
     if fs::create_dir_all(destination).is_err() {
         return false;
@@ -254,7 +281,7 @@ fn expand_directory_preview(source: &Path, destination: &Path, vendor_dir: &Path
     for pck in pcks {
         let relative = pck.strip_prefix(source).unwrap_or(&pck);
         let pck_destination = destination.join(relative).with_extension("pck.contents");
-        if expand_pck(&pck, &pck_destination, vendor_dir) {
+        if expand_one_pck(&pck, &pck_destination, vendor_dir) {
             expanded_any = true;
         }
     }
@@ -637,6 +664,62 @@ fn expand_pck(source: &Path, destination: &Path, vendor_dir: &Path) -> bool {
         destination.display()
     ));
     success
+}
+
+/// Copies only the files `compact_language_preview_cache` would keep straight
+/// out of the pack, falling back to a full GodotPCKExplorer extraction for
+/// archives the native reader does not support (e.g. encrypted ones).
+fn expand_pck_for_translation(source: &Path, destination: &Path, vendor_dir: &Path) -> bool {
+    if destination.exists() {
+        return true;
+    }
+    let started = Instant::now();
+    match extract_pck_files(source, destination, is_translation_preview_resource) {
+        Ok(Some(files)) => {
+            append_performance_log(format!(
+                "expand_pck stage=native_done files={} total={}ms source={}",
+                files,
+                started.elapsed().as_millis(),
+                source.display()
+            ));
+            return true;
+        }
+        Ok(None) => append_performance_log(format!(
+            "expand_pck stage=native_unsupported source={}",
+            source.display()
+        )),
+        Err(error) => {
+            append_performance_log(format!(
+                "expand_pck stage=native_failed error={error} source={}",
+                source.display()
+            ));
+            let _ = fs::remove_dir_all(destination);
+        }
+    }
+    expand_pck(source, destination, vendor_dir)
+}
+
+fn is_translation_preview_resource(path: &str) -> bool {
+    let extension = path
+        .rsplit_once('.')
+        .map(|(_, extension)| extension.to_ascii_lowercase())
+        .unwrap_or_default();
+    matches!(
+        extension.as_str(),
+        "json"
+            | "loc"
+            | "csv"
+            | "tsv"
+            | "po"
+            | "pot"
+            | "mo"
+            | "txt"
+            | "xml"
+            | "yaml"
+            | "yml"
+            | "dll"
+            | "exe"
+    )
 }
 
 fn embedded_pck_explorer_path(vendor_dir: &Path) -> Option<PathBuf> {

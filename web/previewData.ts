@@ -2,6 +2,7 @@ import type {
   Dashboard,
   GameLog,
   JsonSheetReport,
+  JsonTranslationEntry,
   JsonTranslationSheet,
   JsonValidation,
   TranslationProjectInfo,
@@ -347,7 +348,7 @@ export const previewJsonReport: JsonSheetReport = {
   removed_entries: 0,
 };
 
-export const previewJsonSheet: JsonTranslationSheet = {
+const basePreviewJsonSheet: JsonTranslationSheet = {
   source_path: "Z:/game/sts2/mods/sample/localization/eng",
   target_language: "kor",
   updated_epoch: 1777730000,
@@ -379,6 +380,32 @@ export const previewJsonSheet: JsonTranslationSheet = {
   ],
 };
 
+// `?previewEntries=3000` fills the browser preview with a large synthetic sheet
+// so scrolling and typing performance can be checked without the desktop app.
+export const previewJsonSheet: JsonTranslationSheet = withPreviewEntries(basePreviewJsonSheet);
+
+function withPreviewEntries(sheet: JsonTranslationSheet): JsonTranslationSheet {
+  const requested = Number(
+    typeof window === "undefined" ? 0 : new URLSearchParams(window.location.search).get("previewEntries"),
+  );
+  if (!Number.isFinite(requested) || requested <= sheet.entries.length) {
+    return sheet;
+  }
+  const extra = Array.from({ length: requested - sheet.entries.length }, (_, index): JsonTranslationEntry => {
+    const file = `file://generated_${Math.floor(index / 400)}.json`;
+    const longText = index % 7 === 0;
+    return {
+      key: `${file}#/entries/item_${index}/description`,
+      source_value: longText
+        ? `Deal {Damage} damage to ALL enemies.NLApply [gold]${index % 5}[/gold] Weak. ${"Lorem ipsum dolor sit amet. ".repeat(4)}`
+        : `Generated preview text ${index}.`,
+      translated_value: index % 3 === 0 ? "" : `생성된 미리보기 문장 ${index}.`,
+      status: index % 3 === 0 ? "new" : "ready",
+    };
+  });
+  return { ...sheet, entries: [...sheet.entries, ...extra] };
+}
+
 export const previewJsonValidation: JsonValidation = {
   valid: false,
   total_entries: 325,
@@ -400,6 +427,13 @@ export const previewJsonValidation: JsonValidation = {
       key: `file://cards.json#/cards/guard/${index % 2 ? "description" : "name"}`,
       kind: index % 2 ? "line_break_marker" : "square_tags",
       message: index % 2 ? "NL 줄바꿈 마커 수가 다릅니다." : "대괄호 태그 구성이 원본과 다릅니다.",
+    })),
+    // With `?previewEntries`, point one warning far down the sheet so jumping
+    // to an entry that is not rendered yet can be exercised.
+    ...previewJsonSheet.entries.slice(-12, -11).map((entry) => ({
+      key: entry.key,
+      kind: "placeholders",
+      message: "플레이스홀더 구성이 원본과 다릅니다.",
     })),
   ],
 };

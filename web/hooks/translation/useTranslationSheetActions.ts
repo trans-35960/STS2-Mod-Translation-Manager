@@ -30,6 +30,11 @@ export function useTranslationSheetActions({
     const entryKey = jsonSheet?.entries[index]?.key;
     if (entryKey) {
       setPasteCandidatesByKey((candidates) => {
+        // Keep the same object when there is nothing to drop, so every edit
+        // does not invalidate the sheet's filtered view.
+        if (!(entryKey in candidates)) {
+          return candidates;
+        }
         const next = { ...candidates };
         delete next[entryKey];
         return next;

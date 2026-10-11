@@ -84,11 +84,8 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           showCompareColumn={ui.showCompareColumn}
           slotIdByEntryKey={ui.slotIdByEntryKey}
           filteredEntries={ui.filteredEntries}
-          visibleEntries={ui.visibleEntries}
           replaceMatchCount={ui.replaceMatchCount}
           startColumnResize={ui.startColumnResize}
-          expandVisibleEntriesOnScroll={ui.expandVisibleEntriesOnScroll}
-          loadMoreVisibleEntries={ui.loadMoreVisibleEntries}
           showEntryCondition={ui.showEntryCondition}
           showValidationIssueKind={ui.showValidationIssueKind}
           replaceTranslatedValues={ui.replaceTranslatedValues}

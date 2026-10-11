@@ -43,6 +43,7 @@ import {
   compactTranslationFile,
   whitespaceValueLabel,
 } from "./translationUtils";
+import { useVirtualRows } from "./useVirtualRows";
 import { normalizeLanguageTag } from "../mods/modUtils";
 
 const EMPTY_VALIDATION_ISSUES: DisplayValidationIssue[] = [];
@@ -70,11 +71,8 @@ export function TranslationSheetTable({
   showCompareColumn,
   slotIdByEntryKey,
   filteredEntries,
-  visibleEntries,
   replaceMatchCount,
   startColumnResize,
-  expandVisibleEntriesOnScroll,
-  loadMoreVisibleEntries,
   showEntryCondition,
   showValidationIssueKind,
   replaceTranslatedValues,
@@ -104,11 +102,8 @@ export function TranslationSheetTable({
   showCompareColumn: boolean;
   slotIdByEntryKey: Map<string, string>;
   filteredEntries: TranslationEntryRow[];
-  visibleEntries: TranslationEntryRow[];
   replaceMatchCount: number;
   startColumnResize: (column: TranslationColumnKey, event: React.MouseEvent) => void;
-  expandVisibleEntriesOnScroll: (event: React.UIEvent<HTMLDivElement>) => void;
-  loadMoreVisibleEntries: () => void;
   showEntryCondition: (filter: TranslationEntryFilter) => void;
   showValidationIssueKind: (kind: string | null) => void;
   replaceTranslatedValues: (scope: ReplaceScope) => void;
@@ -118,6 +113,18 @@ export function TranslationSheetTable({
 }) {
   const t = props.labels;
   const rowRefs = React.useRef(new Map<string, HTMLDivElement>());
+  const gridRef = React.useRef<HTMLDivElement | null>(null);
+  const rowListRef = React.useRef<HTMLDivElement | null>(null);
+  const entryKeys = React.useMemo(() => filteredEntries.map(({ entry }) => entry.key), [filteredEntries]);
+  // Large sheets have thousands of editable rows; only the ones near the
+  // viewport are mounted so typing and scrolling stay responsive.
+  const { range, measureRow, unmeasureRow, scrollToIndex } = useVirtualRows({
+    scrollRef: gridRef,
+    listRef: rowListRef,
+    keys: entryKeys,
+  });
+  const renderedEntries = filteredEntries.slice(range.start, range.end);
+  const focusHandledRef = React.useRef<string | null>(null);
   const [copiedIdKey, setCopiedIdKey] = React.useState<string | null>(null);
   const [validationCollapsed, setValidationCollapsed] = React.useState(false);
   const [pasteConflictCollapsed, setPasteConflictCollapsed] = React.useState(false);
@@ -187,29 +194,28 @@ export function TranslationSheetTable({
     }
   }, [pasteCandidateCount]);
 
+  // Bring the focused entry into the window first, then center and focus it
+  // once its row has actually been mounted.
   React.useEffect(() => {
     if (!focusEntryKey) {
+      focusHandledRef.current = null;
+      return;
+    }
+    if (focusHandledRef.current === focusEntryKey) {
       return;
     }
     const row = rowRefs.current.get(focusEntryKey);
     if (!row) {
+      scrollToIndex(entryKeys.indexOf(focusEntryKey));
       return;
     }
+    focusHandledRef.current = focusEntryKey;
     row.closest(".json-entry-list")?.scrollIntoView({ block: "start" });
-    window.requestAnimationFrame(() => {
-      row.scrollIntoView({ block: "center", inline: "nearest" });
-      const content = document.querySelector<HTMLElement>(".content");
-      if (content) {
-        const rowRect = row.getBoundingClientRect();
-        const contentRect = content.getBoundingClientRect();
-        const targetTop = rowRect.top - contentRect.top + content.scrollTop - 180;
-        content.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
-      }
-      row.querySelector("textarea")?.focus();
-    });
+    row.scrollIntoView({ block: "center", inline: "nearest" });
+    row.querySelector("textarea")?.focus({ preventScroll: true });
     const timeoutId = window.setTimeout(clearFocusEntryKey, 2200);
     return () => window.clearTimeout(timeoutId);
-  }, [clearFocusEntryKey, focusEntryKey, visibleEntries]);
+  }, [clearFocusEntryKey, entryKeys, focusEntryKey, range, scrollToIndex]);
 
   function copyEntryId(entryKey: string, id: string, event: React.MouseEvent) {
     event.preventDefault();
@@ -502,7 +508,7 @@ export function TranslationSheetTable({
             className="json-grid"
             data-compare={showCompareColumn ? "on" : "off"}
             data-id={showIds ? "on" : "off"}
-            onScroll={expandVisibleEntriesOnScroll}
+            ref={gridRef}
             style={{
               "--col-status": `${columns.status}px`,
               "--col-id": `${columns.id}px`,
@@ -522,7 +528,9 @@ export function TranslationSheetTable({
               <ResizableHead label="file" onMouseDown={(event) => startColumnResize("file", event)} />
               <ResizableHead label="key" onMouseDown={(event) => startColumnResize("key", event)} />
             </div>
-            {visibleEntries.map(({ entry, index, parts }) => (
+            <div className="json-virtual-rows" ref={rowListRef}>
+            {range.padTop > 0 && <div aria-hidden="true" style={{ height: range.padTop }} />}
+            {renderedEntries.map(({ entry, index, parts }) => (
               <JsonEntryRow
                 compareValuesByLanguage={props.compareValuesByLanguage}
                 copiedIdKey={copiedIdKey}
@@ -543,7 +551,9 @@ export function TranslationSheetTable({
                 registerRow={(element: HTMLDivElement | null) => {
                   if (element) {
                     rowRefs.current.set(entry.key, element);
+                    measureRow(entry.key, element);
                   } else {
+                    unmeasureRow(rowRefs.current.get(entry.key) ?? null);
                     rowRefs.current.delete(entry.key);
                   }
                 }}
@@ -559,11 +569,8 @@ export function TranslationSheetTable({
                 wrapSource={wrapSourceWithTranslation}
               />
             ))}
-            {visibleEntries.length < filteredEntries.length && (
-              <button className="load-more" type="button" onClick={loadMoreVisibleEntries}>
-                더 보기 {visibleEntries.length}/{filteredEntries.length}
-              </button>
-            )}
+            {range.padBottom > 0 && <div aria-hidden="true" style={{ height: range.padBottom }} />}
+            </div>
             {filteredEntries.length === 0 && <div className="empty compact">조건에 맞는 항목이 없습니다.</div>}
           </div>
         </div>

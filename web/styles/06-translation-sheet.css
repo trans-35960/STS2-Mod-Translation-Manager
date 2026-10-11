@@ -865,12 +865,6 @@
   white-space: nowrap;
 }
 
-.load-more {
-  display: block;
-  width: calc(100% - 24px);
-  margin: 12px;
-}
-
 .empty.compact {
   margin: 12px;
   padding: 12px;
