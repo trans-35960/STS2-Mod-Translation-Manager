@@ -278,6 +278,19 @@ pub(crate) async fn load_translation_glossary(
 }
 
 #[tauri::command]
+pub(crate) async fn export_ai_translation_kit(
+    output_path: String,
+    sheet: JsonSheetDto,
+    only_empty: Option<bool>,
+    include_keys: Option<Vec<String>>,
+) -> Result<AiKitExportDto, String> {
+    run_blocking(move || {
+        crate::services::export_ai_translation_kit(output_path, sheet, only_empty, include_keys)
+    })
+    .await
+}
+
+#[tauri::command]
 pub(crate) async fn save_user_glossary(
     target_language: String,
     terms: Vec<GlossaryTermDto>,

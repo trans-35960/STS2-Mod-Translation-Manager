@@ -1306,6 +1306,48 @@ Packed file: Shadowverse/localization/eng/cards.json
     }
 
     #[test]
+    fn ai_kit_export_writes_json_guide_and_glossary() {
+        let root = std::env::temp_dir().join(format!("sts2-ai-kit-{}", timestamp_string()));
+        fs::create_dir_all(&root).expect("create root");
+        let sheet = JsonTranslationSheet {
+            source_path: root.join("source").display().to_string(),
+            target_language: "kor".to_string(),
+            updated_epoch: 1,
+            entries: vec![JsonTranslationEntry {
+                key: "file://cards.json#/strike".to_string(),
+                slot_id: Some("k001-aa".to_string()),
+                previous_source_value: None,
+                source_value: "Deal {Damage:diff()} damage.".to_string(),
+                translated_value: String::new(),
+                status: JsonTranslationStatus::New,
+            }],
+        };
+        let output = root.join("mod.kor.short.json");
+
+        let report = export_ai_translation_kit(
+            output.display().to_string(),
+            json_sheet_dto(sheet),
+            None,
+            None,
+        )
+        .expect("export ai kit");
+
+        assert_eq!(report.rows, 1);
+        let json: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&output).expect("read json"))
+                .expect("parse json");
+        assert_eq!(json["cards.json"]["k001-aa"], "Deal {Damage:diff()} damage.");
+        let guide = fs::read_to_string(root.join("mod.kor.AI_GUIDE.md")).expect("read guide");
+        assert!(guide.contains("`mod.kor.short.json`"));
+        assert!(guide.contains("`mod.kor.glossary.tsv`"));
+        assert!(guide.contains("{Cards:plural:card|cards}"));
+        assert!(guide.contains("조사는 강조 태그 밖에"));
+        let glossary = fs::read_to_string(root.join("mod.kor.glossary.tsv")).expect("read glossary");
+        assert!(glossary.starts_with("source\ttarget\n"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn pck_source_install_replaces_active_pck() {
         let root = std::env::temp_dir().join(format!("sts2-pck-install-{}", timestamp_string()));
         let config = test_config(&root);

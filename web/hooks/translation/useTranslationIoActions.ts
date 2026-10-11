@@ -13,6 +13,8 @@ import { isPreviewRuntime } from "../../utils/runtime";
 import type { TranslationActionsParams } from "./types";
 
 type ShortJsonExportOptions = boolean | {
+  /** Also write an AI guide and the glossary terms next to the JSON. */
+  aiKit?: boolean;
   changeOnly?: boolean;
   onlyEmpty?: boolean;
   scopePath?: string;
@@ -173,9 +175,10 @@ export function useTranslationIoActions({
       normalizedOptions.warningOnly ? "warning" : "",
       normalizedOptions.changeOnly ? "change" : "",
       onlyEmpty ? "empty" : "",
+      normalizedOptions.aiKit ? "ai" : "",
     ].filter(Boolean).join(".");
     const defaultName = `${translationProject?.modName || "translation"}.${jsonSheet.target_language || "kor"}${suffix ? `.${suffix}` : ""}.short.json`;
-    const title = normalizedOptions.warningOnly ? "검증 오류 JSON 내보내기" : normalizedOptions.changeOnly ? "신규/변경 JSON 내보내기" : "번역용 JSON 내보내기";
+    const title = normalizedOptions.aiKit ? "AI 작업 키트 내보내기" : normalizedOptions.warningOnly ? "검증 오류 JSON 내보내기" : normalizedOptions.changeOnly ? "신규/변경 JSON 내보내기" : "번역용 JSON 내보내기";
     let outputPath: string | null | string[] = null;
     try {
       outputPath = isPreviewRuntime()
@@ -191,6 +194,19 @@ export function useTranslationIoActions({
       setBusy("export_json_translation_short_json");
       if (isPreviewRuntime()) {
         appendLog(`${title}: ${outputPath}`);
+        return;
+      }
+      if (normalizedOptions.aiKit) {
+        const kit = await invokeCommand("export_ai_translation_kit", {
+          outputPath,
+          sheet: jsonSheet,
+          onlyEmpty,
+          includeKeys: shouldLimitKeys ? includeKeys : undefined,
+        });
+        appendLog(
+          `AI 작업 키트 내보내기 완료: ${kit.rows}행, 용어 ${kit.glossary_terms}개 (${kit.output_path}, ${kit.guide_path}, ${kit.glossary_path}). ` +
+            "AI_GUIDE.md를 AI에게 먼저 읽히고, 완성된 JSON은 CSV/JSON 매칭으로 가져오세요.",
+        );
         return;
       }
       const result = normalizedOptions.warningOnly

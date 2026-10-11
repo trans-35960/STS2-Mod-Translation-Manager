@@ -361,6 +361,15 @@ pub(crate) struct GlossaryTermDto {
 }
 
 #[derive(Debug, Serialize)]
+pub(crate) struct AiKitExportDto {
+    pub(crate) output_path: String,
+    pub(crate) rows: usize,
+    pub(crate) guide_path: String,
+    pub(crate) glossary_path: String,
+    pub(crate) glossary_terms: usize,
+}
+
+#[derive(Debug, Serialize)]
 pub(crate) struct GlossaryInfoDto {
     pub(crate) source_language: String,
     pub(crate) target_language: String,

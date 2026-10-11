@@ -576,6 +576,44 @@ fn highlight_spans(value: &str) -> Vec<HighlightSpan<'_>> {
     spans
 }
 
+/// Terms worth handing to a translator for these entries: every user term,
+/// plus the official names of terms highlighted in the included sources.
+/// User terms come first and win over a game name for the same word.
+pub fn sheet_glossary_terms(
+    sheet: &JsonTranslationSheet,
+    game: Option<&GameGlossary>,
+    user_terms: &[GlossaryTerm],
+    include_keys: Option<&BTreeSet<String>>,
+) -> Vec<GlossaryTerm> {
+    let mut seen = user_terms
+        .iter()
+        .map(|term| term.source.to_lowercase())
+        .collect::<HashSet<_>>();
+    let mut terms = user_terms.to_vec();
+    let Some(game) = game else {
+        return terms;
+    };
+    let mut game_terms = Vec::new();
+    for entry in &sheet.entries {
+        if include_keys.is_some_and(|keys| !keys.contains(&entry.key)) {
+            continue;
+        }
+        for span in highlight_spans(&entry.source_value) {
+            if has_markup(span.content) {
+                continue;
+            }
+            if let Some(term) = game.lookup(span.content) {
+                if seen.insert(term.source.to_lowercase()) {
+                    game_terms.push(term.clone());
+                }
+            }
+        }
+    }
+    game_terms.sort_by(|left, right| left.source.to_lowercase().cmp(&right.source.to_lowercase()));
+    terms.extend(game_terms);
+    terms
+}
+
 fn should_check(entry: &JsonTranslationEntry) -> bool {
     entry.status != JsonTranslationStatus::Removed
         && !entry.translated_value.trim().is_empty()
@@ -832,5 +870,30 @@ mod tests {
             issues[0].suggestion,
             "[gold]아르토리아[/gold]는 공격합니다."
         );
+    }
+
+    #[test]
+    fn collects_terms_used_by_the_sheet() {
+        let game = game();
+        let user = vec![GlossaryTerm {
+            source: "Artoria".to_string(),
+            targets: vec!["아르토리아".to_string()],
+        }];
+        let sheet = sheet(vec![
+            entry("Add [gold]Shivs[/gold].", ""),
+            entry("Apply [blue]Vulnerable[/blue].", ""),
+            entry("Plain Vulnerable text.", ""),
+        ]);
+        let terms = sheet_glossary_terms(&sheet, Some(&game), &user, None);
+        let sources = terms
+            .iter()
+            .map(|term| term.source.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(sources, vec!["Artoria", "Shiv", "Vulnerable"]);
+
+        let only_first = BTreeSet::from([sheet.entries[0].key.clone()]);
+        let terms = sheet_glossary_terms(&sheet, Some(&game), &[], Some(&only_first));
+        assert_eq!(terms.len(), 1);
+        assert_eq!(terms[0].targets, vec!["단도".to_string()]);
     }
 }

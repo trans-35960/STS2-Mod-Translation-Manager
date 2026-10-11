@@ -2,6 +2,7 @@ import React from "react";
 import { GlossaryPanel } from "./GlossaryPanel";
 import {
   AlertTriangle,
+  Bot,
   CheckCircle2,
   FileDown,
   FileJson,
@@ -320,6 +321,15 @@ export function TranslationActionsPanel({
             </button>
             <button className="toolbar-icon-button" aria-label="번역용 JSON" data-tooltip="번역용 JSON" onClick={() => props.onExportShortJson(exportOnlyEmpty)} disabled={!canUseCurrentSheet || Boolean(props.busy)}>
               <FileJson size={15} />
+            </button>
+            <button
+              className="toolbar-icon-button"
+              aria-label="AI 작업 키트"
+              data-tooltip="AI 작업 키트 (번역 JSON + 규칙 안내 + 용어집)"
+              onClick={() => props.onExportShortJson({ aiKit: true, onlyEmpty: exportOnlyEmpty })}
+              disabled={!canUseCurrentSheet || Boolean(props.busy)}
+            >
+              <Bot size={15} />
             </button>
             <button
               className="toolbar-icon-button"

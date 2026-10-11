@@ -432,6 +432,14 @@ export type ShortJsonExport = {
 
 export type LogTone = "info" | "warn" | "error";
 
+export type AiKitExport = {
+  output_path: string;
+  rows: number;
+  guide_path: string;
+  glossary_path: string;
+  glossary_terms: number;
+};
+
 export type GlossaryTerm = {
   source: string;
   targets: string[];
