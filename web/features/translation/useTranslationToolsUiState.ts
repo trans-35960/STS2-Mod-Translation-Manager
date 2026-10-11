@@ -400,7 +400,7 @@ function validationIssueKeys(validation: JsonValidation | null, kind: string | n
   if (kind === "removed") {
     validation.removed_entries.forEach((key) => keys.add(key));
   }
-  for (const issue of validation.format_issues ?? []) {
+  for (const issue of [...(validation.format_issues ?? []), ...(validation.glossary_issues ?? [])]) {
     if (!kind || issue.kind === kind) {
       keys.add(issue.key);
     }

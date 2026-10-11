@@ -1,4 +1,5 @@
 import React from "react";
+import { GlossaryPanel } from "./GlossaryPanel";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -167,7 +168,8 @@ export function TranslationActionsPanel({
     (props.validation?.missing_entries.length ?? 0) +
     (props.validation?.updated_entries.length ?? 0) +
     (props.validation?.removed_entries.length ?? 0) +
-    (props.validation?.format_issues?.length ?? 0);
+    (props.validation?.format_issues?.length ?? 0) +
+    (props.validation?.glossary_issues?.length ?? 0);
   const changeEntryCount = props.sheet?.entries.filter((entry) => entry.status === "new" || entry.status === "updated").length ?? 0;
   const currentSheetMatchesTarget = !props.sheet || translationLanguagesMatch(props.sheet.target_language, props.targetLanguage);
   const canUseCurrentSheet = Boolean(props.sheet && currentSheetMatchesTarget);
@@ -293,6 +295,16 @@ export function TranslationActionsPanel({
             <span>{props.toolError}</span>
           </article>
         )}
+        <GlossaryPanel
+          sourcePath={props.sheet?.source_path ?? props.sourcePath}
+          targetLanguage={props.sheet?.target_language ?? props.targetLanguage}
+          disabled={Boolean(props.busy)}
+          onSaved={() => {
+            if (canUseCurrentSheet) {
+              void props.onValidate();
+            }
+          }}
+        />
         <details className="action-details">
           <summary>가져오기/내보내기</summary>
           <label className="inline-check export-option">

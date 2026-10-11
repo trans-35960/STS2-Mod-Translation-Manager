@@ -350,6 +350,23 @@ pub(crate) struct JsonValidationDto {
     pub(crate) updated_entries: Vec<String>,
     pub(crate) removed_entries: Vec<String>,
     pub(crate) format_issues: Vec<JsonValidationIssueDto>,
+    /// Advisory term mismatches; they never make a sheet invalid.
+    pub(crate) glossary_issues: Vec<JsonValidationIssueDto>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct GlossaryTermDto {
+    pub(crate) source: String,
+    pub(crate) targets: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct GlossaryInfoDto {
+    pub(crate) source_language: String,
+    pub(crate) target_language: String,
+    pub(crate) game_pck_path: Option<String>,
+    pub(crate) game_terms: usize,
+    pub(crate) user_terms: Vec<GlossaryTermDto>,
 }
 
 #[derive(Debug, Serialize)]

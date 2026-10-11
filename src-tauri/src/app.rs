@@ -44,6 +44,8 @@ pub fn run() {
             commands::load_json_translation_sheet,
             commands::validate_json_translation_sheet,
             commands::validate_json_translation_sheet_data,
+            commands::load_translation_glossary,
+            commands::save_user_glossary,
             commands::save_json_translation_sheet,
             commands::export_json_translation_csv,
             commands::export_json_translation_short_json,

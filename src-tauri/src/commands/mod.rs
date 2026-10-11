@@ -269,6 +269,23 @@ pub(crate) async fn validate_json_translation_sheet_data(
 }
 
 #[tauri::command]
+pub(crate) async fn load_translation_glossary(
+    source_path: String,
+    target_language: String,
+) -> Result<GlossaryInfoDto, String> {
+    run_blocking(move || crate::services::load_translation_glossary(source_path, target_language))
+        .await
+}
+
+#[tauri::command]
+pub(crate) async fn save_user_glossary(
+    target_language: String,
+    terms: Vec<GlossaryTermDto>,
+) -> Result<Vec<GlossaryTermDto>, String> {
+    run_blocking(move || crate::services::save_user_glossary(target_language, terms)).await
+}
+
+#[tauri::command]
 pub(crate) async fn save_json_translation_sheet(
     sheet_path: String,
     sheet: JsonSheetDto,

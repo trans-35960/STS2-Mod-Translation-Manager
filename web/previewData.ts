@@ -413,6 +413,13 @@ export const previewJsonValidation: JsonValidation = {
   missing_entries: ["file://cards.json#/cards/guard/name"],
   updated_entries: ["file://powers.json#/bash/description"],
   removed_entries: [],
+  glossary_issues: [
+    {
+      key: "file://powers.json#/bash/description",
+      kind: "glossary",
+      message: "용어집: 'Vulnerable' → '취약'",
+    },
+  ],
   format_issues: [
     {
       key: "file://cards.json#/cards/strike/description",

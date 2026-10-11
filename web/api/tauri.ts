@@ -13,6 +13,8 @@ import type {
   JsonSheetAction,
   JsonTranslationSheet,
   JsonValidation,
+  GlossaryInfo,
+  GlossaryTerm,
   LanguageCompareValue,
   ModDeleteRequest,
   ModToggleRequest,
@@ -85,6 +87,8 @@ export type CommandArgs = {
   load_json_translation_sheet: { sheetPath: string };
   validate_json_translation_sheet: { sheetPath: string };
   validate_json_translation_sheet_data: { sheet: JsonTranslationSheet };
+  load_translation_glossary: { sourcePath: string; targetLanguage: string };
+  save_user_glossary: { targetLanguage: string; terms: GlossaryTerm[] };
   save_json_translation_sheet: { sheetPath: string; sheet: JsonTranslationSheet };
   export_json_translation_csv: { outputPath: string; sheet: JsonTranslationSheet };
   export_json_translation_short_json: {
@@ -152,6 +156,8 @@ export type CommandResult = {
   load_json_translation_sheet: JsonTranslationSheet;
   validate_json_translation_sheet: JsonValidation;
   validate_json_translation_sheet_data: JsonValidation;
+  load_translation_glossary: GlossaryInfo;
+  save_user_glossary: GlossaryTerm[];
   save_json_translation_sheet: JsonSheetAction;
   export_json_translation_csv: JsonCsvExport;
   export_json_translation_short_json: ShortJsonExport;

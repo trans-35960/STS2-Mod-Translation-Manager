@@ -269,6 +269,7 @@ export function TranslationSheetTable({
               <ValidationMetric label="원본 변경" value={props.validation.updated_entries.length} tone={props.validation.updated_entries.length ? "warn" : "good"} />
               <ValidationMetric label="삭제됨" value={props.validation.removed_entries.length} />
               <ValidationMetric label="구조" value={props.validation.format_issues?.length ?? 0} tone={(props.validation.format_issues?.length ?? 0) ? "warn" : "good"} />
+              <ValidationMetric label="용어" value={props.validation.glossary_issues?.length ?? 0} tone={(props.validation.glossary_issues?.length ?? 0) ? "warn" : "good"} />
             </div>
           </div>
           {!validationCollapsed && validationItems.length > 0 && (
@@ -1049,6 +1050,7 @@ function validationRows(validation: TranslationToolsPageProps["validation"]): Di
       message: "원본에서 삭제된 항목입니다.",
     })),
     ...(validation.format_issues ?? []),
+    ...(validation.glossary_issues ?? []),
   ];
   const groupedRows = new Map<string, JsonValidationIssue & { count: number }>();
   for (const row of rows) {
@@ -1097,6 +1099,8 @@ function validationIssueLabel(kind: string) {
       return "원본 변경";
     case "removed":
       return "삭제됨";
+    case "glossary":
+      return "용어집";
     default:
       return kind;
   }

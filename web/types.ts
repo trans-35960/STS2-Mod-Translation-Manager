@@ -359,6 +359,8 @@ export type JsonValidation = {
   updated_entries: string[];
   removed_entries: string[];
   format_issues: JsonValidationIssue[];
+  /** Advisory term mismatches; never make the sheet invalid. */
+  glossary_issues?: JsonValidationIssue[];
 };
 
 export type JsonValidationIssue = {
@@ -425,3 +427,16 @@ export type ShortJsonExport = {
 };
 
 export type LogTone = "info" | "warn" | "error";
+
+export type GlossaryTerm = {
+  source: string;
+  targets: string[];
+};
+
+export type GlossaryInfo = {
+  source_language: string;
+  target_language: string;
+  game_pck_path?: string | null;
+  game_terms: number;
+  user_terms: GlossaryTerm[];
+};

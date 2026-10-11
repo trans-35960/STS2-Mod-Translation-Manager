@@ -88,6 +88,30 @@ pub fn extract_pck_files(
     Ok(Some(written))
 }
 
+/// Reads every entry accepted by `wanted` into memory, or `None` when the
+/// archive is unsupported.
+pub fn read_pck_files(
+    pck_path: &Path,
+    wanted: impl Fn(&str) -> bool,
+) -> AppResult<Option<Vec<(String, Vec<u8>)>>> {
+    let Some(entries) = read_pck_index(pck_path)? else {
+        return Ok(None);
+    };
+    let mut source = File::open(pck_path).map_err(|source| AppError::io(pck_path, source))?;
+    let mut files = Vec::new();
+    for entry in entries.into_iter().filter(|entry| wanted(&entry.path)) {
+        source
+            .seek(SeekFrom::Start(entry.offset))
+            .map_err(|error| AppError::io(pck_path, error))?;
+        let mut data = vec![0u8; entry.size as usize];
+        source
+            .read_exact(&mut data)
+            .map_err(|error| AppError::io(pck_path, error))?;
+        files.push((entry.path, data));
+    }
+    Ok(Some(files))
+}
+
 fn read_index<R: Read + Seek>(reader: &mut R, length: u64) -> io::Result<Option<Vec<PckEntry>>> {
     let mut magic = [0u8; 4];
     reader.read_exact(&mut magic)?;

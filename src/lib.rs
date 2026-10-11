@@ -5,6 +5,7 @@ pub mod discovery;
 pub mod domain;
 pub mod error;
 pub mod game_settings;
+pub mod glossary;
 pub mod json_translation;
 pub mod launcher;
 pub mod path_guard;

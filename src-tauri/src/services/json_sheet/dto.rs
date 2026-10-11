@@ -70,7 +70,10 @@ fn status_label(status: JsonTranslationStatus) -> &'static str {
     }
 }
 
-fn json_validation_dto(report: JsonValidationReport) -> JsonValidationDto {
+fn json_validation_dto(
+    report: JsonValidationReport,
+    glossary_issues: Vec<JsonValidationIssueDto>,
+) -> JsonValidationDto {
     JsonValidationDto {
         valid: report.valid,
         total_entries: report.total_entries,
@@ -86,6 +89,7 @@ fn json_validation_dto(report: JsonValidationReport) -> JsonValidationDto {
                 message: issue.message,
             })
             .collect(),
+        glossary_issues,
     }
 }
 

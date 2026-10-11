@@ -14,6 +14,10 @@ use sts2_mod_manager::app::App;
 use sts2_mod_manager::config::AppConfig;
 use sts2_mod_manager::discovery::scan_mod_directory;
 use sts2_mod_manager::domain::{ModFingerprint, ModKind, ModRecord, ModSource, ScanSummary};
+use sts2_mod_manager::glossary::{
+    GlossaryTerm, glossary_issues, load_game_glossary, read_user_glossary,
+    sheet_source_language as glossary_source_language, write_user_glossary,
+};
 use sts2_mod_manager::json_translation::{
     JsonImportReport, JsonSheetReport, JsonTranslationEntry, JsonTranslationSheet,
     JsonTranslationStatus, JsonValidationReport, apply_sheet, apply_sheet_to_target_language,
@@ -56,4 +60,5 @@ include!("translation_preview.rs");
 include!("json_sheet.rs");
 include!("json_sheet/dto.rs");
 include!("pck.rs");
+include!("glossary.rs");
 include!("tests.rs");

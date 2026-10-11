@@ -129,14 +129,18 @@ pub(crate) fn validate_json_translation_sheet(
 ) -> Result<JsonValidationDto, String> {
     let path = PathBuf::from(sheet_path.trim());
     let report = validate_sheet(&path).map_err(|error| error.to_string())?;
-    Ok(json_validation_dto(report))
+    let glossary = read_sheet(&path)
+        .map(|sheet| sheet_glossary_issues(&sheet))
+        .unwrap_or_default();
+    Ok(json_validation_dto(report, glossary))
 }
 
 pub(crate) fn validate_json_translation_sheet_data(
     sheet: JsonSheetDto,
 ) -> Result<JsonValidationDto, String> {
     let domain = json_sheet_from_dto(sheet)?;
-    Ok(json_validation_dto(validate_translation_sheet(&domain)))
+    let glossary = sheet_glossary_issues(&domain);
+    Ok(json_validation_dto(validate_translation_sheet(&domain), glossary))
 }
 
 pub(crate) fn save_json_translation_sheet(

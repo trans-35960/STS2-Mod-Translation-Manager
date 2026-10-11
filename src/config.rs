@@ -1,6 +1,7 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
+pub const GAME_PCK_FILE: &str = "SlayTheSpire2.pck";
 pub const STEAM_APP_ID: &str = "2868840";
 const GAME_SETTINGS_FILE: &str = "settings.save";
 
@@ -68,6 +69,17 @@ impl AppConfig {
         self.save_dir
             .as_deref()
             .map(|save_dir| save_dir.join(GAME_SETTINGS_FILE))
+    }
+
+    /// The game's main resource pack, which holds the official localization.
+    pub fn game_pck_path(&self) -> Option<PathBuf> {
+        self.game_exe_path
+            .as_deref()
+            .and_then(Path::parent)
+            .into_iter()
+            .chain([self.game_dir.as_path()])
+            .map(|dir| dir.join(GAME_PCK_FILE))
+            .find(|path| path.is_file())
     }
 
     pub fn managed_dirs(&self) -> [&Path; 6] {
