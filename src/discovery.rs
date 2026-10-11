@@ -34,8 +34,16 @@ pub fn scan_mod_directory(path: &Path, source: ModSource) -> AppResult<Vec<ModRe
             }
         };
 
+        let manifest_version = if kind == ModKind::Directory {
+            find_mod_manifests(&entry_path, LOCAL_MANIFEST_MAX_DEPTH)
+                .first()
+                .and_then(|manifest| read_manifest_identity(manifest).version)
+        } else {
+            None
+        };
+
         mods.push(ModRecord {
-            version_hint: infer_version_hint(&name),
+            version_hint: manifest_version.or_else(|| infer_version_hint(&name)),
             name,
             path: entry_path,
             source,
@@ -50,6 +58,7 @@ pub fn scan_mod_directory(path: &Path, source: ModSource) -> AppResult<Vec<ModRe
 
 pub const MOD_MANIFEST_FILE: &str = "mod_manifest.json";
 const WORKSHOP_MANIFEST_MAX_DEPTH: usize = 3;
+const LOCAL_MANIFEST_MAX_DEPTH: usize = 2;
 
 /// Scans a Steam Workshop content folder (`.../workshop/content/<appid>`).
 ///
@@ -274,6 +283,19 @@ mod tests {
         assert_eq!(mods[0].kind, ModKind::Directory);
         assert_eq!(mods[0].version_hint.as_deref(), Some("v1.2.3"));
         assert_eq!(mods[0].fingerprint.bytes, 2);
+    }
+
+    #[test]
+    fn directory_mod_version_comes_from_manifest() {
+        let fixture = TestDir::create("directory_mod_version_comes_from_manifest");
+        fixture.write_file(
+            "BaseLib-v1.0.0/BaseLib/mod_manifest.json",
+            r#"{"id":"BaseLib","version":"1.2.0"}"#,
+        );
+
+        let mods = scan_mod_directory(fixture.path(), ModSource::GameMods).expect("scan");
+
+        assert_eq!(mods[0].version_hint.as_deref(), Some("1.2.0"));
     }
 
     #[test]

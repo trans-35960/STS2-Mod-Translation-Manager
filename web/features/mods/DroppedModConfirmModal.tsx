@@ -234,6 +234,7 @@ function previewAsModRow(item: DroppedModPreview): ModRow {
     path: item.path,
     update_state: "clean",
     change_reasons: [],
+    previous_version: null,
     translation_state: "",
     translation_applied: false,
     translation_applied_epoch: null,

@@ -107,6 +107,11 @@ function ModTableRow({
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
+          {mod.previous_version && (
+            <StatusBadge tone="info">
+              UPDATE {mod.previous_version} → {displayModVersion(mod)}
+            </StatusBadge>
+          )}
           {mod.needs_recheck && <StatusBadge tone="danger">Recheck</StatusBadge>}
           {mod.translation_review_required && <StatusBadge tone="danger">Translation</StatusBadge>}
           {mod.dependencies.some((dependency) => !dependency.available) && <StatusBadge tone="danger">Missing Dep</StatusBadge>}
@@ -409,6 +414,11 @@ function SimpleModRow({
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
+          {mod.previous_version && (
+            <StatusBadge tone="info">
+              UPDATE {mod.previous_version} → {displayModVersion(mod)}
+            </StatusBadge>
+          )}
           {mod.needs_recheck && <StatusBadge tone="danger">Recheck</StatusBadge>}
           {mod.dependencies.some((dependency) => !dependency.available) && <StatusBadge tone="danger">Missing Dep</StatusBadge>}
           {hasDependencyVersionMismatch(mod) && <StatusBadge tone="danger">Dep Version</StatusBadge>}

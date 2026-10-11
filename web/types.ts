@@ -141,6 +141,7 @@ export type ModRow = {
   download_state?: string | null;
   update_state: string;
   change_reasons: string[];
+  previous_version: string | null;
   translation_state: string;
   translation_applied: boolean;
   translation_applied_epoch: number | null;

@@ -37,13 +37,15 @@ fn mod_rows(
         .map(|(key, builder)| {
             let row_started = Instant::now();
             let desired_active = desired_active_keys.contains(&key);
-            let (update_state, change_reasons) = builder.change_summary(&state_index);
+            let (update_state, change_reasons, previous_version) =
+                builder.change_summary(&state_index);
             let lifecycle = lifecycle.get(&key);
             let translation_apply = translation_applies.get(&key);
             let dto = builder.into_dto(ModRowBuildContext {
                 key,
                 update_state,
                 change_reasons,
+                previous_version,
                 registered_epoch: lifecycle.map(|entry| entry.registered_epoch),
                 updated_epoch: lifecycle.map(|entry| entry.updated_epoch),
                 translation_apply,
@@ -120,6 +122,7 @@ struct ModRowBuildContext<'a> {
     key: String,
     update_state: Option<String>,
     change_reasons: Vec<String>,
+    previous_version: Option<String>,
     registered_epoch: Option<u64>,
     updated_epoch: Option<u64>,
     translation_apply: Option<&'a TranslationApplyRecord>,
@@ -234,10 +237,14 @@ impl ModRowBuilder {
                 .game_updated_epoch
                 .zip(latest_mod_epoch)
                 .is_some_and(|(game_epoch, mod_epoch)| game_epoch > mod_epoch);
-        let translation_review_required = context
-            .translation_apply
-            .and_then(|apply| context.game_updated_epoch.map(|game_epoch| game_epoch > apply.applied_epoch))
-            .unwrap_or(false);
+        // A new mod version can rename or add text keys, so an applied translation
+        // needs another look just like after a game update.
+        let translation_review_required = context.translation_apply.is_some_and(|apply| {
+            context.previous_version.is_some()
+                || context
+                    .game_updated_epoch
+                    .is_some_and(|game_epoch| game_epoch > apply.applied_epoch)
+        });
 
         ModRowDto {
             key: context.key,
@@ -260,6 +267,7 @@ impl ModRowBuilder {
             download_state,
             update_state: context.update_state.unwrap_or_else(|| "clean".to_string()),
             change_reasons: context.change_reasons,
+            previous_version: context.previous_version,
             translation_state: translation.0,
             translation_applied: context.translation_apply.is_some(),
             translation_applied_epoch: context.translation_apply.map(|record| record.applied_epoch),
@@ -286,7 +294,7 @@ impl ModRowBuilder {
     fn change_summary(
         &self,
         state_index: &std::collections::HashMap<String, ModStateEntry>,
-    ) -> (Option<String>, Vec<String>) {
+    ) -> (Option<String>, Vec<String>, Option<String>) {
         let records = [
             self.active.as_ref(),
             self.disabled.as_ref(),
@@ -295,6 +303,7 @@ impl ModRowBuilder {
         ];
         let mut state = None;
         let mut reasons = BTreeSet::new();
+        let mut previous_version = None;
         for record in records.into_iter().flatten() {
             let key = mod_record_state_key(record);
             let Some(previous) = state_index.get(&key) else {
@@ -302,6 +311,13 @@ impl ModRowBuilder {
                 reasons.insert("새로 감지".to_string());
                 continue;
             };
+            if let Some((from, to)) = version_change(record, previous) {
+                if state.as_deref() != Some("new") {
+                    state = Some("updated".to_string());
+                }
+                reasons.insert(format!("버전 {from} → {to}"));
+                previous_version = Some(from);
+            }
             let current_modified = epoch_seconds(record.fingerprint.modified);
             let bytes_changed = record.fingerprint.bytes != previous.bytes;
             let modified_changed = current_modified != previous.modified_epoch;
@@ -317,7 +333,7 @@ impl ModRowBuilder {
                 }
             }
         }
-        (state, reasons.into_iter().collect())
+        (state, reasons.into_iter().collect(), previous_version)
     }
 }
 

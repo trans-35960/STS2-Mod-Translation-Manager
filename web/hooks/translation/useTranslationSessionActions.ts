@@ -305,6 +305,7 @@ export function useTranslationSessionActions({
           path: translationProject.modPath || "",
           update_state: "",
           change_reasons: [],
+          previous_version: null,
           translation_state: "",
           translation_applied: false,
           translation_applied_epoch: null,

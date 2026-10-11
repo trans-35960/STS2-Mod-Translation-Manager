@@ -29,7 +29,7 @@ use sts2_mod_manager::process::{hidden_command, powershell_expand_archive};
 use sts2_mod_manager::save_backup::{self, SaveBackupEntry};
 use sts2_mod_manager::state::{
     ModStateEntry, desired_active_mod_keys, mod_record_state_key, read_mod_state_index,
-    write_desired_active_mod_keys,
+    version_change, write_desired_active_mod_keys,
 };
 use sts2_mod_manager::translation::{
     TranslationWorkspace, has_translatable_hardcoded_values, scan_translation_candidates,

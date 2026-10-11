@@ -324,6 +324,7 @@ function mergeModRows(left: ModRow, right: ModRow): ModRow {
     managed: left.managed || right.managed,
     external: left.external || right.external,
     workshop: left.workshop || right.workshop,
+    previous_version: primary.previous_version ?? secondary.previous_version,
     source_label: mergeTextLabels(left.source_label, right.source_label),
     update_state: mergeUpdateState(left.update_state, right.update_state),
     translation_state: primary.translation_state || secondary.translation_state,

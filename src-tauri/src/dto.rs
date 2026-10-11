@@ -117,6 +117,7 @@ pub(crate) struct ModRowDto {
     pub(crate) download_state: Option<String>,
     pub(crate) update_state: String,
     pub(crate) change_reasons: Vec<String>,
+    pub(crate) previous_version: Option<String>,
     pub(crate) translation_state: String,
     pub(crate) translation_applied: bool,
     pub(crate) translation_applied_epoch: Option<u64>,

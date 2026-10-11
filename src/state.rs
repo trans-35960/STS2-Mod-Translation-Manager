@@ -17,6 +17,8 @@ pub struct ModStateEntry {
     pub path: PathBuf,
     pub registered_epoch: u64,
     pub updated_epoch: u64,
+    /// Version recorded at the last acknowledged scan; `None` for older indexes.
+    pub version: Option<String>,
 }
 
 pub fn detect_changes(summary: &ScanSummary, state_path: &Path) -> AppResult<Vec<ModChange>> {
@@ -34,7 +36,10 @@ pub fn detect_changes(summary: &ScanSummary, state_path: &Path) -> AppResult<Vec
                 kind: ModChangeKind::New,
                 record: record.clone(),
             }),
-            Some(previous) if fingerprint_changed(&record.fingerprint, previous) => {
+            Some(previous)
+                if fingerprint_changed(&record.fingerprint, previous)
+                    || version_change(record, previous).is_some() =>
+            {
                 changes.push(ModChange {
                     kind: ModChangeKind::Updated,
                     record: record.clone(),
@@ -65,8 +70,9 @@ pub fn write_state(summary: &ScanSummary, state_path: &Path) -> AppResult<()> {
         .map(|record| (state_key(record.source, &record.key), record))
         .collect::<HashMap<_, _>>();
 
-    let mut output =
-        String::from("source\tkey\tbytes\tmodified_epoch\tregistered_epoch\tupdated_epoch\tpath\n");
+    let mut output = String::from(
+        "source\tkey\tbytes\tmodified_epoch\tregistered_epoch\tupdated_epoch\tpath\tversion\n",
+    );
     for record in summary.records() {
         let key = record_state_key(record);
         let previous_record = previous.get(&key);
@@ -78,7 +84,10 @@ pub fn write_state(summary: &ScanSummary, state_path: &Path) -> AppResult<()> {
             .map(|record| record.registered_epoch)
             .unwrap_or(fallback_epoch);
         let updated_epoch = match previous_record {
-            Some(previous) if !fingerprint_changed(&record.fingerprint, previous) => {
+            Some(previous)
+                if !fingerprint_changed(&record.fingerprint, previous)
+                    && version_change(record, previous).is_none() =>
+            {
                 previous.updated_epoch
             }
             Some(_) | None => now,
@@ -96,6 +105,8 @@ pub fn write_state(summary: &ScanSummary, state_path: &Path) -> AppResult<()> {
         output.push_str(&updated_epoch.to_string());
         output.push('\t');
         output.push_str(&record.path.to_string_lossy());
+        output.push('\t');
+        output.push_str(&state_version(record).unwrap_or_default());
         output.push('\n');
     }
 
@@ -220,7 +231,8 @@ fn read_state(path: &Path) -> AppResult<Vec<ModStateEntry>> {
         }
 
         let parts = line.split('\t').collect::<Vec<_>>();
-        if parts.len() != 7 {
+        // Seven columns predate the version column; keep reading those indexes.
+        if parts.len() != 7 && parts.len() != 8 {
             continue;
         }
 
@@ -248,6 +260,11 @@ fn read_state(path: &Path) -> AppResult<Vec<ModStateEntry>> {
             registered_epoch,
             updated_epoch,
             path,
+            version: parts
+                .get(7)
+                .map(|value| value.trim())
+                .filter(|value| !value.is_empty())
+                .map(str::to_string),
         });
     }
 
@@ -283,6 +300,30 @@ fn is_game_disabled_path(path: &Path) -> bool {
 
 fn state_key(source: ModSource, key: &str) -> String {
     format!("{}:{key}", source.as_key())
+}
+
+/// `(previous, current)` when both scans know the version and it differs.
+/// Workshop mods update silently through Steam, so this is how those updates surface.
+pub fn version_change(record: &ModRecord, previous: &ModStateEntry) -> Option<(String, String)> {
+    let previous_version = previous.version.as_deref()?;
+    let current_version = state_version(record)?;
+    (normalize_version(previous_version) != normalize_version(&current_version))
+        .then(|| (previous_version.to_string(), current_version))
+}
+
+fn state_version(record: &ModRecord) -> Option<String> {
+    record
+        .version_hint
+        .as_deref()
+        .map(|value| value.replace(['\t', '\r', '\n'], " ").trim().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+fn normalize_version(value: &str) -> String {
+    value
+        .trim()
+        .trim_start_matches(['v', 'V'])
+        .to_ascii_lowercase()
 }
 
 fn fingerprint_changed(current: &ModFingerprint, previous: &ModStateEntry) -> bool {
@@ -404,6 +445,73 @@ mod tests {
         assert!(changes.is_empty());
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].source, ModSource::GameMods);
+    }
+
+    #[test]
+    fn version_changes_are_detected_and_old_indexes_stay_quiet() {
+        let state_path = test_state_path("version_changes_are_detected");
+        let mut workshop = record_at(
+            "STS2-RitsuLib",
+            10,
+            ModSource::Workshop,
+            "G:/workshop/content/2868840/3747602295",
+        );
+        workshop.version_hint = Some("0.6.6".to_string());
+        let first = ScanSummary {
+            workshop_mods: vec![workshop.clone()],
+            ..ScanSummary::default()
+        };
+        write_state(&first, &state_path).expect("write first state");
+
+        // Same files, same version: nothing to report.
+        assert!(
+            detect_changes(&first, &state_path)
+                .expect("detect")
+                .is_empty()
+        );
+
+        workshop.version_hint = Some("v0.6.6".to_string());
+        let same_version = ScanSummary {
+            workshop_mods: vec![workshop.clone()],
+            ..ScanSummary::default()
+        };
+        assert!(
+            detect_changes(&same_version, &state_path)
+                .expect("detect")
+                .is_empty()
+        );
+
+        workshop.version_hint = Some("0.6.7".to_string());
+        let updated = ScanSummary {
+            workshop_mods: vec![workshop.clone()],
+            ..ScanSummary::default()
+        };
+        let changes = detect_changes(&updated, &state_path).expect("detect");
+        assert_eq!(changes.len(), 1);
+        assert_eq!(changes[0].kind, ModChangeKind::Updated);
+        let index = read_mod_state_index(&state_path).expect("index");
+        let previous = index
+            .get(&mod_record_state_key(&workshop))
+            .expect("previous entry");
+        assert_eq!(
+            version_change(&workshop, previous),
+            Some(("0.6.6".to_string(), "0.6.7".to_string()))
+        );
+
+        // A seven-column index from before versions were recorded still loads.
+        let legacy_path = test_state_path("version_changes_legacy_index");
+        fs::create_dir_all(legacy_path.parent().expect("parent")).expect("dir");
+        fs::write(
+            &legacy_path,
+            "source\tkey\tbytes\tmodified_epoch\tregistered_epoch\tupdated_epoch\tpath\n\
+             workshop\tworkshop-sts2-ritsulib\t10\t10\t10\t10\tG:/workshop/content/2868840/3747602295\n",
+        )
+        .expect("write legacy");
+        assert!(
+            detect_changes(&updated, &legacy_path)
+                .expect("detect")
+                .is_empty()
+        );
     }
 
     fn record(name: &str, bytes: u64) -> ModRecord {
