@@ -54,11 +54,21 @@ impl UnsupportedEntries {
     }
 }
 
+/// A sheet split into game loc tables.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SheetTables {
+    /// Translated values (may be empty; empty ones are not written).
+    pub values: TranslationTables,
+    /// Source text per key, shown and searched in the in-game edit panel.
+    pub sources: TranslationTables,
+    pub unsupported: UnsupportedEntries,
+}
+
 /// Sheet values grouped by the game loc table they belong to. Only entries
 /// from `localization/<lang>/<table>.json` with a top-level key qualify.
-pub fn sheet_tables(sheet: &JsonTranslationSheet) -> (TranslationTables, UnsupportedEntries) {
-    let mut tables = TranslationTables::new();
-    let mut unsupported = UnsupportedEntries::default();
+pub fn sheet_tables(sheet: &JsonTranslationSheet) -> SheetTables {
+    let mut tables = SheetTables::default();
+    let unsupported = &mut tables.unsupported;
     for entry in &sheet.entries {
         if entry.status == JsonTranslationStatus::Removed || entry.source_value.trim().is_empty() {
             continue;
@@ -66,6 +76,12 @@ pub fn sheet_tables(sheet: &JsonTranslationSheet) -> (TranslationTables, Unsuppo
         match table_location(&entry.key) {
             TableLocation::Table { table, key } => {
                 tables
+                    .sources
+                    .entry(table.clone())
+                    .or_default()
+                    .insert(key.clone(), entry.source_value.clone());
+                tables
+                    .values
                     .entry(table)
                     .or_default()
                     .insert(key, entry.translated_value.clone());
@@ -75,7 +91,7 @@ pub fn sheet_tables(sheet: &JsonTranslationSheet) -> (TranslationTables, Unsuppo
             TableLocation::Outside => unsupported.outside_tables += 1,
         }
     }
-    (tables, unsupported)
+    tables
 }
 
 enum TableLocation {
@@ -144,11 +160,13 @@ pub struct WriteReport {
 /// Writes one sheet's tables for `mod_id`/`language`. Each table file holds
 /// exactly the sheet's non-empty values, so values cleared in the sheet stop
 /// being applied; tables of other sheets for the same mod are left alone.
+/// `_source/{table}.json` holds the source text of the written keys.
 pub fn write_translations(
     shared: &Path,
     mod_id: &str,
     language: &str,
     tables: &TranslationTables,
+    sources: &TranslationTables,
     target_version: Option<&str>,
     updated_at: u64,
 ) -> AppResult<WriteReport> {
@@ -163,17 +181,31 @@ pub fn write_translations(
     };
     for (table, values) in tables {
         let path = dir.join(format!("{table}.json"));
+        let source_path = dir.join("_source").join(format!("{table}.json"));
         let values = values
             .iter()
             .filter(|(_, value)| !value.is_empty())
             .collect::<BTreeMap<_, _>>();
         if values.is_empty() {
             remove_if_exists(&path)?;
+            remove_if_exists(&source_path)?;
             continue;
         }
+        let table_sources = sources
+            .get(table)
+            .map(|sources| {
+                sources
+                    .iter()
+                    .filter(|(key, _)| values.contains_key(key))
+                    .collect::<BTreeMap<_, _>>()
+            })
+            .unwrap_or_default();
         let content = serde_json::to_string_pretty(&values)
             .map_err(|error| AppError::InvalidCommand(error.to_string()))?;
         write_atomic(&path, &content)?;
+        let content = serde_json::to_string_pretty(&table_sources)
+            .map_err(|error| AppError::InvalidCommand(error.to_string()))?;
+        write_atomic(&source_path, &content)?;
         report.tables += 1;
         report.entries += values.len();
     }
@@ -331,7 +363,11 @@ mod tests {
             ],
         };
 
-        let (tables, unsupported) = sheet_tables(&sheet);
+        let SheetTables {
+            values: tables,
+            sources,
+            unsupported,
+        } = sheet_tables(&sheet);
 
         let mut expected = TranslationTables::new();
         expected
@@ -343,6 +379,7 @@ mod tests {
             .or_default()
             .insert("a/b".to_string(), String::new());
         assert_eq!(tables, expected);
+        assert_eq!(sources["cards"]["A.title"], "节制");
         assert_eq!(
             unsupported,
             UnsupportedEntries {
@@ -370,16 +407,32 @@ mod tests {
             .or_default()
             .insert("old".to_string(), String::new());
 
-        let report =
-            write_translations(&shared, "MaidenSuccubus", "kor", &tables, Some("0.1.0"), 42)
-                .expect("write");
+        let mut sources = TranslationTables::new();
+        sources.entry("cards".to_string()).or_default().extend([
+            ("A".to_string(), "节制".to_string()),
+            ("B".to_string(), "空".to_string()),
+        ]);
+
+        let report = write_translations(
+            &shared,
+            "MaidenSuccubus",
+            "kor",
+            &tables,
+            &sources,
+            Some("0.1.0"),
+            42,
+        )
+        .expect("write");
         let cards = fs::read_to_string(dir.join("cards.json")).expect("cards");
+        let card_sources =
+            fs::read_to_string(dir.join("_source").join("cards.json")).expect("sources");
         let meta = read_meta(&dir.join("_meta.json"));
         let format = fs::read_to_string(shared.join("format.json")).expect("format");
         let powers_exists = dir.join("powers.json").exists();
         fs::remove_dir_all(&shared).ok();
 
         assert_eq!(cards, "{\n  \"A\": \"절제\"\n}");
+        assert_eq!(card_sources, "{\n  \"A\": \"节制\"\n}");
         assert!(
             !powers_exists,
             "a table emptied in the sheet stops being applied"

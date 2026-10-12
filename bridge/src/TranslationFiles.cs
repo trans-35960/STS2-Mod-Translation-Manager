@@ -2,8 +2,15 @@ using System.Text.Json;
 
 namespace Sts2ModManagerBridge;
 
-/// <summary>One loc table's translations for one mod: table name and key → value.</summary>
-public sealed record TableTranslations(string ModId, string Table, Dictionary<string, string> Values);
+/// <summary>
+/// One loc table's translations for one mod: key → value, and key → source
+/// text when the app wrote it (<c>_source/{table}.json</c>).
+/// </summary>
+public sealed record TableTranslations(
+    string ModId,
+    string Table,
+    Dictionary<string, string> Values,
+    Dictionary<string, string> Sources);
 
 /// <summary>
 /// Reads <c>translations/{modId}/{lang}/{table}.json</c> (flat string maps the
@@ -52,7 +59,11 @@ public static class TranslationFiles
                 }
                 try
                 {
-                    tables.Add(new TableTranslations(modId, table, ReadFlatMap(file)));
+                    var sourceFile = Path.Combine(languageDir, "_source", table + ".json");
+                    var sources = File.Exists(sourceFile)
+                        ? ReadFlatMap(sourceFile)
+                        : new Dictionary<string, string>(StringComparer.Ordinal);
+                    tables.Add(new TableTranslations(modId, table, ReadFlatMap(file), sources));
                 }
                 catch (Exception exception)
                 {
@@ -61,6 +72,27 @@ public static class TranslationFiles
             }
         }
         return (tables, errors);
+    }
+
+    /// <summary>Last in-game edit id the app took in (<c>_meta.json</c> <c>edits_ack</c>).</summary>
+    public static string? ReadEditsAck(string translationsRoot, string modId, string language)
+    {
+        var file = Path.Combine(translationsRoot, modId, language, "_meta.json");
+        if (!File.Exists(file))
+        {
+            return null;
+        }
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(file));
+            return document.RootElement.TryGetProperty("edits_ack", out var ack) && ack.ValueKind == JsonValueKind.String
+                ? ack.GetString()
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     public static Dictionary<string, string> ReadFlatMap(string file)

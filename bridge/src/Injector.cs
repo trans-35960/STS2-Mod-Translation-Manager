@@ -15,12 +15,28 @@ namespace Sts2ModManagerBridge;
 /// (<see cref="LocManager.SetLanguage"/>).
 /// </para>
 /// </summary>
+/// <summary>One translated key as the edit panel lists it.</summary>
+public sealed record CatalogEntry(
+    string ModId,
+    string Table,
+    string Key,
+    string? Source,
+    string SheetValue,
+    string Current,
+    bool Edited);
+
 public static class Injector
 {
     /// <summary>Godot's NOTIFICATION_TRANSLATION_CHANGED; labels re-read their text on it.</summary>
     private const int TranslationChangedNotification = 2010;
 
     private static readonly Dictionary<(string Table, string Key), string?> Ledger = new();
+
+    /// <summary>Every key the last apply translated, for the edit panel.</summary>
+    public static IReadOnlyList<CatalogEntry> Catalog { get; private set; } = Array.Empty<CatalogEntry>();
+
+    /// <summary>Language of <see cref="Catalog"/>.</summary>
+    public static string CatalogLanguage { get; private set; } = "";
 
     /// <summary>Called after the game (re)built every table for a language.</summary>
     public static void OnTablesRebuilt(LocManager manager)
@@ -67,6 +83,8 @@ public static class Injector
             {
                 Status.RecordError("read", error);
             }
+            Catalog = OverlayEdits(tables, language);
+            CatalogLanguage = language;
 
             var applied = new HashSet<(string Table, string Key)>();
             foreach (var group in tables.GroupBy(table => table.Table, StringComparer.Ordinal))
@@ -116,6 +134,44 @@ public static class Injector
             Status.Write();
             return 0;
         }
+    }
+
+    /// <summary>
+    /// Puts in-game edits the app has not taken in yet on top of the app's
+    /// values, and lists every key for the edit panel.
+    /// </summary>
+    private static List<CatalogEntry> OverlayEdits(List<TableTranslations> tables, string language)
+    {
+        var catalog = new List<CatalogEntry>();
+        foreach (var mod in tables.GroupBy(table => table.ModId, StringComparer.Ordinal))
+        {
+            Dictionary<(string Table, string Key), EditRecord> pending;
+            try
+            {
+                var ack = TranslationFiles.ReadEditsAck(SharedPaths.Translations, mod.Key, language);
+                pending = EditLog.Pending(EditLog.Read(EditLog.PathFor(SharedPaths.Edits, mod.Key, language)), ack);
+            }
+            catch (Exception exception)
+            {
+                Status.RecordError("edits", $"{mod.Key}: {exception.Message}");
+                pending = new();
+            }
+            foreach (var table in mod)
+            {
+                foreach (var key in table.Values.Keys.ToList())
+                {
+                    var sheetValue = table.Values[key];
+                    var edited = pending.TryGetValue((table.Table, key), out var edit) && edit.Before == sheetValue;
+                    if (edited)
+                    {
+                        table.Values[key] = edit!.After!;
+                    }
+                    table.Sources.TryGetValue(key, out var source);
+                    catalog.Add(new CatalogEntry(mod.Key, table.Table, key, source, sheetValue, table.Values[key], edited));
+                }
+            }
+        }
+        return catalog;
     }
 
     /// <summary>Puts back the original text of keys we no longer translate.</summary>

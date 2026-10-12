@@ -44,7 +44,11 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
     if is_hardcoded_source_file(Path::new(&sheet.source_path)) {
         return Ok(None);
     }
-    let (tables, unsupported) = bridge::sheet_tables(&sheet);
+    let bridge::SheetTables {
+        values: tables,
+        sources,
+        unsupported,
+    } = bridge::sheet_tables(&sheet);
     if tables.is_empty() {
         return Ok(None);
     }
@@ -63,6 +67,7 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
         &target.mod_id,
         &sheet.target_language,
         &tables,
+        &sources,
         target.mod_version.as_deref(),
         epoch_seconds(Some(SystemTime::now())).unwrap_or(0),
     )
