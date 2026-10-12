@@ -165,6 +165,26 @@ export type ModRow = {
   extraction_tree: ExtractionTreeNode[];
 };
 
+export type LeftoverText = {
+  text: string;
+  code_like: boolean;
+};
+
+export type LeftoverFile = {
+  location: "dll" | "resource" | "patch";
+  file: string;
+  texts: LeftoverText[];
+};
+
+export type LeftoverReport = {
+  target_language: string;
+  scanned_files: number;
+  total_texts: number;
+  code_like_texts: number;
+  unreadable: string[];
+  files: LeftoverFile[];
+};
+
 export type BranchIssue = {
   kind: "unsupported" | "awaiting_download";
   current_branch: string;

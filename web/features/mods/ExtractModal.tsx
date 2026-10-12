@@ -1,7 +1,76 @@
 import React from "react";
 import { labels } from "../../i18n";
-import type { ExtractionTreeNode, ModRow } from "../../types";
+import type { ExtractionTreeNode, LeftoverReport, ModRow } from "../../types";
 import { hasLocalizationBranch, joinResourcePath } from "./modUtils";
+
+const LEFTOVER_LOCATION_LABELS: Record<LeftoverReport["files"][number]["location"], string> = {
+  dll: "DLL 코드 문자열",
+  resource: "localization 밖 리소스",
+  patch: "번역 모드에 남은 원문",
+};
+
+/** Shows where text in a non-target script survives after translation. */
+function LeftoverTextSection({ onScan, disabled }: { onScan: () => Promise<LeftoverReport>; disabled: boolean }) {
+  const [report, setReport] = React.useState<LeftoverReport | null>(null);
+  const [scanning, setScanning] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function scan() {
+    setScanning(true);
+    setError(null);
+    try {
+      setReport(await onScan());
+    } catch (scanError) {
+      setError(String(scanError));
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  return (
+    <div className="leftover-text-section">
+      <div className="modal-cache-controls">
+        <span>번역 후에도 원문이 남는 위치(DLL 코드 문자열, localization 밖 리소스, 번역 모드)를 찾습니다.</span>
+        <button type="button" onClick={() => void scan()} disabled={disabled || scanning}>
+          {scanning ? "검사 중..." : "남은 원문 검사"}
+        </button>
+      </div>
+      {error && <p className="leftover-text-error">{error}</p>}
+      {report && (
+        <div className="leftover-text-report">
+          <strong>
+            {report.total_texts === 0
+              ? `대상 언어(${report.target_language})가 아닌 문자가 남은 곳이 없습니다. (파일 ${report.scanned_files}개 검사)`
+              : `남은 원문 ${report.total_texts}개 · 번역 금지 추정 ${report.code_like_texts}개 · 파일 ${report.scanned_files}개 검사`}
+          </strong>
+          {report.unreadable.length > 0 && <p className="leftover-text-error">읽을 수 없는 PCK: {report.unreadable.join(", ")}</p>}
+          {report.files.map((file) => (
+            <details key={`${file.location}-${file.file}`}>
+              <summary>
+                <span className={`leftover-location ${file.location}`}>{LEFTOVER_LOCATION_LABELS[file.location]}</span>
+                <span className="leftover-count">{file.texts.length}</span>
+                <code>{file.file}</code>
+              </summary>
+              {file.location === "dll" && (
+                <p className="leftover-text-note">
+                  C# 코드에 직접 들어간 문자열입니다. 번역 모드(PCK)로는 바꿀 수 없고, 정규식으로 표시된 항목은 번역하면 모드 기능이 깨질 수 있습니다.
+                </p>
+              )}
+              <ul>
+                {file.texts.map((text) => (
+                  <li key={text.text} className={text.code_like ? "code-like" : undefined}>
+                    {text.code_like && <span className="leftover-code-badge">번역 금지</span>}
+                    <span>{text.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ExtractConfirmModal(props: {
   labels: typeof labels.ko;
@@ -15,6 +84,7 @@ function ExtractConfirmModal(props: {
   onClearCache: () => void;
   onExtractNode: (node: ExtractionTreeNode) => void;
   onOpenNodeTools: (node: ExtractionTreeNode) => void;
+  onScanLeftover: () => Promise<LeftoverReport>;
 }) {
   const [isTreeOpen, setIsTreeOpen] = React.useState(true);
   const [contextMenu, setContextMenu] = React.useState<{
@@ -68,6 +138,7 @@ function ExtractConfirmModal(props: {
             캐시 삭제 후 다시 읽기
           </button>
         </div>
+        <LeftoverTextSection onScan={props.onScanLeftover} disabled={Boolean(props.busy)} />
         <div className="modal-tree-section">
           <button
             className="modal-tree-title"

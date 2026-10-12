@@ -102,6 +102,111 @@
   flex: 0 0 auto;
 }
 
+.leftover-text-section .modal-cache-controls {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.leftover-text-section .modal-cache-controls > span {
+  color: #3730a3;
+}
+
+.leftover-text-report {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 320px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+}
+
+.leftover-text-report > * {
+  min-width: 0;
+}
+
+.leftover-text-report details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.leftover-text-report summary code {
+  min-width: 0;
+  overflow: hidden;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leftover-location {
+  flex: 0 0 auto;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 900;
+}
+
+.leftover-location.dll {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.leftover-location.resource {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.leftover-location.patch {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.leftover-count {
+  flex: 0 0 auto;
+  font-weight: 900;
+}
+
+.leftover-text-report ul {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0 4px;
+  padding-left: 18px;
+}
+
+.leftover-text-report li {
+  overflow-wrap: anywhere;
+}
+
+.leftover-text-report li.code-like {
+  color: #94a3b8;
+}
+
+.leftover-code-badge {
+  margin-right: 6px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.leftover-text-note {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.leftover-text-error {
+  margin: 6px 0 0;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
 .modal-tree-section {
   margin-top: 14px;
   border: 1px solid #e0e9e5;

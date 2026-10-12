@@ -6,6 +6,7 @@ import type {
   CacheUsage,
   Dashboard,
   LaunchStatus,
+  LeftoverReport,
   DroppedModPreview,
   GameLog,
   JsonApply,
@@ -59,6 +60,7 @@ export type CommandArgs = {
     force?: boolean | null;
   };
   clear_translation_extract_cache: { key: string };
+  scan_leftover_text: { key: string; patchKeys: string[]; targetLanguage: string };
   prepare_translation_node: {
     key: string;
     resourcePath: string;
@@ -180,6 +182,7 @@ export type CommandResult = {
   cleanup_dropped_mod_preview_cache: void;
   extract_translation: ActionResult;
   clear_translation_extract_cache: ActionResult;
+  scan_leftover_text: LeftoverReport;
   prepare_translation_node: NodeTranslationResult;
   save_preset: ActionResult;
   apply_preset: ActionResult;

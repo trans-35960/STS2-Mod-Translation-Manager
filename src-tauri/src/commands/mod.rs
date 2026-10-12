@@ -135,6 +135,16 @@ pub(crate) async fn extract_translation(
 }
 
 #[tauri::command]
+pub(crate) async fn scan_leftover_text(
+    key: String,
+    patch_keys: Vec<String>,
+    target_language: String,
+) -> Result<LeftoverReportDto, String> {
+    run_blocking(move || crate::services::scan_leftover_text(key, patch_keys, target_language))
+        .await
+}
+
+#[tauri::command]
 pub(crate) async fn clear_translation_extract_cache(key: String) -> Result<ActionDto, String> {
     run_blocking(move || crate::services::clear_translation_extract_cache(key)).await
 }

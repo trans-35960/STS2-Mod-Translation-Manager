@@ -729,6 +729,15 @@ function App() {
             void extractTreeNode(mod, node, extractOutputDir || dashboard?.paths.translation_work);
           }}
           onOpenNodeTools={(node) => void openTreeNodeInTranslationTools(pendingExtract, node, extractOutputDir || undefined)}
+          onScanLeftover={() =>
+            invokeCommand("scan_leftover_text", {
+              key: pendingExtract.key,
+              patchKeys: (dashboard?.mods ?? [])
+                .filter((mod) => mod.is_translation_patch && mod.translation_target_key === pendingExtract.key)
+                .map((mod) => mod.key),
+              targetLanguage: jsonTargetLanguage || settingsDraft?.target_language || dashboard?.settings.target_language || "kor",
+            })
+          }
         />
       )}
       {droppedModPreviews && dashboard && (

@@ -28,6 +28,7 @@ pub fn run() {
             commands::cleanup_dropped_mod_preview_cache,
             commands::extract_translation,
             commands::clear_translation_extract_cache,
+            commands::scan_leftover_text,
             commands::prepare_translation_node,
             commands::save_preset,
             commands::apply_preset,

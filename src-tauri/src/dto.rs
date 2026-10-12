@@ -147,6 +147,30 @@ pub(crate) struct ModDeleteDto {
     pub(crate) path: String,
 }
 
+#[derive(Debug, Serialize)]
+pub(crate) struct LeftoverReportDto {
+    pub(crate) target_language: String,
+    pub(crate) scanned_files: usize,
+    pub(crate) total_texts: usize,
+    pub(crate) code_like_texts: usize,
+    pub(crate) unreadable: Vec<String>,
+    pub(crate) files: Vec<LeftoverFileDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct LeftoverFileDto {
+    /// `dll`, `resource` or `patch`.
+    pub(crate) location: String,
+    pub(crate) file: String,
+    pub(crate) texts: Vec<LeftoverTextDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct LeftoverTextDto {
+    pub(crate) text: String,
+    pub(crate) code_like: bool,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct BranchIssueDto {
     /// `unsupported` or `awaiting_download`.
