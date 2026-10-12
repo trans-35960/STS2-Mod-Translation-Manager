@@ -137,6 +137,7 @@ pub(crate) struct ModRowDto {
     pub(crate) translation_target_version: Option<String>,
     pub(crate) dependencies: Vec<ModDependencyDto>,
     pub(crate) branch_issue: Option<BranchIssueDto>,
+    pub(crate) translator_links: Vec<TranslatorLinkDto>,
     pub(crate) language_preview: Vec<LanguagePreviewDto>,
     pub(crate) extraction_tree: Vec<ExtractionTreeNodeDto>,
 }
@@ -169,6 +170,18 @@ pub(crate) struct LeftoverFileDto {
 pub(crate) struct LeftoverTextDto {
     pub(crate) text: String,
     pub(crate) code_like: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct TranslatorLinkDto {
+    pub(crate) mod_id: String,
+    pub(crate) language: String,
+    pub(crate) translator_installed: bool,
+    pub(crate) translator_active: bool,
+    /// Synced values gone from the override files (Workshop update wiped them).
+    pub(crate) missing_entries: usize,
+    /// Values the player changed in game since the last sync.
+    pub(crate) game_changed_entries: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -578,6 +591,7 @@ pub(crate) struct TranslationSaveTargetDto {
     pub(crate) reason: String,
     pub(crate) translator_version: Option<String>,
     pub(crate) translator_active: bool,
+    pub(crate) auto_sync: bool,
     pub(crate) supported_entries: usize,
     pub(crate) unsupported_entries: usize,
 }

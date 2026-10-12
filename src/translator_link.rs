@@ -335,7 +335,10 @@ enum Decision {
 }
 
 fn decide(ours: &str, theirs: Option<&String>, base: Option<&String>) -> Decision {
-    let Some(theirs) = theirs else {
+    // An empty value is what Translator's template holds, and what it writes
+    // again on the next boot after a Workshop update wiped the folder, so it
+    // counts as missing rather than as the player clearing a translation.
+    let Some(theirs) = theirs.filter(|value| !value.is_empty()) else {
         // Missing key or file (never written, or wiped by a Workshop update).
         return if ours.is_empty() {
             Decision::Unchanged
@@ -352,9 +355,8 @@ fn decide(ours: &str, theirs: Option<&String>, base: Option<&String>) -> Decisio
             (false, true) => Decision::Write,
             (false, false) => Decision::Conflict,
         },
-        // First sync: an empty template slot takes our value, an empty sheet
-        // value leaves the player's, two different translations conflict.
-        None if theirs.is_empty() => Decision::Write,
+        // First sync: an empty sheet value leaves the player's, two
+        // different translations conflict.
         None if ours.is_empty() => Decision::KeepInGame,
         None => Decision::Conflict,
     }
@@ -466,6 +468,96 @@ pub fn base_path(state_dir: &Path, mod_key: &str, language: &str) -> PathBuf {
         .join("translator_link")
         .join(sanitize_file_name(mod_key))
         .join(format!("{}.json", sanitize_file_name(language)))
+}
+
+/// Every language this app has synced for `mod_key`, as `(language, base)`.
+pub fn read_bases(state_dir: &Path, mod_key: &str) -> AppResult<Vec<(String, SyncBase)>> {
+    let dir = state_dir
+        .join("translator_link")
+        .join(sanitize_file_name(mod_key));
+    let entries = match fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(error) => return Err(AppError::io(&dir, error)),
+    };
+    let mut bases = Vec::new();
+    for entry in entries {
+        let path = entry.map_err(|source| AppError::io(&dir, source))?.path();
+        let Some(language) = path
+            .extension()
+            .is_some_and(|extension| extension == "json")
+            .then(|| path.file_stem().map(|stem| stem.to_string_lossy().to_string()))
+            .flatten()
+        else {
+            continue;
+        };
+        if let Some(base) = read_base(&path)? {
+            bases.push((language, base));
+        }
+    }
+    bases.sort_by(|left, right| left.0.cmp(&right.0));
+    Ok(bases)
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct LinkHealth {
+    /// Values this app wrote that are no longer in the override files,
+    /// usually because a Workshop update replaced the Translator folder.
+    pub missing_entries: usize,
+    /// Values the player changed in game since the last sync.
+    pub game_changed_entries: usize,
+}
+
+/// Compares what was last synced with the override files on disk.
+pub fn link_health(root: &Path, base: &SyncBase, language: &str) -> AppResult<LinkHealth> {
+    let theirs = read_override_tables(root, &base.mod_id, language, base.tables.keys().cloned())?;
+    let plan = plan_sync(&base.tables, &theirs, &base.tables);
+    Ok(LinkHealth {
+        missing_entries: plan.writes.values().map(BTreeMap::len).sum(),
+        game_changed_entries: plan.kept_in_game.values().map(BTreeMap::len).sum(),
+    })
+}
+
+/// Writes back synced values missing from the override files. Values the
+/// player changed in game are left alone, as in a normal save.
+pub fn restore_from_base(root: &Path, base: &SyncBase, language: &str) -> AppResult<WriteReport> {
+    let theirs = read_override_tables(root, &base.mod_id, language, base.tables.keys().cloned())?;
+    let plan = plan_sync(&base.tables, &theirs, &base.tables);
+    apply_writes(root, &base.mod_id, language, &plan.writes)
+}
+
+fn preferences_path(state_dir: &Path) -> PathBuf {
+    state_dir.join("translator_link").join("preferences.json")
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+struct Preferences {
+    #[serde(default = "default_true")]
+    auto_sync_on_save: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+/// Whether saving a sheet also writes it to Translator. On unless turned off.
+pub fn auto_sync_on_save(state_dir: &Path) -> bool {
+    fs::read_to_string(preferences_path(state_dir))
+        .ok()
+        .and_then(|text| serde_json::from_str::<Preferences>(&text).ok())
+        .is_none_or(|preferences| preferences.auto_sync_on_save)
+}
+
+pub fn set_auto_sync_on_save(state_dir: &Path, enabled: bool) -> AppResult<()> {
+    let path = preferences_path(state_dir);
+    let content = serde_json::to_string_pretty(&Preferences {
+        auto_sync_on_save: enabled,
+    })
+    .map_err(|error| AppError::InvalidCommand(error.to_string()))?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| AppError::io(parent, source))?;
+    }
+    fs::write(&path, content).map_err(|source| AppError::io(&path, source))
 }
 
 pub fn read_base(path: &Path) -> AppResult<Option<SyncBase>> {
@@ -830,6 +922,65 @@ mod tests {
 
         assert!(result.is_err());
         assert_eq!(content, "{\"A\": \"절제\"");
+    }
+
+    #[test]
+    fn wiped_overrides_are_detected_and_restored_without_touching_game_edits() {
+        let root = temp_root("restore");
+        let state = temp_root("restore-state");
+        let base = SyncBase {
+            mod_id: "Mod".to_string(),
+            translator_root: root.display().to_string(),
+            patch_mods_disabled: true,
+            tables: tables(&[("cards", "A", "절제"), ("cards", "B", "오만"), ("cards", "C", "")]),
+        };
+        write_base(&base_path(&state, "workshop-mod", "kor"), &base).expect("write base");
+        let dir = overrides_dir(&root, "Mod", "kor");
+        fs::create_dir_all(&dir).expect("create overrides");
+        // A Workshop update left a fresh template; the player edited B in game.
+        fs::write(dir.join("cards.txt"), "{\"A\": \"\", \"B\": \"교만\"}").expect("write template");
+
+        let bases = read_bases(&state, "workshop-mod").expect("read bases");
+        let health = link_health(&root, &bases[0].1, &bases[0].0).expect("health");
+        let report = restore_from_base(&root, &bases[0].1, &bases[0].0).expect("restore");
+        let restored = read_override_table(&dir.join("cards.txt"))
+            .expect("read")
+            .expect("exists");
+        let wiped_health = {
+            fs::remove_dir_all(root.join("overrides")).expect("wipe");
+            link_health(&root, &base, "kor").expect("health after wipe")
+        };
+        fs::remove_dir_all(&root).ok();
+        fs::remove_dir_all(&state).ok();
+
+        assert_eq!(bases.len(), 1);
+        assert_eq!(bases[0].0, "kor");
+        assert_eq!(
+            health,
+            LinkHealth {
+                missing_entries: 1,
+                game_changed_entries: 1
+            }
+        );
+        assert_eq!(report.written_entries, 1);
+        assert_eq!(restored.get("A").map(String::as_str), Some("절제"));
+        assert_eq!(restored.get("B").map(String::as_str), Some("교만"));
+        assert_eq!(
+            wiped_health,
+            LinkHealth {
+                missing_entries: 2,
+                game_changed_entries: 0
+            }
+        );
+    }
+
+    #[test]
+    fn auto_sync_defaults_on() {
+        let state = temp_root("prefs");
+        assert!(auto_sync_on_save(&state));
+        set_auto_sync_on_save(&state, false).expect("disable");
+        assert!(!auto_sync_on_save(&state));
+        fs::remove_dir_all(&state).ok();
     }
 
     #[test]

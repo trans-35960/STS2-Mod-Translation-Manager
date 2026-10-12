@@ -1,3 +1,12 @@
+/// Auto sync after a save, an explicit apply and a restore can run at the
+/// same time; each reads, merges and writes the same override and base files.
+fn lock_translator_sync() -> std::sync::MutexGuard<'static, ()> {
+    static TRANSLATOR_SYNC_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    TRANSLATOR_SYNC_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
 /// An installed Sts2ModTranslator, found by its manifest next to the DLL.
 struct TranslatorInstall {
     root: PathBuf,
@@ -24,8 +33,11 @@ struct TranslatorTarget {
     language: String,
 }
 
-fn detect_translator(app: &App, summary: &ScanSummary) -> Result<Option<TranslatorInstall>, String> {
-    let desired = desired_active_mod_keys(summary, &app.config().state_dir)
+fn detect_translator(
+    config: &AppConfig,
+    summary: &ScanSummary,
+) -> Result<Option<TranslatorInstall>, String> {
+    let desired = desired_active_mod_keys(summary, &config.state_dir)
         .map_err(|error| error.to_string())?;
     let mut found = None::<TranslatorInstall>;
     for record in summary.clone().into_records() {
@@ -108,7 +120,7 @@ fn save_target_decision(sheet: &JsonTranslationSheet) -> Result<SaveTargetDecisi
         .scan_preview_report()
         .map_err(|error| error.to_string())?
         .summary;
-    let translator = detect_translator(&app, &summary)?;
+    let translator = detect_translator(app.config(), &summary)?;
     let mod_key = mod_key_for_translation_sheet(sheet);
     let mode = mod_key
         .as_deref()
@@ -204,6 +216,7 @@ fn save_target_dto(decision: &SaveTargetDecision) -> TranslationSaveTargetDto {
         .to_string(),
         reason: decision.reason.clone(),
         translator_version: decision.translator.as_ref().map(|install| install.version.clone()),
+        auto_sync: translator_link::auto_sync_on_save(&app().config().state_dir),
         translator_active: decision.translator.as_ref().is_some_and(|install| install.active),
         supported_entries: decision.supported_entries,
         unsupported_entries: decision.unsupported.total(),
@@ -341,6 +354,7 @@ fn save_sheet_to_translator(
     sheet_path: &Path,
     keep_sheet_keys: &[String],
 ) -> Result<Option<JsonApplyDto>, String> {
+    let _guard = lock_translator_sync();
     let sheet = read_sheet(sheet_path).map_err(|error| error.to_string())?;
     let Some(prepared) = prepare_translator_sync(&sheet)? else {
         return Ok(None);
@@ -495,4 +509,104 @@ fn translator_apply_dto(
         installed_mod_path: display_path(overrides_dir),
         translator: Some(translator),
     }
+}
+
+/// Saves the sheet to Translator after the editor saved it, when auto sync
+/// is on. `Ok(None)` when it is off or the sheet goes to a patch mod.
+pub(crate) fn translator_auto_sync(sheet_path: String) -> Result<Option<TranslatorSaveDto>, String> {
+    if !translator_link::auto_sync_on_save(&app().config().state_dir) {
+        return Ok(None);
+    }
+    Ok(save_sheet_to_translator(Path::new(sheet_path.trim()), &[])?
+        .and_then(|result| result.translator))
+}
+
+pub(crate) fn set_translator_auto_sync(enabled: bool) -> Result<bool, String> {
+    translator_link::set_auto_sync_on_save(&app().config().state_dir, enabled)
+        .map_err(|error| error.to_string())?;
+    Ok(enabled)
+}
+
+/// Translator sync state of every mod this app has saved to Translator.
+fn resolve_translator_links(rows: &mut [ModRowDto], config: &AppConfig, summary: &ScanSummary) {
+    let mut install = None::<Option<TranslatorInstall>>;
+    for row in rows.iter_mut() {
+        let Ok(bases) = translator_link::read_bases(&config.state_dir, &row.key) else {
+            continue;
+        };
+        if bases.is_empty() {
+            continue;
+        }
+        let install = install
+            .get_or_insert_with(|| detect_translator(config, summary).ok().flatten())
+            .as_ref();
+        row.translator_links = bases
+            .into_iter()
+            .map(|(language, base)| {
+                let health = install.and_then(|install| {
+                    translator_link::link_health(&install.root, &base, &language).ok()
+                });
+                TranslatorLinkDto {
+                    mod_id: base.mod_id,
+                    language,
+                    translator_installed: install.is_some(),
+                    translator_active: install.is_some_and(|install| install.active),
+                    missing_entries: health.map(|health| health.missing_entries).unwrap_or(0),
+                    game_changed_entries: health
+                        .map(|health| health.game_changed_entries)
+                        .unwrap_or(0),
+                }
+            })
+            .collect();
+    }
+}
+
+/// Writes back what was last synced for `keys` where it is missing from
+/// Translator, e.g. after a Workshop update replaced its folder.
+pub(crate) fn restore_translator_overrides(keys: Vec<String>) -> Result<ActionDto, String> {
+    let app = app();
+    let config = app.config();
+    let summary = app
+        .scan_preview_report()
+        .map_err(|error| error.to_string())?
+        .summary;
+    let install = detect_translator(config, &summary)?
+        .ok_or_else(|| "Sts2ModTranslator가 설치되어 있지 않아 복구할 수 없습니다.".to_string())?;
+    if !translator_link::version_supported(&install.version) {
+        return Err(format!(
+            "Sts2ModTranslator {} 은(는) 지원하지 않는 버전입니다 (1.19.0 이상 필요)",
+            install.version
+        ));
+    }
+    let _guard = lock_translator_sync();
+    let mut restored = Vec::new();
+    for key in &keys {
+        for (language, mut base) in
+            translator_link::read_bases(&config.state_dir, key).map_err(|error| error.to_string())?
+        {
+            let report = translator_link::restore_from_base(&install.root, &base, &language)
+                .map_err(|error| error.to_string())?;
+            if report.written_entries > 0 {
+                restored.push(format!("{}/{} {}개", base.mod_id, language, report.written_entries));
+            }
+            // The files now live under the current Translator copy.
+            let root_text = install.root.display().to_string();
+            if base.translator_root != root_text {
+                base.translator_root = root_text;
+                translator_link::write_base(
+                    &translator_link::base_path(&config.state_dir, key, &language),
+                    &base,
+                )
+                .map_err(|error| error.to_string())?;
+            }
+        }
+    }
+    Ok(ActionDto {
+        message: if restored.is_empty() {
+            "Translator에서 다시 쓸 번역이 없습니다.".to_string()
+        } else {
+            format!("Translator 번역 복구: {}", restored.join(", "))
+        },
+        dashboard: dashboard().map_err(|error| error.to_string())?,
+    })
 }

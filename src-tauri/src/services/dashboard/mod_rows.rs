@@ -78,6 +78,8 @@ fn mod_rows(
     trace.mark("resolve_translation_patches");
     resolve_branch_issues(&mut rows, config);
     trace.mark("resolve_branch_issues");
+    resolve_translator_links(&mut rows, config, &report.summary);
+    trace.mark("resolve_translator_links");
 
     cache
         .entries
@@ -352,6 +354,7 @@ impl ModRowBuilder {
             translation_target_version: manifest.target_mod_version,
             dependencies,
             branch_issue: None,
+            translator_links: Vec::new(),
             language_preview,
             extraction_tree,
         }

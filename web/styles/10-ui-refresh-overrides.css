@@ -1131,3 +1131,21 @@ select {
   min-height: 0;
   margin: 2px 0 0;
 }
+
+.translation-work-actions .translator-auto-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.translation-work-actions .translator-auto-sync input {
+  width: auto;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+}

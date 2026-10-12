@@ -180,6 +180,7 @@ export function TranslationWorkHeader({
             sheetPath={sheetPath}
             sheet={props.sheet}
             busy={props.busy}
+            saveState={props.saveState}
             onReplaceEntries={props.onReplaceEntries}
             onApply={props.onApply}
           />

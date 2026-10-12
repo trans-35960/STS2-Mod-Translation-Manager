@@ -527,6 +527,35 @@
   flex: 0 0 auto;
 }
 
+.translator-link-icon {
+  display: inline-flex;
+  height: 20px;
+  min-width: 20px;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: #4f46e5;
+  flex: 0 0 auto;
+}
+
+.translator-link-icon.changed {
+  color: #d97706;
+}
+
+.translator-link-icon.problem {
+  color: #dc2626;
+}
+
+.translator-link-icon small {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.translator-link-icon svg {
+  display: block;
+  stroke-width: 2.5;
+}
+
 .branch-warning-icon.awaiting_download {
   color: #f59e0b;
 }

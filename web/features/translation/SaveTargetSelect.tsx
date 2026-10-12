@@ -1,8 +1,9 @@
 import React from "react";
 import { invokeCommand } from "../../api/tauri";
-import type { JsonTranslationSheet, TranslationSaveTarget, TranslatorSyncItem, TranslatorSyncPreview } from "../../types";
+import type { JsonTranslationSheet, TranslationSaveTarget, TranslatorSave, TranslatorSyncItem, TranslatorSyncPreview } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
 import { TranslatorSyncModal } from "./TranslatorSyncModal";
+import type { SheetSaveState } from "./useTranslationSessionState";
 
 export type ApplyOptions = { translatorKeepSheetKeys?: string[] };
 
@@ -15,15 +16,19 @@ export function SaveTargetSelect({
   sheetPath,
   sheet,
   busy,
+  saveState,
   onReplaceEntries,
   onApply,
 }: {
   sheetPath: string;
   sheet: JsonTranslationSheet | null;
   busy: string | null;
+  saveState: SheetSaveState;
   onReplaceEntries: (updates: Array<{ index: number; value: string }>, label?: string) => void;
   onApply: (options?: ApplyOptions) => void;
 }) {
+  const [lastSync, setLastSync] = React.useState<{ at: Date; result: TranslatorSave | null; error?: string } | null>(null);
+  const previousSaveStateRef = React.useRef(saveState);
   const [target, setTarget] = React.useState<TranslationSaveTarget | null>(null);
   const [preview, setPreview] = React.useState<TranslatorSyncPreview | null>(null);
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -74,6 +79,22 @@ export function SaveTargetSelect({
     }
   }, [target?.destination, idle, sheetPath, loadPreview]);
 
+  // Each finished save of a sheet that goes to Translator also writes it
+  // there (unless turned off), so the game picks it up on the next Reload.
+  React.useEffect(() => {
+    const previous = previousSaveStateRef.current;
+    previousSaveStateRef.current = saveState;
+    if (previous !== "saving" || saveState !== "saved" || target?.destination !== "translator" || !target.auto_sync) {
+      return;
+    }
+    invokeCommand("translator_auto_sync", { sheetPath })
+      .then((result) => {
+        setLastSync({ at: new Date(), result });
+        void loadPreview();
+      })
+      .catch((error) => setLastSync({ at: new Date(), result: null, error: String(error) }));
+  }, [saveState, sheetPath, target?.destination, target?.auto_sync, loadPreview]);
+
   React.useEffect(() => {
     if (pendingApply) {
       setPendingApply(null);
@@ -90,6 +111,15 @@ export function SaveTargetSelect({
       setTarget(await invokeCommand("set_translation_save_mode", { sheetPath, mode }));
     } catch {
       // The selector keeps the previous state; the reason tooltip explains failures on save.
+    }
+  }
+
+  async function toggleAutoSync(enabled: boolean) {
+    try {
+      const saved = await invokeCommand("set_translator_auto_sync", { enabled });
+      setTarget((current) => (current ? { ...current, auto_sync: saved } : current));
+    } catch {
+      // Keeps the previous setting.
     }
   }
 
@@ -118,6 +148,7 @@ export function SaveTargetSelect({
   const tooltip = [
     target.reason,
     target.unsupported_entries > 0 ? `Translator 미지원 항목 ${target.unsupported_entries}개(DLL 문자열 등)` : "",
+    lastSync ? autoSyncLabel(lastSync) : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -133,6 +164,12 @@ export function SaveTargetSelect({
           <option value="patch">패치 모드</option>
         </select>
       </label>
+      {target.destination === "translator" && (
+        <label className="translator-auto-sync" data-tooltip="시트를 저장할 때마다 Translator에도 바로 씁니다. 게임 안 값과 충돌하면 쓰지 않습니다.">
+          <input type="checkbox" checked={target.auto_sync} onChange={(event) => void toggleAutoSync(event.target.checked)} disabled={Boolean(busy)} />
+          <span>저장 시 자동 반영</span>
+        </label>
+      )}
       {changedCount > 0 && (
         <button
           type="button"
@@ -147,4 +184,18 @@ export function SaveTargetSelect({
       {modalOpen && preview && <TranslatorSyncModal preview={preview} onCancel={() => setModalOpen(false)} onConfirm={resolve} />}
     </>
   );
+}
+
+function autoSyncLabel(sync: { at: Date; result: TranslatorSave | null; error?: string }): string {
+  const time = sync.at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (sync.error) {
+    return `자동 반영 실패 (${time}): ${sync.error}`;
+  }
+  if (!sync.result) {
+    return "";
+  }
+  if (sync.result.conflicts.length > 0) {
+    return `자동 반영 보류 (${time}): 게임 안 값과 다른 항목 ${sync.result.conflicts.length}개`;
+  }
+  return `자동 반영 (${time}): ${sync.result.written_entries}개 변경`;
 }

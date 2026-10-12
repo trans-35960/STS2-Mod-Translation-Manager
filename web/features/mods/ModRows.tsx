@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  BookOpenCheck,
   ChevronDown,
   ChevronRight,
   DownloadCloud,
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 import { IconButton, Pill, SourceTags, StatusBadge } from "../../components/Common";
 import { labels } from "../../i18n";
-import type { BranchIssue, ModDependency, ModGroup, ModRow } from "../../types";
+import type { BranchIssue, ModDependency, ModGroup, ModRow, TranslatorLink } from "../../types";
 import { LanguageBadges, RepresentativeLanguageBadge } from "./ModBadges";
 import { ModTranslationActions } from "./ModTranslationActions";
 import {
@@ -104,6 +105,7 @@ function ModTableRow({
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={mod.branch_issue} />
+          <TranslatorLinkIcon links={mod.translator_links} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
@@ -228,6 +230,7 @@ function ModGroupTableRow({
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
+          <TranslatorLinkIcon links={group.mods.flatMap((mod) => mod.translator_links ?? [])} />
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
@@ -322,6 +325,7 @@ function SimpleModGroupRow({
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
+          <TranslatorLinkIcon links={group.mods.flatMap((mod) => mod.translator_links ?? [])} />
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
@@ -414,6 +418,7 @@ function SimpleModRow({
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={mod.branch_issue} />
+          <TranslatorLinkIcon links={mod.translator_links} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
@@ -536,6 +541,31 @@ function BranchWarningIcon({ issue }: { issue: BranchIssue | null | undefined })
   return (
     <span className={`branch-warning-icon ${issue.kind}`} title={`${label}: ${issue.message}`} aria-label={label}>
       <GitBranch size={15} />
+    </span>
+  );
+}
+
+/** Shows that a mod's translation lives in Sts2ModTranslator, and whether it needs attention. */
+function TranslatorLinkIcon({ links }: { links: TranslatorLink[] | undefined }) {
+  if (!links || links.length === 0) {
+    return null;
+  }
+  const missing = links.reduce((total, link) => total + link.missing_entries, 0);
+  const changed = links.reduce((total, link) => total + link.game_changed_entries, 0);
+  const installed = links.every((link) => link.translator_installed);
+  const languages = links.map((link) => link.language).join(", ");
+  const state = !installed || missing > 0 ? "problem" : changed > 0 ? "changed" : "ok";
+  const label = !installed
+    ? `Translator 번역(${languages}): Translator가 설치되어 있지 않아 적용되지 않습니다`
+    : missing > 0
+      ? `Translator 번역(${languages}): ${missing}개가 사라졌습니다. 곧 자동으로 다시 씁니다`
+      : changed > 0
+        ? `Translator 번역(${languages}): 게임 안에서 바뀐 항목 ${changed}개. 번역 도구에서 가져올 수 있습니다`
+        : `Translator 번역(${languages})`;
+  return (
+    <span className={`translator-link-icon ${state}`} title={label} aria-label={label}>
+      <BookOpenCheck size={15} />
+      {state === "changed" && <small>{changed}</small>}
     </span>
   );
 }

@@ -9,6 +9,7 @@ import type {
   LeftoverReport,
   TranslationSaveTarget,
   TranslatorSyncPreview,
+  TranslatorSave,
   DroppedModPreview,
   GameLog,
   JsonApply,
@@ -160,6 +161,9 @@ export type CommandArgs = {
     translatorKeepSheetKeys?: string[] | null;
   };
   translator_sync_preview: { sheet: JsonTranslationSheet };
+  translator_auto_sync: { sheetPath: string };
+  set_translator_auto_sync: { enabled: boolean };
+  restore_translator_overrides: { keys: string[] };
   export_translation_patch_mod: { sheetPath: string; outputDir: string };
   translation_save_target: { sheetPath: string };
   set_translation_save_mode: { sheetPath: string; mode: string };
@@ -226,6 +230,9 @@ export type CommandResult = {
   translation_save_target: TranslationSaveTarget;
   set_translation_save_mode: TranslationSaveTarget;
   translator_sync_preview: TranslatorSyncPreview;
+  translator_auto_sync: TranslatorSave | null;
+  set_translator_auto_sync: boolean;
+  restore_translator_overrides: ActionResult;
 };
 
 export type CommandName = keyof CommandArgs;

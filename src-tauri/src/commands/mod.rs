@@ -469,6 +469,23 @@ pub(crate) async fn apply_json_translation_sheet(
 }
 
 #[tauri::command]
+pub(crate) async fn translator_auto_sync(
+    sheet_path: String,
+) -> Result<Option<TranslatorSaveDto>, String> {
+    run_blocking(move || crate::services::translator_auto_sync(sheet_path)).await
+}
+
+#[tauri::command]
+pub(crate) async fn set_translator_auto_sync(enabled: bool) -> Result<bool, String> {
+    run_blocking(move || crate::services::set_translator_auto_sync(enabled)).await
+}
+
+#[tauri::command]
+pub(crate) async fn restore_translator_overrides(keys: Vec<String>) -> Result<ActionDto, String> {
+    run_blocking(move || crate::services::restore_translator_overrides(keys)).await
+}
+
+#[tauri::command]
 pub(crate) async fn translator_sync_preview(
     sheet: JsonSheetDto,
 ) -> Result<TranslatorSyncPreviewDto, String> {

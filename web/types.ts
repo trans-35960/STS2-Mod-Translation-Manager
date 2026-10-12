@@ -161,6 +161,7 @@ export type ModRow = {
   translation_target_version: string | null;
   dependencies: ModDependency[];
   branch_issue?: BranchIssue | null;
+  translator_links?: TranslatorLink[];
   language_preview: LanguagePreview[];
   extraction_tree: ExtractionTreeNode[];
 };
@@ -183,6 +184,15 @@ export type LeftoverReport = {
   code_like_texts: number;
   unreadable: string[];
   files: LeftoverFile[];
+};
+
+export type TranslatorLink = {
+  mod_id: string;
+  language: string;
+  translator_installed: boolean;
+  translator_active: boolean;
+  missing_entries: number;
+  game_changed_entries: number;
 };
 
 export type BranchIssue = {
@@ -452,6 +462,7 @@ export type TranslationSaveTarget = {
   reason: string;
   translator_version: string | null;
   translator_active: boolean;
+  auto_sync: boolean;
   supported_entries: number;
   unsupported_entries: number;
 };
