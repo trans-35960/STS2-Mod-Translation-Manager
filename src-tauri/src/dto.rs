@@ -136,6 +136,7 @@ pub(crate) struct ModRowDto {
     pub(crate) translation_target_name: Option<String>,
     pub(crate) translation_target_version: Option<String>,
     pub(crate) dependencies: Vec<ModDependencyDto>,
+    pub(crate) branch_issue: Option<BranchIssueDto>,
     pub(crate) language_preview: Vec<LanguagePreviewDto>,
     pub(crate) extraction_tree: Vec<ExtractionTreeNodeDto>,
 }
@@ -144,6 +145,16 @@ pub(crate) struct ModRowDto {
 pub(crate) struct ModDeleteDto {
     pub(crate) key: String,
     pub(crate) path: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct BranchIssueDto {
+    /// `unsupported` or `awaiting_download`.
+    pub(crate) kind: String,
+    pub(crate) current_branch: String,
+    pub(crate) branch_min: String,
+    pub(crate) branch_max: String,
+    pub(crate) message: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -215,6 +226,8 @@ pub(crate) struct LaunchStatusDto {
     pub(crate) steam_exe: Option<String>,
     pub(crate) target_label: String,
     pub(crate) running: bool,
+    pub(crate) game_branch: Option<String>,
+    pub(crate) game_version: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

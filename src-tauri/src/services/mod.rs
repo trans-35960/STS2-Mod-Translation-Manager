@@ -16,6 +16,9 @@ use sts2_mod_manager::ai_prompt::{
 };
 use sts2_mod_manager::app::App;
 use sts2_mod_manager::config::AppConfig;
+use sts2_mod_manager::steam_branch::{
+    BranchSupport, branch_support, read_game_branch, read_workshop_branches,
+};
 use sts2_mod_manager::discovery::scan_mod_directory;
 use sts2_mod_manager::domain::{ModFingerprint, ModKind, ModRecord, ModSource, ScanSummary};
 use sts2_mod_manager::glossary::{

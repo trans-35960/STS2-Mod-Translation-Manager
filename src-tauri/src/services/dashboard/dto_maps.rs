@@ -64,7 +64,7 @@ fn tool_dto(tool: VendorTool) -> ToolDto {
     }
 }
 
-fn launch_dto(status: LaunchStatus) -> LaunchStatusDto {
+fn launch_dto(status: LaunchStatus, config: &AppConfig) -> LaunchStatusDto {
     let game_exe = status.game_exe.as_deref().map(display_path);
     let steam_exe = status.steam_exe.as_deref().map(display_path);
     let target_label = game_exe
@@ -75,12 +75,15 @@ fn launch_dto(status: LaunchStatus) -> LaunchStatusDto {
                 .map(|path| format!("Steam fallback ({path})"))
         })
         .unwrap_or_else(|| "not found".to_string());
+    let game = read_game_branch(&config.game_dir);
     LaunchStatusDto {
         ready: status.ready,
         game_exe,
         steam_exe,
         target_label,
         running: status.running,
+        game_branch: game.as_ref().map(|game| game.branch.clone()),
+        game_version: game.and_then(|game| game.version),
     }
 }
 

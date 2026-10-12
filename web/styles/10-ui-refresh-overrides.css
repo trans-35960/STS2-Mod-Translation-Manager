@@ -448,6 +448,12 @@ select {
   color: #047857;
 }
 
+.launch-status-chip.beta {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
 .launch-status-chip.warn {
   border-color: #fed7aa;
   background: #fff7ed;

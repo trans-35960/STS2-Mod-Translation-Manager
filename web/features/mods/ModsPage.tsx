@@ -7,6 +7,7 @@ import {
   Search,
   CheckSquare,
   ShieldAlert,
+  GitBranch,
   ShieldCheck,
   Square,
   Trash2,
@@ -94,6 +95,8 @@ function ModsPage(props: {
   targetLanguage: string;
   vanillaSafe: boolean;
   launchRunning: boolean;
+  gameBranch: string | null;
+  gameVersion: string | null;
   busy: string | null;
   togglingModKeys: Set<string>;
   initialSimpleView: boolean;
@@ -419,6 +422,15 @@ function ModsPage(props: {
         >
           {props.vanillaSafe ? <ShieldCheck size={15} /> : <ShieldAlert size={15} />}
         </span>
+        {props.gameBranch && (
+          <span
+            className={`launch-status-chip${props.gameBranch === "public" ? "" : " beta"}`}
+            aria-label={gameBranchLabel(props.gameBranch, props.gameVersion)}
+            data-tooltip={gameBranchLabel(props.gameBranch, props.gameVersion)}
+          >
+            <GitBranch size={15} />
+          </span>
+        )}
         <button
           className={simpleView ? "toolbar-icon-button active" : "toolbar-icon-button"}
           type="button"
@@ -815,4 +827,9 @@ function attachedTranslationMods(group: ModGroup): { parent: ModRow; children: M
     parent: originals[0],
     children: translations,
   };
+}
+
+function gameBranchLabel(branch: string, version: string | null): string {
+  const kind = branch === "public" ? "정식" : "베타";
+  return `Steam 브랜치: ${branch} (${kind})${version ? ` · 게임 ${version}` : ""}`;
 }

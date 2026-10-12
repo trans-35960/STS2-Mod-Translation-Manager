@@ -15,6 +15,7 @@ pub mod preset;
 pub mod process;
 pub mod save_backup;
 pub mod state;
+pub mod steam_branch;
 pub mod term_candidates;
 pub mod text_ui;
 pub mod translation;

@@ -73,6 +73,22 @@ export function useModActions({
       return;
     }
     if (command === "launch_current") {
+      const branchBlocked = (dashboard?.mods ?? []).filter((mod) => mod.active && mod.branch_issue);
+      if (branchBlocked.length > 0) {
+        const branch = branchBlocked[0].branch_issue?.current_branch ?? "";
+        const confirmed = window.confirm(
+          [
+            `현재 Steam 브랜치(${branch})에서 게임이 불러오지 않을 활성 모드가 있습니다.`,
+            ...branchBlocked.map((mod) => `- ${mod.name}: ${mod.branch_issue?.message ?? ""}`),
+            "",
+            "Steam 속성 > 베타에서 브랜치를 바꾸거나 해당 모드를 비활성화하세요.",
+            "그대로 실행할까요?",
+          ].join("\n"),
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
       const backupCount = dashboard?.save_backups.length ?? 0;
       if (backupCount === 0) {
         const confirmed = window.confirm(

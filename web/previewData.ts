@@ -322,6 +322,8 @@ export const previewDashboard: Dashboard = {
     steam_exe: null,
     target_label: "not found",
     running: false,
+    game_branch: null,
+    game_version: null,
   },
 };
 

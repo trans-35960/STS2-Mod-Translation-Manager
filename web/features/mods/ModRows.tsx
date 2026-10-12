@@ -4,6 +4,7 @@ import {
   ChevronRight,
   DownloadCloud,
   FolderOpen,
+  GitBranch,
   Languages,
   Loader2,
   TriangleAlert,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react";
 import { IconButton, Pill, SourceTags, StatusBadge } from "../../components/Common";
 import { labels } from "../../i18n";
-import type { ModDependency, ModGroup, ModRow } from "../../types";
+import type { BranchIssue, ModDependency, ModGroup, ModRow } from "../../types";
 import { LanguageBadges, RepresentativeLanguageBadge } from "./ModBadges";
 import { ModTranslationActions } from "./ModTranslationActions";
 import {
@@ -102,6 +103,7 @@ function ModTableRow({
         />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
+          <BranchWarningIcon issue={mod.branch_issue} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
@@ -225,6 +227,7 @@ function ModGroupTableRow({
         />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
+          <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
@@ -318,6 +321,7 @@ function SimpleModGroupRow({
         />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
+          <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
@@ -409,6 +413,7 @@ function SimpleModRow({
         />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
+          <BranchWarningIcon issue={mod.branch_issue} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
@@ -521,6 +526,25 @@ function DependencyWarningIcon({ dependencies }: { dependencies: ModDependency[]
       <TriangleAlert size={15} />
     </span>
   );
+}
+
+function BranchWarningIcon({ issue }: { issue: BranchIssue | null | undefined }) {
+  if (!issue) {
+    return null;
+  }
+  const label = issue.kind === "unsupported" ? "현재 Steam 브랜치 미지원" : "현재 브랜치용 버전 대기 중";
+  return (
+    <span className={`branch-warning-icon ${issue.kind}`} title={`${label}: ${issue.message}`} aria-label={label}>
+      <GitBranch size={15} />
+    </span>
+  );
+}
+
+/** The version the game will load decides the warning; inactive versions only matter when none is active. */
+function groupBranchIssue(mods: ModRow[]): BranchIssue | null {
+  const activeMods = mods.filter((mod) => mod.active);
+  const candidates = activeMods.length > 0 ? activeMods : mods;
+  return candidates.find((mod) => mod.branch_issue)?.branch_issue ?? null;
 }
 
 function isTranslationPreparing(busy: string | null, modKey: string): boolean {

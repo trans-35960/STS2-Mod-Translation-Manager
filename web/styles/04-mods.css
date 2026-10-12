@@ -517,6 +517,25 @@
   stroke-width: 2.5;
 }
 
+.branch-warning-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
+  flex: 0 0 auto;
+}
+
+.branch-warning-icon.awaiting_download {
+  color: #f59e0b;
+}
+
+.branch-warning-icon svg {
+  display: block;
+  stroke-width: 2.5;
+}
+
 .mod-title small,
 .language-cell small,
 .panel p,

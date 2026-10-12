@@ -76,6 +76,8 @@ fn mod_rows(
     trace.mark("resolve_dependencies");
     resolve_translation_patch_summaries(&mut rows);
     trace.mark("resolve_translation_patches");
+    resolve_branch_issues(&mut rows, config);
+    trace.mark("resolve_branch_issues");
 
     cache
         .entries
@@ -87,6 +89,67 @@ fn mod_rows(
     trace.finish(format!("rows={}", rows.len()), 0);
 
     Ok(rows)
+}
+
+/// Flags Workshop mods the game will refuse to load on the current Steam
+/// branch, using the same snapshot ranges the game checks.
+fn resolve_branch_issues(rows: &mut [ModRowDto], config: &AppConfig) {
+    if !rows.iter().any(|row| row.workshop) {
+        return;
+    }
+    let Some(game) = read_game_branch(&config.game_dir) else {
+        return;
+    };
+    let items = read_workshop_branches(&config.workshop_dirs);
+    for row in rows.iter_mut().filter(|row| row.workshop) {
+        let Some(item) = row
+            .workshop_item_id
+            .as_deref()
+            .and_then(|item_id| items.get(item_id))
+        else {
+            continue;
+        };
+        row.branch_issue = branch_issue_dto(branch_support(item, &game.branch), &game.branch);
+    }
+}
+
+fn branch_issue_dto(support: BranchSupport, current_branch: &str) -> Option<BranchIssueDto> {
+    let (kind, branch_min, branch_max) = match support {
+        BranchSupport::Supported | BranchSupport::Unknown => return None,
+        BranchSupport::Unsupported {
+            branch_min,
+            branch_max,
+        } => ("unsupported", branch_min, branch_max),
+        BranchSupport::AwaitingDownload {
+            branch_min,
+            branch_max,
+        } => ("awaiting_download", branch_min, branch_max),
+    };
+    let range = branch_range_label(&branch_min, &branch_max);
+    let message = if kind == "unsupported" {
+        format!("현재 브랜치({current_branch})를 지원하지 않아 게임이 불러오지 않습니다. 지원: {range}")
+    } else {
+        format!(
+            "설치된 버전은 {range}용입니다. 현재 브랜치({current_branch})용 버전을 Steam이 아직 받지 않았습니다."
+        )
+    };
+    Some(BranchIssueDto {
+        kind: kind.to_string(),
+        current_branch: current_branch.to_string(),
+        branch_min,
+        branch_max,
+        message,
+    })
+}
+
+fn branch_range_label(branch_min: &str, branch_max: &str) -> String {
+    match (branch_min.trim(), branch_max.trim()) {
+        ("", "") => "모든 브랜치".to_string(),
+        (min, max) if min.eq_ignore_ascii_case(max) => min.to_string(),
+        ("", max) => max.to_string(),
+        (min, "") => format!("{min} 이상"),
+        (min, max) => format!("{min} ~ {max}"),
+    }
 }
 
 fn mod_lifecycle_by_key(
@@ -255,7 +318,9 @@ impl ModRowBuilder {
             managed: self.disabled.is_some(),
             external: self.external.is_some(),
             workshop: self.workshop.is_some(),
-            workshop_item_id: record.workshop_item_id(),
+            workshop_item_id: record
+                .workshop_item_id()
+                .or_else(|| self.workshop.as_ref().and_then(ModRecord::workshop_item_id)),
             source_label: sources,
             kind: kind_label(record.kind).to_string(),
             version_hint,
@@ -286,6 +351,7 @@ impl ModRowBuilder {
             translation_target_name: manifest.target_mod_name,
             translation_target_version: manifest.target_mod_version,
             dependencies,
+            branch_issue: None,
             language_preview,
             extraction_tree,
         }

@@ -160,8 +160,17 @@ export type ModRow = {
   translation_target_name: string | null;
   translation_target_version: string | null;
   dependencies: ModDependency[];
+  branch_issue?: BranchIssue | null;
   language_preview: LanguagePreview[];
   extraction_tree: ExtractionTreeNode[];
+};
+
+export type BranchIssue = {
+  kind: "unsupported" | "awaiting_download";
+  current_branch: string;
+  branch_min: string;
+  branch_max: string;
+  message: string;
 };
 
 export type ModGroup = {
@@ -233,6 +242,8 @@ export type LaunchStatus = {
   steam_exe: string | null;
   target_label: string;
   running: boolean;
+  game_branch: string | null;
+  game_version: string | null;
 };
 
 export type TranslationPreparationProgress = {

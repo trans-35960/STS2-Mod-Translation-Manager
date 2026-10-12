@@ -498,6 +498,8 @@ function diagnosticCategoryLabel(category: string) {
       return "번역";
     case "dependency":
       return "의존성";
+    case "branch":
+      return "브랜치";
     case "safety":
       return "세이브";
     default:

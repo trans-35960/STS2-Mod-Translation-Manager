@@ -120,7 +120,8 @@ pub(crate) fn import_dropped_mod(
 }
 
 pub(crate) fn load_launch_status() -> Result<LaunchStatusDto, String> {
-    Ok(launch_dto(app().launch_status()))
+    let app = app();
+    Ok(launch_dto(app.launch_status(), app.config()))
 }
 
 pub(crate) fn import_dropped_mods(
@@ -1224,7 +1225,7 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         save_backups,
         cache_usage,
         tools: tools.into_iter().map(tool_dto).collect(),
-        launch: launch_dto(launch),
+        launch: launch_dto(launch, app.config()),
     };
     timing.mark("dto");
     timing.finish();

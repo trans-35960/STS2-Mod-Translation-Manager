@@ -66,7 +66,9 @@ export function useDashboardLoader({
             current.launch.game_exe === launch.game_exe &&
             current.launch.steam_exe === launch.steam_exe &&
             current.launch.target_label === launch.target_label &&
-            current.launch.running === launch.running)
+            current.launch.running === launch.running &&
+            current.launch.game_branch === launch.game_branch &&
+            current.launch.game_version === launch.game_version)
         ) {
           return current;
         }

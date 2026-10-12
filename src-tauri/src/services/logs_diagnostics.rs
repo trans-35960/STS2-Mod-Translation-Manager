@@ -127,6 +127,26 @@ fn troubleshoot_diagnostics(
                 });
             }
         }
+        if mod_row.active
+            && let Some(issue) = &mod_row.branch_issue
+        {
+            diagnostics.push(TroubleshootDiagnosticDto {
+                id: format!("branch-{}", mod_row.key),
+                category: "branch".to_string(),
+                severity: if issue.kind == "unsupported" { "error" } else { "warn" }.to_string(),
+                title: if issue.kind == "unsupported" {
+                    "현재 Steam 브랜치에서 불러오지 않는 모드입니다"
+                } else {
+                    "현재 Steam 브랜치용 모드 버전을 기다리는 중입니다"
+                }
+                .to_string(),
+                detail: format!("{}: {}", mod_row.name, issue.message),
+                action_label: "모드 경로 열기".to_string(),
+                related_path: mod_row.path.clone(),
+                mod_key: Some(mod_row.key.clone()),
+                can_auto_fix: false,
+            });
+        }
         if mod_row.needs_recheck {
             diagnostics.push(TroubleshootDiagnosticDto {
                 id: format!("game-recheck-{}", mod_row.key),
@@ -263,6 +283,15 @@ fn classify_game_log_line(line: &str) -> Option<(&'static str, String, String)> 
         return Some((
             "current-run",
             "진행 중 런이 현재 모드 구성과 충돌할 수 있습니다".to_string(),
+            line.trim().to_string(),
+        ));
+    }
+    // ModManager.CheckSteamBranchSupport: the mod is not built for the
+    // current public/public-beta branch, so the game skipped it.
+    if lower.contains("steam branch") && lower.contains("min/max") {
+        return Some((
+            "branch",
+            "현재 Steam 브랜치(public/public-beta)를 지원하지 않아 불러오지 못한 모드가 있습니다".to_string(),
             line.trim().to_string(),
         ));
     }

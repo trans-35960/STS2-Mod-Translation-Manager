@@ -562,6 +562,8 @@ function App() {
                 targetLanguage={jsonTargetLanguage || settingsDraft?.target_language || dashboard.settings.target_language}
                 vanillaSafe={dashboard.stats.vanilla_safe}
                 launchRunning={dashboard.launch.running}
+                gameBranch={dashboard.launch.game_branch}
+                gameVersion={dashboard.launch.game_version}
                 busy={busy}
                 togglingModKeys={togglingModKeys}
                 initialSimpleView={dashboard.settings.mod_view_mode === "simple"}

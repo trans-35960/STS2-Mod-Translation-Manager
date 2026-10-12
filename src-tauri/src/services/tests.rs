@@ -1893,6 +1893,16 @@ Packed file: Shadowverse/localization/eng/cards.json
     }
 
     #[test]
+    fn log_classifier_detects_steam_branch_rejections() {
+        let branch = classify_game_log_line(
+            "[ERROR] Tried to load mod with id Manosaba, but the current Steam branch public-beta does not lie in the min/max steam branches the mod supports! Max supported: public",
+        )
+        .expect("branch rejection");
+
+        assert_eq!(branch.0, "branch");
+    }
+
+    #[test]
     fn log_classifier_marks_model_not_found_as_current_run_conflict() {
         let current_run = classify_game_log_line(
             "ERROR: MegaCrit.Sts2.Core.Models.Exceptions.ModelNotFoundException: Model id=CHARACTER.MIYU_CHARACTER not found",
@@ -2312,6 +2322,7 @@ Packed file: Shadowverse/localization/eng/cards.json
             translation_target_name: None,
             translation_target_version: None,
             dependencies: Vec::new(),
+            branch_issue: None,
             language_preview: Vec::new(),
             extraction_tree: Vec::new(),
         }
