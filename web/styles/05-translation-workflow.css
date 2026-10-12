@@ -328,17 +328,35 @@
   margin: 0;
 }
 
-.glossary-details summary small {
-  margin-left: 8px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
+.glossary-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 10px 12px;
 }
 
-.glossary-body {
-  display: grid;
+.glossary-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  padding: 10px;
+}
+
+.glossary-card-head strong {
+  font-size: 13px;
+}
+
+.glossary-card-counts {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.glossary-card-counts em {
+  color: #b45309;
+  font-style: normal;
 }
 
 .glossary-note {
@@ -346,33 +364,6 @@
   color: var(--muted);
   font-size: 11px;
   line-height: 1.5;
-}
-
-.glossary-section {
-  display: grid;
-  gap: 6px;
-}
-
-.glossary-section h4 {
-  margin: 0;
-  font-size: 12px;
-}
-
-.glossary-section h4 small {
-  margin-left: 4px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.glossary-details .compact-action-row {
-  align-items: center;
-  padding: 0;
-}
-
-.glossary-dirty {
-  color: #b45309;
-  font-size: 11px;
 }
 
 .action-details .export-option {

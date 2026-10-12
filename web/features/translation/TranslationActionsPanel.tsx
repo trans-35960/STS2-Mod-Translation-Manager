@@ -373,6 +373,7 @@ export function TranslationActionsPanel({
         )}
         <GlossaryPanel
           sourcePath={props.sheet?.source_path ?? props.sourcePath}
+          sampleKey={props.sheet?.entries[0]?.key ?? ""}
           targetLanguage={props.sheet?.target_language ?? props.targetLanguage}
           projectKey={translationProjectKey(props.projectInfo ?? null)}
           refreshKey={modTermsVersion}

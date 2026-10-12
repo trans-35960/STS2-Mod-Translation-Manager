@@ -21,7 +21,8 @@ use sts2_mod_manager::domain::{ModFingerprint, ModKind, ModRecord, ModSource, Sc
 use sts2_mod_manager::glossary::{
     GLOSSARY_ISSUE_KIND, GlossaryTerm, JOSA_ISSUE_KIND, glossary_issues, is_korean_language,
     korean_josa_issues, load_game_glossary, merge_glossary_terms, read_user_glossary,
-    sheet_glossary_terms, sheet_source_language as glossary_source_language, write_user_glossary,
+    sheet_glossary_terms, sheet_source_language as glossary_source_language, source_language_of,
+    write_user_glossary,
 };
 use sts2_mod_manager::json_translation::{
     JsonImportReport, JsonSheetReport, JsonTranslationEntry, JsonTranslationSheet,

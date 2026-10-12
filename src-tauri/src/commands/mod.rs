@@ -276,9 +276,12 @@ pub(crate) async fn validate_json_translation_sheet_data(
 pub(crate) async fn load_translation_glossary(
     source_path: String,
     target_language: String,
+    sample_key: Option<String>,
 ) -> Result<GlossaryInfoDto, String> {
-    run_blocking(move || crate::services::load_translation_glossary(source_path, target_language))
-        .await
+    run_blocking(move || {
+        crate::services::load_translation_glossary(source_path, target_language, sample_key)
+    })
+    .await
 }
 
 #[tauri::command]

@@ -204,11 +204,27 @@ pub(crate) fn has_markup(value: &str) -> bool {
 /// entry keys (`file://Mod/localization/jpn/cards.json#/...`). Defaults to
 /// English.
 pub fn sheet_source_language(sheet: &JsonTranslationSheet) -> String {
-    let from_path = language_component(sheet.source_path.split(['/', '\\']).rev());
-    from_path
+    source_language_of(
+        &sheet.source_path,
+        sheet
+            .entries
+            .iter()
+            .take(32)
+            .map(|entry| entry.key.as_str()),
+    )
+}
+
+/// The source language from a sheet's source folder, or else from its entry
+/// keys (`file://Mod/localization/<lang>/...`), which name it even when the
+/// folder is a cache directory.
+pub fn source_language_of<'a>(
+    source_path: &str,
+    entry_keys: impl IntoIterator<Item = &'a str>,
+) -> String {
+    language_component(source_path.split(['/', '\\']).rev())
         .or_else(|| {
-            sheet.entries.iter().take(32).find_map(|entry| {
-                let file = entry.key.strip_prefix("file://")?.split('#').next()?;
+            entry_keys.into_iter().find_map(|key| {
+                let file = key.strip_prefix("file://")?.split('#').next()?;
                 language_component(file.split('/').rev())
             })
         })

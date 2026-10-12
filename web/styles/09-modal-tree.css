@@ -789,3 +789,29 @@
   font-size: 12px;
   font-weight: 700;
 }
+
+.glossary-modal {
+  display: grid;
+  gap: 10px;
+  width: min(820px, calc(100vw - 32px));
+}
+
+.glossary-modal header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.glossary-save-state {
+  font-weight: 700;
+}
+
+.glossary-tabs {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+
+.glossary-modal .term-table-rows {
+  max-height: min(52vh, 520px);
+}
+

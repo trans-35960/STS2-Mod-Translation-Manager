@@ -91,7 +91,7 @@ export type CommandArgs = {
   load_json_translation_sheet: { sheetPath: string };
   validate_json_translation_sheet: { sheetPath: string; projectKey?: string | null };
   validate_json_translation_sheet_data: { sheet: JsonTranslationSheet; projectKey?: string | null };
-  load_translation_glossary: { sourcePath: string; targetLanguage: string };
+  load_translation_glossary: { sourcePath: string; targetLanguage: string; sampleKey?: string | null };
   save_user_glossary: { targetLanguage: string; terms: GlossaryTerm[] };
   export_ai_translation_kit: {
     outputPath: string;

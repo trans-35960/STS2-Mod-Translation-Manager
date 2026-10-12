@@ -51,16 +51,11 @@ fn sheet_glossary_issues(
 pub(crate) fn load_translation_glossary(
     source_path: String,
     target_language: String,
+    sample_key: Option<String>,
 ) -> Result<GlossaryInfoDto, String> {
     let config = configured_config();
     let target_language = target_language.trim().to_lowercase();
-    let probe = JsonTranslationSheet {
-        source_path,
-        target_language: target_language.clone(),
-        updated_epoch: 0,
-        entries: Vec::new(),
-    };
-    let source_language = glossary_source_language(&probe);
+    let source_language = source_language_of(&source_path, sample_key.as_deref());
     let game_pck = config.game_pck_path();
     let game_terms = match game_pck.as_deref() {
         Some(pck) if !target_language.is_empty() => {
