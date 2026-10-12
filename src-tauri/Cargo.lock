@@ -3155,6 +3155,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-window-state",
  "ttf-parser",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

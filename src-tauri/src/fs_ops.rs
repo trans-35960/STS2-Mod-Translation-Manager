@@ -5,7 +5,13 @@ use std::process::Command;
 pub(crate) fn open_path_in_system(path: &Path) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
+        // Go through the shell instead of launching explorer.exe directly so a
+        // file manager the user set as the folder handler (Directory Opus,
+        // Files, ...) is the one that opens.
         if path.is_file() {
+            if windows_shell::reveal_item(path) {
+                return Ok(());
+            }
             Command::new("explorer")
                 .arg("/select,")
                 .arg(path)
@@ -14,6 +20,9 @@ pub(crate) fn open_path_in_system(path: &Path) -> Result<(), String> {
             return Ok(());
         }
 
+        if windows_shell::open_with_default_handler(path) {
+            return Ok(());
+        }
         Command::new("explorer")
             .arg(path)
             .spawn()
@@ -124,5 +133,80 @@ fn copy_path_for_move(source: &Path, target: &Path) -> std::io::Result<()> {
         }
         fs::copy(source, target)?;
         Ok(())
+    }
+}
+
+#[cfg(target_os = "windows")]
+mod windows_shell {
+    use std::os::windows::ffi::OsStrExt;
+    use std::path::Path;
+    use std::ptr::{null, null_mut};
+    use windows_sys::Win32::System::Com::{
+        COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE, CoInitializeEx, CoUninitialize,
+    };
+    use windows_sys::Win32::UI::Shell::Common::ITEMIDLIST;
+    use windows_sys::Win32::UI::Shell::{
+        ILFree, SHOpenFolderAndSelectItems, SHParseDisplayName, ShellExecuteW,
+    };
+    use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+    fn wide(value: &std::ffi::OsStr) -> Vec<u16> {
+        value.encode_wide().chain(std::iter::once(0)).collect()
+    }
+
+    /// Initializes COM for this thread for the lifetime of the guard; shell
+    /// calls need it and the command runs on a blocking worker thread.
+    struct ComGuard(bool);
+
+    impl ComGuard {
+        fn new() -> Self {
+            let result = unsafe {
+                CoInitializeEx(
+                    null(),
+                    (COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE) as _,
+                )
+            };
+            Self(result >= 0)
+        }
+    }
+
+    impl Drop for ComGuard {
+        fn drop(&mut self) {
+            if self.0 {
+                unsafe { CoUninitialize() };
+            }
+        }
+    }
+
+    pub(super) fn open_with_default_handler(path: &Path) -> bool {
+        let _com = ComGuard::new();
+        let operation = wide("open".as_ref());
+        let file = wide(path.as_os_str());
+        let instance = unsafe {
+            ShellExecuteW(
+                null_mut(),
+                operation.as_ptr(),
+                file.as_ptr(),
+                null(),
+                null(),
+                SW_SHOWNORMAL,
+            )
+        };
+        // ShellExecuteW reports success with a value greater than 32.
+        instance as isize > 32
+    }
+
+    pub(super) fn reveal_item(path: &Path) -> bool {
+        let _com = ComGuard::new();
+        let name = wide(path.as_os_str());
+        let mut pidl: *mut ITEMIDLIST = null_mut();
+        let parsed =
+            unsafe { SHParseDisplayName(name.as_ptr(), null_mut(), &mut pidl, 0, null_mut()) };
+        if parsed < 0 || pidl.is_null() {
+            return false;
+        }
+        let opened = unsafe { SHOpenFolderAndSelectItems(pidl, 0, null(), 0) };
+        unsafe { ILFree(pidl) };
+        opened >= 0
     }
 }
