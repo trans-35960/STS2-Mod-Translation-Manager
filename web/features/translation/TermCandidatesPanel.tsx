@@ -36,11 +36,15 @@ export function TermCandidatesPanel({
   const [message, setMessage] = React.useState("");
   const [prompts, setPrompts] = React.useState<AiPromptParts | null>(null);
   const [copied, setCopied] = React.useState<Set<number>>(() => new Set());
+  // Sources shown by the "번역어 없는 것만" filter, fixed when it is turned on
+  // so a row stays while its translation is typed.
+  const [untranslatedOnly, setUntranslatedOnly] = React.useState<Set<string> | null>(null);
 
   async function extract() {
     setBusy(true);
     setMessage("");
     setPrompts(null);
+    setUntranslatedOnly(null);
     try {
       const candidates = isPreviewRuntime()
         ? previewCandidates()
@@ -69,6 +73,8 @@ export function TermCandidatesPanel({
   const checked = rows?.filter((row) => row.checked) ?? [];
   const untranslated = checked.filter((row) => !row.translation.trim());
   const ready = checked.filter((row) => row.translation.trim());
+  const allUntranslated = rows?.filter((row) => !row.translation.trim()) ?? [];
+  const visibleRows = untranslatedOnly ? (rows ?? []).filter((row) => untranslatedOnly.has(row.source)) : rows ?? [];
 
   async function buildTermPrompt() {
     setBusy(true);
@@ -130,6 +136,7 @@ export function TermCandidatesPanel({
       return { ...row, translation: answer, checked: true };
     });
     setRows(next);
+    setUntranslatedOnly(null);
     setMessage(`용어 답변 ${answers.size}개 중 ${filled}개를 채웠습니다. 확인 후 "용어에 추가"를 누르세요.`);
   }
 
@@ -155,6 +162,16 @@ export function TermCandidatesPanel({
             <button type="button" className="icon-button-text compact" onClick={() => void buildTermPrompt()} disabled={busy || untranslated.length === 0}>
               <Copy size={14} />
               번역어 없는 {untranslated.length}개 용어 프롬프트
+            </button>
+            <button
+              type="button"
+              className={untranslatedOnly ? "term-table-untranslated active" : "term-table-untranslated"}
+              aria-pressed={Boolean(untranslatedOnly)}
+              disabled={allUntranslated.length === 0 && !untranslatedOnly}
+              title="번역어가 빈 후보만 봅니다."
+              onClick={() => setUntranslatedOnly((current) => (current ? null : new Set(allUntranslated.map((row) => row.source))))}
+            >
+              번역어 없는 것만 {allUntranslated.length}
             </button>
             <button type="button" className="primary icon-button-text compact" onClick={addReady} disabled={ready.length === 0}>
               <ListPlus size={14} />
@@ -190,7 +207,8 @@ export function TermCandidatesPanel({
       {rows && rows.length === 0 && <p className="term-candidates-message">새로 추가할 용어 후보가 없습니다.</p>}
       {rows && rows.length > 0 && (
         <div className="term-candidate-list">
-          {rows.map((row) => {
+          {visibleRows.length === 0 && <p className="term-candidates-message">번역어가 빈 후보가 없습니다.</p>}
+          {visibleRows.map((row) => {
             const split = row.suggestions.length > 1;
             return (
               <div className={row.checked ? "term-candidate checked" : "term-candidate"} key={row.source}>

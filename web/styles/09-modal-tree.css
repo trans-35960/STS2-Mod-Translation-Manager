@@ -610,6 +610,7 @@
 
 .term-table-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
@@ -668,6 +669,13 @@
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.term-table-untranslated:disabled {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: default;
 }
 
 .term-table-untranslated.active {

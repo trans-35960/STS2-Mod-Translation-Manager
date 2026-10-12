@@ -126,10 +126,11 @@ export function TermTableEditor({
         {mode === "table" && rows.length > FILTER_THRESHOLD && (
           <input className="term-table-filter" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder={`${filled}개 중 찾기`} aria-label="용어 찾기" />
         )}
-        {mode === "table" && keepUntranslated && (untranslated > 0 || untranslatedIds) && (
+        {mode === "table" && keepUntranslated && rows.length > 0 && (
           <button
             type="button"
             className={untranslatedIds ? "term-table-untranslated active" : "term-table-untranslated"}
+            disabled={untranslated === 0 && !untranslatedIds}
             aria-pressed={Boolean(untranslatedIds)}
             title="번역이 빈 용어만 봅니다. 번역은 비어 있으면 프롬프트와 검증에 쓰이지 않습니다."
             onClick={() =>
