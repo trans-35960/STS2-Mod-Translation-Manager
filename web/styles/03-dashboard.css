@@ -211,7 +211,18 @@
   font-weight: 800;
 }
 
-.work-summary-accordion .save-state.unsaved {
-  background: #fff7ed;
-  color: #c2410c;
+.work-summary-accordion .save-state.pending {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.work-summary-accordion .save-state.error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.translation-work-actions .history-actions {
+  display: inline-flex;
+  gap: 4px;
+  margin-right: 4px;
 }

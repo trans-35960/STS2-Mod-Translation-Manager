@@ -41,6 +41,8 @@ export function useTranslationIoActions({
   setJsonSheetDraft,
   setJsonValidation,
   setPasteCandidatesByKey,
+  labelNextSheetEdit,
+  saveSheetNow,
 }: TranslationActionsParams) {
   function ensureCurrentSheetLanguage(action: string): boolean {
     if (!jsonSheet || !jsonTargetLanguage || translationLanguagesMatch(jsonSheet.target_language, jsonTargetLanguage)) {
@@ -61,6 +63,13 @@ export function useTranslationIoActions({
     if (!sheetPath) {
       appendLog("저장할 번역 시트 경로가 없습니다.");
       return false;
+    }
+    // A plain save writes the file like autosave does and keeps the work
+    // state (validation, conflict candidates, undo history) as it is.
+    if (!options?.finalizeStatuses) {
+      const saved = await saveSheetNow();
+      appendLog(saved ? `번역 시트 저장 완료: ${sheetPath}` : "번역 시트를 저장하지 못했습니다.");
+      return saved;
     }
     setBusy("save_json_translation_sheet");
     try {
@@ -271,6 +280,7 @@ export function useTranslationIoActions({
         inputPath,
         sheet: jsonSheet,
       });
+      labelNextSheetEdit(`파일에서 가져오기 (${inputPath.split(/[\\/]/).pop()})`);
       setJsonSheetDraft(preservePendingTranslationStatuses(jsonSheet, result.sheet));
       setJsonReport(result.report);
       setJsonValidation(null);

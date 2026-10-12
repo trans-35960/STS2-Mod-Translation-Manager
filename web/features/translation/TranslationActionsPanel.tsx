@@ -10,7 +10,10 @@ import {
   FileJson,
   FileUp,
   FolderOpen,
+  History,
   Loader2,
+  Redo2,
+  Undo2,
   Package,
   RefreshCw,
   Save,
@@ -39,14 +42,37 @@ type TargetLanguageOption = {
   label: string;
 };
 
+function SaveStateBadge({ props }: { props: TranslationToolsPageProps }) {
+  if (props.saveState === "error") {
+    return (
+      <em className="save-state error" title={props.saveError}>
+        자동 저장 실패{props.unsavedChanges > 0 ? ` · ${props.unsavedChanges}개 변경` : ""}
+      </em>
+    );
+  }
+  if (props.saveState === "saving") {
+    return <em className="save-state pending">저장 중…</em>;
+  }
+  if (props.unsavedChanges > 0) {
+    return <em className="save-state pending">{props.unsavedChanges}개 변경 · 곧 자동 저장</em>;
+  }
+  return <em className="save-state">자동 저장됨</em>;
+}
+
 export function TranslationWorkHeader({
   props,
   sheetPath,
   filledTranslations,
+  onUndo,
+  onRedo,
+  onRevertToStart,
 }: {
   props: TranslationToolsPageProps;
   sheetPath: string;
   filledTranslations: number;
+  onUndo: () => void;
+  onRedo: () => void;
+  onRevertToStart: () => void;
 }) {
   const t = props.labels;
   const workTitle = props.projectInfo?.modName || props.sheet?.source_path || t.translationTools;
@@ -62,11 +88,7 @@ export function TranslationWorkHeader({
         <summary>
           <span>현재 작업</span>
           <strong>{workTitle}</strong>
-          {props.sheet && (
-            <em className={props.unsavedChanges > 0 ? "save-state unsaved" : "save-state"}>
-              {props.unsavedChanges > 0 ? `저장 안 됨 · ${props.unsavedChanges}개 변경` : "저장됨"}
-            </em>
-          )}
+          {props.sheet && <SaveStateBadge props={props} />}
         </summary>
         <ProjectSummary
           title={props.projectInfo?.modName || projectNameFromPath(props.sheet?.source_path ?? t.translationTools)}
@@ -100,10 +122,42 @@ export function TranslationWorkHeader({
         <button className="toolbar-icon-button" aria-label="시트 열기" data-tooltip="시트 열기" onClick={props.onLoad} disabled={!sheetPath || Boolean(props.busy)}>
           <FolderOpen size={15} />
         </button>
+        <span className="history-actions">
+          <button
+            className="toolbar-icon-button"
+            type="button"
+            aria-label="되돌리기"
+            data-tooltip={props.history.undoLabel ? `되돌리기: ${props.history.undoLabel} (Ctrl+Z)` : "되돌릴 작업 없음"}
+            onClick={onUndo}
+            disabled={!props.history.undoLabel || Boolean(props.busy)}
+          >
+            <Undo2 size={15} />
+          </button>
+          <button
+            className="toolbar-icon-button"
+            type="button"
+            aria-label="다시 하기"
+            data-tooltip={props.history.redoLabel ? `다시 하기: ${props.history.redoLabel} (Ctrl+Y)` : "다시 할 작업 없음"}
+            onClick={onRedo}
+            disabled={!props.history.redoLabel || Boolean(props.busy)}
+          >
+            <Redo2 size={15} />
+          </button>
+          <button
+            className="toolbar-icon-button"
+            type="button"
+            aria-label="작업 시작 시점으로 되돌리기"
+            data-tooltip="작업 시작 시점으로 되돌리기"
+            onClick={onRevertToStart}
+            disabled={!props.history.changedSinceStart || Boolean(props.busy)}
+          >
+            <History size={15} />
+          </button>
+        </span>
         <button
           className="toolbar-icon-button dark labeled"
           aria-label="저장"
-          data-tooltip="시트 저장 (Ctrl+S)"
+          data-tooltip="지금 저장 (Ctrl+S) · 변경은 자동으로 저장됩니다"
           onClick={props.onSave}
           disabled={!canUseCurrentSheet || !sheetPath || Boolean(props.busy)}
         >

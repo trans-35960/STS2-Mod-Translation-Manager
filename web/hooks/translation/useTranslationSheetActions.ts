@@ -26,6 +26,7 @@ export function useTranslationSheetActions({
   setJsonSheet,
   setPasteCandidatesByKey,
   setSelectedRows,
+  labelNextSheetEdit,
 }: TranslationActionsParams) {
   function updateTranslationEntry(index: number, value: string) {
     setJsonApplyResult(null);
@@ -42,6 +43,8 @@ export function useTranslationSheetActions({
         return next;
       });
     }
+    // Typing in one cell is one undo step.
+    labelNextSheetEdit(`번역 수정${entryKey ? ` (${shortKey(entryKey)})` : ""}`, `cell:${entryKey ?? index}`);
     setJsonSheet((current) => {
       if (!current) {
         return current;
@@ -60,10 +63,11 @@ export function useTranslationSheetActions({
     });
   }
 
-  function replaceTranslationEntries(updates: Array<{ index: number; value: string }>) {
+  function replaceTranslationEntries(updates: Array<{ index: number; value: string }>, label?: string) {
     if (updates.length === 0) {
       return;
     }
+    labelNextSheetEdit(label ?? `일괄 수정 ${updates.length}개`);
     setJsonApplyResult(null);
     const updateByIndex = new Map(updates.map((update) => [update.index, update.value]));
     const affectedKeys = new Set(
@@ -117,6 +121,7 @@ export function useTranslationSheetActions({
       return;
     }
     setJsonApplyResult(null);
+    labelNextSheetEdit(`표 붙여넣기 ${values.length}행`);
     const valuesByKey = new Map<string, string>();
     const pasteConflicts: Record<string, PasteCandidate> = {};
     const affectedKeys = new Set<string>();
@@ -274,6 +279,7 @@ export function useTranslationSheetActions({
       const value = values.get(entry.key);
       return value !== undefined && entry.translated_value === value;
     }).length;
+    labelNextSheetEdit(`JSON 붙여넣기 ${updatedCount}개`);
     setJsonSheet((current) => {
       if (!current) {
         return current;
@@ -353,6 +359,7 @@ export function useTranslationSheetActions({
     }
     const candidateByKey = new Map(entriesToApply.map((item) => [item.entryKey, item.candidate]));
     setJsonApplyResult(null);
+    labelNextSheetEdit(`충돌 후보 적용 ${entriesToApply.length}개`);
     setJsonSheet((current) => {
       if (!current) {
         return current;
@@ -477,6 +484,11 @@ function editedTranslationStatus(entry: JsonTranslationEntry, value: string): Js
     return entry.status;
   }
   return "ready";
+}
+
+function shortKey(key: string) {
+  const name = splitSheetKey(key).key || key;
+  return name.length > 40 ? `…${name.slice(-39)}` : name;
 }
 
 function previewIds(ids: string[]) {

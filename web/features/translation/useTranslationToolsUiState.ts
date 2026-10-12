@@ -47,6 +47,7 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
   const [showIds, setShowIds] = React.useState(true);
   const [columns, setColumns] = React.useState<TranslationColumns>(defaultColumns);
   const [focusEntryKey, setFocusEntryKey] = React.useState<string | null>(null);
+  const [focusEntryInput, setFocusEntryInput] = React.useState(true);
   const [validationIssueKindFilter, setValidationIssueKindFilter] = React.useState<string | null>(null);
   const splitKeyCacheRef = React.useRef(new Map<string, ReturnType<typeof splitSheetKey>>());
 
@@ -262,6 +263,16 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     setEntrySearch("");
     setValidationIssueKindFilter(null);
     setEntryFilter(targetEntry?.status === "removed" ? "removed" : "all");
+    setFocusEntryInput(true);
+    setFocusEntryKey(key);
+  }
+
+  /** Scrolls to a row changed by undo/redo, keeping filters when it is visible. */
+  function showChangedEntry(key: string) {
+    if (!filteredEntries.some(({ entry }) => entry.key === key)) {
+      revealEntryKey(key);
+    }
+    setFocusEntryInput(false);
     setFocusEntryKey(key);
   }
 
@@ -285,7 +296,7 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     if (!ok) {
       return;
     }
-    props.onReplaceEntries(updates);
+    props.onReplaceEntries(updates, `찾아 바꾸기 ${updates.length}개`);
   }
 
   async function copyTreeJson(node: TranslationProjectNode) {
@@ -349,7 +360,9 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     replaceTranslatedValues,
     copyTreeJson,
     focusEntryKey,
+    focusEntryInput,
     revealEntryKey,
+    showChangedEntry,
     clearFocusEntryKey: () => setFocusEntryKey(null),
   };
 }

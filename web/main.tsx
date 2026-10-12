@@ -82,6 +82,14 @@ function App() {
     setJsonSheet,
     setJsonSheetDraft,
     savedSheet,
+    sheetHistory,
+    labelNextSheetEdit,
+    undoSheetEdit,
+    redoSheetEdit,
+    revertSheetToStart,
+    sheetSaveState,
+    sheetSaveError,
+    saveSheetNow,
     jsonReport,
     setJsonReport,
     jsonValidation,
@@ -276,6 +284,8 @@ function App() {
     setJsonReport,
     setJsonSheet,
     setJsonSheetDraft,
+    labelNextSheetEdit,
+    saveSheetNow,
     setJsonSource,
     setJsonTargetLanguage,
     setJsonToolError,
@@ -624,6 +634,13 @@ function App() {
               onCopySelected={copySelectedTranslations}
               onSave={saveEditedTranslationSheet}
               unsavedChanges={unsavedTranslationChanges}
+              saveState={sheetSaveState}
+              saveError={sheetSaveError}
+              onFlushSave={saveSheetNow}
+              history={sheetHistory}
+              onUndo={undoSheetEdit}
+              onRedo={redoSheetEdit}
+              onRevertToStart={revertSheetToStart}
               onExportCsv={exportTranslationCsv}
               onExportPatchMod={exportTranslationPatchMod}
               onExportShortJson={exportTranslationShortJson}

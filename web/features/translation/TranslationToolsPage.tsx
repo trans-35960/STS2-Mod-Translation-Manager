@@ -38,25 +38,56 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
     ui.showEntryCondition("warning");
   }
 
-  function closeWithConfirmation() {
-    if (
-      props.unsavedChanges > 0 &&
-      !window.confirm(`저장하지 않은 변경 ${props.unsavedChanges}개가 있습니다. 저장하지 않고 닫을까요?`)
-    ) {
-      return;
+  async function closeWithConfirmation() {
+    // Pending edits are saved first; ask only when that fails.
+    if (props.unsavedChanges > 0 && !(await props.onFlushSave())) {
+      if (!window.confirm(`변경 ${props.unsavedChanges}개를 저장하지 못했습니다. 저장하지 않고 닫을까요?`)) {
+        return;
+      }
     }
     props.onCloseSession();
   }
 
-  // Ctrl+S saves, Ctrl+F jumps to the sheet search.
-  const shortcutState = React.useRef({ props, canSave: false });
-  shortcutState.current = { props, canSave: Boolean(props.sheet && ui.sheetPath && !props.busy) };
+  function showHistoryMove(move: ReturnType<typeof props.onUndo>) {
+    if (move?.changedKeys[0]) {
+      ui.showChangedEntry(move.changedKeys[0]);
+    }
+  }
+
+  const undo = () => showHistoryMove(props.onUndo());
+  const redo = () => showHistoryMove(props.onRedo());
+  function revertToStart() {
+    if (window.confirm("이번 작업을 시작할 때 상태로 시트를 되돌릴까요? (되돌리기로 다시 취소할 수 있습니다)")) {
+      showHistoryMove(props.onRevertToStart());
+    }
+  }
+
+  // Ctrl+S saves, Ctrl+F jumps to the sheet search. Ctrl+Z / Ctrl+Y undo and
+  // redo sheet edits, except inside text fields (which undo their own typing)
+  // and while a dialog is open.
+  const shortcutState = React.useRef({ props, canSave: false, undo, redo });
+  shortcutState.current = { props, canSave: Boolean(props.sheet && ui.sheetPath && !props.busy), undo, redo };
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) {
         return;
       }
       const key = event.key.toLowerCase();
+      if (key === "z" || key === "y") {
+        if (isTextField(event.target) || document.querySelector(".modal-backdrop")) {
+          return;
+        }
+        event.preventDefault();
+        if (key === "y" || event.shiftKey) {
+          shortcutState.current.redo();
+        } else {
+          shortcutState.current.undo();
+        }
+        return;
+      }
+      if (event.shiftKey) {
+        return;
+      }
       if (key === "s") {
         event.preventDefault();
         if (shortcutState.current.canSave) {
@@ -78,7 +109,10 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
   return (
     <div className="translation-tool-page">
       <TranslationWorkHeader
-        props={{ ...props, onValidate: validateAndShowWarnings, onCloseSession: closeWithConfirmation }}
+        props={{ ...props, onValidate: validateAndShowWarnings, onCloseSession: () => void closeWithConfirmation() }}
+        onUndo={undo}
+        onRedo={redo}
+        onRevertToStart={revertToStart}
         sheetPath={ui.sheetPath}
         filledTranslations={ui.filledTranslations}
       />
@@ -128,6 +162,7 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           showValidationIssueKind={ui.showValidationIssueKind}
           replaceTranslatedValues={ui.replaceTranslatedValues}
           focusEntryKey={ui.focusEntryKey}
+          focusEntryInput={ui.focusEntryInput}
           revealEntryKey={ui.revealEntryKey}
           clearFocusEntryKey={ui.clearFocusEntryKey}
         />
@@ -142,6 +177,13 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
         </div>
       )}
     </div>
+  );
+}
+
+function isTextField(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || target.matches("input:not([type=checkbox]):not([type=radio]):not([type=button]), textarea, select"))
   );
 }
 

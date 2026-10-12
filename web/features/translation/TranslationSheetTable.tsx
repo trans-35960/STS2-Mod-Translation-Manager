@@ -78,6 +78,7 @@ export function TranslationSheetTable({
   showValidationIssueKind,
   replaceTranslatedValues,
   focusEntryKey,
+  focusEntryInput,
   revealEntryKey,
   clearFocusEntryKey,
 }: {
@@ -109,6 +110,8 @@ export function TranslationSheetTable({
   showValidationIssueKind: (kind: string | null) => void;
   replaceTranslatedValues: (scope: ReplaceScope) => void;
   focusEntryKey: string | null;
+  /** Also put the cursor in the revealed row's translation. */
+  focusEntryInput: boolean;
   revealEntryKey: (key: string) => void;
   clearFocusEntryKey: () => void;
 }) {
@@ -258,10 +261,12 @@ export function TranslationSheetTable({
     focusHandledRef.current = focusEntryKey;
     row.closest(".json-entry-list")?.scrollIntoView({ block: "start" });
     row.scrollIntoView({ block: "center", inline: "nearest" });
-    row.querySelector("textarea")?.focus({ preventScroll: true });
+    if (focusEntryInput) {
+      row.querySelector("textarea")?.focus({ preventScroll: true });
+    }
     const timeoutId = window.setTimeout(clearFocusEntryKey, 2200);
     return () => window.clearTimeout(timeoutId);
-  }, [clearFocusEntryKey, entryKeys, focusEntryKey, range, scrollToIndex]);
+  }, [clearFocusEntryKey, entryKeys, focusEntryInput, focusEntryKey, range, scrollToIndex]);
 
   function copyEntryId(entryKey: string, id: string, event: React.MouseEvent) {
     event.preventDefault();
@@ -336,7 +341,7 @@ export function TranslationSheetTable({
                     type="button"
                     key={group.kind}
                     title={fixAllTitle(group.kind)}
-                    onClick={() => props.onReplaceEntries(group.updates)}
+                    onClick={() => props.onReplaceEntries(group.updates, `${fixLabel(group.kind)} ${group.updates.length}개`)}
                   >
                     {group.kind === "glossary" ? "용어 모두 치환" : "조사 위치 모두 고치기"} <b>{group.updates.length}</b>
                   </button>

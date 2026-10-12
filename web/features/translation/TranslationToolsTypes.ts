@@ -1,3 +1,5 @@
+import type { SheetHistoryMove, SheetHistoryState } from "./useSheetHistory";
+import type { SheetSaveState } from "./useTranslationSessionState";
 import type React from "react";
 import type { labels } from "../../i18n";
 import type {
@@ -42,7 +44,7 @@ export type TranslationToolsPageProps = {
   setPckTargetPath: (value: string) => void;
   setTargetLanguage: (value: string) => void;
   onEditEntry: (index: number, value: string) => void;
-  onReplaceEntries: (updates: Array<{ index: number; value: string }>) => void;
+  onReplaceEntries: (updates: Array<{ index: number; value: string }>, label?: string) => void;
   onPasteEntries: (index: number, text: string) => void;
   onPasteStructuredJson: (text: string) => boolean;
   onApplyPasteCandidate: (entryKey: string) => void;
@@ -54,6 +56,15 @@ export type TranslationToolsPageProps = {
   onSave: () => void;
   /** Entries changed since the sheet was last loaded or saved. */
   unsavedChanges: number;
+  /** Autosave status of the sheet file. */
+  saveState: SheetSaveState;
+  saveError: string;
+  /** Saves pending edits now (before closing). */
+  onFlushSave: () => Promise<boolean>;
+  history: SheetHistoryState;
+  onUndo: () => SheetHistoryMove | null;
+  onRedo: () => SheetHistoryMove | null;
+  onRevertToStart: () => SheetHistoryMove | null;
   onExportCsv: () => void;
   onExportPatchMod: () => void;
   onExportShortJson: (options: boolean | { aiKit?: boolean; changeOnly?: boolean; onlyEmpty?: boolean; scopePath?: string; warningOnly?: boolean }) => void;

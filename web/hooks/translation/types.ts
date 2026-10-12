@@ -53,6 +53,10 @@ export type TranslationActionsParams = {
   setJsonSheet: StateSetter<JsonTranslationSheet | null>;
   /** Sets the sheet without treating it as saved (in-memory results). */
   setJsonSheetDraft: StateSetter<JsonTranslationSheet | null>;
+  /** Names the next sheet edit in the undo history; edits with the same mergeKey merge. */
+  labelNextSheetEdit: (label: string, mergeKey?: string) => void;
+  /** Writes the current sheet to its file without touching other state. */
+  saveSheetNow: () => Promise<boolean>;
   setJsonSource: StateSetter<string>;
   setJsonTargetLanguage: StateSetter<string>;
   setJsonToolError: StateSetter<string>;
