@@ -2270,4 +2270,135 @@ Packed file: Shadowverse/localization/eng/cards.json
             workshop_dirs: Vec::new(),
         }
     }
+
+    fn dependency_test_row(key: &str, manifest_id: &str, active: bool) -> ModRowDto {
+        ModRowDto {
+            key: key.to_string(),
+            name: key.to_string(),
+            manifest_id: Some(manifest_id.to_string()),
+            group_name: None,
+            active,
+            managed: false,
+            external: false,
+            workshop: false,
+            workshop_item_id: None,
+            source_label: String::new(),
+            kind: String::new(),
+            version_hint: None,
+            bytes: 0,
+            modified_epoch: None,
+            registered_epoch: None,
+            updated_epoch: None,
+            path: String::new(),
+            download_state: None,
+            update_state: "clean".to_string(),
+            change_reasons: Vec::new(),
+            previous_version: None,
+            translation_state: String::new(),
+            translation_applied: false,
+            translation_applied_epoch: None,
+            translation_patch_count: 0,
+            translation_patch_active_count: 0,
+            translation_patch_names: Vec::new(),
+            needs_recheck: false,
+            translation_review_required: false,
+            safety_warnings: Vec::new(),
+            extraction_hint: String::new(),
+            extraction_source_path: String::new(),
+            extraction_target: String::new(),
+            is_translation_patch: false,
+            translation_target_id: None,
+            translation_target_key: None,
+            translation_target_name: None,
+            translation_target_version: None,
+            dependencies: Vec::new(),
+            language_preview: Vec::new(),
+            extraction_tree: Vec::new(),
+        }
+    }
+
+    fn dependency_on(id: &str) -> ModDependencyDto {
+        ModDependencyDto {
+            id: id.to_string(),
+            key: None,
+            name: id.to_string(),
+            active: false,
+            available: false,
+            version_required: None,
+            version_current: None,
+            version_matches: None,
+        }
+    }
+
+    #[test]
+    fn dependency_prefers_active_version_among_installed_copies() {
+        let mut dependent = dependency_test_row("manosaba", "Manosaba", true);
+        dependent.dependencies.push(dependency_on("BaseLib"));
+        let mut rows = vec![
+            dependency_test_row("baselib-v3-1-0", "BaseLib", false),
+            dependency_test_row("baselib-v3-3-0", "BaseLib", true),
+            dependent,
+        ];
+
+        resolve_mod_dependencies(&mut rows);
+
+        let dependency = &rows[2].dependencies[0];
+        assert!(dependency.available);
+        assert!(dependency.active);
+        assert_eq!(dependency.key.as_deref(), Some("baselib-v3-3-0"));
+    }
+
+    #[test]
+    fn dependency_prefers_version_match_when_none_active() {
+        let mut dependent = dependency_test_row("manosaba", "Manosaba", true);
+        let mut needs = dependency_on("BaseLib");
+        needs.version_required = Some("3.3.0".to_string());
+        dependent.dependencies.push(needs);
+        let mut old = dependency_test_row("baselib-a", "BaseLib", false);
+        old.version_hint = Some("3.1.0".to_string());
+        let mut current = dependency_test_row("baselib-b", "BaseLib", false);
+        current.version_hint = Some("v3.3.0".to_string());
+        let mut rows = vec![old, current, dependent];
+
+        resolve_mod_dependencies(&mut rows);
+
+        let dependency = &rows[2].dependencies[0];
+        assert_eq!(dependency.key.as_deref(), Some("baselib-b"));
+        assert_eq!(dependency.version_matches, Some(true));
+    }
+
+    #[test]
+    fn dependency_ignores_translation_patch_and_name_prefix_lookalikes() {
+        let mut dependent = dependency_test_row("other", "Other", true);
+        dependent.dependencies.push(dependency_on("MaidenSuccubus"));
+        dependent.dependencies.push(dependency_on("BaseLib"));
+        let mut patch = dependency_test_row("maidensuccubus_tr", "MaidenSuccubus_tr", true);
+        patch.is_translation_patch = true;
+        let mut rows = vec![
+            patch,
+            dependency_test_row("maidensuccubus", "MaidenSuccubus", false),
+            dependency_test_row("baselibextra", "BaseLibExtra", true),
+            dependent,
+        ];
+
+        resolve_mod_dependencies(&mut rows);
+
+        let original = &rows[3].dependencies[0];
+        assert_eq!(original.key.as_deref(), Some("maidensuccubus"));
+        assert!(!original.active);
+        assert!(!rows[3].dependencies[1].available);
+    }
+
+    #[test]
+    fn dependency_accepts_version_suffixed_folder_names() {
+        let mut dependent = dependency_test_row("other", "Other", true);
+        dependent.dependencies.push(dependency_on("BaseLib"));
+        let mut versioned = dependency_test_row("baselib-v3-3-0", "BaseLib-v3.3.0", true);
+        versioned.manifest_id = None;
+        let mut rows = vec![versioned, dependent];
+
+        resolve_mod_dependencies(&mut rows);
+
+        assert!(rows[1].dependencies[0].active);
+    }
 }

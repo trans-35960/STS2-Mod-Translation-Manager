@@ -337,56 +337,114 @@ impl ModRowBuilder {
     }
 }
 
+struct DependencyCandidate {
+    key: String,
+    name: String,
+    manifest_token: Option<String>,
+    group_name: Option<String>,
+    active: bool,
+    is_translation_patch: bool,
+    version: Option<String>,
+    tokens: Vec<String>,
+}
+
+impl DependencyCandidate {
+    fn from_row(row: &ModRowDto) -> Self {
+        Self {
+            key: row.key.clone(),
+            name: row.name.clone(),
+            manifest_token: row.manifest_id.as_deref().map(normalize_dependency_token),
+            group_name: row.group_name.clone(),
+            active: row.active,
+            is_translation_patch: row.is_translation_patch,
+            version: row.version_hint.clone(),
+            tokens: dependency_match_tokens(
+                &row.key,
+                &row.name,
+                row.manifest_id.as_deref(),
+                row.group_name.as_deref(),
+            ),
+        }
+    }
+
+    /// How well this row stands in for a dependency id: 2 for an exact
+    /// identifier match, 1 for the id followed only by a version suffix
+    /// (`baselib` vs `baselibv330`), `None` when it is a different mod.
+    fn match_strength(&self, needle: &str) -> Option<u8> {
+        if needle.is_empty() {
+            return None;
+        }
+        // A translation patch must never satisfy its own target's id just
+        // because its folder name starts with it (`MaidenSuccubus_tr`).
+        if self.is_translation_patch {
+            return (self.manifest_token.as_deref() == Some(needle)).then_some(2);
+        }
+        if self.tokens.iter().any(|token| token == needle) {
+            return Some(2);
+        }
+        self.tokens
+            .iter()
+            .any(|token| {
+                token
+                    .strip_prefix(needle)
+                    .is_some_and(is_version_suffix_token)
+            })
+            .then_some(1)
+    }
+}
+
 fn resolve_mod_dependencies(rows: &mut [ModRowDto]) {
     let index = rows
         .iter()
-        .map(|row| {
-            (
-                row.key.clone(),
-                row.name.clone(),
-                row.manifest_id.clone(),
-                row.group_name.clone(),
-                row.active,
-                row.version_hint.clone(),
-                dependency_match_tokens(
-                    &row.key,
-                    &row.name,
-                    row.manifest_id.as_deref(),
-                    row.group_name.as_deref(),
-                ),
-            )
-        })
+        .map(DependencyCandidate::from_row)
         .collect::<Vec<_>>();
     for row in rows {
         for dependency in &mut row.dependencies {
             let needle = normalize_dependency_token(&dependency.id);
-            let Some((key, name, _manifest_id, group_name, active, version, _)) = index.iter().find(|(key, name, _, _, _, _, tokens)| {
-                key != &row.key
-                    && (tokens.iter().any(|token| token == &needle)
-                        || tokens.iter().any(|token| token.starts_with(&needle))
-                        || normalize_dependency_token(name) == needle)
-            }) else {
+            // Several installed versions of the same mod can all match; an
+            // active one satisfies the dependency, so prefer it over the
+            // first row that happens to come up in key order.
+            let Some(candidate) = index
+                .iter()
+                .enumerate()
+                .filter(|(_, candidate)| candidate.key != row.key)
+                .filter_map(|(position, candidate)| {
+                    let strength = candidate.match_strength(&needle)?;
+                    let version_ok = dependency.version_required.as_deref().is_none_or(
+                        |required| dependency_version_matches(required, candidate.version.as_deref()),
+                    );
+                    Some((
+                        (candidate.active, version_ok, strength, std::cmp::Reverse(position)),
+                        candidate,
+                    ))
+                })
+                .max_by(|left, right| left.0.cmp(&right.0))
+                .map(|(_, candidate)| candidate)
+            else {
                 dependency.available = false;
                 dependency.active = false;
                 continue;
             };
-            dependency.key = Some(key.clone());
-            dependency.name = group_name.clone().unwrap_or_else(|| name.clone());
-            dependency.active = *active;
+            dependency.key = Some(candidate.key.clone());
+            dependency.name = candidate
+                .group_name
+                .clone()
+                .unwrap_or_else(|| candidate.name.clone());
+            dependency.active = candidate.active;
             dependency.available = true;
-            dependency.version_current = version.clone();
+            dependency.version_current = candidate.version.clone();
             dependency.version_matches = dependency
                 .version_required
                 .as_ref()
-                .map(|required| dependency_version_matches(required, version.as_deref()));
+                .map(|required| dependency_version_matches(required, candidate.version.as_deref()));
             if row
                 .translation_target_id
                 .as_deref()
                 .is_some_and(|target_id| normalize_dependency_token(target_id) == needle)
             {
-                row.translation_target_key = Some(key.clone());
+                row.translation_target_key = Some(candidate.key.clone());
                 if row.translation_target_name.is_none() {
-                    row.translation_target_name = Some(name.clone());
+                    row.translation_target_name = Some(candidate.name.clone());
                 }
             }
         }
@@ -530,12 +588,22 @@ fn dependency_match_tokens(
     if let Some(group_name) = group_name {
         tokens.push(normalize_dependency_token(group_name));
     }
-    if let Some(prefix) = key.split(['-', '_', ' ']).next() {
-        tokens.push(normalize_dependency_token(prefix));
-    }
+    tokens.retain(|token| !token.is_empty());
     tokens.sort();
     tokens.dedup();
     tokens
+}
+
+/// Whether what follows a dependency id inside a longer token is only a
+/// version (`v330`, `330workshop`), so `BaseLib-v3.3.0` still satisfies
+/// `BaseLib` while `BaseLibExtra` or `MaidenSuccubus_tr` does not.
+fn is_version_suffix_token(rest: &str) -> bool {
+    let mut characters = rest.chars();
+    match characters.next() {
+        Some(first) if first.is_ascii_digit() => true,
+        Some('v') => characters.next().is_some_and(|next| next.is_ascii_digit()),
+        _ => false,
+    }
 }
 
 fn normalize_dependency_token(value: &str) -> String {
