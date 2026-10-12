@@ -35,6 +35,12 @@ public static class Injector
     /// <summary>Every key the last apply translated, for the edit panel.</summary>
     public static IReadOnlyList<CatalogEntry> Catalog { get; private set; } = Array.Empty<CatalogEntry>();
 
+    /// <summary>
+    /// Prefix every translated text with <c>[key]</c> so a line seen in game
+    /// can be found in the edit panel. Off again after a restart.
+    /// </summary>
+    public static bool ShowKeys { get; set; }
+
     /// <summary>Language of <see cref="Catalog"/>.</summary>
     public static string CatalogLanguage { get; private set; } = "";
 
@@ -85,6 +91,16 @@ public static class Injector
             }
             Catalog = OverlayEdits(tables, language);
             CatalogLanguage = language;
+            if (ShowKeys)
+            {
+                foreach (var table in tables)
+                {
+                    foreach (var key in table.Values.Keys.ToList())
+                    {
+                        table.Values[key] = $"[{key}] {table.Values[key]}";
+                    }
+                }
+            }
 
             var applied = new HashSet<(string Table, string Key)>();
             foreach (var group in tables.GroupBy(table => table.Table, StringComparer.Ordinal))

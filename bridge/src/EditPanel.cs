@@ -22,6 +22,7 @@ public partial class EditPanel : Window
     private LineEdit _search = null!;
     private ItemList _results = null!;
     private Label _count = null!;
+    private CheckBox _showKeys = null!;
     private Label _info = null!;
     private TextEdit _source = null!;
     private TextEdit _value = null!;
@@ -70,6 +71,13 @@ public partial class EditPanel : Window
         searchRow.AddChild(_search);
         _count = new Label();
         searchRow.AddChild(_count);
+        _showKeys = new CheckBox { Text = "화면에 [키] 표시", TooltipText = "번역된 문장 앞에 키를 붙여 게임 화면에서 찾기 쉽게 합니다 (Ctrl+F8)" };
+        _showKeys.Toggled += pressed =>
+        {
+            Injector.ShowKeys = pressed;
+            ReloadAndShow(pressed ? "화면의 번역 문장 앞에 [키]를 붙였습니다. 키로 검색하세요" : "[키] 표시를 껐습니다");
+        };
+        searchRow.AddChild(_showKeys);
         var reload = new Button { Text = "다시 불러오기" };
         reload.Pressed += () => ReloadAndShow($"공용 폴더에서 다시 불러왔습니다");
         searchRow.AddChild(reload);
@@ -154,6 +162,7 @@ public partial class EditPanel : Window
             Math.Min(1100, (int)(screen.X * 0.9f)),
             Math.Min(700, (int)(screen.Y * 0.85f)));
         PopupCentered(size);
+        _showKeys.SetPressedNoSignal(Injector.ShowKeys);
         ReloadAndShow("");
         _search.GrabFocus();
     }
