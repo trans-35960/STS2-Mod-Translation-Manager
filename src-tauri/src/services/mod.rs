@@ -15,10 +15,8 @@ use sts2_mod_manager::ai_prompt::{
     build_term_prompt_parts, read_project_settings, write_project_settings,
 };
 use sts2_mod_manager::app::App;
+use sts2_mod_manager::bridge;
 use sts2_mod_manager::config::AppConfig;
-use sts2_mod_manager::steam_branch::{
-    BranchSupport, branch_support, read_game_branch, read_workshop_branches,
-};
 use sts2_mod_manager::discovery::scan_mod_directory;
 use sts2_mod_manager::domain::{ModFingerprint, ModKind, ModRecord, ModSource, ScanSummary};
 use sts2_mod_manager::glossary::{
@@ -46,6 +44,9 @@ use sts2_mod_manager::state::{
     ModStateEntry, desired_active_mod_keys, mod_record_state_key, read_mod_state_index,
     version_change, write_desired_active_mod_keys,
 };
+use sts2_mod_manager::steam_branch::{
+    BranchSupport, branch_support, read_game_branch, read_workshop_branches,
+};
 use sts2_mod_manager::term_candidates::extract_term_candidates as term_candidates;
 use sts2_mod_manager::translation::{
     TranslationWorkspace, has_translatable_hardcoded_values, scan_translation_candidates,
@@ -72,5 +73,6 @@ include!("json_sheet.rs");
 include!("json_sheet/dto.rs");
 include!("pck.rs");
 include!("glossary.rs");
+include!("bridge.rs");
 include!("leftover_text.rs");
 include!("tests.rs");

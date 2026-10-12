@@ -222,6 +222,26 @@ function App() {
       });
   }, [appendLog, dashboard, page, setDashboard]);
 
+  // The translation bridge mod ships with the app: install or update it once
+  // per launch, after the first dashboard load has found the game.
+  const bridgeCheckedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!dashboard || bridgeCheckedRef.current || isPreviewRuntime()) {
+      return;
+    }
+    bridgeCheckedRef.current = true;
+    void invokeCommand("ensure_bridge_installed")
+      .then((result) => {
+        if (result.message) {
+          appendLog(result.message);
+        }
+        if (result.state === "installed" || result.state === "updated") {
+          void load();
+        }
+      })
+      .catch((error) => appendLog(formatCommandError("ensure_bridge_installed", undefined, error)));
+  }, [appendLog, dashboard, load]);
+
   const {
     applyAllPasteCandidates,
     applyPasteCandidate,

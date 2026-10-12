@@ -62,6 +62,10 @@ try {
     Invoke-Step "Tauri command contract" {
         & (Join-Path $PSScriptRoot "check-tauri-contract.ps1")
     }
+    # Needs the .NET SDK and a Slay the Spire 2 install; reports a skip otherwise.
+    Invoke-Step "bridge mod build" {
+        & (Join-Path $PSScriptRoot "build-bridge.ps1") -SkipIfUnavailable
+    }
 
     if (-not $SkipFrontend) {
         $node = Resolve-Node

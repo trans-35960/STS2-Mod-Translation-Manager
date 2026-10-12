@@ -1,0 +1,11 @@
+{
+  "id": "STS2ModManagerBridge",
+  "name": "STS2 Mod Manager Bridge",
+  "author": "STS2 Mod Manager",
+  "description": "Applies translations made in STS2 Mod Translation Manager while the game runs. Press F8 in game to reload them.",
+  "version": "0.0.0",
+  "has_pck": false,
+  "has_dll": true,
+  "dependencies": [],
+  "affects_gameplay": false
+}

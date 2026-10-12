@@ -29,6 +29,7 @@ pub fn run() {
             commands::extract_translation,
             commands::clear_translation_extract_cache,
             commands::scan_leftover_text,
+            commands::ensure_bridge_installed,
             commands::prepare_translation_node,
             commands::save_preset,
             commands::apply_preset,

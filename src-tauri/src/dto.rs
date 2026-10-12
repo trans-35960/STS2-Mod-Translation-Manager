@@ -15,6 +15,54 @@ pub(crate) struct DashboardDto {
     pub(crate) cache_usage: CacheUsageDto,
     pub(crate) tools: Vec<ToolDto>,
     pub(crate) launch: LaunchStatusDto,
+    pub(crate) bridge: BridgeDto,
+}
+
+/// The in-game companion mod that applies translations from the shared folder.
+#[derive(Debug, Serialize)]
+pub(crate) struct BridgeDto {
+    pub(crate) installed: bool,
+    pub(crate) active: bool,
+    pub(crate) installed_version: Option<String>,
+    pub(crate) bundled_version: Option<String>,
+    pub(crate) shared_dir: String,
+    /// What the bridge reported after its last apply in game.
+    pub(crate) status: Option<BridgeStatusDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct BridgeStatusDto {
+    pub(crate) bridge_version: String,
+    pub(crate) game_version: Option<String>,
+    pub(crate) language: String,
+    pub(crate) applied_at: String,
+    pub(crate) applied_entries: usize,
+    pub(crate) mods: Vec<(String, usize)>,
+    pub(crate) invalid_count: usize,
+    pub(crate) invalid: Vec<String>,
+    pub(crate) missing_tables: Vec<String>,
+    pub(crate) errors: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct BridgeInstallDto {
+    /// `installed`, `updated`, `current`, `game_running` or `missing_source`.
+    pub(crate) state: String,
+    pub(crate) version: Option<String>,
+    pub(crate) message: String,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct BridgeApplyDto {
+    pub(crate) mod_id: String,
+    pub(crate) language: String,
+    pub(crate) tables: usize,
+    pub(crate) unsupported_entries: usize,
+    pub(crate) unsupported_hardcoded: usize,
+    pub(crate) disabled_patch_mods: Vec<String>,
+    pub(crate) bridge_installed: bool,
+    pub(crate) bridge_active: bool,
+    pub(crate) game_running: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -137,6 +185,8 @@ pub(crate) struct ModRowDto {
     pub(crate) translation_target_version: Option<String>,
     pub(crate) dependencies: Vec<ModDependencyDto>,
     pub(crate) branch_issue: Option<BranchIssueDto>,
+    /// The bridge mod: installed and updated by the app, not deletable.
+    pub(crate) system_mod: bool,
     pub(crate) language_preview: Vec<LanguagePreviewDto>,
     pub(crate) extraction_tree: Vec<ExtractionTreeNodeDto>,
 }
@@ -516,6 +566,8 @@ pub(crate) struct JsonApplyDto {
     pub(crate) language_output_path: String,
     pub(crate) packed_pck_path: String,
     pub(crate) installed_mod_path: String,
+    /// Set when the sheet was applied through the bridge's shared folder.
+    pub(crate) bridge: Option<BridgeApplyDto>,
 }
 
 #[derive(Debug, Serialize)]

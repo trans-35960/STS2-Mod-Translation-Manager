@@ -77,6 +77,9 @@ fn delete_mod_entry(
     if requested_path.as_os_str().is_empty() {
         return Err("삭제할 모드 경로가 없습니다.".to_string());
     }
+    if requested_path.join(bridge_manifest_file_name()).is_file() {
+        return Err("번역 브리지 모드는 프로그램이 관리하므로 삭제할 수 없습니다. 끄려면 비활성화하세요.".to_string());
+    }
     let record = summary.into_records()
         .find(|record| record.stable_key() == key && same_path(&record.path, &requested_path))
         .ok_or_else(|| format!("{key} 모드를 현재 목록에서 찾지 못했습니다."))?;

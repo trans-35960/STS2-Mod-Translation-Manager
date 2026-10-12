@@ -1175,7 +1175,8 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
     timing.mark("setup_cleanup");
     let mods = mod_rows(&report, app.config(), &deleted_keys, game_updated_epoch)?;
     timing.mark("mod_rows");
-    let diagnostics = troubleshoot_diagnostics(
+    let bridge = bridge_dto(app.config(), &mods);
+    let mut diagnostics = troubleshoot_diagnostics(
         app.config(),
         &settings,
         &launch,
@@ -1183,6 +1184,7 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         &mods,
         &setup_issues,
     );
+    diagnostics.extend(bridge_diagnostics(&bridge));
     timing.mark("diagnostics");
     let stats = dashboard_stats(&mods, presets.len(), translations.len());
     timing.mark("stats");
@@ -1226,6 +1228,7 @@ fn dashboard() -> sts2_mod_manager::error::AppResult<DashboardDto> {
         cache_usage,
         tools: tools.into_iter().map(tool_dto).collect(),
         launch: launch_dto(launch, app.config()),
+        bridge,
     };
     timing.mark("dto");
     timing.finish();

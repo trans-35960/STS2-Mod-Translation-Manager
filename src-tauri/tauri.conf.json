@@ -38,6 +38,7 @@
     "resources": [
       "../THIRD_PARTY_NOTICES.md",
       "../vendor/7zip/*",
+      "../vendor/bridge/*",
       "../vendor/godot-pck-explorer-dotnet-ui-console-win-linux-mac/**/*"
     ]
   }

@@ -30,6 +30,48 @@ export type Dashboard = {
   cache_usage: CacheUsage;
   tools: Tool[];
   launch: LaunchStatus;
+  bridge: Bridge;
+};
+
+/** The in-game companion mod that applies translations from the shared folder. */
+export type Bridge = {
+  installed: boolean;
+  active: boolean;
+  installed_version: string | null;
+  bundled_version: string | null;
+  shared_dir: string;
+  status: BridgeStatus | null;
+};
+
+export type BridgeStatus = {
+  bridge_version: string;
+  game_version: string | null;
+  language: string;
+  applied_at: string;
+  applied_entries: number;
+  mods: [string, number][];
+  invalid_count: number;
+  invalid: string[];
+  missing_tables: string[];
+  errors: string[];
+};
+
+export type BridgeInstall = {
+  state: "installed" | "updated" | "current" | "game_running" | "missing_source";
+  version: string | null;
+  message: string;
+};
+
+export type BridgeApply = {
+  mod_id: string;
+  language: string;
+  tables: number;
+  unsupported_entries: number;
+  unsupported_hardcoded: number;
+  disabled_patch_mods: string[];
+  bridge_installed: boolean;
+  bridge_active: boolean;
+  game_running: boolean;
 };
 
 export type CacheUsage = {
@@ -161,6 +203,7 @@ export type ModRow = {
   translation_target_version: string | null;
   dependencies: ModDependency[];
   branch_issue?: BranchIssue | null;
+  system_mod?: boolean;
   language_preview: LanguagePreview[];
   extraction_tree: ExtractionTreeNode[];
 };
@@ -410,6 +453,7 @@ export type JsonApply = {
   language_output_path?: string;
   packed_pck_path?: string;
   installed_mod_path?: string;
+  bridge?: BridgeApply | null;
 };
 
 export type TranslationPatchExport = {

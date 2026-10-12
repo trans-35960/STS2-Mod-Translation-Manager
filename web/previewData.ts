@@ -325,6 +325,14 @@ export const previewDashboard: Dashboard = {
     game_branch: null,
     game_version: null,
   },
+  bridge: {
+    installed: true,
+    active: true,
+    installed_version: "0.2.2",
+    bundled_version: "0.2.2",
+    shared_dir: "C:/Users/preview/AppData/Roaming/STS2ModTranslationManager/shared",
+    status: null,
+  },
 };
 
 export const previewGameLogs: GameLog[] = [

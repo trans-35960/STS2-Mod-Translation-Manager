@@ -158,6 +158,8 @@ try {
         cargo fmt --check
         cargo test
         cargo build --release
+        # The installer bundles vendor/bridge, so the bridge must be built first.
+        & (Join-Path $PSScriptRoot "build-bridge.ps1")
         Assert-ExecutableNotRunning -Path (Join-Path $repoRoot "src-tauri\target\release\sts2_mod_manager_tauri.exe")
         Invoke-Npm run tauri build
     }

@@ -309,6 +309,7 @@ impl ModRowBuilder {
                     .is_some_and(|game_epoch| game_epoch > apply.applied_epoch)
         });
 
+        let system_mod = manifest_id.as_deref() == Some(bridge::BRIDGE_MOD_ID);
         ModRowDto {
             key: context.key,
             name: record.name.clone(),
@@ -352,6 +353,7 @@ impl ModRowBuilder {
             translation_target_version: manifest.target_mod_version,
             dependencies,
             branch_issue: None,
+            system_mod,
             language_preview,
             extraction_tree,
         }

@@ -25,3 +25,11 @@
 
 # Local helper scripts generated during ad-hoc release/watch tasks.
 /scripts/watch-dcinside-comments.ps1
+
+# Bridge mod build output (scripts/build-bridge.ps1 copies the result to vendor/bridge).
+/bridge/.godot/
+/bridge/bin/
+/bridge/obj/
+!/vendor/bridge
+/vendor/bridge/*
+!/vendor/bridge/README.md

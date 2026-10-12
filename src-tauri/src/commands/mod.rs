@@ -463,6 +463,11 @@ pub(crate) async fn apply_json_translation_sheet(
 }
 
 #[tauri::command]
+pub(crate) async fn ensure_bridge_installed() -> Result<BridgeInstallDto, String> {
+    run_blocking(crate::services::ensure_bridge_installed).await
+}
+
+#[tauri::command]
 pub(crate) async fn export_translation_patch_mod(
     sheet_path: String,
     output_dir: String,

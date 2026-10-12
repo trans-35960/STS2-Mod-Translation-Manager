@@ -441,6 +441,8 @@ function matchesModFilters(mod: ModRow, activeFilter: ActiveFilter, changeFilter
 export function canDeleteMod(mod: ModRow): boolean {
   // Steam restores workshop files, so those are only switched off, never deleted.
   if (mod.workshop) return false;
+  // The app installs and updates the bridge itself.
+  if (mod.system_mod) return false;
   const source = mod.source_label.toLowerCase();
   return mod.active || mod.managed || mod.external || source.includes("게임") || source.includes("game") || source.includes("disabled") || source.includes("nexus") || source.includes("vortex");
 }

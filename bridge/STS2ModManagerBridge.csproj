@@ -1,0 +1,35 @@
+<Project Sdk="Godot.NET.Sdk/4.5.1">
+    <!--
+      In-game companion mod shipped with the app. It applies translations the
+      app writes to %APPDATA%\STS2ModTranslationManager\shared at runtime.
+      Build with scripts/build-bridge.ps1, which finds the game and passes
+      Sts2DataDir and the app version.
+    -->
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Sts2ModManagerBridge</RootNamespace>
+        <AssemblyName>STS2ModManagerBridge</AssemblyName>
+        <EnableDynamicLoading>true</EnableDynamicLoading>
+        <Version Condition="'$(Version)' == ''">0.0.0</Version>
+        <NoWarn>$(NoWarn);MSB3270</NoWarn>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="0Harmony">
+            <HintPath>$(Sts2DataDir)/0Harmony.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="sts2">
+            <HintPath>$(Sts2DataDir)/sts2.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+
+    <Target Name="CheckSts2DataDir" BeforeTargets="ResolveAssemblyReferences">
+        <Error Text="Slay the Spire 2 data folder not found: '$(Sts2DataDir)'. Run scripts/build-bridge.ps1 or pass -p:Sts2DataDir=..."
+               Condition="'$(Sts2DataDir)' == '' or !Exists('$(Sts2DataDir)/sts2.dll')" />
+    </Target>
+</Project>

@@ -1,7 +1,7 @@
 import React from "react";
 import { invokeCommand } from "../../api/tauri";
 import type { CommandArgs, JsonToolCommand } from "../../api/tauri";
-import type { JsonSheetAction } from "../../types";
+import type { BridgeApply, JsonSheetAction } from "../../types";
 import { isAlertApplyResult } from "../../features/translation/LogToasts";
 import { inferPckTargetPath } from "../../features/translation/translationUtils";
 import {
@@ -92,6 +92,12 @@ export function useJsonToolRunner({
         appendLog(result.valid ? "검증 통과" : `수정 필요한 항목이 있습니다. 구조 경고 ${result.format_issues?.length ?? 0}개`);
       } else if (command === "apply_json_translation_sheet") {
         const result = await invokeCommand("apply_json_translation_sheet", args as CommandArgs["apply_json_translation_sheet"]);
+        if (result.bridge) {
+          const message = bridgeApplyMessage(result.applied_entries, result.bridge);
+          setJsonApplyResult({ ...result, message });
+          appendLog(`${message} (${result.output_path})`);
+          return true;
+        }
         const message = result.installed_mod_path
           ? result.packed_pck_path
             ? `PCK 반영 완료: ${result.applied_entries}개 항목 적용`
@@ -128,4 +134,23 @@ export function useJsonToolRunner({
       setBusy(null);
     }
   };
+}
+
+/** Toast text for a sheet applied through the bridge's shared folder. */
+function bridgeApplyMessage(entries: number, bridge: BridgeApply): string {
+  const notes = [
+    !bridge.bridge_installed
+      ? "브리지 모드가 아직 설치되지 않아 게임에 나오지 않습니다(프로그램을 다시 열면 설치)"
+      : !bridge.bridge_active
+        ? "브리지 모드가 꺼져 있어 게임에 나오지 않습니다(모드 관리에서 켜기)"
+        : bridge.game_running
+          ? "게임 안에서 F8을 누르면 바로 반영됩니다"
+          : "",
+    bridge.unsupported_hardcoded > 0 ? `DLL 문자열 ${bridge.unsupported_hardcoded}개는 아직 브리지로 적용되지 않음` : "",
+    bridge.unsupported_entries - bridge.unsupported_hardcoded > 0
+      ? `localization 테이블 밖 항목 ${bridge.unsupported_entries - bridge.unsupported_hardcoded}개 제외`
+      : "",
+    bridge.disabled_patch_mods.length > 0 ? `기존 번역 모드 비활성화: ${bridge.disabled_patch_mods.join(", ")}` : "",
+  ].filter(Boolean);
+  return `번역 적용 완료: ${bridge.mod_id}/${bridge.language} ${entries}개${notes.length > 0 ? ` · ${notes.join(" · ")}` : ""}`;
 }
