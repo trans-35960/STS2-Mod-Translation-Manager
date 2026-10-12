@@ -137,7 +137,6 @@ pub(crate) struct ModRowDto {
     pub(crate) translation_target_version: Option<String>,
     pub(crate) dependencies: Vec<ModDependencyDto>,
     pub(crate) branch_issue: Option<BranchIssueDto>,
-    pub(crate) translator_links: Vec<TranslatorLinkDto>,
     pub(crate) language_preview: Vec<LanguagePreviewDto>,
     pub(crate) extraction_tree: Vec<ExtractionTreeNodeDto>,
 }
@@ -170,18 +169,6 @@ pub(crate) struct LeftoverFileDto {
 pub(crate) struct LeftoverTextDto {
     pub(crate) text: String,
     pub(crate) code_like: bool,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub(crate) struct TranslatorLinkDto {
-    pub(crate) mod_id: String,
-    pub(crate) language: String,
-    pub(crate) translator_installed: bool,
-    pub(crate) translator_active: bool,
-    /// Synced values gone from the override files (Workshop update wiped them).
-    pub(crate) missing_entries: usize,
-    /// Values the player changed in game since the last sync.
-    pub(crate) game_changed_entries: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -529,71 +516,6 @@ pub(crate) struct JsonApplyDto {
     pub(crate) language_output_path: String,
     pub(crate) packed_pck_path: String,
     pub(crate) installed_mod_path: String,
-    /// Set when the sheet was saved into Sts2ModTranslator overrides.
-    pub(crate) translator: Option<TranslatorSaveDto>,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct TranslatorSaveDto {
-    pub(crate) mod_id: String,
-    pub(crate) language: String,
-    pub(crate) overrides_dir: String,
-    pub(crate) translator_version: String,
-    pub(crate) translator_active: bool,
-    pub(crate) written_entries: usize,
-    pub(crate) unchanged_entries: usize,
-    /// Values the player changed in game since the last save; left in place.
-    pub(crate) kept_in_game_entries: usize,
-    pub(crate) unsupported_entries: usize,
-    pub(crate) unsupported_hardcoded: usize,
-    /// Non-empty means nothing was written.
-    pub(crate) conflicts: Vec<TranslatorConflictDto>,
-    pub(crate) disabled_patch_mods: Vec<String>,
-    pub(crate) game_running: bool,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct TranslatorConflictDto {
-    pub(crate) table: String,
-    pub(crate) key: String,
-    pub(crate) ours: String,
-    pub(crate) theirs: String,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct TranslatorSyncPreviewDto {
-    /// False when the sheet does not go to Translator.
-    pub(crate) available: bool,
-    pub(crate) mod_id: String,
-    pub(crate) language: String,
-    /// Sheet values a save would write without asking.
-    pub(crate) pending_writes: usize,
-    pub(crate) items: Vec<TranslatorSyncItemDto>,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct TranslatorSyncItemDto {
-    /// `game_changed` (edited in game only) or `conflict` (edited on both sides).
-    pub(crate) kind: String,
-    pub(crate) sheet_keys: Vec<String>,
-    pub(crate) table: String,
-    pub(crate) key: String,
-    pub(crate) ours: String,
-    pub(crate) theirs: String,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct TranslationSaveTargetDto {
-    /// `translator` or `patch`.
-    pub(crate) destination: String,
-    /// `auto`, `patch` or `translator`.
-    pub(crate) mode: String,
-    pub(crate) reason: String,
-    pub(crate) translator_version: Option<String>,
-    pub(crate) translator_active: bool,
-    pub(crate) auto_sync: bool,
-    pub(crate) supported_entries: usize,
-    pub(crate) unsupported_entries: usize,
 }
 
 #[derive(Debug, Serialize)]

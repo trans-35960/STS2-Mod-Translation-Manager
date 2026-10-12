@@ -114,7 +114,6 @@ fn json_apply_dto(report: PckPatchReport) -> JsonApplyDto {
             .as_deref()
             .map(display_path)
             .unwrap_or_default(),
-        translator: None,
     }
 }
 

@@ -2323,7 +2323,6 @@ Packed file: Shadowverse/localization/eng/cards.json
             translation_target_version: None,
             dependencies: Vec::new(),
             branch_issue: None,
-            translator_links: Vec::new(),
             language_preview: Vec::new(),
             extraction_tree: Vec::new(),
         }

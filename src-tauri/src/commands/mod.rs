@@ -455,56 +455,11 @@ pub(crate) async fn apply_json_translation_sheet(
     sheet_path: String,
     output_path: String,
     pck_target_path: Option<String>,
-    translator_keep_sheet_keys: Option<Vec<String>>,
 ) -> Result<JsonApplyDto, String> {
     run_blocking(move || {
-        crate::services::apply_json_translation_sheet(
-            sheet_path,
-            output_path,
-            pck_target_path,
-            translator_keep_sheet_keys.unwrap_or_default(),
-        )
+        crate::services::apply_json_translation_sheet(sheet_path, output_path, pck_target_path)
     })
     .await
-}
-
-#[tauri::command]
-pub(crate) async fn translator_auto_sync(
-    sheet_path: String,
-) -> Result<Option<TranslatorSaveDto>, String> {
-    run_blocking(move || crate::services::translator_auto_sync(sheet_path)).await
-}
-
-#[tauri::command]
-pub(crate) async fn set_translator_auto_sync(enabled: bool) -> Result<bool, String> {
-    run_blocking(move || crate::services::set_translator_auto_sync(enabled)).await
-}
-
-#[tauri::command]
-pub(crate) async fn restore_translator_overrides(keys: Vec<String>) -> Result<ActionDto, String> {
-    run_blocking(move || crate::services::restore_translator_overrides(keys)).await
-}
-
-#[tauri::command]
-pub(crate) async fn translator_sync_preview(
-    sheet: JsonSheetDto,
-) -> Result<TranslatorSyncPreviewDto, String> {
-    run_blocking(move || crate::services::translator_sync_preview(sheet)).await
-}
-
-#[tauri::command]
-pub(crate) async fn translation_save_target(
-    sheet_path: String,
-) -> Result<TranslationSaveTargetDto, String> {
-    run_blocking(move || crate::services::translation_save_target(sheet_path)).await
-}
-
-#[tauri::command]
-pub(crate) async fn set_translation_save_mode(
-    sheet_path: String,
-    mode: String,
-) -> Result<TranslationSaveTargetDto, String> {
-    run_blocking(move || crate::services::set_translation_save_mode(sheet_path, mode)).await
 }
 
 #[tauri::command]

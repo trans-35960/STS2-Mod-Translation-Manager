@@ -161,7 +161,6 @@ export type ModRow = {
   translation_target_version: string | null;
   dependencies: ModDependency[];
   branch_issue?: BranchIssue | null;
-  translator_links?: TranslatorLink[];
   language_preview: LanguagePreview[];
   extraction_tree: ExtractionTreeNode[];
 };
@@ -184,15 +183,6 @@ export type LeftoverReport = {
   code_like_texts: number;
   unreadable: string[];
   files: LeftoverFile[];
-};
-
-export type TranslatorLink = {
-  mod_id: string;
-  language: string;
-  translator_installed: boolean;
-  translator_active: boolean;
-  missing_entries: number;
-  game_changed_entries: number;
 };
 
 export type BranchIssue = {
@@ -420,51 +410,6 @@ export type JsonApply = {
   language_output_path?: string;
   packed_pck_path?: string;
   installed_mod_path?: string;
-  translator?: TranslatorSave | null;
-};
-
-export type TranslatorSave = {
-  mod_id: string;
-  language: string;
-  overrides_dir: string;
-  translator_version: string;
-  translator_active: boolean;
-  written_entries: number;
-  unchanged_entries: number;
-  kept_in_game_entries: number;
-  unsupported_entries: number;
-  unsupported_hardcoded: number;
-  conflicts: { table: string; key: string; ours: string; theirs: string }[];
-  disabled_patch_mods: string[];
-  game_running: boolean;
-};
-
-export type TranslatorSyncItem = {
-  kind: "game_changed" | "conflict";
-  sheet_keys: string[];
-  table: string;
-  key: string;
-  ours: string;
-  theirs: string;
-};
-
-export type TranslatorSyncPreview = {
-  available: boolean;
-  mod_id: string;
-  language: string;
-  pending_writes: number;
-  items: TranslatorSyncItem[];
-};
-
-export type TranslationSaveTarget = {
-  destination: "translator" | "patch";
-  mode: "auto" | "patch" | "translator";
-  reason: string;
-  translator_version: string | null;
-  translator_active: boolean;
-  auto_sync: boolean;
-  supported_entries: number;
-  unsupported_entries: number;
 };
 
 export type TranslationPatchExport = {

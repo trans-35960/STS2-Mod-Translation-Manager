@@ -222,24 +222,6 @@ function App() {
       });
   }, [appendLog, dashboard, page, setDashboard]);
 
-  // A Workshop update can replace Sts2ModTranslator's folder and drop the
-  // translations saved there; write them back once per mod per session.
-  const translatorRestoreAttemptedRef = React.useRef(new Set<string>());
-  React.useEffect(() => {
-    if (!dashboard || busy || isPreviewRuntime()) {
-      return;
-    }
-    const keys = dashboard.mods
-      .filter((mod) => mod.translator_links?.some((link) => link.translator_installed && link.missing_entries > 0))
-      .map((mod) => mod.key)
-      .filter((key) => !translatorRestoreAttemptedRef.current.has(key));
-    if (keys.length === 0) {
-      return;
-    }
-    keys.forEach((key) => translatorRestoreAttemptedRef.current.add(key));
-    void runAction("restore_translator_overrides", { keys });
-  }, [busy, dashboard, runAction]);
-
   const {
     applyAllPasteCandidates,
     applyPasteCandidate,
@@ -674,9 +656,9 @@ function App() {
               onRecalculate={() => void recalculateTranslationSheet()}
               onLoad={() => void loadTranslationSheet()}
               onValidate={validateTranslationSheet}
-              onApply={(options) => {
+              onApply={() => {
                 const appliedModKey = translationProject?.modKey ?? null;
-                void applyTranslationSheet(options).then((applied) => {
+                void applyTranslationSheet().then((applied) => {
                   if (!applied || !appliedModKey) {
                     return;
                   }

@@ -147,39 +147,6 @@ fn troubleshoot_diagnostics(
                 can_auto_fix: false,
             });
         }
-        for link in &mod_row.translator_links {
-            if !link.translator_installed {
-                diagnostics.push(TroubleshootDiagnosticDto {
-                    id: format!("translator-missing-{}-{}", mod_row.key, link.language),
-                    category: "translation".to_string(),
-                    severity: "warn".to_string(),
-                    title: "Translator에 저장한 번역이 적용되지 않습니다".to_string(),
-                    detail: format!(
-                        "{} 번역({})은 Sts2ModTranslator에 저장되어 있지만 Translator가 설치되어 있지 않습니다. Translator를 다시 설치하면 자동으로 복구합니다.",
-                        mod_row.name, link.language
-                    ),
-                    action_label: "모드 경로 열기".to_string(),
-                    related_path: mod_row.path.clone(),
-                    mod_key: Some(mod_row.key.clone()),
-                    can_auto_fix: false,
-                });
-            } else if link.missing_entries > 0 {
-                diagnostics.push(TroubleshootDiagnosticDto {
-                    id: format!("translator-wiped-{}-{}", mod_row.key, link.language),
-                    category: "translation".to_string(),
-                    severity: "warn".to_string(),
-                    title: "Translator 번역 일부가 사라졌습니다".to_string(),
-                    detail: format!(
-                        "{} 번역({}) {}개가 Sts2ModTranslator 폴더에서 사라졌습니다. Workshop 업데이트로 폴더가 교체된 경우로, 모드 목록을 열면 자동으로 다시 씁니다.",
-                        mod_row.name, link.language, link.missing_entries
-                    ),
-                    action_label: "모드 경로 열기".to_string(),
-                    related_path: mod_row.path.clone(),
-                    mod_key: Some(mod_row.key.clone()),
-                    can_auto_fix: false,
-                });
-            }
-        }
         if mod_row.needs_recheck {
             diagnostics.push(TroubleshootDiagnosticDto {
                 id: format!("game-recheck-{}", mod_row.key),
