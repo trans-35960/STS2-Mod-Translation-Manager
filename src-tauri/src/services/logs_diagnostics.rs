@@ -91,7 +91,9 @@ fn troubleshoot_diagnostics(
 
     for mod_row in mods {
         for dependency in &mod_row.dependencies {
-            if !dependency.available {
+            // The game never loads an inactive mod, so a missing dependency
+            // cannot fail it; a version mismatch still matters once it is on.
+            if mod_row.active && !dependency.available {
                 diagnostics.push(TroubleshootDiagnosticDto {
                     id: format!("dependency-{}-{}", mod_row.key, dependency.id),
                     category: "dependency".to_string(),
@@ -238,6 +240,17 @@ fn log_diagnostics(
             if save_fix && current_run_paths.is_empty() {
                 continue;
             }
+            // The game checks branches before it drops mods disabled in
+            // settings, so it logs this even for mods it never meant to load.
+            if category == "branch"
+                && branch_rejected_mod_id(line).is_some_and(|id| {
+                    !mods
+                        .iter()
+                        .any(|row| row.active && row.manifest_id.as_deref() == Some(id))
+                })
+            {
+                continue;
+            }
             let detail = if save_fix {
                 current_run_paths
                     .first()
@@ -334,6 +347,7 @@ fn classify_game_log_line(line: &str) -> Option<(&'static str, String, String)> 
     }
     if any_keyword(&lower, &["mod", "workshop", "loader"])
         && any_keyword(&lower, &["error", "failed", "exception"])
+        && !is_save_file_line(&lower)
     {
         return Some((
             "mod",
@@ -342,6 +356,19 @@ fn classify_game_log_line(line: &str) -> Option<(&'static str, String, String)> 
         ));
     }
     None
+}
+
+/// `Tried to load mod with id <id>, but the current Steam branch ...`
+fn branch_rejected_mod_id(line: &str) -> Option<&str> {
+    let start = line.find("mod with id ")? + "mod with id ".len();
+    let rest = &line[start..];
+    Some(rest[..rest.find(", but")?].trim())
+}
+
+/// Save I/O under the `modded/` profile mentions "mod" but is not about
+/// loading a mod (e.g. deleting a missing `current_run.save.backup`).
+fn is_save_file_line(lower: &str) -> bool {
+    lower.contains("/saves/") || lower.contains(".save")
 }
 
 fn any_keyword(text: &str, keywords: &[&str]) -> bool {

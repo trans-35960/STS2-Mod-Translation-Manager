@@ -1900,6 +1900,22 @@ Packed file: Shadowverse/localization/eng/cards.json
         .expect("branch rejection");
 
         assert_eq!(branch.0, "branch");
+        assert_eq!(
+            branch_rejected_mod_id(
+                "[ERROR] Tried to load mod with id MEP SakurabaEma, but the current Steam branch public-beta does not lie"
+            ),
+            Some("MEP SakurabaEma")
+        );
+    }
+
+    #[test]
+    fn log_classifier_ignores_modded_save_file_errors() {
+        assert!(
+            classify_game_log_line(
+                "[ERROR] Error deleting path modded/profile1/saves/current_run.save.backup: Failed"
+            )
+            .is_none()
+        );
     }
 
     #[test]

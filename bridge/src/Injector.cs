@@ -1,5 +1,7 @@
 using Godot;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 
 namespace Sts2ModManagerBridge;
 
@@ -36,7 +38,8 @@ public static class Injector
             return 0;
         }
         var applied = Apply(manager);
-        RefreshLabels();
+        var cards = RefreshLabels();
+        BridgeMod.Log.Info($"[{BridgeMod.ModId}] reloaded {applied} entries ({manager.Language}), redrew {cards} cards");
         return applied;
     }
 
@@ -157,11 +160,41 @@ public static class Injector
         }
     }
 
-    private static void RefreshLabels()
+    /// <summary>
+    /// Makes on-screen text pick up the new values. Plain labels listen for
+    /// the translation-changed notification; cards set their text once when
+    /// shown, so every card node already in the tree is redrawn.
+    /// </summary>
+    private static int RefreshLabels()
     {
-        if (Engine.GetMainLoop() is SceneTree tree)
+        if (Engine.GetMainLoop() is not SceneTree tree)
         {
-            tree.Root.PropagateNotification(TranslationChangedNotification);
+            return 0;
         }
+        tree.Root.PropagateNotification(TranslationChangedNotification);
+        var redrawn = 0;
+        var pending = new Stack<Node>();
+        pending.Push(tree.Root);
+        while (pending.Count > 0)
+        {
+            var node = pending.Pop();
+            if (node is NCard { Model: not null } card && card.IsNodeReady())
+            {
+                try
+                {
+                    card.UpdateVisuals(card.DisplayingPile, CardPreviewMode.Normal);
+                    redrawn++;
+                }
+                catch (Exception exception)
+                {
+                    BridgeMod.Log.Warn($"[{BridgeMod.ModId}] card redraw failed: {exception.Message}");
+                }
+            }
+            foreach (var child in node.GetChildren())
+            {
+                pending.Push(child);
+            }
+        }
+        return redrawn;
     }
 }

@@ -125,11 +125,9 @@ function ModsPage(props: {
   onImportVortexDownloads: () => void;
   onLaunch: () => void;
   onVanilla: () => void;
-  onRefreshDashboard: () => void;
 }) {
   const t = props.labels;
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({});
-  const [forceModChanges, setForceModChanges] = React.useState(false);
   const [selectedModKeys, setSelectedModKeys] = React.useState<Set<string>>(() => new Set());
   const [simpleView, setSimpleView] = React.useState(() => props.initialSimpleView || readStoredModViewMode());
   const [detailColumns, setDetailColumns] = React.useState(() =>
@@ -169,12 +167,6 @@ function ModsPage(props: {
   }
 
   React.useEffect(() => {
-    if (!props.launchRunning) {
-      setForceModChanges(false);
-    }
-  }, [props.launchRunning]);
-
-  React.useEffect(() => {
     setSelectedModKeys((current) => {
       const validKeys = new Set(props.mods.filter(canDeleteMod).map((mod) => mod.key));
       const next = new Set(Array.from(current).filter((key) => validKeys.has(key)));
@@ -190,7 +182,9 @@ function ModsPage(props: {
     writeStoredModTableColumns("simple", simpleColumns);
   }, [simpleColumns]);
 
-  const modChangesLocked = props.launchRunning && !forceModChanges;
+  // On/off only changes what the next launch loads, so it stays available
+  // while the game runs; deleting moves folders the game may hold open.
+  const modChangesLocked = props.launchRunning;
 
   React.useEffect(() => {
     if (!props.focusedModKey) {
@@ -324,7 +318,13 @@ function ModsPage(props: {
 
   return (
     <>
-      <div className={modChangesLocked ? "mod-lock-frame locked" : "mod-lock-frame"}>
+      <div className="mod-lock-frame">
+      {modChangesLocked && (
+        <div className="mod-running-notice" role="status">
+          <ShieldAlert size={15} />
+          게임 실행 중입니다. 켜기/끄기는 다음 실행부터 적용되고, 삭제는 게임을 종료한 뒤 할 수 있습니다.
+        </div>
+      )}
       <div className="toolbar mod-toolbar">
         <div className="search-field">
           <Search size={16} />
@@ -682,25 +682,6 @@ function ModsPage(props: {
         })}
         {groups.length === 0 && <div className="empty compact">조건에 맞는 모드가 없습니다.</div>}
       </div>
-      {modChangesLocked && (
-        <div className="mod-lock-overlay">
-          <div>
-            <ShieldAlert size={22} />
-            <strong>게임이 실행 중입니다.</strong>
-            <span>실행 중에 모드를 변경하면 게임 데이터가 꼬이거나 적용 상태가 달라질 수 있습니다.</span>
-            <button
-              type="button"
-              className="primary icon-button-text"
-              onClick={() => {
-                setForceModChanges(true);
-                props.onRefreshDashboard();
-              }}
-            >
-              그래도 변경하기
-            </button>
-          </div>
-        </div>
-      )}
       </div>
     </>
   );

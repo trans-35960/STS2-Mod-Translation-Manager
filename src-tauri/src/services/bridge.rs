@@ -197,9 +197,16 @@ pub(crate) fn ensure_bridge_installed() -> Result<BridgeInstallDto, String> {
     let installed_version = installed
         .as_ref()
         .and_then(|record| bridge::manifest_version(&record.path.join(bridge_manifest_file_name())));
-    let needs_copy = match installed_version.as_deref() {
-        None => true,
-        Some(version) => bridge::is_newer_version(&bundled_version, version),
+    // A rebuild without a version bump (development) still has to reach the
+    // game, so the same version with a different DLL counts as an update.
+    let needs_copy = match (installed_version.as_deref(), installed.as_ref()) {
+        (Some(version), Some(record)) => {
+            bridge::is_newer_version(&bundled_version, version)
+                || (!bridge::is_newer_version(version, &bundled_version)
+                    && fs::read(source.join(&dll_name)).ok()
+                        != fs::read(record.path.join(&dll_name)).ok())
+        }
+        _ => true,
     };
     if !needs_copy {
         return Ok(BridgeInstallDto {

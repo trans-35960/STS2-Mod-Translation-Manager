@@ -204,51 +204,22 @@
   position: relative;
 }
 
-.mod-lock-frame.locked .table,
-.mod-lock-frame.locked .mod-toolbar {
-  filter: blur(2px);
-  opacity: 0.48;
-  pointer-events: none;
-  user-select: none;
-}
-
-.mod-lock-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 80;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: rgba(248, 250, 252, 0.42);
-  padding: 24px;
-}
-
-.mod-lock-overlay > div {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  max-width: 360px;
+.mod-running-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
   border: 1px solid #fed7aa;
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
-  padding: 18px;
-  text-align: center;
-}
-
-.mod-lock-overlay svg {
-  color: #f97316;
-}
-
-.mod-lock-overlay strong {
-  color: #0f172a;
-  font-size: 14px;
-}
-
-.mod-lock-overlay span {
-  color: #64748b;
+  background: #fff7ed;
+  padding: 8px 12px;
+  color: #9a3412;
   font-size: 12px;
-  line-height: 1.45;
+}
+
+.mod-running-notice svg {
+  flex: none;
+  color: #f97316;
 }
 
 .mod-grid {

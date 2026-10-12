@@ -24,6 +24,7 @@ public static class BridgeMod
         try
         {
             new Harmony(ModId).PatchAll(typeof(BridgeMod).Assembly);
+            ModErrorFilter.DropBranchErrorsOfDisabledMods();
             Log.Info($"[{ModId}] {Version} initialized, shared folder: {SharedPaths.Root}");
         }
         catch (Exception exception)

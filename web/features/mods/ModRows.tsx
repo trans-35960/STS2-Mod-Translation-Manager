@@ -103,7 +103,7 @@ function ModTableRow({
         />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
-          <BranchWarningIcon issue={mod.branch_issue} />
+          <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
@@ -149,16 +149,16 @@ function ModTableRow({
             {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
         )}
-        <ToggleSwitch active={mod.active} pending={toggling} locked={Boolean(busy) || locked || downloading} label={mod.name} onToggle={() => onToggle(mod)} />
+        <ToggleSwitch active={mod.active} pending={toggling} locked={Boolean(busy) || downloading} label={mod.name} onToggle={() => onToggle(mod)} />
         <IconButton
           label={translationBusy ? `${mod.name} 번역 도구 준비 중...` : `${mod.name} 번역 도구에서 열기`}
           icon={translationBusy ? Loader2 : Languages}
           onClick={() => onStartModTranslation(mod, primaryResourcePath)}
-          disabled={Boolean(busy) || locked || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0 && !canAnalyzeOnDemand)}
+          disabled={Boolean(busy) || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0 && !canAnalyzeOnDemand)}
           loading={translationBusy}
         />
         <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />
-        <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || locked || downloading} />
+        <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || downloading} />
         <IconButton
           label={`${mod.name} 삭제`}
           icon={Trash2}
@@ -254,7 +254,7 @@ function ModGroupTableRow({
         <small>클릭해서 버전별 항목 보기</small>
       </div>
       <div className="row-actions group-row-actions" onClick={(event) => event.stopPropagation()}>
-        <ToggleSwitch active={group.activeCount > 0} pending={toggling} locked={Boolean(busy) || locked || (downloading && group.activeCount === 0)} label={`${group.name} 그룹`} onToggle={onToggleGroup} />
+        <ToggleSwitch active={group.activeCount > 0} pending={toggling} locked={Boolean(busy) || (downloading && group.activeCount === 0)} label={`${group.name} 그룹`} onToggle={onToggleGroup} />
         <button className="icon-only-button" type="button" aria-label={expanded ? "접기" : "열기"} data-tooltip={expanded ? "접기" : "열기"} onClick={onToggleExpand}>
           {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
@@ -341,7 +341,7 @@ function SimpleModGroupRow({
         />
       </div>
       <div className="row-actions simple-row-actions" onClick={(event) => event.stopPropagation()}>
-        <ToggleSwitch active={group.activeCount > 0} pending={toggling} locked={Boolean(busy) || locked || (downloading && group.activeCount === 0)} label={`${group.name} 그룹`} onToggle={onToggleGroup} />
+        <ToggleSwitch active={group.activeCount > 0} pending={toggling} locked={Boolean(busy) || (downloading && group.activeCount === 0)} label={`${group.name} 그룹`} onToggle={onToggleGroup} />
         <button className="icon-only-button" type="button" aria-label={expanded ? "접기" : "열기"} data-tooltip={expanded ? "접기" : "열기"} onClick={onToggleExpand}>
           {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
@@ -414,7 +414,7 @@ function SimpleModRow({
         />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
-          <BranchWarningIcon issue={mod.branch_issue} />
+          <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
@@ -452,16 +452,16 @@ function SimpleModRow({
             {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
         )}
-        <ToggleSwitch active={mod.active} pending={toggling} locked={Boolean(busy) || locked || downloading} label={mod.name} onToggle={() => onToggle(mod)} />
+        <ToggleSwitch active={mod.active} pending={toggling} locked={Boolean(busy) || downloading} label={mod.name} onToggle={() => onToggle(mod)} />
         <IconButton
           label={translationBusy ? `${mod.name} 번역 도구 준비 중...` : `${mod.name} 번역 도구에서 열기`}
           icon={translationBusy ? Loader2 : Languages}
           onClick={() => onStartModTranslation(mod, primaryResourcePath)}
-          disabled={Boolean(busy) || locked || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0 && !canAnalyzeOnDemand)}
+          disabled={Boolean(busy) || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0 && !canAnalyzeOnDemand)}
           loading={translationBusy}
         />
         <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />
-        <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || locked || downloading} />
+        <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || downloading} />
         <IconButton
           label={`${mod.name} 삭제`}
           icon={Trash2}
@@ -542,11 +542,9 @@ function BranchWarningIcon({ issue }: { issue: BranchIssue | null | undefined })
   );
 }
 
-/** The version the game will load decides the warning; inactive versions only matter when none is active. */
+/** Only the version the game will load can fail to load; inactive versions never warn. */
 function groupBranchIssue(mods: ModRow[]): BranchIssue | null {
-  const activeMods = mods.filter((mod) => mod.active);
-  const candidates = activeMods.length > 0 ? activeMods : mods;
-  return candidates.find((mod) => mod.branch_issue)?.branch_issue ?? null;
+  return mods.find((mod) => mod.active && mod.branch_issue)?.branch_issue ?? null;
 }
 
 function isTranslationPreparing(busy: string | null, modKey: string): boolean {
@@ -601,11 +599,11 @@ function ToggleSwitch({
   );
 }
 
+/** An inactive mod cannot miss an inactive dependency, but a version mismatch still matters once it is on. */
 function warningDependencies(mod: ModRow): ModDependency[] {
-  if (!mod.active) {
-    return [];
-  }
-  return mod.dependencies.filter((dependency) => (dependency.available && !dependency.active) || dependency.version_matches === false);
+  return mod.dependencies.filter(
+    (dependency) => (mod.active && dependency.available && !dependency.active) || dependency.version_matches === false,
+  );
 }
 
 function warningDependenciesForGroup(mods: ModRow[]): ModDependency[] {
