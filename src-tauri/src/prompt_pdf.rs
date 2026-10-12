@@ -14,7 +14,9 @@ use std::sync::Arc;
 const PAGE_WIDTH: f32 = 595.0;
 const PAGE_HEIGHT: f32 = 842.0;
 const MARGIN: f32 = 28.0;
-pub(crate) const DEFAULT_PDF_FONT_SIZE: f32 = 5.5;
+/// AI chats read the PDF's text layer, not the rendered glyphs, so small
+/// text only means fewer pages.
+pub(crate) const DEFAULT_PDF_FONT_SIZE: f32 = 3.0;
 const LINE_SPACING: f32 = 1.25;
 const TAB_WIDTH: usize = 4;
 
@@ -138,7 +140,7 @@ fn font_dirs() -> Vec<PathBuf> {
 
 /// Renders `text` onto A4 pages and returns the PDF bytes.
 pub(crate) fn render_text_pdf(text: &str, font_size: f32) -> Result<Vec<u8>, String> {
-    let font_size = font_size.clamp(4.0, 14.0);
+    let font_size = font_size.clamp(2.0, 14.0);
     let mut fonts = FontSet::system()?;
     let max_width = (PAGE_WIDTH - MARGIN * 2.0) / font_size;
     let lines = wrap_lines(text, max_width, |ch| fonts.glyph(ch).1);

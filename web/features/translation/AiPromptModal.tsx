@@ -15,9 +15,6 @@ import {
 } from "./translationUtils";
 
 const MAX_CHARS_STORAGE_KEY = "sts2.aiPrompt.maxChars.v1";
-const PDF_FONT_SIZE_STORAGE_KEY = "sts2.aiPrompt.pdfFontSize.v1";
-const PDF_FONT_SIZES = [4.5, 5, 5.5, 6, 7];
-const DEFAULT_PDF_FONT_SIZE = 5.5;
 const DEFAULT_MAX_CHARS = 5000;
 const AUTOSAVE_DELAY_MS = 600;
 
@@ -67,7 +64,6 @@ export function AiPromptModal({
   const [copiedParts, setCopiedParts] = React.useState<Set<number>>(() => new Set());
   const [pasteReport, setPasteReport] = React.useState<PasteReport | null>(null);
   const [exportMessage, setExportMessage] = React.useState("");
-  const [pdfFontSize, setPdfFontSize] = React.useState(readStoredPdfFontSize);
   const [busy, setBusy] = React.useState(false);
   const [tab, setTab] = React.useState<"settings" | "terms" | "parts">("settings");
   const [error, setError] = React.useState("");
@@ -265,7 +261,6 @@ export function AiPromptModal({
             outputPath,
             parts: result.parts.map((part) => part.text),
             format,
-            fontSize: format === "pdf" ? pdfFontSize : null,
           });
       setExportMessage(
         written.length === 1
@@ -497,32 +492,12 @@ export function AiPromptModal({
                       type="button"
                       className="icon-button-text compact"
                       disabled={busy}
-                      title={`파트마다 작은 글씨(${pdfFontSize}pt) PDF를 만듭니다. Gemini처럼 PDF를 페이지 단위로 계산하는 AI에 파일로 올리면 입력 토큰이 줄 수 있습니다.`}
+                      title="파트마다 아주 작은 글씨로 페이지를 채운 PDF를 만듭니다. AI는 PDF의 텍스트를 읽으므로, Gemini처럼 페이지 단위로 계산하는 AI에 파일로 올리면 입력 토큰이 줄 수 있습니다."
                       onClick={() => void exportParts("pdf")}
                     >
                       <FileDown size={14} />
                       PDF 파트별
                     </button>
-                    <select
-                      className="ai-prompt-pdf-size"
-                      aria-label="PDF 글자 크기"
-                      value={pdfFontSize}
-                      onChange={(event) => {
-                        const size = Number(event.target.value);
-                        setPdfFontSize(size);
-                        try {
-                          window.localStorage.setItem(PDF_FONT_SIZE_STORAGE_KEY, String(size));
-                        } catch {
-                          // Remembering the size is only a convenience.
-                        }
-                      }}
-                    >
-                      {PDF_FONT_SIZES.map((size) => (
-                        <option key={size} value={size}>
-                          PDF {size}pt
-                        </option>
-                      ))}
-                    </select>
                   </div>
                   {exportMessage && <p className="ai-prompt-paste-report good">{exportMessage}</p>}
                   <label className="modal-field ai-prompt-answer">
@@ -570,15 +545,6 @@ function slotKey(file: string, id: string) {
 
 function budgetOf(value: number) {
   return Math.max(500, Math.round(value) || DEFAULT_MAX_CHARS);
-}
-
-function readStoredPdfFontSize() {
-  try {
-    const stored = Number(window.localStorage.getItem(PDF_FONT_SIZE_STORAGE_KEY));
-    return PDF_FONT_SIZES.includes(stored) ? stored : DEFAULT_PDF_FONT_SIZE;
-  } catch {
-    return DEFAULT_PDF_FONT_SIZE;
-  }
 }
 
 function readStoredMaxChars() {
