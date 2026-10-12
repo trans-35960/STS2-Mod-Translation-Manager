@@ -141,7 +141,7 @@ function translatorSaveSummary(save: TranslatorSave): { message: string; blocked
   if (save.conflicts.length > 0) {
     return {
       blocked: true,
-      message: `Translator에 저장하지 않음: 게임 안 번역과 다른 항목 ${save.conflicts.length}개`,
+      message: `Translator에 저장하지 않음: 게임 안 번역과 다른 항목 ${save.conflicts.length}개 · 적용 버튼 옆 "게임 안 변경"에서 고른 뒤 다시 적용하세요`,
       details: [
         `Translator 저장 중단: ${save.mod_id}/${save.language}에서 게임 안에서 따로 번역한 값과 시트 값이 다른 항목이 ${save.conflicts.length}개 있습니다. 아무것도 쓰지 않았습니다.`,
         ...save.conflicts

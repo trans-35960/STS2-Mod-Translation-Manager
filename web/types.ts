@@ -429,6 +429,23 @@ export type TranslatorSave = {
   game_running: boolean;
 };
 
+export type TranslatorSyncItem = {
+  kind: "game_changed" | "conflict";
+  sheet_keys: string[];
+  table: string;
+  key: string;
+  ours: string;
+  theirs: string;
+};
+
+export type TranslatorSyncPreview = {
+  available: boolean;
+  mod_id: string;
+  language: string;
+  pending_writes: number;
+  items: TranslatorSyncItem[];
+};
+
 export type TranslationSaveTarget = {
   destination: "translator" | "patch";
   mode: "auto" | "patch" | "translator";

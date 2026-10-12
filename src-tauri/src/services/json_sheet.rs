@@ -520,9 +520,10 @@ pub(crate) fn apply_json_translation_sheet(
     sheet_path: String,
     output_path: String,
     pck_target_path: Option<String>,
+    translator_keep_sheet_keys: Vec<String>,
 ) -> Result<JsonApplyDto, String> {
     let sheet = PathBuf::from(sheet_path.trim());
-    if let Some(result) = save_sheet_to_translator(&sheet)? {
+    if let Some(result) = save_sheet_to_translator(&sheet, &translator_keep_sheet_keys)? {
         return Ok(result);
     }
     let output = output_path.trim();

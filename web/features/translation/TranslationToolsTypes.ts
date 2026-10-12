@@ -1,6 +1,7 @@
 import type { SheetHistoryMove, SheetHistoryState } from "./useSheetHistory";
 import type { SheetSaveState } from "./useTranslationSessionState";
 import type React from "react";
+import type { ApplyOptions } from "./SaveTargetSelect";
 import type { labels } from "../../i18n";
 import type {
   ApplyResultState,
@@ -78,7 +79,7 @@ export type TranslationToolsPageProps = {
   onRecalculate: () => void;
   onLoad: () => void;
   onValidate: () => void | boolean | Promise<void | boolean>;
-  onApply: () => void;
+  onApply: (options?: ApplyOptions) => void;
 };
 
 export type TranslationEntryRow = {

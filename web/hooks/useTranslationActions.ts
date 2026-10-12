@@ -1,6 +1,7 @@
 import React from "react";
 import { invokeCommand } from "../api/tauri";
 import { translationLanguagesMatch, translationProjectKey } from "../features/translation/translationUtils";
+import type { ApplyOptions } from "../features/translation/SaveTargetSelect";
 import type { JsonValidation } from "../types";
 import { formatError } from "../utils/logging";
 import { isPreviewRuntime } from "../utils/runtime";
@@ -222,7 +223,7 @@ export function useTranslationActions(params: TranslationActionsParams) {
     }
   }
 
-  async function applyTranslationSheet(): Promise<boolean> {
+  async function applyTranslationSheet(options?: ApplyOptions): Promise<boolean> {
     const saved = await ioActions.saveEditedTranslationSheet();
     if (!saved) {
       return false;
@@ -235,6 +236,7 @@ export function useTranslationActions(params: TranslationActionsParams) {
       sheetPath: params.jsonOutputSheet || params.jsonExistingSheet,
       outputPath: params.jsonTranslatedOutput,
       pckTargetPath: params.jsonPckTargetPath || null,
+      translatorKeepSheetKeys: options?.translatorKeepSheetKeys ?? null,
     });
     if (applied) {
       await ioActions.saveEditedTranslationSheet({ finalizeStatuses: true });

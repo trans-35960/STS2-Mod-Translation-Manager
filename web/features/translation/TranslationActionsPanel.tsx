@@ -175,12 +175,20 @@ export function TranslationWorkHeader({
           {validating ? <Loader2 size={15} className="spin-icon" /> : <CheckCircle2 size={15} />}
           검증
         </button>
-        {sheetPath && currentSheetMatchesTarget && <SaveTargetSelect sheetPath={sheetPath} busy={props.busy} />}
+        {sheetPath && currentSheetMatchesTarget && (
+          <SaveTargetSelect
+            sheetPath={sheetPath}
+            sheet={props.sheet}
+            busy={props.busy}
+            onReplaceEntries={props.onReplaceEntries}
+            onApply={props.onApply}
+          />
+        )}
         <button
           className="toolbar-icon-button primary labeled"
           aria-label={props.busy === "apply_json_translation_sheet" || props.busy === "save_json_translation_sheet" ? "번역 파일 적용 중..." : "번역 저장/적용"}
           data-tooltip={props.busy === "apply_json_translation_sheet" || props.busy === "save_json_translation_sheet" ? "번역 파일 적용 중..." : "번역 저장/적용"}
-          onClick={props.onApply}
+          onClick={() => props.onApply()}
           disabled={!sheetPath || !props.translatedOutputPath || !currentSheetMatchesTarget || filledTranslations === 0 || Boolean(props.busy)}
         >
           {props.busy === "apply_json_translation_sheet" || props.busy === "save_json_translation_sheet" ? <Loader2 size={15} className="spin-icon" /> : <UploadCloud size={15} />}

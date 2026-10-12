@@ -86,6 +86,20 @@ pub fn sheet_override_tables(sheet: &JsonTranslationSheet) -> (OverrideTables, U
     (tables, unsupported)
 }
 
+/// Which sheet entries feed each override `(table, key)`.
+pub fn sheet_override_keys(sheet: &JsonTranslationSheet) -> BTreeMap<(String, String), Vec<String>> {
+    let mut keys = BTreeMap::<(String, String), Vec<String>>::new();
+    for entry in &sheet.entries {
+        if entry.status == JsonTranslationStatus::Removed || entry.source_value.trim().is_empty() {
+            continue;
+        }
+        if let OverrideLocation::Table { table, key } = override_location(&entry.key) {
+            keys.entry((table, key)).or_default().push(entry.key.clone());
+        }
+    }
+    keys
+}
+
 enum OverrideLocation {
     Table { table: String, key: String },
     Hardcoded,
@@ -476,6 +490,23 @@ pub fn write_base(path: &Path, base: &SyncBase) -> AppResult<()> {
     fs::write(path, content).map_err(|source| AppError::io(path, source))
 }
 
+/// The user chose the sheet value over what the player wrote in game for
+/// these keys. Recording the in-game value as the base makes the next plan a
+/// plain write instead of "kept in game" or a conflict.
+pub fn prefer_sheet_values<'a>(
+    base: &mut OverrideTables,
+    theirs: &OverrideTables,
+    keys: impl IntoIterator<Item = &'a (String, String)>,
+) {
+    for (table, key) in keys {
+        if let Some(value) = theirs.get(table).and_then(|values| values.get(key)) {
+            base.entry(table.clone())
+                .or_default()
+                .insert(key.clone(), value.clone());
+        }
+    }
+}
+
 /// Base after a sync: written and agreeing values become the new base;
 /// values kept in game or in conflict keep their old base so the next sync
 /// still sees them as changed.
@@ -632,6 +663,12 @@ mod tests {
                 nested: 1
             }
         );
+        let keys = sheet_override_keys(&sheet);
+        assert_eq!(
+            keys.get(&("powers".to_string(), "a/b".to_string())),
+            Some(&vec!["file://localization/zhs/powers.json#/a~1b".to_string()])
+        );
+        assert_eq!(keys.len(), 2);
     }
 
 
@@ -688,6 +725,25 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(conflicts, vec!["both_changed", "first_conflict"]);
         assert_eq!(plan.unchanged, 2);
+    }
+
+    #[test]
+    fn preferring_the_sheet_turns_game_edits_and_conflicts_into_writes() {
+        let ours = tables(&[("t", "game", "old"), ("t", "both", "mine"), ("t", "first", "mine")]);
+        let theirs = tables(&[("t", "game", "edited"), ("t", "both", "theirs"), ("t", "first", "theirs")]);
+        let mut base = tables(&[("t", "game", "old"), ("t", "both", "old")]);
+        let keys = [
+            ("t".to_string(), "game".to_string()),
+            ("t".to_string(), "both".to_string()),
+            ("t".to_string(), "first".to_string()),
+        ];
+
+        prefer_sheet_values(&mut base, &theirs, &keys);
+        let plan = plan_sync(&ours, &theirs, &base);
+
+        assert_eq!(plan.writes, ours);
+        assert!(plan.conflicts.is_empty());
+        assert!(plan.kept_in_game.is_empty());
     }
 
     #[test]

@@ -31,6 +31,7 @@ pub fn run() {
             commands::scan_leftover_text,
             commands::translation_save_target,
             commands::set_translation_save_mode,
+            commands::translator_sync_preview,
             commands::prepare_translation_node,
             commands::save_preset,
             commands::apply_preset,

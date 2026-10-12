@@ -548,6 +548,28 @@ pub(crate) struct TranslatorConflictDto {
 }
 
 #[derive(Debug, Serialize)]
+pub(crate) struct TranslatorSyncPreviewDto {
+    /// False when the sheet does not go to Translator.
+    pub(crate) available: bool,
+    pub(crate) mod_id: String,
+    pub(crate) language: String,
+    /// Sheet values a save would write without asking.
+    pub(crate) pending_writes: usize,
+    pub(crate) items: Vec<TranslatorSyncItemDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct TranslatorSyncItemDto {
+    /// `game_changed` (edited in game only) or `conflict` (edited on both sides).
+    pub(crate) kind: String,
+    pub(crate) sheet_keys: Vec<String>,
+    pub(crate) table: String,
+    pub(crate) key: String,
+    pub(crate) ours: String,
+    pub(crate) theirs: String,
+}
+
+#[derive(Debug, Serialize)]
 pub(crate) struct TranslationSaveTargetDto {
     /// `translator` or `patch`.
     pub(crate) destination: String,

@@ -98,19 +98,18 @@ fn translator_target_for_sheet(
     })
 }
 
-fn save_target_decision(sheet_path: &Path) -> Result<SaveTargetDecision, String> {
+fn save_target_decision(sheet: &JsonTranslationSheet) -> Result<SaveTargetDecision, String> {
     use translator_link::SaveTargetMode;
 
     let app = app();
-    let sheet = read_sheet(sheet_path).map_err(|error| error.to_string())?;
-    let (tables, unsupported) = translator_link::sheet_override_tables(&sheet);
+    let (tables, unsupported) = translator_link::sheet_override_tables(sheet);
     let supported_entries = tables.values().map(BTreeMap::len).sum::<usize>();
     let summary = app
         .scan_preview_report()
         .map_err(|error| error.to_string())?
         .summary;
     let translator = detect_translator(&app, &summary)?;
-    let mod_key = mod_key_for_translation_sheet(&sheet);
+    let mod_key = mod_key_for_translation_sheet(sheet);
     let mode = mod_key
         .as_deref()
         .map(|key| translator_link::read_save_target_mode(&app.config().state_dir, key))
@@ -156,7 +155,7 @@ fn save_target_decision(sheet_path: &Path) -> Result<SaveTargetDecision, String>
             "시트에 Translator로 옮길 수 있는 localization 항목이 없습니다".to_string(),
         );
     }
-    let Some(target) = translator_target_for_sheet(&app, &summary, &sheet) else {
+    let Some(target) = translator_target_for_sheet(&app, &summary, sheet) else {
         return patch(decision, "대상 모드의 manifest id를 찾지 못했습니다".to_string());
     };
     decision.reason = if active {
@@ -169,7 +168,8 @@ fn save_target_decision(sheet_path: &Path) -> Result<SaveTargetDecision, String>
 }
 
 pub(crate) fn translation_save_target(sheet_path: String) -> Result<TranslationSaveTargetDto, String> {
-    let decision = save_target_decision(Path::new(sheet_path.trim()))?;
+    let sheet = read_sheet(Path::new(sheet_path.trim())).map_err(|error| error.to_string())?;
+    let decision = save_target_decision(&sheet)?;
     Ok(save_target_dto(&decision))
 }
 
@@ -210,23 +210,38 @@ fn save_target_dto(decision: &SaveTargetDecision) -> TranslationSaveTargetDto {
     }
 }
 
-/// Saves the sheet into Translator overrides when the per-mod decision says
-/// so; `Ok(None)` means the caller should build a patch mod as before.
-fn save_sheet_to_translator(sheet_path: &Path) -> Result<Option<JsonApplyDto>, String> {
-    let decision = save_target_decision(sheet_path)?;
-    let (Some(target), Some(install)) = (decision.target.as_ref(), decision.translator.as_ref())
-    else {
-        if decision.mode == translator_link::SaveTargetMode::Translator {
-            return Err(format!("Translator에 저장할 수 없습니다: {}", decision.reason));
+/// Everything one Translator sync needs, read but not yet written.
+struct PreparedSync {
+    target: TranslatorTarget,
+    install: TranslatorInstall,
+    ours: translator_link::OverrideTables,
+    theirs: translator_link::OverrideTables,
+    unsupported: translator_link::UnsupportedEntries,
+    previous: Option<translator_link::SyncBase>,
+    previous_tables: translator_link::OverrideTables,
+    base_path: PathBuf,
+}
+
+/// `Ok(None)` when the sheet does not go to Translator (the caller builds a
+/// patch mod as before); an error when Translator was forced but cannot be used.
+fn prepare_translator_sync(sheet: &JsonTranslationSheet) -> Result<Option<PreparedSync>, String> {
+    let SaveTargetDecision {
+        mode,
+        translator,
+        target,
+        reason,
+        unsupported,
+        ..
+    } = save_target_decision(sheet)?;
+    let (Some(target), Some(install)) = (target, translator) else {
+        if mode == translator_link::SaveTargetMode::Translator {
+            return Err(format!("Translator에 저장할 수 없습니다: {reason}"));
         }
         return Ok(None);
     };
-
-    let app = app();
-    let config = app.config();
-    let sheet = read_sheet(sheet_path).map_err(|error| error.to_string())?;
-    let (ours, unsupported) = translator_link::sheet_override_tables(&sheet);
-    let base_path = translator_link::base_path(&config.state_dir, &target.mod_key, &target.language);
+    let (ours, _) = translator_link::sheet_override_tables(sheet);
+    let base_path =
+        translator_link::base_path(&app().config().state_dir, &target.mod_key, &target.language);
     let root_text = install.root.display().to_string();
     // A base recorded for another Translator copy or mod id says nothing
     // about the files we are about to read.
@@ -241,6 +256,117 @@ fn save_sheet_to_translator(sheet_path: &Path) -> Result<Option<JsonApplyDto>, S
         ours.keys().cloned(),
     )
     .map_err(|error| error.to_string())?;
+    Ok(Some(PreparedSync {
+        target,
+        install,
+        ours,
+        theirs,
+        unsupported,
+        previous,
+        previous_tables,
+        base_path,
+    }))
+}
+
+/// Lists what a save would not write on its own: values changed in game
+/// since the last save, and keys changed on both sides. Uses the sheet the
+/// editor holds, so unsaved edits count.
+pub(crate) fn translator_sync_preview(
+    sheet: JsonSheetDto,
+) -> Result<TranslatorSyncPreviewDto, String> {
+    let sheet = json_sheet_from_dto(sheet)?;
+    let Some(prepared) = prepare_translator_sync(&sheet)? else {
+        return Ok(TranslatorSyncPreviewDto {
+            available: false,
+            mod_id: String::new(),
+            language: sheet.target_language.clone(),
+            pending_writes: 0,
+            items: Vec::new(),
+        });
+    };
+    let plan =
+        translator_link::plan_sync(&prepared.ours, &prepared.theirs, &prepared.previous_tables);
+    let sheet_keys = translator_link::sheet_override_keys(&sheet);
+    let keys_of = |table: &str, key: &str| {
+        sheet_keys
+            .get(&(table.to_string(), key.to_string()))
+            .cloned()
+            .unwrap_or_default()
+    };
+    let ours_of = |table: &str, key: &str| {
+        prepared
+            .ours
+            .get(table)
+            .and_then(|values| values.get(key))
+            .cloned()
+            .unwrap_or_default()
+    };
+    let mut items = Vec::new();
+    for (table, values) in &plan.kept_in_game {
+        for (key, theirs) in values {
+            items.push(TranslatorSyncItemDto {
+                kind: "game_changed".to_string(),
+                sheet_keys: keys_of(table, key),
+                table: table.clone(),
+                key: key.clone(),
+                ours: ours_of(table, key),
+                theirs: theirs.clone(),
+            });
+        }
+    }
+    for conflict in &plan.conflicts {
+        items.push(TranslatorSyncItemDto {
+            kind: "conflict".to_string(),
+            sheet_keys: keys_of(&conflict.table, &conflict.key),
+            table: conflict.table.clone(),
+            key: conflict.key.clone(),
+            ours: conflict.ours.clone(),
+            theirs: conflict.theirs.clone(),
+        });
+    }
+    Ok(TranslatorSyncPreviewDto {
+        available: true,
+        mod_id: prepared.target.mod_id,
+        language: prepared.target.language,
+        pending_writes: plan.writes.values().map(BTreeMap::len).sum(),
+        items,
+    })
+}
+
+/// Saves the sheet into Translator overrides when the per-mod decision says
+/// so; `Ok(None)` means the caller should build a patch mod as before.
+/// `keep_sheet_keys` are sheet keys whose sheet value should replace what
+/// the player changed in game (the user chose the sheet side).
+fn save_sheet_to_translator(
+    sheet_path: &Path,
+    keep_sheet_keys: &[String],
+) -> Result<Option<JsonApplyDto>, String> {
+    let sheet = read_sheet(sheet_path).map_err(|error| error.to_string())?;
+    let Some(prepared) = prepare_translator_sync(&sheet)? else {
+        return Ok(None);
+    };
+    let PreparedSync {
+        target,
+        install,
+        ours,
+        theirs,
+        unsupported,
+        previous,
+        mut previous_tables,
+        base_path,
+    } = prepared;
+    // Choosing the sheet side means "the game value is known and replaced":
+    // treating it as the base turns the key into a plain write.
+    let keep = keep_sheet_keys.iter().collect::<BTreeSet<_>>();
+    let kept_keys = translator_link::sheet_override_keys(&sheet)
+        .into_iter()
+        .filter(|(_, sheet_keys)| sheet_keys.iter().any(|sheet_key| keep.contains(sheet_key)))
+        .map(|(location, _)| location)
+        .collect::<Vec<_>>();
+    translator_link::prefer_sheet_values(&mut previous_tables, &theirs, &kept_keys);
+
+    let app = app();
+    let config = app.config();
     let plan = translator_link::plan_sync(&ours, &theirs, &previous_tables);
     let overrides_dir =
         translator_link::overrides_dir(&install.root, &target.mod_id, &target.language);
@@ -296,7 +422,7 @@ fn save_sheet_to_translator(sheet_path: &Path) -> Result<Option<JsonApplyDto>, S
         &base_path,
         &translator_link::SyncBase {
             mod_id: target.mod_id.clone(),
-            translator_root: root_text,
+            translator_root: install.root.display().to_string(),
             patch_mods_disabled: true,
             tables: translator_link::next_base(&ours, &previous_tables, &plan),
         },

@@ -656,9 +656,9 @@ function App() {
               onRecalculate={() => void recalculateTranslationSheet()}
               onLoad={() => void loadTranslationSheet()}
               onValidate={validateTranslationSheet}
-              onApply={() => {
+              onApply={(options) => {
                 const appliedModKey = translationProject?.modKey ?? null;
-                void applyTranslationSheet().then((applied) => {
+                void applyTranslationSheet(options).then((applied) => {
                   if (!applied || !appliedModKey) {
                     return;
                   }

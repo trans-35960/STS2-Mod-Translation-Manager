@@ -455,11 +455,24 @@ pub(crate) async fn apply_json_translation_sheet(
     sheet_path: String,
     output_path: String,
     pck_target_path: Option<String>,
+    translator_keep_sheet_keys: Option<Vec<String>>,
 ) -> Result<JsonApplyDto, String> {
     run_blocking(move || {
-        crate::services::apply_json_translation_sheet(sheet_path, output_path, pck_target_path)
+        crate::services::apply_json_translation_sheet(
+            sheet_path,
+            output_path,
+            pck_target_path,
+            translator_keep_sheet_keys.unwrap_or_default(),
+        )
     })
     .await
+}
+
+#[tauri::command]
+pub(crate) async fn translator_sync_preview(
+    sheet: JsonSheetDto,
+) -> Result<TranslatorSyncPreviewDto, String> {
+    run_blocking(move || crate::services::translator_sync_preview(sheet)).await
 }
 
 #[tauri::command]
