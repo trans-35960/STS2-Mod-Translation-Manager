@@ -41,10 +41,16 @@ pub struct WorkshopItemBranches {
 pub enum BranchSupport {
     Supported,
     /// No snapshot of the item supports the current branch.
-    Unsupported { branch_min: String, branch_max: String },
+    Unsupported {
+        branch_min: String,
+        branch_max: String,
+    },
     /// Another snapshot supports the current branch, but Steam still has the
     /// incompatible one installed.
-    AwaitingDownload { branch_min: String, branch_max: String },
+    AwaitingDownload {
+        branch_min: String,
+        branch_max: String,
+    },
     Unknown,
 }
 
@@ -115,8 +121,10 @@ pub fn parse_workshop_branches(text: &str) -> BTreeMap<String, WorkshopItemBranc
     if let Some(installed) = workshop.child("WorkshopItemsInstalled") {
         for (item_id, item) in installed.entries() {
             if let Some(manifest) = item.string("manifest") {
-                items.entry(item_id.to_string()).or_default().installed_manifest =
-                    Some(manifest.to_string());
+                items
+                    .entry(item_id.to_string())
+                    .or_default()
+                    .installed_manifest = Some(manifest.to_string());
             }
         }
     }
@@ -399,10 +407,16 @@ mod tests {
 
     #[test]
     fn reads_mounted_branch_and_defaults_to_public() {
-        assert_eq!(current_branch_from_app_manifest(APP_MANIFEST), "public-beta");
+        assert_eq!(
+            current_branch_from_app_manifest(APP_MANIFEST),
+            "public-beta"
+        );
         let public = APP_MANIFEST.replace("\"public-beta\"", "\"\"");
         assert_eq!(current_branch_from_app_manifest(&public), "public");
-        assert_eq!(current_branch_from_app_manifest("\"AppState\" {}"), "public");
+        assert_eq!(
+            current_branch_from_app_manifest("\"AppState\" {}"),
+            "public"
+        );
     }
 
     #[test]
@@ -448,7 +462,10 @@ mod tests {
     #[test]
     fn unknown_branches_only_match_exactly() {
         assert_eq!(branch_in_range("experimental", "", "public"), None);
-        assert_eq!(branch_in_range("experimental", "experimental", ""), Some(true));
+        assert_eq!(
+            branch_in_range("experimental", "experimental", ""),
+            Some(true)
+        );
         assert_eq!(branch_in_range("public", "public-beta", ""), Some(false));
         assert_eq!(branch_in_range("public-beta", "", ""), Some(true));
     }

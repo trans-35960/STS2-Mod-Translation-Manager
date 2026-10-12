@@ -101,9 +101,11 @@ pub fn contains_foreign_script(text: &str, target_language: &str) -> bool {
 }
 
 pub fn is_code_like_text(text: &str) -> bool {
-    ["(?:", "\\d", "\\s", "\\w", "[^", "(\\", ")+", ")*", ".*", "+?", "*?"]
-        .iter()
-        .any(|marker| text.contains(marker))
+    [
+        "(?:", "\\d", "\\s", "\\w", "[^", "(\\", ")+", ")*", ".*", "+?", "*?",
+    ]
+    .iter()
+    .any(|marker| text.contains(marker))
 }
 
 /// Scans a mod (folder, `.pck` or `.dll`) and the given translation patches.
@@ -277,7 +279,9 @@ fn looks_like_file_path(text: &str) -> bool {
     }
     text.rsplit_once('.').is_some_and(|(_, extension)| {
         (1..=5).contains(&extension.len())
-            && extension.chars().all(|character| character.is_ascii_alphanumeric())
+            && extension
+                .chars()
+                .all(|character| character.is_ascii_alphanumeric())
     })
 }
 
@@ -325,10 +329,12 @@ fn is_text_resource(resource: &str, is_patch: bool) -> bool {
 }
 
 fn is_localization_path(lower: &str) -> bool {
-    lower
-        .split('/')
-        .any(|part| matches!(part, "localization" | "localisation" | "translations" | "i18n"))
-        || lower.ends_with(".translation")
+    lower.split('/').any(|part| {
+        matches!(
+            part,
+            "localization" | "localisation" | "translations" | "i18n"
+        )
+    }) || lower.ends_with(".translation")
 }
 
 /// UTF-8 text runs from a (possibly binary) file that contain foreign script.
@@ -352,8 +358,7 @@ fn foreign_text_runs(bytes: &[u8], target_language: &str) -> Vec<String> {
             continue;
         };
         index += width;
-        if matches!(character, '\n' | '\r' | '"') || (character.is_control() && character != '\t')
-        {
+        if matches!(character, '\n' | '\r' | '"') || (character.is_control() && character != '\t') {
             flush(&mut current);
         } else {
             current.push(character);
@@ -420,7 +425,9 @@ mod tests {
 
     #[test]
     fn asset_paths_are_not_reported() {
-        assert!(looks_like_file_path("V3赛璐璐_20261001/starter_HeroOrb.png"));
+        assert!(looks_like_file_path(
+            "V3赛璐璐_20261001/starter_HeroOrb.png"
+        ));
         assert!(looks_like_file_path("res://Mod/图片/卡.png"));
         assert!(!looks_like_file_path("进行2场精英战斗。"));
         assert!(!looks_like_file_path("堕落值 +2"));
@@ -436,17 +443,17 @@ mod tests {
 
     #[test]
     fn scans_folder_mod_resources_and_patch_values() {
-        let root = std::env::temp_dir().join(format!(
-            "sts2-leftover-text-{}",
-            std::process::id()
-        ));
+        let root = std::env::temp_dir().join(format!("sts2-leftover-text-{}", std::process::id()));
         let mod_dir = root.join("Mod");
         let patch_dir = root.join("Mod_tr");
         fs::create_dir_all(mod_dir.join("localization/zhs")).expect("create mod");
         fs::create_dir_all(mod_dir.join("data")).expect("create data");
         fs::create_dir_all(patch_dir.join("localization/kor")).expect("create patch");
-        fs::write(mod_dir.join("localization/zhs/cards.json"), r#"{"a":"节制"}"#)
-            .expect("write loc");
+        fs::write(
+            mod_dir.join("localization/zhs/cards.json"),
+            r#"{"a":"节制"}"#,
+        )
+        .expect("write loc");
         fs::write(mod_dir.join("data/trials.json"), r#"{"name":"傲慢"}"#).expect("write data");
         fs::write(
             patch_dir.join("localization/kor/cards.json"),
@@ -454,8 +461,7 @@ mod tests {
         )
         .expect("write patch");
 
-        let report =
-            scan_leftover_text(&mod_dir, &[patch_dir.as_path()], "kor").expect("scan");
+        let report = scan_leftover_text(&mod_dir, &[patch_dir.as_path()], "kor").expect("scan");
         fs::remove_dir_all(&root).ok();
 
         let texts = |location| {
