@@ -74,6 +74,36 @@ export type BridgeApply = {
   game_running: boolean;
 };
 
+/** In-game edits (F8 panel) and mistranslation reports for one sheet. */
+export type BridgeEdits = {
+  mod_id: string;
+  language: string;
+  items: BridgeEditItem[];
+  reports: BridgeReport[];
+  ack_id: string | null;
+};
+
+export type BridgeEditItem = {
+  kind: "game_changed" | "conflict";
+  sheet_key: string;
+  table: string;
+  key: string;
+  source: string | null;
+  sheet_value: string;
+  game_value: string;
+};
+
+export type BridgeReport = {
+  id: string;
+  table: string;
+  key: string;
+  sheet_key: string | null;
+  source: string | null;
+  shown: string | null;
+  note: string;
+  pending: boolean;
+};
+
 export type CacheUsage = {
   bytes: number;
   files: number;
@@ -204,6 +234,8 @@ export type ModRow = {
   dependencies: ModDependency[];
   branch_issue?: BranchIssue | null;
   system_mod?: boolean;
+  /** In-game (F8) edits and open reports waiting in the translation tool. */
+  bridge_edits?: { edits: number; reports: number } | null;
   language_preview: LanguagePreview[];
   extraction_tree: ExtractionTreeNode[];
 };

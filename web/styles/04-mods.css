@@ -882,3 +882,27 @@
   padding: 0 11px;
   font-size: 12px;
 }
+
+.bridge-edits-row-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+  background: #fffbeb;
+  padding: 0 8px;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bridge-edits-row-badge.static {
+  cursor: default;
+}
+
+.bridge-edits-row-badge:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

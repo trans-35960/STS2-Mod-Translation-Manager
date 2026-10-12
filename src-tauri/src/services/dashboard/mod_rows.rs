@@ -78,6 +78,8 @@ fn mod_rows(
     trace.mark("resolve_translation_patches");
     resolve_branch_issues(&mut rows, config);
     trace.mark("resolve_branch_issues");
+    resolve_bridge_edit_counts(&mut rows, config);
+    trace.mark("resolve_bridge_edits");
 
     cache
         .entries
@@ -89,6 +91,26 @@ fn mod_rows(
     trace.finish(format!("rows={}", rows.len()), 0);
 
     Ok(rows)
+}
+
+/// Marks mods with in-game edits or reports, so the list shows them without
+/// opening the translation tool.
+fn resolve_bridge_edit_counts(rows: &mut [ModRowDto], config: &AppConfig) {
+    let Some(shared) = bridge::shared_root().filter(|shared| shared.is_dir()) else {
+        return;
+    };
+    let mut counts = BTreeMap::<String, (usize, usize)>::new();
+    for row in rows.iter_mut().filter(|row| !row.is_translation_patch) {
+        let Some(mod_id) = row.manifest_id.clone() else {
+            continue;
+        };
+        let (edits, reports) = *counts
+            .entry(mod_id.clone())
+            .or_insert_with(|| bridge_edits::pending_counts(&shared, &config.state_dir, &mod_id));
+        if edits + reports > 0 {
+            row.bridge_edits = Some(BridgeEditCountsDto { edits, reports });
+        }
+    }
 }
 
 /// Flags Workshop mods the game will refuse to load on the current Steam
@@ -354,6 +376,7 @@ impl ModRowBuilder {
             dependencies,
             branch_issue: None,
             system_mod,
+            bridge_edits: None,
             language_preview,
             extraction_tree,
         }

@@ -7,6 +7,7 @@ import type {
   Dashboard,
   LaunchStatus,
   LeftoverReport,
+  BridgeEdits,
   BridgeInstall,
   DroppedModPreview,
   GameLog,
@@ -62,6 +63,9 @@ export type CommandArgs = {
   };
   clear_translation_extract_cache: { key: string };
   ensure_bridge_installed: undefined;
+  bridge_edits_preview: { sheet: JsonTranslationSheet };
+  acknowledge_bridge_edits: { sheet: JsonTranslationSheet; ackId: string };
+  resolve_bridge_report: { sheet: JsonTranslationSheet; id: string };
   scan_leftover_text: { key: string; patchKeys: string[]; targetLanguage: string };
   prepare_translation_node: {
     key: string;
@@ -185,6 +189,9 @@ export type CommandResult = {
   extract_translation: ActionResult;
   clear_translation_extract_cache: ActionResult;
   ensure_bridge_installed: BridgeInstall;
+  bridge_edits_preview: BridgeEdits;
+  acknowledge_bridge_edits: BridgeEdits;
+  resolve_bridge_report: BridgeEdits;
   scan_leftover_text: LeftoverReport;
   prepare_translation_node: NodeTranslationResult;
   save_preset: ActionResult;

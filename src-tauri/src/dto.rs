@@ -65,6 +65,51 @@ pub(crate) struct BridgeApplyDto {
     pub(crate) game_running: bool,
 }
 
+/// In-game edits and reports waiting to be taken into a sheet.
+#[derive(Debug, Serialize)]
+pub(crate) struct BridgeEditsDto {
+    pub(crate) mod_id: String,
+    pub(crate) language: String,
+    pub(crate) items: Vec<BridgeEditItemDto>,
+    /// Reports kept by the app plus ones not taken in yet.
+    pub(crate) reports: Vec<BridgeReportDto>,
+    /// Ack to write once `items` and new reports are dealt with.
+    pub(crate) ack_id: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct BridgeEditCountsDto {
+    pub(crate) edits: usize,
+    pub(crate) reports: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct BridgeEditItemDto {
+    /// `game_changed` or `conflict`.
+    pub(crate) kind: String,
+    pub(crate) sheet_key: String,
+    pub(crate) table: String,
+    pub(crate) key: String,
+    pub(crate) source: Option<String>,
+    pub(crate) sheet_value: String,
+    pub(crate) game_value: String,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct BridgeReportDto {
+    pub(crate) id: String,
+    pub(crate) table: String,
+    pub(crate) key: String,
+    /// The sheet row, when the key is still in the sheet.
+    pub(crate) sheet_key: Option<String>,
+    pub(crate) source: Option<String>,
+    /// Text shown in game when it was reported.
+    pub(crate) shown: Option<String>,
+    pub(crate) note: String,
+    /// Not taken in yet (still only in the bridge's edit log).
+    pub(crate) pending: bool,
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct PathsDto {
     pub(crate) workspace: String,
@@ -187,6 +232,8 @@ pub(crate) struct ModRowDto {
     pub(crate) branch_issue: Option<BranchIssueDto>,
     /// The bridge mod: installed and updated by the app, not deletable.
     pub(crate) system_mod: bool,
+    /// In-game (F8) edits and open reports waiting in the translation tool.
+    pub(crate) bridge_edits: Option<BridgeEditCountsDto>,
     pub(crate) language_preview: Vec<LanguagePreviewDto>,
     pub(crate) extraction_tree: Vec<ExtractionTreeNodeDto>,
 }

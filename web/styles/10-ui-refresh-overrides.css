@@ -985,3 +985,153 @@ select {
   white-space: nowrap;
 }
 
+
+.translation-work-actions .bridge-edits-badge {
+  min-height: 34px;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  background: #fffbeb;
+  padding: 0 10px;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.translation-work-actions .bridge-edits-badge.conflict {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.bridge-edits-modal {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.bridge-edits-bulk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 12px;
+}
+
+.bridge-edits-bulk strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bridge-edits-bulk span {
+  color: #b91c1c;
+  font-weight: 800;
+}
+
+.bridge-edits-list {
+  display: grid;
+  gap: 8px;
+  max-height: min(40vh, 400px);
+  overflow-y: auto;
+}
+
+.bridge-edits-item {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.bridge-edits-item.conflict {
+  border-color: #fecaca;
+}
+
+.bridge-edits-item p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.bridge-edits-source {
+  color: #64748b;
+}
+
+.bridge-edits-note {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.bridge-edits-key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bridge-edits-key code {
+  min-width: 0;
+  overflow: hidden;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bridge-edits-kind {
+  flex: 0 0 auto;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1px 6px;
+  font-weight: 900;
+}
+
+.bridge-edits-item.conflict .bridge-edits-kind {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.bridge-edits-item label {
+  display: grid;
+  grid-template-columns: auto 34px minmax(0, 1fr);
+  align-items: start;
+  gap: 6px;
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.bridge-edits-item label.selected {
+  background: #eef2ff;
+}
+
+.bridge-edits-item label span {
+  font-weight: 800;
+}
+
+.bridge-edits-item label em {
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+
+.bridge-edits-item input[type="radio"] {
+  width: auto;
+  height: auto;
+  min-height: 0;
+  margin: 2px 0 0;
+}
+
+.bridge-edits-report-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.bridge-edits-report-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}

@@ -1,4 +1,5 @@
 import React from "react";
+import { BridgeEditsButton } from "./BridgeEditsButton";
 import { AiPromptModal } from "./AiPromptModal";
 import { GlossaryPanel } from "./GlossaryPanel";
 import {
@@ -66,6 +67,7 @@ export function TranslationWorkHeader({
   onUndo,
   onRedo,
   onRevertToStart,
+  onRevealEntry,
 }: {
   props: TranslationToolsPageProps;
   sheetPath: string;
@@ -73,6 +75,7 @@ export function TranslationWorkHeader({
   onUndo: () => void;
   onRedo: () => void;
   onRevertToStart: () => void;
+  onRevealEntry: (key: string) => void;
 }) {
   const t = props.labels;
   const workTitle = props.projectInfo?.modName || props.sheet?.source_path || t.translationTools;
@@ -174,6 +177,16 @@ export function TranslationWorkHeader({
           {validating ? <Loader2 size={15} className="spin-icon" /> : <CheckCircle2 size={15} />}
           검증
         </button>
+        {sheetPath && currentSheetMatchesTarget && (
+          <BridgeEditsButton
+            sheet={props.sheet}
+            sheetPath={sheetPath}
+            busy={props.busy}
+            onReplaceEntries={props.onReplaceEntries}
+            onApply={props.onApply}
+            onRevealEntry={onRevealEntry}
+          />
+        )}
         <button
           className="toolbar-icon-button primary labeled"
           aria-label={props.busy === "apply_json_translation_sheet" || props.busy === "save_json_translation_sheet" ? "번역 파일 적용 중..." : "번역 저장/적용"}

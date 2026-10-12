@@ -115,6 +115,7 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
         onRevertToStart={revertToStart}
         sheetPath={ui.sheetPath}
         filledTranslations={ui.filledTranslations}
+        onRevealEntry={ui.revealEntryKey}
       />
       <div className="tool-layout">
         <TranslationActionsPanel

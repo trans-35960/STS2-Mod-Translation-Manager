@@ -468,6 +468,27 @@ pub(crate) async fn ensure_bridge_installed() -> Result<BridgeInstallDto, String
 }
 
 #[tauri::command]
+pub(crate) async fn bridge_edits_preview(sheet: JsonSheetDto) -> Result<BridgeEditsDto, String> {
+    run_blocking(move || crate::services::bridge_edits_preview(sheet)).await
+}
+
+#[tauri::command]
+pub(crate) async fn acknowledge_bridge_edits(
+    sheet: JsonSheetDto,
+    ack_id: String,
+) -> Result<BridgeEditsDto, String> {
+    run_blocking(move || crate::services::acknowledge_bridge_edits(sheet, ack_id)).await
+}
+
+#[tauri::command]
+pub(crate) async fn resolve_bridge_report(
+    sheet: JsonSheetDto,
+    id: String,
+) -> Result<BridgeEditsDto, String> {
+    run_blocking(move || crate::services::resolve_bridge_report(sheet, id)).await
+}
+
+#[tauri::command]
 pub(crate) async fn export_translation_patch_mod(
     sheet_path: String,
     output_dir: String,

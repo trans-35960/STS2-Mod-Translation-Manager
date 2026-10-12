@@ -107,6 +107,7 @@ function ModTableRow({
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
+          <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={() => onStartModTranslation(mod, primaryResourcePath)} />
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
@@ -231,6 +232,7 @@ function ModGroupTableRow({
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
+          <BridgeEditsGroupBadge mods={group.mods} />
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
         </strong>
@@ -325,6 +327,7 @@ function SimpleModGroupRow({
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
+          <BridgeEditsGroupBadge mods={group.mods} />
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
         </strong>
@@ -418,6 +421,7 @@ function SimpleModRow({
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
+          <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={() => onStartModTranslation(mod, primaryResourcePath)} />
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
@@ -528,6 +532,39 @@ function DependencyWarningIcon({ dependencies }: { dependencies: ModDependency[]
       <TriangleAlert size={15} />
     </span>
   );
+}
+
+/** In-game (F8) edits and reports waiting for this mod; opens the translation tool. */
+function BridgeEditsRowBadge({ mod, disabled, onOpen }: { mod: ModRow; disabled: boolean; onOpen: () => void }) {
+  const counts = mod.bridge_edits;
+  if (!counts) {
+    return null;
+  }
+  return (
+    <button
+      type="button"
+      className="bridge-edits-row-badge"
+      data-tooltip="번역 도구에서 게임 안 수정을 가져오거나 오역 신고를 확인합니다"
+      onClick={(event) => {
+        event.stopPropagation();
+        onOpen();
+      }}
+      disabled={disabled}
+    >
+      {bridgeEditsLabel(counts)}
+    </button>
+  );
+}
+
+function BridgeEditsGroupBadge({ mods }: { mods: ModRow[] }) {
+  const counts = mods.find((mod) => mod.bridge_edits)?.bridge_edits;
+  return counts ? <span className="bridge-edits-row-badge static">{bridgeEditsLabel(counts)}</span> : null;
+}
+
+function bridgeEditsLabel(counts: { edits: number; reports: number }): string {
+  return [counts.edits > 0 ? `게임 안 수정 ${counts.edits}` : "", counts.reports > 0 ? `오역 신고 ${counts.reports}` : ""]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function BranchWarningIcon({ issue }: { issue: BranchIssue | null | undefined }) {

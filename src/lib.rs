@@ -1,6 +1,7 @@
 pub mod ai_prompt;
 pub mod app;
 pub mod bridge;
+pub mod bridge_edits;
 pub mod cli;
 pub mod config;
 pub mod discovery;

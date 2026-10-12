@@ -345,3 +345,123 @@ fn bridge_diagnostics(bridge: &BridgeDto) -> Vec<TroubleshootDiagnosticDto> {
     }
     diagnostics
 }
+
+/// The shared folder and the mod a sheet translates, for in-game edits.
+fn bridge_edit_target(sheet: &JsonTranslationSheet) -> Result<(PathBuf, String), String> {
+    let app = app();
+    let summary = app
+        .scan_preview_report()
+        .map_err(|error| error.to_string())?
+        .summary;
+    let target = bridge_target_for_sheet(&app, &summary, sheet)
+        .ok_or_else(|| "번역 대상 모드의 manifest id를 찾지 못했습니다.".to_string())?;
+    let shared = bridge::shared_root()
+        .ok_or_else(|| "공용 폴더(%APPDATA%)를 찾지 못했습니다.".to_string())?;
+    Ok((shared, target.mod_id))
+}
+
+fn bridge_edits_dto(sheet: &JsonTranslationSheet, shared: &Path, mod_id: &str) -> BridgeEditsDto {
+    let language = sheet.target_language.as_str();
+    let ack = bridge_edits::read_edits_ack(shared, mod_id, language);
+    let pending = bridge_edits::pending_edits(
+        &bridge_edits::read_edits(shared, mod_id, language),
+        ack.as_deref(),
+    );
+    let sheet_keys = sheet
+        .entries
+        .iter()
+        .filter_map(|entry| bridge::sheet_key_table(&entry.key).map(|slot| (slot, entry.key.clone())))
+        .collect::<BTreeMap<_, _>>();
+    let report_dto = |record: &bridge_edits::EditRecord, pending: bool| BridgeReportDto {
+        id: record.id.clone(),
+        table: record.table.clone(),
+        key: record.key.clone(),
+        sheet_key: sheet_keys
+            .get(&(record.table.clone(), record.key.clone()))
+            .cloned(),
+        source: record.source.clone(),
+        shown: record.before.clone(),
+        note: record.note.clone(),
+        pending,
+    };
+    let stored_reports = bridge_edits::read_stored_reports(&app().config().state_dir);
+    let stored = stored_reports
+        .iter()
+        .filter(|item| item.mod_id == mod_id && item.language == language)
+        .map(|item| (item.record.id.clone(), item))
+        .collect::<BTreeMap<_, _>>();
+    let mut reports = stored
+        .values()
+        .filter(|item| !item.resolved)
+        .map(|item| report_dto(&item.record, false))
+        .collect::<Vec<_>>();
+    reports.extend(
+        pending
+            .reports
+            .iter()
+            .filter(|record| !stored.contains_key(&record.id))
+            .map(|record| report_dto(record, true)),
+    );
+    BridgeEditsDto {
+        mod_id: mod_id.to_string(),
+        language: language.to_string(),
+        items: bridge_edits::edit_import_items(sheet, &pending)
+            .into_iter()
+            .map(|item| BridgeEditItemDto {
+                kind: match item.kind {
+                    bridge_edits::EditImportKind::GameChanged => "game_changed",
+                    bridge_edits::EditImportKind::Conflict => "conflict",
+                }
+                .to_string(),
+                sheet_key: item.sheet_key,
+                table: item.table,
+                key: item.key,
+                source: item.source,
+                sheet_value: item.sheet_value,
+                game_value: item.game_value,
+            })
+            .collect(),
+        reports,
+        ack_id: pending.last_id,
+    }
+}
+
+pub(crate) fn bridge_edits_preview(sheet: JsonSheetDto) -> Result<BridgeEditsDto, String> {
+    let sheet = json_sheet_from_dto(sheet)?;
+    let (shared, mod_id) = bridge_edit_target(&sheet)?;
+    Ok(bridge_edits_dto(&sheet, &shared, &mod_id))
+}
+
+/// Called once the chosen game values are in the sheet: keeps new reports
+/// and moves `edits_ack` past everything the preview showed.
+pub(crate) fn acknowledge_bridge_edits(
+    sheet: JsonSheetDto,
+    ack_id: String,
+) -> Result<BridgeEditsDto, String> {
+    let sheet = json_sheet_from_dto(sheet)?;
+    let (shared, mod_id) = bridge_edit_target(&sheet)?;
+    bridge_edits::acknowledge(
+        &shared,
+        &app().config().state_dir,
+        &mod_id,
+        &sheet.target_language,
+        &ack_id,
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(bridge_edits_dto(&sheet, &shared, &mod_id))
+}
+
+/// Marks a report handled without acking the edits before it.
+pub(crate) fn resolve_bridge_report(sheet: JsonSheetDto, id: String) -> Result<BridgeEditsDto, String> {
+    let sheet = json_sheet_from_dto(sheet)?;
+    let (shared, mod_id) = bridge_edit_target(&sheet)?;
+    bridge_edits::resolve_report(
+        &shared,
+        &app().config().state_dir,
+        &mod_id,
+        &sheet.target_language,
+        &id,
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(bridge_edits_dto(&sheet, &shared, &mod_id))
+}

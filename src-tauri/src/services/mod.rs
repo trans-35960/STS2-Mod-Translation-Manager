@@ -16,6 +16,7 @@ use sts2_mod_manager::ai_prompt::{
 };
 use sts2_mod_manager::app::App;
 use sts2_mod_manager::bridge;
+use sts2_mod_manager::bridge_edits;
 use sts2_mod_manager::config::AppConfig;
 use sts2_mod_manager::discovery::scan_mod_directory;
 use sts2_mod_manager::domain::{ModFingerprint, ModKind, ModRecord, ModSource, ScanSummary};

@@ -101,6 +101,14 @@ enum TableLocation {
     Outside,
 }
 
+/// `(table, key)` of a sheet key that maps to a game loc table.
+pub fn sheet_key_table(sheet_key: &str) -> Option<(String, String)> {
+    match table_location(sheet_key) {
+        TableLocation::Table { table, key } => Some((table, key)),
+        _ => None,
+    }
+}
+
 fn table_location(sheet_key: &str) -> TableLocation {
     if sheet_key.starts_with("dll://") {
         return TableLocation::Hardcoded;
@@ -220,7 +228,7 @@ pub fn write_translations(
     Ok(report)
 }
 
-fn read_meta(path: &Path) -> TranslationMeta {
+pub(crate) fn read_meta(path: &Path) -> TranslationMeta {
     fs::read_to_string(path)
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
@@ -235,7 +243,7 @@ fn remove_if_exists(path: &Path) -> AppResult<()> {
     }
 }
 
-fn write_atomic(path: &Path, content: &str) -> AppResult<()> {
+pub(crate) fn write_atomic(path: &Path, content: &str) -> AppResult<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|source| AppError::io(parent, source))?;
     }
