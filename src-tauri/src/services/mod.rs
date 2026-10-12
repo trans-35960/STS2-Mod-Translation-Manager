@@ -37,6 +37,7 @@ use sts2_mod_manager::json_translation::{
 };
 use sts2_mod_manager::launcher::{LaunchReport, LaunchStatus};
 use sts2_mod_manager::leftover_text;
+use sts2_mod_manager::translator_link;
 use sts2_mod_manager::path_guard::{ensure_existing_path_in_roots, ensure_path_in_roots};
 use sts2_mod_manager::pck_reader::extract_pck_files;
 use sts2_mod_manager::preset::{Preset, PresetApplyReport};
@@ -73,4 +74,5 @@ include!("json_sheet/dto.rs");
 include!("pck.rs");
 include!("glossary.rs");
 include!("leftover_text.rs");
+include!("translator_link.rs");
 include!("tests.rs");

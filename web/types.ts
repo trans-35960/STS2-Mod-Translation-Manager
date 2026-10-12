@@ -410,6 +410,33 @@ export type JsonApply = {
   language_output_path?: string;
   packed_pck_path?: string;
   installed_mod_path?: string;
+  translator?: TranslatorSave | null;
+};
+
+export type TranslatorSave = {
+  mod_id: string;
+  language: string;
+  overrides_dir: string;
+  translator_version: string;
+  translator_active: boolean;
+  written_entries: number;
+  unchanged_entries: number;
+  kept_in_game_entries: number;
+  unsupported_entries: number;
+  unsupported_hardcoded: number;
+  conflicts: { table: string; key: string; ours: string; theirs: string }[];
+  disabled_patch_mods: string[];
+  game_running: boolean;
+};
+
+export type TranslationSaveTarget = {
+  destination: "translator" | "patch";
+  mode: "auto" | "patch" | "translator";
+  reason: string;
+  translator_version: string | null;
+  translator_active: boolean;
+  supported_entries: number;
+  unsupported_entries: number;
 };
 
 export type TranslationPatchExport = {

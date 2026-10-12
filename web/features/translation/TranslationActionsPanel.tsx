@@ -29,6 +29,7 @@ import {
 import type { TranslationToolsPageProps } from "./TranslationToolsTypes";
 import { TranslationProjectTree } from "./TranslationProjectTree";
 import { ProjectSummary } from "./TranslationWidgets";
+import { SaveTargetSelect } from "./SaveTargetSelect";
 import {
   languageFolderCode,
   projectNameFromPath,
@@ -174,6 +175,7 @@ export function TranslationWorkHeader({
           {validating ? <Loader2 size={15} className="spin-icon" /> : <CheckCircle2 size={15} />}
           검증
         </button>
+        {sheetPath && currentSheetMatchesTarget && <SaveTargetSelect sheetPath={sheetPath} busy={props.busy} />}
         <button
           className="toolbar-icon-button primary labeled"
           aria-label={props.busy === "apply_json_translation_sheet" || props.busy === "save_json_translation_sheet" ? "번역 파일 적용 중..." : "번역 저장/적용"}

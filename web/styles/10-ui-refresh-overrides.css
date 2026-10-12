@@ -985,3 +985,34 @@ select {
   white-space: nowrap;
 }
 
+
+/* Where "적용" sends the sheet: Sts2ModTranslator overrides or a patch mod. */
+.translation-work-actions .save-target-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid #d8e1ec;
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 0 4px 0 9px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.translation-work-actions .save-target-select.translator {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.translation-work-actions .save-target-select select {
+  min-height: 26px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}

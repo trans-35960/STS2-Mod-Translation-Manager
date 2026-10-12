@@ -20,5 +20,6 @@ pub mod steam_branch;
 pub mod term_candidates;
 pub mod text_ui;
 pub mod translation;
+pub mod translator_link;
 pub mod vault;
 pub mod vendor_tools;

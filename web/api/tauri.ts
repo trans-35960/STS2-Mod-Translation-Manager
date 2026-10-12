@@ -7,6 +7,7 @@ import type {
   Dashboard,
   LaunchStatus,
   LeftoverReport,
+  TranslationSaveTarget,
   DroppedModPreview,
   GameLog,
   JsonApply,
@@ -157,6 +158,8 @@ export type CommandArgs = {
     pckTargetPath?: string | null;
   };
   export_translation_patch_mod: { sheetPath: string; outputDir: string };
+  translation_save_target: { sheetPath: string };
+  set_translation_save_mode: { sheetPath: string; mode: string };
 };
 
 export type CommandResult = {
@@ -217,6 +220,8 @@ export type CommandResult = {
   compare_translation_language: LanguageCompareValue[];
   apply_json_translation_sheet: JsonApply;
   export_translation_patch_mod: TranslationPatchExport;
+  translation_save_target: TranslationSaveTarget;
+  set_translation_save_mode: TranslationSaveTarget;
 };
 
 export type CommandName = keyof CommandArgs;

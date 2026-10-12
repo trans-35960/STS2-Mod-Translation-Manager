@@ -463,6 +463,21 @@ pub(crate) async fn apply_json_translation_sheet(
 }
 
 #[tauri::command]
+pub(crate) async fn translation_save_target(
+    sheet_path: String,
+) -> Result<TranslationSaveTargetDto, String> {
+    run_blocking(move || crate::services::translation_save_target(sheet_path)).await
+}
+
+#[tauri::command]
+pub(crate) async fn set_translation_save_mode(
+    sheet_path: String,
+    mode: String,
+) -> Result<TranslationSaveTargetDto, String> {
+    run_blocking(move || crate::services::set_translation_save_mode(sheet_path, mode)).await
+}
+
+#[tauri::command]
 pub(crate) async fn export_translation_patch_mod(
     sheet_path: String,
     output_dir: String,

@@ -522,6 +522,9 @@ pub(crate) fn apply_json_translation_sheet(
     pck_target_path: Option<String>,
 ) -> Result<JsonApplyDto, String> {
     let sheet = PathBuf::from(sheet_path.trim());
+    if let Some(result) = save_sheet_to_translator(&sheet)? {
+        return Ok(result);
+    }
     let output = output_path.trim();
     let pck_target = pck_target_path
         .as_deref()
