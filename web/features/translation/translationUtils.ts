@@ -141,20 +141,87 @@ export function isHardcodedSheet(sourcePath: string): boolean {
   return /\.(dll|exe)$/i.test(sourcePath.trim());
 }
 
+/** Uses where a DLL literal is never shown, or must not change; mirrors `dll_text::is_excluded_use`. */
+const EXCLUDED_DLL_USES = new Set(["key", "searched_for", "contains_key", "reflection", "node", "loc", "exception", "log"]);
+
+/** Foreign-script texts from which a DLL counts as written in that script; mirrors `dll_text`. */
+const FOREIGN_TEXT_MAJORITY = 30;
+
 /**
- * A DLL holds every string literal of the mod: identifiers, log lines, paths.
- * Only text in a foreign script (and anything already translated) is worth
- * translating. Null for other sheets, or when that would leave nothing.
+ * Whether Latin sentences in a DLL are likely its text: not when dozens of
+ * its strings are in another script. Mirrors `dll_text::latin_is_text`.
  */
-export function dllTextKeys(sheet: JsonTranslationSheet | null, targetLanguage: string): Set<string> | null {
+export function latinIsText(literals: string[], targetLanguage: string): boolean {
+  let foreign = 0;
+  for (const literal of literals) {
+    if (containsForeignScript(literal, targetLanguage) && !isCodeLikeText(literal) && ++foreign >= FOREIGN_TEXT_MAJORITY) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Whether a DLL literal is text worth translating; mirrors `dll_text::is_dll_text`. */
+export function isDllText(literal: string, targetLanguage: string, use: string | undefined, latinText = true): boolean {
+  if (use === "shown") {
+    return true;
+  }
+  if (use && EXCLUDED_DLL_USES.has(use)) {
+    return false;
+  }
+  if (isCodeLikeText(literal)) {
+    return false;
+  }
+  return containsForeignScript(literal, targetLanguage) || (latinText && looksLikeSentence(literal));
+}
+
+/** Latin text that reads like words for people; mirrors `dll_text::looks_like_sentence`. */
+export function looksLikeSentence(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.includes("=") || trimmed.includes("://") || /^\[[A-Za-z0-9_]*[A-Z][A-Za-z0-9_]*\]/.test(trimmed)) {
+    return false;
+  }
+  const words = trimmed
+    .split(/\s+/)
+    .map((word) => word.replace(/\[[^\]]*\]?/g, "").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""))
+    .filter(Boolean);
+  if (words.some(isCodeWord)) {
+    return false;
+  }
+  const realWords = words.filter((word) => (word.match(/\p{L}/gu)?.length ?? 0) >= 2).length;
+  return realWords >= 2 && /\p{Ll}/u.test(trimmed);
+}
+
+/** `snake_case`, `dotted.key`, `a/path`, `CamelCaseName`. */
+function isCodeWord(word: string): boolean {
+  return /[_/\\]/.test(word) || /\p{L}[^.]*\.[^.]*\p{L}/u.test(word) || /\p{Ll}\p{Lu}/u.test(word);
+}
+
+/**
+ * A DLL holds every string literal of the mod: names, keys, log lines. Only
+ * {@link isDllText} literals (and anything already translated) are worth
+ * showing. `uses` is the bridge's analysis of the DLL, when the game has
+ * run with it. Null for other sheets, or when that would leave nothing.
+ */
+export function dllTextKeys(
+  sheet: JsonTranslationSheet | null,
+  targetLanguage: string,
+  uses: Record<string, string> | null = null,
+): Set<string> | null {
   if (!sheet || !isHardcodedSheet(sheet.source_path)) {
     return null;
   }
   const language = targetLanguage || sheet.target_language;
+  const latinText = latinIsText(
+    sheet.entries.map((entry) => entry.source_value),
+    language,
+  );
   const keys = new Set<string>();
   for (const entry of sheet.entries) {
-    const readable = containsForeignScript(entry.source_value, language) && !isCodeLikeText(entry.source_value);
-    if (readable || hasTranslationValue(entry.translated_value)) {
+    if (
+      isDllText(entry.source_value, language, uses?.[entry.source_value], latinText) ||
+      hasTranslationValue(entry.translated_value)
+    ) {
       keys.add(entry.key);
     }
   }

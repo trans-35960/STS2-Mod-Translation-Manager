@@ -8,6 +8,7 @@ import type {
   LaunchStatus,
   LeftoverReport,
   BridgeEdits,
+  DllStringUses,
   BridgeInstall,
   DroppedModPreview,
   GameLog,
@@ -66,6 +67,7 @@ export type CommandArgs = {
   bridge_edits_preview: { sheet: JsonTranslationSheet };
   acknowledge_bridge_edits: { sheet: JsonTranslationSheet; ackId: string };
   resolve_bridge_report: { sheet: JsonTranslationSheet; id: string };
+  dll_string_uses: { sourcePath: string };
   scan_leftover_text: { key: string; patchKeys: string[]; targetLanguage: string };
   prepare_translation_node: {
     key: string;
@@ -135,6 +137,10 @@ export type CommandArgs = {
       maxChars: number;
       onlyEmpty: boolean;
       includeKeys?: string[] | null;
+      /** `updated` revises changed sources, `warnings` fixes flagged translations. */
+      focus?: "updated" | "warnings" | null;
+      /** Entry key → validation messages, for `warnings`. */
+      issues?: Record<string, string[]> | null;
     };
   };
   save_json_translation_sheet: { sheetPath: string; sheet: JsonTranslationSheet };
@@ -192,6 +198,7 @@ export type CommandResult = {
   bridge_edits_preview: BridgeEdits;
   acknowledge_bridge_edits: BridgeEdits;
   resolve_bridge_report: BridgeEdits;
+  dll_string_uses: DllStringUses | null;
   scan_leftover_text: LeftoverReport;
   prepare_translation_node: NodeTranslationResult;
   save_preset: ActionResult;

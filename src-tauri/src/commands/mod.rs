@@ -489,6 +489,11 @@ pub(crate) async fn resolve_bridge_report(
 }
 
 #[tauri::command]
+pub(crate) async fn dll_string_uses(source_path: String) -> Result<Option<DllStringUsesDto>, String> {
+    run_blocking(move || crate::services::dll_string_uses(source_path)).await
+}
+
+#[tauri::command]
 pub(crate) async fn export_translation_patch_mod(
     sheet_path: String,
     output_dir: String,

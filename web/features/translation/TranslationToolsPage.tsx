@@ -131,6 +131,7 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           selectedCompareLanguages={ui.selectedCompareLanguages}
           exportOnlyEmpty={ui.exportOnlyEmpty}
           setExportOnlyEmpty={ui.setExportOnlyEmpty}
+          dllTextKeys={ui.dllTextKeys}
           filledTranslations={ui.filledTranslations}
           copyTreeJson={ui.copyTreeJson}
         />
@@ -151,6 +152,7 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           dllTextOnly={ui.dllTextOnly}
           setDllTextOnly={ui.setDllTextOnly}
           dllTextCount={ui.dllTextCount}
+          dllAnalyzedAt={ui.dllUses?.analyzed_at ?? null}
           columns={ui.columns}
           sheetSourceLanguage={ui.sheetSourceLanguage}
           selectedCompareLanguages={ui.selectedCompareLanguages}
@@ -166,6 +168,8 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           showValidationIssueKind={ui.showValidationIssueKind}
           replaceTranslatedValues={ui.replaceTranslatedValues}
           focusEntryKey={ui.focusEntryKey}
+          focusRequest={ui.focusRequest}
+          revealWarningEntry={ui.revealWarningEntry}
           focusEntryInput={ui.focusEntryInput}
           revealEntryKey={ui.revealEntryKey}
           clearFocusEntryKey={ui.clearFocusEntryKey}

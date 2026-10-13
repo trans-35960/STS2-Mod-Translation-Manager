@@ -7,7 +7,9 @@
 
 use crate::error::{AppError, AppResult};
 use crate::glossary::{GameGlossary, GlossaryTerm, entry_glossary_terms, is_korean_language};
-use crate::json_translation::{JsonTranslationSheet, translation_slot_entries};
+use crate::json_translation::{
+    JsonTranslationEntry, JsonTranslationSheet, JsonTranslationStatus, translation_slot_entries,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fs;
@@ -102,11 +104,36 @@ pub fn write_project_settings(
     fs::write(&path, content).map_err(|source| AppError::io(&path, source))
 }
 
+/// What the parts ask the AI to do.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum PromptFocus {
+    /// Translate the source text.
+    #[default]
+    Translate,
+    /// Entries whose source changed: update the existing translation.
+    Revise,
+    /// Entries validation flagged: fix the existing translation.
+    Fix,
+}
+
+impl PromptFocus {
+    pub fn parse(value: Option<&str>) -> Self {
+        match value {
+            Some("updated") => Self::Revise,
+            Some("warnings") => Self::Fix,
+            _ => Self::Translate,
+        }
+    }
+}
+
 pub struct PromptOptions<'a> {
     pub include_prompt: bool,
     pub max_chars: usize,
     pub only_empty: bool,
     pub include_keys: Option<&'a BTreeSet<String>>,
+    pub focus: PromptFocus,
+    /// Entry key → validation messages, for [`PromptFocus::Fix`].
+    pub issues: Option<&'a BTreeMap<String, Vec<String>>>,
     pub source_language: &'a str,
     pub mod_name: &'a str,
     pub mod_description: &'a str,
@@ -132,6 +159,8 @@ struct PromptRow<'a> {
     id: String,
     source: &'a str,
     terms: Vec<&'a GlossaryTerm>,
+    /// What the AI needs besides the source when revising or fixing.
+    context: String,
 }
 
 /// Splits the sheet into parts that each fit `max_chars` (counted in
@@ -150,12 +179,25 @@ pub fn build_prompt_parts(
                 .include_keys
                 .is_none_or(|keys| keys.contains(&slot.entry.key))
         })
-        .filter(|slot| !options.only_empty || slot.entry.translated_value.is_empty())
+        .filter(|slot| match options.focus {
+            PromptFocus::Translate => {
+                !options.only_empty || slot.entry.translated_value.is_empty()
+            }
+            PromptFocus::Revise => slot.entry.status == JsonTranslationStatus::Updated,
+            PromptFocus::Fix => options
+                .issues
+                .is_some_and(|issues| issues.contains_key(&slot.entry.key)),
+        })
         .map(|slot| PromptRow {
             terms: if options.include_prompt {
                 entry_glossary_terms(&slot.entry.source_value, game, user_terms)
             } else {
                 Vec::new()
+            },
+            context: if options.include_prompt {
+                row_context(&slot.id, slot.entry, options)
+            } else {
+                String::new()
             },
             file: slot.compact_file,
             id: slot.id,
@@ -246,7 +288,47 @@ pub fn build_prompt_parts(
 
 fn row_chars(row: &PromptRow<'_>) -> usize {
     // `    "id": "source",\n`
-    json_string(&row.id).chars().count() + json_string(row.source).chars().count() + 8
+    json_string(&row.id).chars().count()
+        + json_string(row.source).chars().count()
+        + 8
+        + row.context.chars().count()
+}
+
+/// The existing translation (and, when revising, the old source; when
+/// fixing, what is wrong) shown next to an entry.
+fn row_context(id: &str, entry: &JsonTranslationEntry, options: &PromptOptions<'_>) -> String {
+    let mut lines = format!("- `{id}`\n");
+    match options.focus {
+        PromptFocus::Translate => return String::new(),
+        PromptFocus::Revise => {
+            if let Some(previous) = entry
+                .previous_source_value
+                .as_deref()
+                .filter(|previous| !previous.is_empty())
+            {
+                lines.push_str(&format!("  - 이전 원문: {}\n", json_string(previous)));
+            }
+            lines.push_str(&format!(
+                "  - 기존 번역: {}\n",
+                json_string(&entry.translated_value)
+            ));
+        }
+        PromptFocus::Fix => {
+            lines.push_str(&format!(
+                "  - 기존 번역: {}\n",
+                json_string(&entry.translated_value)
+            ));
+            for issue in options
+                .issues
+                .and_then(|issues| issues.get(&entry.key))
+                .into_iter()
+                .flatten()
+            {
+                lines.push_str(&format!("  - 문제: {}\n", issue.replace('\n', " ")));
+            }
+        }
+    }
+    lines
 }
 
 fn file_block_chars(file: &str) -> usize {
@@ -298,10 +380,20 @@ fn render_part(
             "- 이 요청은 전체 중 {part_label} 파트다. 이 파트만 번역한다.\n"
         ));
     }
-    text.push_str(
-        "- 아래 JSON의 각 값(원문)을 번역해 **같은 구조의 JSON만** ```json 코드 블록으로 출력한다. 설명은 쓰지 않는다.\n\
-- 파일 이름과 ID(키)는 바꾸거나 빼지 않는다.\n",
-    );
+    match options.focus {
+        PromptFocus::Translate => text.push_str(
+            "- 아래 JSON의 각 값(원문)을 번역해 **같은 구조의 JSON만** ```json 코드 블록으로 출력한다. 설명은 쓰지 않는다.\n",
+        ),
+        PromptFocus::Revise => text.push_str(
+            "- 아래 항목들은 모드 업데이트로 원문이 바뀌었다. `기존 번역`의 문체·용어·표현은 최대한 그대로 두고, `이전 원문`과 달라진 부분만 반영해 고친다.\n\
+- 아래 JSON의 각 값(현재 원문)에 대한 고친 번역을 **같은 구조의 JSON만** ```json 코드 블록으로 출력한다. 설명은 쓰지 않는다.\n",
+        ),
+        PromptFocus::Fix => text.push_str(
+            "- 아래 항목들의 `기존 번역`에는 검사에서 찾은 `문제`가 있다. 문제만 고치고 나머지 표현은 그대로 둔다.\n\
+- 아래 JSON의 각 값(원문)에 대한 고친 번역을 **같은 구조의 JSON만** ```json 코드 블록으로 출력한다. 설명은 쓰지 않는다.\n",
+        ),
+    }
+    text.push_str("- 파일 이름과 ID(키)는 바꾸거나 빼지 않는다.\n");
 
     let mod_name = options.mod_name.trim();
     let description = options.mod_description.trim();
@@ -357,6 +449,16 @@ fn render_part(
         text.push_str(glossary_heading());
         for term in terms {
             text.push_str(&term_line(term));
+        }
+    }
+
+    if rows.iter().any(|row| !row.context.is_empty()) {
+        text.push_str(match options.focus {
+            PromptFocus::Fix => "\n## 기존 번역과 문제\n",
+            _ => "\n## 기존 번역\n",
+        });
+        for row in rows {
+            text.push_str(&row.context);
         }
     }
 
@@ -549,6 +651,8 @@ mod tests {
             max_chars,
             only_empty: false,
             include_keys: None,
+            focus: PromptFocus::Translate,
+            issues: None,
             source_language: "eng",
             mod_name: "Sample",
             mod_description: "Fate crossover",
@@ -597,6 +701,33 @@ mod tests {
             let value: serde_json::Value = serde_json::from_str(json).expect("part json");
             assert_eq!(value["cards.json"].as_object().unwrap().len(), part.rows);
         }
+    }
+
+    #[test]
+    fn revise_and_fix_parts_show_the_existing_translation() {
+        let mut sheet = sheet(6);
+        sheet.entries[1].status = JsonTranslationStatus::Updated;
+        sheet.entries[1].previous_source_value = Some("Old text".to_string());
+        let mut options = options(DEFAULT_PROMPT_MAX_CHARS);
+
+        options.focus = PromptFocus::Revise;
+        let revise = build_prompt_parts(&sheet, None, &artoria(), &options);
+        let issues = BTreeMap::from([(
+            sheet.entries[3].key.clone(),
+            vec!["줄바꿈 수가 다릅니다".to_string()],
+        )]);
+        options.focus = PromptFocus::Fix;
+        options.issues = Some(&issues);
+        let fix = build_prompt_parts(&sheet, None, &artoria(), &options);
+
+        assert_eq!(revise.len(), 1);
+        assert_eq!(revise[0].rows, 1);
+        assert!(revise[0].text.contains("모드 업데이트로 원문이 바뀌었다"));
+        assert!(revise[0].text.contains("  - 이전 원문: \"Old text\"\n  - 기존 번역: \"번역\"\n"));
+        assert_eq!(fix[0].rows, 1);
+        assert!(fix[0].text.contains("## 기존 번역과 문제"));
+        assert!(fix[0].text.contains("  - 문제: 줄바꿈 수가 다릅니다\n"));
+        assert!(fix[0].text.contains("- Artoria → 아르토리아"));
     }
 
     #[test]

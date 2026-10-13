@@ -5,6 +5,7 @@ pub mod bridge_edits;
 pub mod cli;
 pub mod config;
 pub mod discovery;
+pub mod dll_text;
 pub mod domain;
 pub mod error;
 pub mod game_settings;

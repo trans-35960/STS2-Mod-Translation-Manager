@@ -33,6 +33,7 @@ pub fn run() {
             commands::bridge_edits_preview,
             commands::acknowledge_bridge_edits,
             commands::resolve_bridge_report,
+            commands::dll_string_uses,
             commands::prepare_translation_node,
             commands::save_preset,
             commands::apply_preset,

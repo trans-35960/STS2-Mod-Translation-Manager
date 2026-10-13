@@ -78,6 +78,15 @@ export type BridgeApply = {
 };
 
 /** In-game edits (F8 panel) and mistranslation reports for one sheet. */
+/** How the bridge saw a mod DLL use its string literals (written in game). */
+export type DllStringUses = {
+  assembly: string;
+  analyzed_at: string;
+  bridge_version: string;
+  /** Literal → use (`key`, `searched_for`, `log`, `shown`, …); unknown uses are left out. */
+  uses: Record<string, string>;
+};
+
 export type BridgeEdits = {
   mod_id: string;
   language: string;

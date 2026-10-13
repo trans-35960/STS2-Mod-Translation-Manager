@@ -1,5 +1,7 @@
 import React from "react";
-import type { JsonSheetReport, JsonValidation } from "../../types";
+import { invokeCommand } from "../../api/tauri";
+import type { DllStringUses, JsonSheetReport, JsonValidation } from "../../types";
+import { isPreviewRuntime } from "../../utils/runtime";
 import {
   normalizeLanguageTag,
   recommendedSourceLanguage,
@@ -16,6 +18,7 @@ import type {
 import {
   buildTranslationProjectTree,
   dllTextKeys as findDllTextKeys,
+  isHardcodedSheet,
   hasTranslationValue,
   isTranslatableEntry,
   languageCodeFromSourcePath,
@@ -49,6 +52,8 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
   const [dllTextOnly, setDllTextOnly] = React.useState(true);
   const [columns, setColumns] = React.useState<TranslationColumns>(defaultColumns);
   const [focusEntryKey, setFocusEntryKey] = React.useState<string | null>(null);
+  // Bumped on every request, so asking for the same row again still scrolls.
+  const [focusRequest, setFocusRequest] = React.useState(0);
   const [focusEntryInput, setFocusEntryInput] = React.useState(true);
   const [validationIssueKindFilter, setValidationIssueKindFilter] = React.useState<string | null>(null);
   const splitKeyCacheRef = React.useRef(new Map<string, ReturnType<typeof splitSheetKey>>());
@@ -129,9 +134,31 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     };
   }, [props.report, props.sheet, sheetPath]);
   const projectTree = React.useMemo(() => buildTranslationProjectTree(props.sheet), [props.sheet]);
+  const dllSourcePath = props.sheet && isHardcodedSheet(props.sheet.source_path) ? props.sheet.source_path : "";
+  const [dllUses, setDllUses] = React.useState<DllStringUses | null>(null);
+  // The bridge analyses the DLL in game; look again when the window comes
+  // back into focus, which is when the player returns from the game.
+  React.useEffect(() => {
+    setDllUses(null);
+    if (!dllSourcePath || isPreviewRuntime()) {
+      return;
+    }
+    let cancelled = false;
+    const load = () => {
+      invokeCommand("dll_string_uses", { sourcePath: dllSourcePath })
+        .then((uses) => !cancelled && setDllUses(uses))
+        .catch(() => undefined);
+    };
+    load();
+    window.addEventListener("focus", load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", load);
+    };
+  }, [dllSourcePath]);
   const dllTextKeys = React.useMemo(
-    () => findDllTextKeys(props.sheet, props.targetLanguage),
-    [props.sheet, props.targetLanguage],
+    () => findDllTextKeys(props.sheet, props.targetLanguage, dllUses?.uses ?? null),
+    [dllUses, props.sheet, props.targetLanguage],
   );
   const hiddenDllKeys = dllTextOnly ? dllTextKeys : null;
   const filteredEntries = React.useMemo(
@@ -279,6 +306,26 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     }
     setFocusEntryInput(true);
     setFocusEntryKey(key);
+    setFocusRequest((request) => request + 1);
+  }
+
+  /**
+   * Goes to a row from the warning list without leaving it: the warning
+   * filter (and the list) stays, so the next warning is one click away.
+   */
+  function revealWarningEntry(key: string) {
+    if (entryFilter !== "warning" || !validationWarningKeys.has(key)) {
+      revealEntryKey(key);
+      return;
+    }
+    setActiveProjectPath(null);
+    setEntrySearch("");
+    if (dllTextKeys && !dllTextKeys.has(key)) {
+      setDllTextOnly(false);
+    }
+    setFocusEntryInput(true);
+    setFocusEntryKey(key);
+    setFocusRequest((request) => request + 1);
   }
 
   /** Scrolls to a row changed by undo/redo, keeping filters when it is visible. */
@@ -288,6 +335,7 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     }
     setFocusEntryInput(false);
     setFocusEntryKey(key);
+    setFocusRequest((request) => request + 1);
   }
 
   function replaceTranslatedValues(scope: ReplaceScope) {
@@ -353,6 +401,8 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     dllTextOnly,
     setDllTextOnly,
     dllTextCount: dllTextKeys?.size ?? null,
+    dllTextKeys,
+    dllUses,
     columns,
     sheetPath,
     sheetSourceLanguage,
@@ -377,7 +427,9 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     replaceTranslatedValues,
     copyTreeJson,
     focusEntryKey,
+    focusRequest,
     focusEntryInput,
+    revealWarningEntry,
     revealEntryKey,
     showChangedEntry,
     clearFocusEntryKey: () => setFocusEntryKey(null),

@@ -11,12 +11,13 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use sts2_mod_manager::ai_prompt::{
-    DEFAULT_PROMPT_MAX_CHARS, PromptOptions, TermToTranslate, build_prompt_parts,
+    DEFAULT_PROMPT_MAX_CHARS, PromptFocus, PromptOptions, TermToTranslate, build_prompt_parts,
     build_term_prompt_parts, read_project_settings, write_project_settings,
 };
 use sts2_mod_manager::app::App;
 use sts2_mod_manager::bridge;
 use sts2_mod_manager::bridge_edits;
+use sts2_mod_manager::dll_text;
 use sts2_mod_manager::config::AppConfig;
 use sts2_mod_manager::discovery::scan_mod_directory;
 use sts2_mod_manager::domain::{ModFingerprint, ModKind, ModRecord, ModSource, ScanSummary};

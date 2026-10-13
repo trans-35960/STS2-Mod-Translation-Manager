@@ -1,4 +1,4 @@
-use super::hardcoded::is_hardcoded_entry_key;
+use super::hardcoded::{is_hardcoded_entry_key, is_hardcoded_source_file};
 use super::language_path::{matching_target_language_values, source_path_matches_target_language};
 use super::slots::{ensure_translation_slot_ids, stable_slot_key};
 use super::source_json::{flatten_source_values, json_text};
@@ -162,6 +162,29 @@ pub fn validate_sheet(path: &Path) -> AppResult<JsonValidationReport> {
 }
 
 pub fn validate_translation_sheet(sheet: &JsonTranslationSheet) -> JsonValidationReport {
+    let analysis = is_hardcoded_source_file(Path::new(&sheet.source_path))
+        .then(crate::bridge::shared_root)
+        .flatten()
+        .and_then(|shared| crate::dll_text::analysis_for_dll(&shared, Path::new(&sheet.source_path)));
+    validate_translation_sheet_with(sheet, analysis.as_ref())
+}
+
+/// Validates with the bridge's analysis of the sheet's DLL, if any.
+pub fn validate_translation_sheet_with(
+    sheet: &JsonTranslationSheet,
+    analysis: Option<&crate::dll_text::DllAnalysis>,
+) -> JsonValidationReport {
+    let dll = DllText {
+        analysis,
+        latin_is_text: crate::dll_text::latin_is_text(
+            sheet
+                .entries
+                .iter()
+                .filter(|entry| is_hardcoded_entry_key(&entry.key))
+                .map(|entry| entry.source_value.as_str()),
+            &sheet.target_language,
+        ),
+    };
     let mut missing_entries = Vec::new();
     let mut updated_entries = Vec::new();
     let mut removed_entries = Vec::new();
@@ -172,11 +195,11 @@ pub fn validate_translation_sheet(sheet: &JsonTranslationSheet) -> JsonValidatio
             JsonTranslationStatus::Removed => removed_entries.push(entry.key.clone()),
             JsonTranslationStatus::Updated => {
                 updated_entries.push(entry.key.clone());
-                if needs_translation(entry, &sheet.target_language) {
+                if needs_translation(entry, &sheet.target_language, &dll) {
                     missing_entries.push(entry.key.clone());
                 }
             }
-            _ if needs_translation(entry, &sheet.target_language) => {
+            _ if needs_translation(entry, &sheet.target_language, &dll) => {
                 missing_entries.push(entry.key.clone())
             }
             _ => {}
@@ -250,14 +273,25 @@ fn count_status(sheet: &JsonTranslationSheet, status: JsonTranslationStatus) -> 
 }
 
 /// An empty translation is only missing when the text is meant to be read. A
-/// DLL sheet lists every string literal of the mod (identifiers, log lines,
-/// paths); of those only text in a foreign script counts, minus regexes.
-fn needs_translation(entry: &JsonTranslationEntry, target_language: &str) -> bool {
+/// DLL sheet lists every string literal of the mod (names, keys, log lines);
+/// only those [`crate::dll_text::is_dll_text`] counts as text are.
+fn needs_translation(entry: &JsonTranslationEntry, target_language: &str, dll: &DllText) -> bool {
     is_translatable_entry(entry)
         && entry.translated_value.is_empty()
         && (!is_hardcoded_entry_key(&entry.key)
-            || (crate::leftover_text::contains_foreign_script(&entry.source_value, target_language)
-                && !crate::leftover_text::is_code_like_text(&entry.source_value)))
+            || crate::dll_text::is_dll_text(
+                &entry.source_value,
+                target_language,
+                dll.analysis
+                    .and_then(|analysis| analysis.use_of(&entry.source_value)),
+                dll.latin_is_text,
+            ))
+}
+
+/// What decides which DLL strings are text, for one sheet.
+struct DllText<'a> {
+    analysis: Option<&'a crate::dll_text::DllAnalysis>,
+    latin_is_text: bool,
 }
 
 pub(crate) fn is_translatable_entry(entry: &JsonTranslationEntry) -> bool {

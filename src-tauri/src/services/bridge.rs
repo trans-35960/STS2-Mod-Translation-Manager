@@ -556,6 +556,24 @@ pub(crate) fn acknowledge_bridge_edits(
 }
 
 /// Marks a report handled without acking the edits before it.
+/// How the bridge saw the DLL behind a DLL sheet use its literals, if it has
+/// read this build in game. `None` for other sheets.
+pub(crate) fn dll_string_uses(source_path: String) -> Result<Option<DllStringUsesDto>, String> {
+    let path = PathBuf::from(&source_path);
+    if !is_hardcoded_source_file(&path) {
+        return Ok(None);
+    }
+    let Some(shared) = bridge::shared_root() else {
+        return Ok(None);
+    };
+    Ok(dll_text::analysis_for_dll(&shared, &path).map(|analysis| DllStringUsesDto {
+        assembly: analysis.assembly,
+        analyzed_at: analysis.analyzed_at,
+        bridge_version: analysis.bridge_version,
+        uses: analysis.uses,
+    }))
+}
+
 pub(crate) fn resolve_bridge_report(sheet: JsonSheetDto, id: String) -> Result<BridgeEditsDto, String> {
     let sheet = json_sheet_from_dto(sheet)?;
     let (shared, mod_id) = bridge_edit_target(&sheet)?;

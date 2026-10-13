@@ -18,20 +18,26 @@ namespace Sts2ModManagerBridge;
 /// load order so that includes the mod's initializer. Values a mod already
 /// built from these strings stay as they were, so changes need a restart.
 /// </para>
+/// <para>
+/// Literals the code compares, looks up or passes on as names
+/// (<see cref="StringUses.BreaksWhenTranslated"/>) are never replaced.
+/// Every mod DLL also gets its literal uses written to <c>analysis/</c>, so
+/// the app can show which strings are worth translating.
+/// </para>
 /// </summary>
 public static class StringReplacer
 {
-    private const BindingFlags AllDeclared =
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
-
-    /// <summary>Assembly name → original → translation, for the language the game starts in.</summary>
-    private static Dictionary<string, Dictionary<string, string>> _byAssembly = new(StringComparer.OrdinalIgnoreCase);
-
     private const int MaxListedProtected = 200;
 
-    private static readonly HashSet<string> Patched = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly object PatchLock = new();
+    /// <summary>Assembly or DLL file name → original → translation, for the language the game starts in.</summary>
+    private static Dictionary<string, Dictionary<string, string>> _byAssembly = new(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly HashSet<string> Seen = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object SeenLock = new();
     private static Harmony? _harmony;
+
+    /// <summary>Analysis of DLLs nothing is replaced in runs off the main thread, one at a time.</summary>
+    private static Task _analysisQueue = Task.CompletedTask;
 
     /// <summary>Per assembly results, for <c>status/bridge.json</c>.</summary>
     public static Dictionary<string, AssemblyReport> Reports { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -47,14 +53,10 @@ public static class StringReplacer
         var (assemblies, errors) = StringFiles.Load(SharedPaths.Strings, Language);
         Errors.AddRange(errors);
         _byAssembly = assemblies;
-        if (_byAssembly.Count == 0)
-        {
-            return;
-        }
-        AppDomain.CurrentDomain.AssemblyLoad += (_, args) => TryPatch(args.LoadedAssembly);
+        AppDomain.CurrentDomain.AssemblyLoad += (_, args) => OnAssembly(args.LoadedAssembly);
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
-            TryPatch(assembly);
+            OnAssembly(assembly);
         }
     }
 
@@ -75,55 +77,91 @@ public static class StringReplacer
         return "eng";
     }
 
-    private static void TryPatch(Assembly assembly)
+    private static void OnAssembly(Assembly assembly)
     {
-        if (assembly.IsDynamic || assembly.GetName().Name is not { } name || !_byAssembly.TryGetValue(name, out var strings))
+        if (assembly.IsDynamic || assembly == typeof(StringReplacer).Assembly || ModFile(assembly) is not { } file)
         {
             return;
         }
-        lock (PatchLock)
+        var name = assembly.GetName().Name ?? "";
+        lock (SeenLock)
         {
-            if (!Patched.Add(name))
+            if (!Seen.Add(name))
             {
                 return;
             }
         }
+        var fileStem = Path.GetFileNameWithoutExtension(file.Name);
+        if (_byAssembly.TryGetValue(fileStem, out var strings) || _byAssembly.TryGetValue(name, out strings))
+        {
+            Patch(assembly, name, fileStem, file, strings);
+            return;
+        }
+        var mvid = assembly.ManifestModule.ModuleVersionId;
+        if (AnalysisFiles.IsCurrent(SharedPaths.Analysis, fileStem, mvid))
+        {
+            return;
+        }
+        _analysisQueue = _analysisQueue.ContinueWith(_ =>
+        {
+            try
+            {
+                AnalysisFiles.Write(SharedPaths.Analysis, fileStem, name, mvid, file.Length, AssemblyStrings.Read(assembly));
+            }
+            catch (Exception exception)
+            {
+                BridgeMod.Log.Warn($"[{BridgeMod.ModId}] {name}: string analysis failed: {exception.Message}");
+            }
+        }, TaskScheduler.Default);
+    }
+
+    /// <summary>The DLL file of an assembly loaded from a mod folder; null for the game and the runtime.</summary>
+    private static FileInfo? ModFile(Assembly assembly)
+    {
+        try
+        {
+            var location = assembly.Location;
+            if (string.IsNullOrEmpty(location))
+            {
+                return null;
+            }
+            var normalized = location.Replace('\\', '/');
+            var isMod = normalized.Contains("/mods/", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("/workshop/content/", StringComparison.OrdinalIgnoreCase);
+            return isMod ? new FileInfo(location) : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static void Patch(Assembly assembly, string name, string fileStem, FileInfo file, Dictionary<string, string> strings)
+    {
         var report = new AssemblyReport { Translations = strings.Count };
         Reports[name] = report;
         var watch = Stopwatch.StartNew();
         try
         {
-            // First read every method: a literal used as a key anywhere must
-            // stay as it is everywhere, or the code stops matching its own text.
-            var keys = new HashSet<string>(StringComparer.Ordinal);
-            var usingMethods = new List<(MethodBase Method, HashSet<string> Loaded)>();
-            foreach (var method in Methods(assembly))
+            // Every method is read first: a literal used as a name or key
+            // anywhere must stay as it is everywhere.
+            var read = AssemblyStrings.Read(assembly);
+            // Text only an unreadable method loads still must not hide a searched-for word.
+            foreach (var original in strings.Keys)
             {
-                var loaded = new HashSet<string>(StringComparer.Ordinal);
-                try
-                {
-                    KeyStrings.Scan(method, strings, loaded, keys);
-                }
-                catch (Exception exception)
-                {
-                    // A body that cannot be read (missing dependency) is skipped, not fatal.
-                    report.Unreadable++;
-                    if (report.FailedMethods.Count < 20)
-                    {
-                        report.FailedMethods.Add($"{method.DeclaringType?.FullName}.{method.Name}: {exception.Message}");
-                    }
-                    continue;
-                }
-                if (loaded.Count > 0)
-                {
-                    usingMethods.Add((method, loaded));
-                }
+                read.Uses.TryAdd(original, StringUse.Unknown);
             }
-            foreach (var kept in KeyStrings.WithContainingText(keys, strings.Keys.ToList()).Where(strings.ContainsKey))
+            StringUses.MarkTextContainingKeys(read.Uses);
+            report.Unreadable = read.Unreadable;
+            report.FailedMethods.AddRange(read.FailedMethods);
+            foreach (var original in strings.Keys.ToList())
             {
-                // The transpiler reads this same dictionary.
-                strings.Remove(kept);
-                report.ProtectedStrings.Add(kept);
+                if (read.Uses.TryGetValue(original, out var use) && StringUses.BreaksWhenTranslated(use))
+                {
+                    // The transpiler reads this same dictionary.
+                    strings.Remove(original);
+                    report.ProtectedStrings.Add(original);
+                }
             }
             report.Protected = report.ProtectedStrings.Count;
             report.ProtectedStrings.Sort(StringComparer.Ordinal);
@@ -133,7 +171,7 @@ public static class StringReplacer
             }
 
             var found = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var (method, loaded) in usingMethods)
+            foreach (var (method, loaded) in read.Methods)
             {
                 var hits = loaded.Where(strings.ContainsKey).ToList();
                 if (hits.Count == 0)
@@ -162,6 +200,14 @@ public static class StringReplacer
                 }
             }
             report.Found = found.Count;
+            try
+            {
+                AnalysisFiles.Write(SharedPaths.Analysis, fileStem, name, assembly.ManifestModule.ModuleVersionId, file.Length, read);
+            }
+            catch (Exception exception)
+            {
+                Errors.Add($"{name}: analysis not written: {exception.Message}");
+            }
         }
         catch (Exception exception)
         {
@@ -169,48 +215,14 @@ public static class StringReplacer
         }
         report.Milliseconds = watch.ElapsedMilliseconds;
         BridgeMod.Log.Info(
-            $"[{BridgeMod.ModId}] {name}: replaced {report.Found}/{report.Translations} DLL strings in {report.Methods} methods ({report.Milliseconds} ms, kept {report.Protected} used as keys, failed {report.Failed}, generic {report.SkippedGeneric}, unreadable {report.Unreadable})");
-    }
-
-    private static IEnumerable<MethodBase> Methods(Assembly assembly)
-    {
-        Type?[] types;
-        try
-        {
-            types = assembly.GetTypes();
-        }
-        catch (ReflectionTypeLoadException exception)
-        {
-            types = exception.Types;
-        }
-        foreach (var type in types)
-        {
-            if (type == null)
-            {
-                continue;
-            }
-            foreach (var method in type.GetMethods(AllDeclared))
-            {
-                if (!method.IsAbstract)
-                {
-                    yield return method;
-                }
-            }
-            foreach (var constructor in type.GetConstructors(AllDeclared))
-            {
-                yield return constructor;
-            }
-            if (type.TypeInitializer is { } initializer)
-            {
-                yield return initializer;
-            }
-        }
+            $"[{BridgeMod.ModId}] {name}: replaced {report.Found}/{report.Translations} DLL strings in {report.Methods} methods ({report.Milliseconds} ms, kept {report.Protected} used as names or keys, failed {report.Failed}, generic {report.SkippedGeneric}, unreadable {report.Unreadable})");
     }
 
     private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase __originalMethod)
     {
-        var name = __originalMethod.Module.Assembly.GetName().Name;
-        _byAssembly.TryGetValue(name ?? "", out var strings);
+        var assembly = __originalMethod.Module.Assembly;
+        var strings = Lookup(assembly.GetName().Name)
+            ?? Lookup(Path.GetFileNameWithoutExtension(assembly.Location));
         foreach (var instruction in instructions)
         {
             if (strings != null
@@ -224,6 +236,9 @@ public static class StringReplacer
         }
     }
 
+    private static Dictionary<string, string>? Lookup(string? name) =>
+        name != null && _byAssembly.TryGetValue(name, out var strings) ? strings : null;
+
     public sealed class AssemblyReport
     {
         /// <summary>Strings the app sent for this assembly.</summary>
@@ -232,7 +247,7 @@ public static class StringReplacer
         /// <summary>Of those, strings found in patched methods.</summary>
         public int Found { get; set; }
 
-        /// <summary>Strings left untranslated because the code compares or searches with them.</summary>
+        /// <summary>Strings left untranslated because the code uses them as names or keys.</summary>
         public int Protected { get; set; }
 
         /// <summary>The first of those, for the app to show.</summary>

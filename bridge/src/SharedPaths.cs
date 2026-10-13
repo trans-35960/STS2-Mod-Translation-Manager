@@ -20,6 +20,9 @@ public static class SharedPaths
 
     public static string Edits => Path.Combine(Root, "edits");
 
+    /// <summary>How each mod DLL uses its string literals (written by this mod, read by the app).</summary>
+    public static string Analysis => Path.Combine(Root, "analysis");
+
     public static string StatusFile => Path.Combine(Root, "status", "bridge.json");
 
     public static string FormatFile => Path.Combine(Root, "format.json");

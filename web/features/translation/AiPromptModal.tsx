@@ -1,13 +1,19 @@
 import React from "react";
 import { Check, CircleCheck, Copy, FileDown, FileText, Files, Loader2, Sparkles, X } from "lucide-react";
 import { invokeCommand, saveDialog } from "../../api/tauri";
-import type { AiPromptParts, GlossaryTerm, JsonTranslationSheet, ProjectTranslationSettings, TranslationProjectInfo } from "../../types";
+import type {
+  AiPromptParts,
+  GlossaryTerm,
+  JsonTranslationSheet,
+  JsonValidation,
+  ProjectTranslationSettings,
+  TranslationProjectInfo,
+} from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
 import { TermCandidatesPanel } from "./TermCandidatesPanel";
 import { TermTableEditor } from "./TermTableEditor";
 import {
   compactTranslationFile,
-  dllTextKeys,
   normalizeSlotId,
   parsePastedTranslationJson,
   structuredTranslationEntries,
@@ -38,6 +44,8 @@ export function AiPromptModal({
   sheet,
   projectInfo,
   onlyEmptyDefault,
+  dllTextKeys: dllKeys,
+  validation,
   onClose,
   onTermsSaved,
   onPasteAnswer,
@@ -45,6 +53,10 @@ export function AiPromptModal({
   sheet: JsonTranslationSheet;
   projectInfo: TranslationProjectInfo | null;
   onlyEmptyDefault: boolean;
+  /** Strings worth translating in a DLL sheet; null for other sheets. */
+  dllTextKeys: Set<string> | null;
+  /** The last validation, for re-asking only the flagged entries. */
+  validation: JsonValidation | null;
   onClose: () => void;
   onTermsSaved: () => void;
   onPasteAnswer: (text: string) => boolean;
@@ -58,7 +70,13 @@ export function AiPromptModal({
   const [includePrompt, setIncludePrompt] = React.useState(true);
   const [onlyEmpty, setOnlyEmpty] = React.useState(onlyEmptyDefault);
   const [dllTextOnly, setDllTextOnly] = React.useState(true);
-  const dllKeys = React.useMemo(() => dllTextKeys(sheet, sheet.target_language), [sheet]);
+  const [focus, setFocus] = React.useState<PromptFocus>("all");
+  const updatedCount = React.useMemo(
+    () => sheet.entries.filter((entry) => entry.status === "updated" && entry.source_value.trim()).length,
+    [sheet],
+  );
+  const issuesByKey = React.useMemo(() => validationIssuesByKey(validation), [validation]);
+  const issueCount = Object.keys(issuesByKey).length;
   const [maxChars, setMaxChars] = React.useState(readStoredMaxChars);
   const [saveState, setSaveState] = React.useState<"" | "saving" | "saved">("");
   const savedTermsRef = React.useRef("");
@@ -202,6 +220,8 @@ export function AiPromptModal({
               includePrompt,
               maxChars: budget,
               onlyEmpty,
+              focus: focus === "all" ? null : focus,
+              issues: focus === "warnings" ? issuesByKey : null,
             },
           });
       setResult(parts);
@@ -422,8 +442,25 @@ export function AiPromptModal({
               <input type="checkbox" checked={includePrompt} onChange={(event) => setIncludePrompt(event.target.checked)} />
               <span>프롬프트 포함</span>
             </label>
+            <label className="ai-prompt-focus" title="업데이트·경고는 기존 번역과 용어집을 함께 보내 고쳐 달라고 합니다.">
+              <span>대상</span>
+              <select value={focus} onChange={(event) => setFocus(event.target.value as PromptFocus)}>
+                <option value="all">번역할 항목</option>
+                <option value="updated" disabled={updatedCount === 0}>
+                  원문 바뀐 항목 ({updatedCount})
+                </option>
+                <option value="warnings" disabled={issueCount === 0}>
+                  {validation ? `경고 항목 (${issueCount})` : "경고 항목 (검증 먼저)"}
+                </option>
+              </select>
+            </label>
             <label className="inline-check">
-              <input type="checkbox" checked={onlyEmpty} onChange={(event) => setOnlyEmpty(event.target.checked)} />
+              <input
+                type="checkbox"
+                checked={onlyEmpty}
+                disabled={focus !== "all"}
+                onChange={(event) => setOnlyEmpty(event.target.checked)}
+              />
               <span>빈 값만</span>
             </label>
             {dllKeys && (
@@ -573,6 +610,20 @@ async function loadSettings(projectKey: string): Promise<ProjectTranslationSetti
     return { mod_description: "", tone: "official", terms: [], extra_instructions: "" };
   }
   return invokeCommand("load_project_translation_settings", { projectKey });
+}
+
+type PromptFocus = "all" | "updated" | "warnings";
+
+/**
+ * Format and term problems by entry, the warnings a re-ask can fix. Empty
+ * and changed-source entries have their own options (빈 값만, 원문 바뀐 항목).
+ */
+function validationIssuesByKey(validation: JsonValidation | null): Record<string, string[]> {
+  const issues: Record<string, string[]> = {};
+  for (const issue of [...(validation?.format_issues ?? []), ...(validation?.glossary_issues ?? [])]) {
+    (issues[issue.key] ??= []).push(issue.message);
+  }
+  return issues;
 }
 
 function previewParts(sheet: JsonTranslationSheet, includePrompt: boolean, budget: number): AiPromptParts {

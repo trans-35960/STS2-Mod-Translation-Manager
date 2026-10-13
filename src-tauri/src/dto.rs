@@ -81,6 +81,16 @@ pub(crate) struct BridgeEditsDto {
     pub(crate) ack_id: Option<String>,
 }
 
+/// The bridge's record of how a mod DLL uses its string literals.
+#[derive(Debug, Serialize)]
+pub(crate) struct DllStringUsesDto {
+    pub(crate) assembly: String,
+    pub(crate) analyzed_at: String,
+    pub(crate) bridge_version: String,
+    /// Literal → use (`key`, `log`, `shown`, …); unknown uses are left out.
+    pub(crate) uses: std::collections::BTreeMap<String, String>,
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct BridgeEditCountsDto {
     pub(crate) edits: usize,
@@ -517,6 +527,13 @@ pub(crate) struct AiPromptRequestDto {
     #[serde(default)]
     pub(crate) only_empty: bool,
     pub(crate) include_keys: Option<Vec<String>>,
+    /// `updated` (revise changed sources) or `warnings` (fix flagged
+    /// translations); anything else translates.
+    #[serde(default)]
+    pub(crate) focus: Option<String>,
+    /// Entry key → validation messages, for `warnings`.
+    #[serde(default)]
+    pub(crate) issues: Option<std::collections::BTreeMap<String, Vec<String>>>,
 }
 
 #[derive(Debug, Serialize)]

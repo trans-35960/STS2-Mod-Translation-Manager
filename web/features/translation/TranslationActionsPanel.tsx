@@ -230,6 +230,7 @@ export function TranslationActionsPanel({
   selectedCompareLanguages,
   exportOnlyEmpty,
   setExportOnlyEmpty,
+  dllTextKeys,
   filledTranslations,
   copyTreeJson,
 }: {
@@ -245,6 +246,8 @@ export function TranslationActionsPanel({
   selectedCompareLanguages: LanguagePreview[];
   exportOnlyEmpty: boolean;
   setExportOnlyEmpty: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Strings worth translating in a DLL sheet; null for other sheets. */
+  dllTextKeys: Set<string> | null;
   filledTranslations: number;
   copyTreeJson: (node: TranslationProjectNode) => Promise<void>;
 }) {
@@ -480,6 +483,8 @@ export function TranslationActionsPanel({
           sheet={props.sheet}
           projectInfo={props.projectInfo ?? null}
           onlyEmptyDefault={exportOnlyEmpty}
+          dllTextKeys={dllTextKeys}
+          validation={props.validation}
           onClose={() => setAiPromptOpen(false)}
           onPasteAnswer={props.onPasteStructuredJson}
           onTermsSaved={() => {

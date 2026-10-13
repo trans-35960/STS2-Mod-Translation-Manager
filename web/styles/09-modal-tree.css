@@ -428,6 +428,7 @@
   border-top: 1px solid #e7eeeb;
 }
 
+.ai-prompt-focus,
 .ai-prompt-max {
   display: inline-flex;
   align-items: center;

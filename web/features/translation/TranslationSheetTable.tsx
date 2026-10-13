@@ -67,6 +67,7 @@ export function TranslationSheetTable({
   dllTextOnly,
   setDllTextOnly,
   dllTextCount,
+  dllAnalyzedAt,
   columns,
   sheetSourceLanguage,
   selectedCompareLanguages,
@@ -82,7 +83,9 @@ export function TranslationSheetTable({
   showValidationIssueKind,
   replaceTranslatedValues,
   focusEntryKey,
+  focusRequest,
   focusEntryInput,
+  revealWarningEntry,
   revealEntryKey,
   clearFocusEntryKey,
 }: {
@@ -103,6 +106,8 @@ export function TranslationSheetTable({
   setDllTextOnly: React.Dispatch<React.SetStateAction<boolean>>;
   /** Strings worth translating in a DLL sheet; null for other sheets. */
   dllTextCount: number | null;
+  /** When the bridge last analysed this DLL in game; null before it has. */
+  dllAnalyzedAt: string | null;
   columns: TranslationColumns;
   sheetSourceLanguage: string;
   selectedCompareLanguages: LanguagePreview[];
@@ -118,6 +123,10 @@ export function TranslationSheetTable({
   showValidationIssueKind: (kind: string | null) => void;
   replaceTranslatedValues: (scope: ReplaceScope) => void;
   focusEntryKey: string | null;
+  /** Changes on every request to show {@link focusEntryKey}, even the same one again. */
+  focusRequest: number;
+  /** Shows a row from the warning list, keeping the list open. */
+  revealWarningEntry: (key: string) => void;
   /** Also put the cursor in the revealed row's translation. */
   focusEntryInput: boolean;
   revealEntryKey: (key: string) => void;
@@ -258,7 +267,8 @@ export function TranslationSheetTable({
       focusHandledRef.current = null;
       return;
     }
-    if (focusHandledRef.current === focusEntryKey) {
+    const request = `${focusRequest}:${focusEntryKey}`;
+    if (focusHandledRef.current === request) {
       return;
     }
     const row = rowRefs.current.get(focusEntryKey);
@@ -266,7 +276,7 @@ export function TranslationSheetTable({
       scrollToIndex(entryKeys.indexOf(focusEntryKey));
       return;
     }
-    focusHandledRef.current = focusEntryKey;
+    focusHandledRef.current = request;
     row.closest(".json-entry-list")?.scrollIntoView({ block: "start" });
     row.scrollIntoView({ block: "center", inline: "nearest" });
     if (focusEntryInput) {
@@ -274,7 +284,7 @@ export function TranslationSheetTable({
     }
     const timeoutId = window.setTimeout(clearFocusEntryKey, 2200);
     return () => window.clearTimeout(timeoutId);
-  }, [clearFocusEntryKey, entryKeys, focusEntryInput, focusEntryKey, range, scrollToIndex]);
+  }, [clearFocusEntryKey, entryKeys, focusEntryInput, focusEntryKey, focusRequest, range, scrollToIndex]);
 
   function copyEntryId(entryKey: string, id: string, event: React.MouseEvent) {
     event.preventDefault();
@@ -361,7 +371,7 @@ export function TranslationSheetTable({
                     className="validation-issue-row"
                     type="button"
                     key={`${issue.kind}-${issue.key}-${issueIndex}`}
-                    onClick={() => revealEntryKey(issue.key)}
+                    onClick={() => revealWarningEntry(issue.key)}
                   >
                     <code title={issue.key}>{formatValidationIssueKey(issue.key)}</code>
                     <span>{issue.message}</span>
@@ -565,11 +575,15 @@ export function TranslationSheetTable({
                   type="button"
                   aria-pressed={dllTextOnly}
                   aria-label={`번역할 문장만 ${dllTextCount}`}
-                  data-tooltip={
+                  data-tooltip={`${
                     dllTextOnly
-                      ? `번역할 문장 ${dllTextCount}개만 표시 중(코드 이름·로그·경로·정규식 숨김). 누르면 DLL 문자열 전체`
+                      ? `번역할 문장 ${dllTextCount}개만 표시 중(이름·키·로그·경로·정규식 숨김). 누르면 DLL 문자열 전체`
                       : `DLL 문자열 전체 표시 중. 누르면 번역할 문장 ${dllTextCount}개만`
-                  }
+                  } · ${
+                    dllAnalyzedAt
+                      ? `게임에서 분석한 쓰임새 반영(${new Date(dllAnalyzedAt).toLocaleString()})`
+                      : "아직 글자 모양으로만 판단합니다. 브리지를 켜고 게임을 한 번 실행하면 코드가 쓰는 방식까지 반영됩니다"
+                  }`}
                   onClick={() => setDllTextOnly((value) => !value)}
                 >
                   <MessageSquareText size={15} />
