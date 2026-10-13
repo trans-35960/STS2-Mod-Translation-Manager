@@ -92,20 +92,27 @@ fn bridge_target_for_sheet(
     })
 }
 
-/// Applies a sheet through the bridge: its loc table values go to the
-/// shared folder and the bridge puts them into the game. `Ok(None)` for
-/// sheets the bridge cannot carry yet (DLL strings, non-table files), which
-/// keep the previous apply path.
+/// Applies a sheet through the bridge: loc table values go to
+/// `translations/`, DLL string literals to `strings/`, and the bridge puts
+/// them into the game. `Ok(None)` for sheets the bridge cannot carry (files
+/// outside `localization/`), which keep the previous apply path.
 fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, String> {
     let sheet = read_sheet(sheet_path).map_err(|error| error.to_string())?;
-    if is_hardcoded_source_file(Path::new(&sheet.source_path)) {
-        return Ok(None);
+    let source_path = PathBuf::from(&sheet.source_path);
+    let dll_assembly = is_hardcoded_source_file(&source_path)
+        .then(|| source_path.file_stem().map(|stem| stem.to_string_lossy().to_string()))
+        .flatten();
+    let mut tables = bridge::SheetTables::default();
+    let mut strings = bridge::SheetStrings::default();
+    if dll_assembly.is_some() {
+        strings = bridge::sheet_strings(&sheet);
+    } else {
+        tables = bridge::sheet_tables(&sheet);
+        if tables.values.is_empty() {
+            return Ok(None);
+        }
+        add_other_languages(&sheet, &mut tables.info);
     }
-    let mut tables = bridge::sheet_tables(&sheet);
-    if tables.values.is_empty() {
-        return Ok(None);
-    }
-    add_other_languages(&sheet, &mut tables.info);
     let app = app();
     let config = app.config();
     let summary = app
@@ -116,26 +123,46 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
         .ok_or_else(|| "번역 대상 모드의 manifest id를 찾지 못해 브리지로 적용할 수 없습니다.".to_string())?;
     let shared = bridge::shared_root()
         .ok_or_else(|| "공용 폴더(%APPDATA%)를 찾지 못했습니다.".to_string())?;
-    let report = bridge::write_translations(
-        &shared,
-        &target.mod_id,
-        &sheet.target_language,
-        &tables,
-        target.mod_version.as_deref(),
-        epoch_seconds(Some(SystemTime::now())).unwrap_or(0),
-    )
-    .map_err(|error| error.to_string())?;
-    if report.entries == 0 {
+    let updated_at = epoch_seconds(Some(SystemTime::now())).unwrap_or(0);
+    let (output_dir, entries, table_count) = match dll_assembly.as_deref() {
+        Some(assembly) => {
+            // An emptied sheet still writes, so the bridge stops replacing.
+            let path = bridge::write_strings(
+                &shared,
+                &target.mod_id,
+                &sheet.target_language,
+                assembly,
+                &strings.strings,
+                updated_at,
+            )
+            .map_err(|error| error.to_string())?;
+            let dir = path.parent().map(Path::to_path_buf).unwrap_or(path);
+            (dir, strings.strings.len(), 0)
+        }
+        None => {
+            let report = bridge::write_translations(
+                &shared,
+                &target.mod_id,
+                &sheet.target_language,
+                &tables,
+                target.mod_version.as_deref(),
+                updated_at,
+            )
+            .map_err(|error| error.to_string())?;
+            (report.dir, report.entries, report.tables)
+        }
+    };
+    if entries == 0 && dll_assembly.is_none() {
         return Err("적용할 번역값이 없습니다. translated_value를 입력하거나 CSV/JSON을 먼저 매칭해 주세요.".to_string());
     }
     let disabled_patch_mods = disable_patch_mods_once(&app, &summary, &target.mod_id)?;
     record_translation_apply(
         sheet_path,
         &PckPatchReport {
-            language_output_path: report.dir.clone(),
+            language_output_path: output_dir.clone(),
             packed_pck_path: None,
-            installed_mod_path: Some(report.dir.clone()),
-            applied_entries: report.entries,
+            installed_mod_path: Some(output_dir.clone()),
+            applied_entries: entries,
         },
         config,
     )?;
@@ -143,17 +170,19 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
     let bridge_row = find_bridge_record(&summary);
     let desired = desired_active_mod_keys(&summary, &config.state_dir).unwrap_or_default();
     Ok(Some(JsonApplyDto {
-        output_path: display_path(&report.dir),
-        applied_entries: report.entries,
-        language_output_path: display_path(&report.dir),
+        output_path: display_path(&output_dir),
+        applied_entries: entries,
+        language_output_path: display_path(&output_dir),
         packed_pck_path: String::new(),
-        installed_mod_path: display_path(&report.dir),
+        installed_mod_path: display_path(&output_dir),
         bridge: Some(BridgeApplyDto {
             mod_id: target.mod_id,
             language: sheet.target_language.clone(),
-            tables: report.tables,
+            tables: table_count,
             unsupported_entries: tables.unsupported.total(),
             unsupported_hardcoded: tables.unsupported.hardcoded,
+            dll_strings: dll_assembly.is_some().then_some(entries),
+            code_like_skipped: strings.code_like,
             disabled_patch_mods,
             bridge_installed: bridge_row.is_some(),
             bridge_active: bridge_row.is_some_and(|record| desired.contains(&record.stable_key())),
@@ -230,6 +259,24 @@ fn bundled_bridge_dir(config: &AppConfig) -> PathBuf {
     config.vendor_dir.join("bridge")
 }
 
+/// Puts the bridge first in the game's mod order. Mods without dependencies
+/// load in that order, and the bridge has to be loaded before a mod's
+/// assembly to replace DLL strings its initializer already uses. Best effort:
+/// the game creates `settings.save` on its first run.
+fn ensure_bridge_loads_first(app: &App) {
+    let Some(settings_path) = app.config().game_settings_path() else {
+        return;
+    };
+    if let Err(error) = game_settings::move_mod_first(
+        &settings_path,
+        &app.config().save_backup_dir,
+        bridge::BRIDGE_MOD_ID,
+        game_settings::SOURCE_MODS_DIRECTORY,
+    ) {
+        eprintln!("bridge load order not set: {error}");
+    }
+}
+
 /// Installs the bridge bundled with the app into the game's mods folder, or
 /// updates an older copy wherever it is (active or disabled). A fresh install
 /// is switched on; an existing copy keeps the on/off state the user chose.
@@ -267,6 +314,9 @@ pub(crate) fn ensure_bridge_installed() -> Result<BridgeInstallDto, String> {
         _ => true,
     };
     if !needs_copy {
+        if !app.launch_status().running {
+            ensure_bridge_loads_first(&app);
+        }
         return Ok(BridgeInstallDto {
             state: "current".to_string(),
             version: installed_version,
@@ -296,6 +346,7 @@ pub(crate) fn ensure_bridge_installed() -> Result<BridgeInstallDto, String> {
                 .map_err(|error| error.to_string())?;
         }
     }
+    ensure_bridge_loads_first(&app);
     Ok(BridgeInstallDto {
         state: if installed.is_some() { "updated" } else { "installed" }.to_string(),
         version: Some(bundled_version.clone()),

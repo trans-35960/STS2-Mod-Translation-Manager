@@ -197,8 +197,20 @@
 }
 
 .leftover-text-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 6px 0 0;
   color: #64748b;
+}
+
+.leftover-text-note p {
+  flex: 1;
+  margin: 0;
+}
+
+.leftover-text-note button {
+  flex: none;
 }
 
 .leftover-text-error {

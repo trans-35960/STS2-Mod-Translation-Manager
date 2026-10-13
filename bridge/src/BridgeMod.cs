@@ -23,8 +23,10 @@ public static class BridgeMod
     {
         try
         {
-            new Harmony(ModId).PatchAll(typeof(BridgeMod).Assembly);
+            var harmony = new Harmony(ModId);
+            harmony.PatchAll(typeof(BridgeMod).Assembly);
             ModErrorFilter.DropBranchErrorsOfDisabledMods();
+            StringReplacer.Initialize(harmony);
             Log.Info($"[{ModId}] {Version} initialized, shared folder: {SharedPaths.Root}");
         }
         catch (Exception exception)

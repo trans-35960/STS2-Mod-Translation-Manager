@@ -9,6 +9,7 @@ import {
   FileJson,
   Hash,
   List,
+  MessageSquareText,
   RefreshCw,
   Replace,
   ReplaceAll,
@@ -63,6 +64,9 @@ export function TranslationSheetTable({
   setReplaceWith,
   showIds,
   setShowIds,
+  dllTextOnly,
+  setDllTextOnly,
+  dllTextCount,
   columns,
   sheetSourceLanguage,
   selectedCompareLanguages,
@@ -95,6 +99,10 @@ export function TranslationSheetTable({
   setReplaceWith: React.Dispatch<React.SetStateAction<string>>;
   showIds: boolean;
   setShowIds: React.Dispatch<React.SetStateAction<boolean>>;
+  dllTextOnly: boolean;
+  setDllTextOnly: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Strings worth translating in a DLL sheet; null for other sheets. */
+  dllTextCount: number | null;
   columns: TranslationColumns;
   sheetSourceLanguage: string;
   selectedCompareLanguages: LanguagePreview[];
@@ -551,6 +559,23 @@ export function TranslationSheetTable({
                 <AlertTriangle size={15} />
                 {pasteCandidateCount > 0 && <span>{pasteCandidateCount}</span>}
               </button>
+              {dllTextCount !== null && (
+                <button
+                  className={dllTextOnly ? "active" : ""}
+                  type="button"
+                  aria-pressed={dllTextOnly}
+                  aria-label={`번역할 문장만 ${dllTextCount}`}
+                  data-tooltip={
+                    dllTextOnly
+                      ? `번역할 문장 ${dllTextCount}개만 표시 중(코드 이름·로그·경로·정규식 숨김). 누르면 DLL 문자열 전체`
+                      : `DLL 문자열 전체 표시 중. 누르면 번역할 문장 ${dllTextCount}개만`
+                  }
+                  onClick={() => setDllTextOnly((value) => !value)}
+                >
+                  <MessageSquareText size={15} />
+                  <span>{dllTextCount}</span>
+                </button>
+              )}
               <button className={showIds ? "active" : ""} type="button" aria-label="id 보기" data-tooltip="id 보기" onClick={() => setShowIds((value) => !value)}>
                 {showIds ? <Eye size={15} /> : <Hash size={15} />}
               </button>

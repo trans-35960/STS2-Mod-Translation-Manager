@@ -68,6 +68,9 @@ export type BridgeApply = {
   tables: number;
   unsupported_entries: number;
   unsupported_hardcoded: number;
+  /** DLL strings written for the bridge to replace (DLL sheets only). */
+  dll_strings: number | null;
+  code_like_skipped: number;
   disabled_patch_mods: string[];
   bridge_installed: boolean;
   bridge_active: boolean;

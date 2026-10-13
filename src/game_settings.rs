@@ -72,6 +72,45 @@ pub fn apply_mod_changes(
     Ok(changed)
 }
 
+/// Puts `id`/`source` first in the mod list, adding it (enabled) when the
+/// game has not recorded it yet. The game loads mods without dependencies in
+/// this order, so the first entry loads before the others. Returns whether
+/// the file changed; nothing is written when it is missing.
+pub fn move_mod_first(
+    settings_path: &Path,
+    backup_root: &Path,
+    id: &str,
+    source: &str,
+) -> AppResult<bool> {
+    let Some(mut root) = read_settings(settings_path)? else {
+        return Ok(false);
+    };
+    let Some(list) = root
+        .pointer_mut("/mod_settings/mod_list")
+        .and_then(Value::as_array_mut)
+    else {
+        return Ok(false);
+    };
+    let position = list.iter().position(|entry| {
+        entry.get("id").and_then(Value::as_str) == Some(id)
+            && entry.get("source").and_then(Value::as_str) == Some(source)
+    });
+    if position == Some(0) {
+        return Ok(false);
+    }
+    let entry = match position {
+        Some(index) => list.remove(index),
+        None => json!({ "id": id, "is_enabled": true, "source": source }),
+    };
+    list.insert(0, entry);
+    backup_settings(settings_path, backup_root)?;
+    let text = serde_json::to_string_pretty(&root).map_err(|error| {
+        AppError::InvalidCommand(format!("게임 설정을 저장하지 못했습니다: {error}"))
+    })?;
+    write_atomically(settings_path, text.as_bytes())?;
+    Ok(true)
+}
+
 fn read_settings(settings_path: &Path) -> AppResult<Option<Value>> {
     if !settings_path.is_file() {
         return Ok(None);
@@ -300,6 +339,28 @@ mod tests {
             .expect("backup dir")
             .count();
         assert_eq!(backups, 1);
+    }
+
+    #[test]
+    fn moves_a_mod_first_and_keeps_its_state() {
+        let dir = test_dir("moves_a_mod_first_and_keeps_its_state");
+        let path = dir.join("settings.save");
+        fs::write(&path, SAMPLE).expect("write");
+
+        let moved = move_mod_first(&path, &dir, "LustTravel2", SOURCE_WORKSHOP).expect("move");
+        let again = move_mod_first(&path, &dir, "LustTravel2", SOURCE_WORKSHOP).expect("again");
+        let entries = read_mod_entries(&path);
+        let added = move_mod_first(&path, &dir, "Bridge", SOURCE_MODS_DIRECTORY).expect("add");
+        let with_new = read_mod_entries(&path);
+
+        assert!(moved);
+        assert!(!again, "already first: no rewrite");
+        assert_eq!(entries[0].id, "LustTravel2");
+        assert!(!entries[0].is_enabled, "keeps the user's on/off state");
+        assert!(added);
+        assert_eq!(with_new[0].id, "Bridge");
+        assert!(with_new[0].is_enabled);
+        assert_eq!(with_new.len(), 3);
     }
 
     #[test]

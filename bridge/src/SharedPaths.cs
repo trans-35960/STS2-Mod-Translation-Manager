@@ -16,6 +16,8 @@ public static class SharedPaths
 
     public static string Translations => Path.Combine(Root, "translations");
 
+    public static string Strings => Path.Combine(Root, "strings");
+
     public static string Edits => Path.Combine(Root, "edits");
 
     public static string StatusFile => Path.Combine(Root, "status", "bridge.json");

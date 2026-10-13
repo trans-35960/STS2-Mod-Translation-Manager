@@ -95,6 +95,35 @@ fn skips_blank_source_strings_when_creating_sheet() {
 }
 
 #[test]
+fn empty_dll_strings_are_missing_only_when_meant_to_be_read() {
+    let entry = |key: &str, source: &str, translated: &str| JsonTranslationEntry {
+        key: key.to_string(),
+        slot_id: None,
+        previous_source_value: None,
+        source_value: source.to_string(),
+        translated_value: translated.to_string(),
+        status: JsonTranslationStatus::Missing,
+    };
+    let sheet = JsonTranslationSheet {
+        source_path: "Mod/Mod.dll".to_string(),
+        target_language: "kor".to_string(),
+        updated_epoch: 0,
+        entries: vec![
+            entry("dll://10:4", "撕裂衣服", ""),
+            entry("dll://20:30", "CURSE_INFECTION", ""),
+            entry("dll://30:12", "挣脱值\\d+", ""),
+            // Longer than the original: fine for the bridge.
+            entry("dll://40:4", "傲慢", "오만한 마음가짐"),
+        ],
+    };
+
+    let report = validate_translation_sheet(&sheet);
+
+    assert_eq!(report.missing_entries, vec!["dll://10:4".to_string()]);
+    assert!(report.format_issues.is_empty());
+}
+
+#[test]
 fn drops_removed_hardcoded_candidates_when_updating_sheet() {
     let fixture = TestDir::create("json_translation_hardcoded_removed_candidates");
     fixture.write_bytes("source.dll", &utf16le_test_bytes("Profile Name"));

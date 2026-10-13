@@ -146,11 +146,13 @@ function bridgeApplyMessage(entries: number, bridge: BridgeApply): string {
         : bridge.game_running
           ? "게임 안에서 F8을 누르면 바로 반영됩니다"
           : "",
-    bridge.unsupported_hardcoded > 0 ? `DLL 문자열 ${bridge.unsupported_hardcoded}개는 아직 브리지로 적용되지 않음` : "",
+    bridge.dll_strings !== null ? "DLL 문자열은 게임을 다시 시작해야 반영됩니다" : "",
+    bridge.code_like_skipped > 0 ? `코드처럼 보이는 문자열 ${bridge.code_like_skipped}개(정규식 등)는 바꾸지 않음` : "",
     bridge.unsupported_entries - bridge.unsupported_hardcoded > 0
       ? `localization 테이블 밖 항목 ${bridge.unsupported_entries - bridge.unsupported_hardcoded}개 제외`
       : "",
     bridge.disabled_patch_mods.length > 0 ? `기존 번역 모드 비활성화: ${bridge.disabled_patch_mods.join(", ")}` : "",
   ].filter(Boolean);
-  return `번역 적용 완료: ${bridge.mod_id}/${bridge.language} ${entries}개${notes.length > 0 ? ` · ${notes.join(" · ")}` : ""}`;
+  const what = bridge.dll_strings !== null ? `DLL 문자열 ${entries}개` : `${entries}개`;
+  return `번역 적용 완료: ${bridge.mod_id}/${bridge.language} ${what}${notes.length > 0 ? ` · ${notes.join(" · ")}` : ""}`;
 }

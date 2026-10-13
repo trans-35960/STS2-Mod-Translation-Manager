@@ -1,4 +1,4 @@
-use super::hardcoded::{hardcoded_capacity_bytes, is_hardcoded_entry_key, utf16le_byte_len};
+use super::hardcoded::is_hardcoded_entry_key;
 use super::language_path::{matching_target_language_values, source_path_matches_target_language};
 use super::slots::{ensure_translation_slot_ids, stable_slot_key};
 use super::source_json::{flatten_source_values, json_text};
@@ -172,11 +172,11 @@ pub fn validate_translation_sheet(sheet: &JsonTranslationSheet) -> JsonValidatio
             JsonTranslationStatus::Removed => removed_entries.push(entry.key.clone()),
             JsonTranslationStatus::Updated => {
                 updated_entries.push(entry.key.clone());
-                if is_translatable_entry(entry) && entry.translated_value.is_empty() {
+                if needs_translation(entry, &sheet.target_language) {
                     missing_entries.push(entry.key.clone());
                 }
             }
-            _ if is_translatable_entry(entry) && entry.translated_value.is_empty() => {
+            _ if needs_translation(entry, &sheet.target_language) => {
                 missing_entries.push(entry.key.clone())
             }
             _ => {}
@@ -249,6 +249,17 @@ fn count_status(sheet: &JsonTranslationSheet, status: JsonTranslationStatus) -> 
         .count()
 }
 
+/// An empty translation is only missing when the text is meant to be read. A
+/// DLL sheet lists every string literal of the mod (identifiers, log lines,
+/// paths); of those only text in a foreign script counts, minus regexes.
+fn needs_translation(entry: &JsonTranslationEntry, target_language: &str) -> bool {
+    is_translatable_entry(entry)
+        && entry.translated_value.is_empty()
+        && (!is_hardcoded_entry_key(&entry.key)
+            || (crate::leftover_text::contains_foreign_script(&entry.source_value, target_language)
+                && !crate::leftover_text::is_code_like_text(&entry.source_value)))
+}
+
 pub(crate) fn is_translatable_entry(entry: &JsonTranslationEntry) -> bool {
     entry.status != JsonTranslationStatus::Removed && !entry.source_value.trim().is_empty()
 }
@@ -257,21 +268,10 @@ fn validation_format_issues(entry: &JsonTranslationEntry) -> Vec<JsonValidationI
     if !is_translatable_entry(entry) || entry.translated_value.is_empty() {
         return Vec::new();
     }
+    // DLL strings go through the bridge, which has no length limit; only the
+    // old in-place DLL patch (`apply_hardcoded_sheet`) does, and it refuses
+    // a translation that does not fit.
     let mut issues = Vec::new();
-    if is_hardcoded_entry_key(&entry.key)
-        && let Some(capacity) = hardcoded_capacity_bytes(&entry.key)
-    {
-        let translated_len = utf16le_byte_len(&entry.translated_value);
-        if translated_len > capacity {
-            issues.push(JsonValidationIssue {
-                key: entry.key.clone(),
-                kind: "hardcoded_capacity".to_string(),
-                message: format!(
-                    "DLL 고정 문자열보다 번역이 깁니다: 번역 {translated_len} bytes / 허용 {capacity} bytes"
-                ),
-            });
-        }
-    }
     let source_newlines = entry.source_value.matches('\n').count();
     let translated_newlines = entry.translated_value.matches('\n').count();
     if source_newlines != translated_newlines {

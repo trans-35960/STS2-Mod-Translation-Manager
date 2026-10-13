@@ -62,6 +62,12 @@ public static class Status
         {
             var directory = Path.GetDirectoryName(SharedPaths.StatusFile)!;
             Directory.CreateDirectory(directory);
+            _current.DllStrings = StringReplacer.Reports;
+            _current.DllStringsLanguage = StringReplacer.Language;
+            foreach (var error in StringReplacer.Errors.Take(MaxListedIssues - _current.Errors.Count))
+            {
+                _current.Errors.Add($"strings: {error}");
+            }
             var temp = SharedPaths.StatusFile + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(_current, JsonOptions));
             File.Move(temp, SharedPaths.StatusFile, overwrite: true);
@@ -113,5 +119,10 @@ public static class Status
         public List<InvalidEntry> Invalid { get; set; } = new();
         public List<string> MissingTables { get; set; } = new();
         public List<string> Errors { get; set; } = new();
+
+        /// <summary>DLL string replacement per assembly (done once at start-up).</summary>
+        public Dictionary<string, StringReplacer.AssemblyReport> DllStrings { get; set; } = new();
+
+        public string DllStringsLanguage { get; set; } = "";
     }
 }

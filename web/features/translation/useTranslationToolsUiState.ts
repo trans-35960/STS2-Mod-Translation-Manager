@@ -15,6 +15,7 @@ import type {
 } from "./TranslationToolsTypes";
 import {
   buildTranslationProjectTree,
+  dllTextKeys as findDllTextKeys,
   hasTranslationValue,
   isTranslatableEntry,
   languageCodeFromSourcePath,
@@ -45,6 +46,7 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
   const [replaceWith, setReplaceWith] = React.useState("");
   const [exportOnlyEmpty, setExportOnlyEmpty] = React.useState(false);
   const [showIds, setShowIds] = React.useState(true);
+  const [dllTextOnly, setDllTextOnly] = React.useState(true);
   const [columns, setColumns] = React.useState<TranslationColumns>(defaultColumns);
   const [focusEntryKey, setFocusEntryKey] = React.useState<string | null>(null);
   const [focusEntryInput, setFocusEntryInput] = React.useState(true);
@@ -127,6 +129,11 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     };
   }, [props.report, props.sheet, sheetPath]);
   const projectTree = React.useMemo(() => buildTranslationProjectTree(props.sheet), [props.sheet]);
+  const dllTextKeys = React.useMemo(
+    () => findDllTextKeys(props.sheet, props.targetLanguage),
+    [props.sheet, props.targetLanguage],
+  );
+  const hiddenDllKeys = dllTextOnly ? dllTextKeys : null;
   const filteredEntries = React.useMemo(
     () => {
       const query = entrySearch.trim().toLowerCase();
@@ -143,6 +150,9 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
             return false;
           }
           if (!isRemoved && !isTranslatableEntry(entry)) {
+            return false;
+          }
+          if (hiddenDllKeys && !isRemoved && !hiddenDllKeys.has(entry.key)) {
             return false;
           }
           if (activeProjectPath && !pathMatchesProjectNode(parts.file, activeProjectPath)) {
@@ -178,6 +188,7 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
       activeProjectPath,
       entryFilter,
       entrySearch,
+      hiddenDllKeys,
       props.pasteCandidatesByKey,
       props.sheet,
       slotIdByEntryKey,
@@ -263,6 +274,9 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     setEntrySearch("");
     setValidationIssueKindFilter(null);
     setEntryFilter(targetEntry?.status === "removed" ? "removed" : "all");
+    if (dllTextKeys && !dllTextKeys.has(key)) {
+      setDllTextOnly(false);
+    }
     setFocusEntryInput(true);
     setFocusEntryKey(key);
   }
@@ -336,6 +350,9 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     setExportOnlyEmpty,
     showIds,
     setShowIds,
+    dllTextOnly,
+    setDllTextOnly,
+    dllTextCount: dllTextKeys?.size ?? null,
     columns,
     sheetPath,
     sheetSourceLanguage,

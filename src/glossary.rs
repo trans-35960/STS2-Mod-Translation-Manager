@@ -201,10 +201,11 @@ pub(crate) fn has_markup(value: &str) -> bool {
 
 /// Picks the game language folder named in the sheet's source path
 /// (`.../localization/eng`) or, for sheets built from a copied folder, in the
-/// entry keys (`file://Mod/localization/jpn/cards.json#/...`). Defaults to
-/// English.
+/// entry keys (`file://Mod/localization/jpn/cards.json#/...`). Sheets without
+/// one (DLL strings) are judged by the script of their text; English is the
+/// default.
 pub fn sheet_source_language(sheet: &JsonTranslationSheet) -> String {
-    source_language_of(
+    named_source_language(
         &sheet.source_path,
         sheet
             .entries
@@ -212,6 +213,39 @@ pub fn sheet_source_language(sheet: &JsonTranslationSheet) -> String {
             .take(32)
             .map(|entry| entry.key.as_str()),
     )
+    .or_else(|| {
+        script_language(
+            sheet
+                .entries
+                .iter()
+                .map(|entry| entry.source_value.as_str()),
+        )
+    })
+    .unwrap_or_else(|| DEFAULT_SOURCE_LANGUAGE.to_string())
+}
+
+/// The language whose script most of `texts` is written in. Latin text says
+/// nothing (identifiers look the same in every language); any kana means
+/// Japanese, since Japanese text also uses Han.
+fn script_language<'a>(texts: impl IntoIterator<Item = &'a str>) -> Option<String> {
+    let (mut han, mut kana, mut hangul, mut cyrillic) = (0usize, 0usize, 0usize, 0usize);
+    for character in texts.into_iter().flat_map(str::chars) {
+        match character {
+            '\u{3040}'..='\u{30ff}' => kana += 1,
+            '\u{4e00}'..='\u{9fff}' | '\u{3400}'..='\u{4dbf}' => han += 1,
+            '\u{ac00}'..='\u{d7af}' => hangul += 1,
+            '\u{0400}'..='\u{04ff}' => cyrillic += 1,
+            _ => {}
+        }
+    }
+    if kana > 0 {
+        return Some("jpn".to_string());
+    }
+    [(han, "zhs"), (hangul, "kor"), (cyrillic, "rus")]
+        .into_iter()
+        .filter(|(count, _)| *count > 0)
+        .max_by_key(|(count, _)| *count)
+        .map(|(_, language)| language.to_string())
 }
 
 /// The source language from a sheet's source folder, or else from its entry
@@ -221,14 +255,20 @@ pub fn source_language_of<'a>(
     source_path: &str,
     entry_keys: impl IntoIterator<Item = &'a str>,
 ) -> String {
-    language_component(source_path.split(['/', '\\']).rev())
-        .or_else(|| {
-            entry_keys.into_iter().find_map(|key| {
-                let file = key.strip_prefix("file://")?.split('#').next()?;
-                language_component(file.split('/').rev())
-            })
-        })
+    named_source_language(source_path, entry_keys)
         .unwrap_or_else(|| DEFAULT_SOURCE_LANGUAGE.to_string())
+}
+
+fn named_source_language<'a>(
+    source_path: &str,
+    entry_keys: impl IntoIterator<Item = &'a str>,
+) -> Option<String> {
+    language_component(source_path.split(['/', '\\']).rev()).or_else(|| {
+        entry_keys.into_iter().find_map(|key| {
+            let file = key.strip_prefix("file://")?.split('#').next()?;
+            language_component(file.split('/').rev())
+        })
+    })
 }
 
 fn language_component<'a>(parts: impl Iterator<Item = &'a str>) -> Option<String> {
@@ -1060,6 +1100,19 @@ mod tests {
         value.entries = vec![entry("x", "y")];
         value.entries[0].key = "file://Mod/localization/zhs/cards.json#/A".to_string();
         assert_eq!(sheet_source_language(&value), "zhs");
+    }
+
+    #[test]
+    fn dll_sheet_source_language_comes_from_its_script() {
+        let mut value = sheet(vec![entry("CURSE_INFECTION", ""), entry("灵体嫁接", "")]);
+        value.source_path = "Z:/work/source/Mod.dll".to_string();
+        value.entries[0].key = "dll://10:4".to_string();
+        value.entries[1].key = "dll://20:8".to_string();
+        assert_eq!(sheet_source_language(&value), "zhs");
+        value.entries[1].source_value = "スキップ".to_string();
+        assert_eq!(sheet_source_language(&value), "jpn");
+        value.entries[1].source_value = "Refund".to_string();
+        assert_eq!(sheet_source_language(&value), "eng");
     }
 
     #[test]

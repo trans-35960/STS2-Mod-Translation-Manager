@@ -148,6 +148,9 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           setReplaceWith={ui.setReplaceWith}
           showIds={ui.showIds}
           setShowIds={ui.setShowIds}
+          dllTextOnly={ui.dllTextOnly}
+          setDllTextOnly={ui.setDllTextOnly}
+          dllTextCount={ui.dllTextCount}
           columns={ui.columns}
           sheetSourceLanguage={ui.sheetSourceLanguage}
           selectedCompareLanguages={ui.selectedCompareLanguages}

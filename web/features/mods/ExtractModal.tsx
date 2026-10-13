@@ -10,7 +10,15 @@ const LEFTOVER_LOCATION_LABELS: Record<LeftoverReport["files"][number]["location
 };
 
 /** Shows where text in a non-target script survives after translation. */
-function LeftoverTextSection({ onScan, disabled }: { onScan: () => Promise<LeftoverReport>; disabled: boolean }) {
+function LeftoverTextSection({
+  onScan,
+  onOpenDll,
+  disabled,
+}: {
+  onScan: () => Promise<LeftoverReport>;
+  onOpenDll: (path: string) => void;
+  disabled: boolean;
+}) {
   const [report, setReport] = React.useState<LeftoverReport | null>(null);
   const [scanning, setScanning] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -52,9 +60,15 @@ function LeftoverTextSection({ onScan, disabled }: { onScan: () => Promise<Lefto
                 <code>{file.file}</code>
               </summary>
               {file.location === "dll" && (
-                <p className="leftover-text-note">
-                  C# 코드에 직접 들어간 문자열입니다. 번역 모드(PCK)로는 바꿀 수 없고, 정규식으로 표시된 항목은 번역하면 모드 기능이 깨질 수 있습니다.
-                </p>
+                <div className="leftover-text-note">
+                  <p>
+                    C# 코드에 직접 들어간 문자열입니다. 번역 도구에서 번역하고 적용하면 브리지가 게임 시작 때 바꿉니다(게임 재시작 필요). "번역 금지"로 표시된
+                    정규식 등은 적용할 때 자동으로 빠집니다.
+                  </p>
+                  <button type="button" onClick={() => onOpenDll(file.file)} disabled={disabled}>
+                    번역 도구에서 작업
+                  </button>
+                </div>
               )}
               <ul>
                 {file.texts.map((text) => (
@@ -70,6 +84,21 @@ function LeftoverTextSection({ onScan, disabled }: { onScan: () => Promise<Lefto
       )}
     </div>
   );
+}
+
+/**
+ * The scan reports where the DLL sits in the mod folder; the translation tool
+ * looks for it in its working copy of that folder, so it needs the path
+ * relative to the mod.
+ */
+function modRelativePath(modPath: string, filePath: string): string {
+  const normalize = (value: string) => value.replace(/\\/g, "/").replace(/\/+$/, "");
+  const root = normalize(modPath);
+  const file = normalize(filePath);
+  if (file.toLowerCase().startsWith(`${root.toLowerCase()}/`)) {
+    return file.slice(root.length + 1);
+  }
+  return file.split("/").pop() || file;
 }
 
 function ExtractConfirmModal(props: {
@@ -138,7 +167,20 @@ function ExtractConfirmModal(props: {
             캐시 삭제 후 다시 읽기
           </button>
         </div>
-        <LeftoverTextSection onScan={props.onScanLeftover} disabled={Boolean(props.busy)} />
+        <LeftoverTextSection
+          onScan={props.onScanLeftover}
+          onOpenDll={(path) => {
+            const relative = modRelativePath(props.mod.path, path);
+            props.onOpenNodeTools({
+              name: relative.split("/").pop() || relative,
+              path: relative,
+              source_path: relative,
+              kind: "hardcoded",
+              children: [],
+            });
+          }}
+          disabled={Boolean(props.busy)}
+        />
         <div className="modal-tree-section">
           <button
             className="modal-tree-title"

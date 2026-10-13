@@ -295,6 +295,105 @@ pub(crate) fn write_atomic(path: &Path, content: &str) -> AppResult<()> {
     })
 }
 
+/// One DLL string literal and what the bridge replaces it with.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DllString {
+    pub original: String,
+    pub translation: String,
+    /// The id the translation tool shows, for the edit panel.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+}
+
+/// The DLL strings of a sheet the bridge can replace.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SheetStrings {
+    pub strings: Vec<DllString>,
+    /// Regexes, format patterns and similar code, never replaced: changing
+    /// them breaks the mod rather than translating anything.
+    pub code_like: usize,
+}
+
+/// Translated `dll://` entries of a DLL sheet. Untranslated and unchanged
+/// strings are left out; so is anything that looks like code.
+pub fn sheet_strings(sheet: &JsonTranslationSheet) -> SheetStrings {
+    let ids = translation_slot_entries(sheet)
+        .into_iter()
+        .map(|slot| (slot.entry.key.as_str(), slot.id))
+        .collect::<BTreeMap<_, _>>();
+    let mut result = SheetStrings::default();
+    let mut seen = std::collections::BTreeSet::new();
+    for entry in &sheet.entries {
+        if entry.status == JsonTranslationStatus::Removed
+            || !entry.key.starts_with("dll://")
+            || entry.translated_value.is_empty()
+            || entry.translated_value == entry.source_value
+        {
+            continue;
+        }
+        if crate::leftover_text::is_code_like_text(&entry.source_value) {
+            result.code_like += 1;
+            continue;
+        }
+        // The #US heap stores each literal once, but a sheet rebuilt from an
+        // updated DLL may list it again under another offset.
+        if !seen.insert(entry.source_value.clone()) {
+            continue;
+        }
+        result.strings.push(DllString {
+            original: entry.source_value.clone(),
+            translation: entry.translated_value.clone(),
+            id: ids.get(entry.key.as_str()).cloned(),
+        });
+    }
+    result
+}
+
+/// `strings/{modId}/{lang}/{assembly}.json`
+pub fn strings_path(shared: &Path, mod_id: &str, language: &str, assembly: &str) -> PathBuf {
+    shared
+        .join("strings")
+        .join(mod_id)
+        .join(language)
+        .join(format!("{assembly}.json"))
+}
+
+#[derive(Serialize)]
+struct StringsFile<'a> {
+    assembly: &'a str,
+    updated_at: u64,
+    strings: &'a [DllString],
+}
+
+/// Writes the strings the bridge replaces in `assembly`; an empty list
+/// removes the file so nothing is replaced any more.
+pub fn write_strings(
+    shared: &Path,
+    mod_id: &str,
+    language: &str,
+    assembly: &str,
+    strings: &[DllString],
+    updated_at: u64,
+) -> AppResult<PathBuf> {
+    write_atomic(
+        &shared.join("format.json"),
+        &format!("{{\n  \"format\": {SHARED_FORMAT}\n}}"),
+    )?;
+    let path = strings_path(shared, mod_id, language, assembly);
+    if strings.is_empty() {
+        remove_if_exists(&path)?;
+        return Ok(path);
+    }
+    let content = serde_json::to_string_pretty(&StringsFile {
+        assembly,
+        updated_at,
+        strings,
+    })
+    .map_err(|error| AppError::InvalidCommand(error.to_string()))?;
+    write_atomic(&path, &content)?;
+    Ok(path)
+}
+
 /// `status/bridge.json`, written by the bridge after each apply.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 pub struct BridgeStatus {
@@ -509,6 +608,52 @@ mod tests {
         assert_eq!(meta.target_version.as_deref(), Some("0.1.0"));
         assert_eq!(meta.updated_at, 42);
         assert!(format.contains("\"format\": 1"));
+    }
+
+    #[test]
+    fn dll_strings_skip_code_untranslated_and_repeats() {
+        let sheet = JsonTranslationSheet {
+            source_path: "Mod/Mod.dll".to_string(),
+            target_language: "kor".to_string(),
+            updated_epoch: 0,
+            entries: vec![
+                entry("dll://10:4", "傲慢", "오만"),
+                entry("dll://20:6", "^(?:进行)\\d+$", "^(?:진행)\\d+$"),
+                entry("dll://30:4", "跳过", ""),
+                entry("dll://40:4", "same", "same"),
+                entry("dll://50:4", "傲慢", "오만2"),
+            ],
+        };
+
+        let result = sheet_strings(&sheet);
+
+        assert_eq!(result.strings.len(), 1);
+        assert_eq!(result.strings[0].original, "傲慢");
+        assert_eq!(result.strings[0].translation, "오만");
+        assert!(result.strings[0].id.is_some());
+        assert_eq!(result.code_like, 1);
+    }
+
+    #[test]
+    fn writes_and_clears_dll_strings() {
+        let shared = temp_dir("strings");
+        let strings = vec![DllString {
+            original: "傲慢".to_string(),
+            translation: "오만".to_string(),
+            id: Some("k001-aa".to_string()),
+        }];
+
+        let path = write_strings(&shared, "Mod", "kor", "Mod", &strings, 7).expect("write");
+        let written: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).expect("read")).expect("json");
+        write_strings(&shared, "Mod", "kor", "Mod", &[], 8).expect("clear");
+        let cleared = path.exists();
+        fs::remove_dir_all(&shared).ok();
+
+        assert!(path.ends_with("strings/Mod/kor/Mod.json"));
+        assert_eq!(written["assembly"], "Mod");
+        assert_eq!(written["strings"][0]["translation"], "오만");
+        assert!(!cleared);
     }
 
     #[test]

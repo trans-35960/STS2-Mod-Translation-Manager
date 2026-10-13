@@ -94,6 +94,73 @@ export function collectLocalizationNodes(node: TranslationProjectNode, output: T
   }
 }
 
+const SCRIPT_PATTERNS: Record<string, RegExp> = {
+  han: /[一-鿿㐀-䶿豈-﫿]/,
+  kana: /[぀-ヿㇰ-ㇿ]/,
+  hangul: /[가-힯ᄀ-ᇿ㄰-㆏]/,
+  cyrillic: /[Ѐ-ӿ]/,
+};
+
+/** Scripts native to the target language; mirrors `leftover_text::native_scripts`. */
+function nativeScripts(targetLanguage: string): string[] {
+  switch (targetLanguage.trim().toLowerCase()) {
+    case "kor":
+    case "ko":
+      return ["hangul"];
+    case "jpn":
+    case "ja":
+      return ["han", "kana"];
+    case "zhs":
+    case "zht":
+    case "zh":
+    case "chs":
+    case "cht":
+      return ["han"];
+    case "rus":
+    case "ru":
+    case "ukr":
+    case "uk":
+      return ["cyrillic"];
+    default:
+      return [];
+  }
+}
+
+/** Text with letters of a script the target language does not use (Latin never counts). */
+export function containsForeignScript(text: string, targetLanguage: string): boolean {
+  const native = nativeScripts(targetLanguage);
+  return Object.entries(SCRIPT_PATTERNS).some(([script, pattern]) => !native.includes(script) && pattern.test(text));
+}
+
+/** Regexes and similar code the bridge never replaces; mirrors `leftover_text::is_code_like_text`. */
+export function isCodeLikeText(text: string): boolean {
+  return ["(?:", "\\d", "\\s", "\\w", "[^", "(\\", ")+", ")*", ".*", "+?", "*?"].some((marker) => text.includes(marker));
+}
+
+export function isHardcodedSheet(sourcePath: string): boolean {
+  return /\.(dll|exe)$/i.test(sourcePath.trim());
+}
+
+/**
+ * A DLL holds every string literal of the mod: identifiers, log lines, paths.
+ * Only text in a foreign script (and anything already translated) is worth
+ * translating. Null for other sheets, or when that would leave nothing.
+ */
+export function dllTextKeys(sheet: JsonTranslationSheet | null, targetLanguage: string): Set<string> | null {
+  if (!sheet || !isHardcodedSheet(sheet.source_path)) {
+    return null;
+  }
+  const language = targetLanguage || sheet.target_language;
+  const keys = new Set<string>();
+  for (const entry of sheet.entries) {
+    const readable = containsForeignScript(entry.source_value, language) && !isCodeLikeText(entry.source_value);
+    if (readable || hasTranslationValue(entry.translated_value)) {
+      keys.add(entry.key);
+    }
+  }
+  return keys.size > 0 ? keys : null;
+}
+
 export function sheetEntryFilePath(key: string): string {
   return splitSheetKey(key).file;
 }

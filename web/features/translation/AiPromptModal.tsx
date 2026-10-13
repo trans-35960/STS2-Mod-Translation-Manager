@@ -7,6 +7,7 @@ import { TermCandidatesPanel } from "./TermCandidatesPanel";
 import { TermTableEditor } from "./TermTableEditor";
 import {
   compactTranslationFile,
+  dllTextKeys,
   normalizeSlotId,
   parsePastedTranslationJson,
   structuredTranslationEntries,
@@ -56,6 +57,8 @@ export function AiPromptModal({
   const [extraInstructions, setExtraInstructions] = React.useState("");
   const [includePrompt, setIncludePrompt] = React.useState(true);
   const [onlyEmpty, setOnlyEmpty] = React.useState(onlyEmptyDefault);
+  const [dllTextOnly, setDllTextOnly] = React.useState(true);
+  const dllKeys = React.useMemo(() => dllTextKeys(sheet, sheet.target_language), [sheet]);
   const [maxChars, setMaxChars] = React.useState(readStoredMaxChars);
   const [saveState, setSaveState] = React.useState<"" | "saving" | "saved">("");
   const savedTermsRef = React.useRef("");
@@ -183,10 +186,13 @@ export function AiPromptModal({
       } catch {
         // Remembering the budget is only a convenience.
       }
+      // Entries keep their stored ids, so answers still land on the full sheet.
+      const promptSheet =
+        dllKeys && dllTextOnly ? { ...sheet, entries: sheet.entries.filter((entry) => dllKeys.has(entry.key)) } : sheet;
       const parts = isPreviewRuntime()
-        ? previewParts(sheet, includePrompt, budget)
+        ? previewParts(promptSheet, includePrompt, budget)
         : await invokeCommand("build_ai_prompt_parts", {
-            sheet,
+            sheet: promptSheet,
             request: {
               projectKey: projectKey || null,
               modName: projectInfo?.modName ?? "",
@@ -420,6 +426,12 @@ export function AiPromptModal({
               <input type="checkbox" checked={onlyEmpty} onChange={(event) => setOnlyEmpty(event.target.checked)} />
               <span>빈 값만</span>
             </label>
+            {dllKeys && (
+              <label className="inline-check" title="코드 이름·로그·경로·정규식은 빼고 번역할 문장만 보냅니다.">
+                <input type="checkbox" checked={dllTextOnly} onChange={(event) => setDllTextOnly(event.target.checked)} />
+                <span>번역할 문장만 ({dllKeys.size})</span>
+              </label>
+            )}
             <label className="ai-prompt-max">
               <span>파트당 최대</span>
               <input type="number" min={500} step={500} value={maxChars} onChange={(event) => setMaxChars(Number(event.target.value))} />

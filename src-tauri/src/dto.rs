@@ -59,6 +59,10 @@ pub(crate) struct BridgeApplyDto {
     pub(crate) tables: usize,
     pub(crate) unsupported_entries: usize,
     pub(crate) unsupported_hardcoded: usize,
+    /// DLL strings written for the bridge to replace (DLL sheets only).
+    pub(crate) dll_strings: Option<usize>,
+    /// DLL strings that look like code (regexes) and are never replaced.
+    pub(crate) code_like_skipped: usize,
     pub(crate) disabled_patch_mods: Vec<String>,
     pub(crate) bridge_installed: bool,
     pub(crate) bridge_active: bool,
