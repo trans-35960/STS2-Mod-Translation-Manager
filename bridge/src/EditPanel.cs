@@ -48,7 +48,11 @@ public partial class EditPanel : Window
     {
         Title = "번역 수정 · F8/Esc 닫기 · Ctrl+Enter 저장";
         Visible = false;
-        Transient = true;
+        // A separate OS window: in full screen a click on the game would put
+        // the game in front and hide the panel. Always-on-top keeps it
+        // visible while open (Godot ignores it on transient windows).
+        Transient = false;
+        AlwaysOnTop = true;
         WrapControls = false;
         CloseRequested += Hide;
         WindowInput += OnWindowInput;
@@ -240,6 +244,11 @@ public partial class EditPanel : Window
         var size = new Vector2I(
             Math.Min(1200, (int)(screen.X * 0.9f)),
             Math.Min(760, (int)(screen.Y * 0.85f)));
+        // Not transient, so it centres on its own screen: put it on the game's.
+        if (GetTree().Root is { } root && !IsEmbedded())
+        {
+            CurrentScreen = root.CurrentScreen;
+        }
         PopupCentered(size);
         _showKeys.SetPressedNoSignal(Injector.ShowKeys);
         ReloadAndShow("");

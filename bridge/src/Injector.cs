@@ -359,6 +359,12 @@ public static class Injector
         var result = text;
         foreach (var (old, replacement) in partial)
         {
+            // `[#12] text` contains `text`: a label the game already updated
+            // would get the tag twice.
+            if (result.Contains(replacement, StringComparison.Ordinal))
+            {
+                continue;
+            }
             if (result.Contains(old, StringComparison.Ordinal))
             {
                 result = result.Replace(old, replacement, StringComparison.Ordinal);
