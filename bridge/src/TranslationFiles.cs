@@ -3,14 +3,23 @@ using System.Text.Json;
 namespace Sts2ModManagerBridge;
 
 /// <summary>
-/// One loc table's translations for one mod: key → value, and key → source
-/// text when the app wrote it (<c>_source/{table}.json</c>).
+/// What the edit panel shows besides the translation: the id the app's
+/// translation tool uses, the source text and the mod's other languages.
+/// </summary>
+public sealed record EntryInfo(string? Id, string? Source, string? SourceLang, IReadOnlyDictionary<string, string> Langs)
+{
+    public static readonly EntryInfo Empty = new(null, null, null, new Dictionary<string, string>());
+}
+
+/// <summary>
+/// One loc table's translations for one mod: key → value, and key → info
+/// when the app wrote it (<c>_info/{table}.json</c>).
 /// </summary>
 public sealed record TableTranslations(
     string ModId,
     string Table,
     Dictionary<string, string> Values,
-    Dictionary<string, string> Sources);
+    Dictionary<string, EntryInfo> Info);
 
 /// <summary>
 /// Reads <c>translations/{modId}/{lang}/{table}.json</c> (flat string maps the
@@ -59,11 +68,11 @@ public static class TranslationFiles
                 }
                 try
                 {
-                    var sourceFile = Path.Combine(languageDir, "_source", table + ".json");
-                    var sources = File.Exists(sourceFile)
-                        ? ReadFlatMap(sourceFile)
-                        : new Dictionary<string, string>(StringComparer.Ordinal);
-                    tables.Add(new TableTranslations(modId, table, ReadFlatMap(file), sources));
+                    var infoFile = Path.Combine(languageDir, "_info", table + ".json");
+                    var info = File.Exists(infoFile)
+                        ? ReadInfo(infoFile)
+                        : new Dictionary<string, EntryInfo>(StringComparer.Ordinal);
+                    tables.Add(new TableTranslations(modId, table, ReadFlatMap(file), info));
                 }
                 catch (Exception exception)
                 {
@@ -94,6 +103,40 @@ public static class TranslationFiles
             return null;
         }
     }
+
+    /// <summary><c>{ key: { "id", "source", "langs": { lang: text } } }</c></summary>
+    public static Dictionary<string, EntryInfo> ReadInfo(string file)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(file));
+        var info = new Dictionary<string, EntryInfo>(StringComparer.Ordinal);
+        foreach (var property in document.RootElement.EnumerateObject())
+        {
+            if (property.Value.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+            var langs = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (property.Value.TryGetProperty("langs", out var langsElement) && langsElement.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var lang in langsElement.EnumerateObject())
+                {
+                    if (lang.Value.ValueKind == JsonValueKind.String)
+                    {
+                        langs[lang.Name] = lang.Value.GetString()!;
+                    }
+                }
+            }
+            info[property.Name] = new EntryInfo(
+                OptionalString(property.Value, "id"),
+                OptionalString(property.Value, "source"),
+                OptionalString(property.Value, "source_lang"),
+                langs);
+        }
+        return info;
+    }
+
+    private static string? OptionalString(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
     public static Dictionary<string, string> ReadFlatMap(string file)
     {

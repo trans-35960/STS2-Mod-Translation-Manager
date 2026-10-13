@@ -5,7 +5,7 @@ namespace Sts2ModManagerBridge;
 /// <summary>
 /// Lives under the scene root for the whole session and opens the edit
 /// panel on F8. Opening it re-reads the shared folder, so F8 also picks up
-/// what the app just applied. Ctrl+F8 toggles the <c>[key]</c> prefixes
+/// what the app just applied. Ctrl+F8 toggles the <c>[#number]</c> prefixes
 /// without opening the panel.
 /// </summary>
 public partial class HotkeyListener : Node
