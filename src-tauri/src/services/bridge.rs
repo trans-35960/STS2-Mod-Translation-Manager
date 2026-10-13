@@ -1,3 +1,60 @@
+/// Adds the mod's own text in each of its language folders, so the edit
+/// panel can show (and copy) them next to the source. Best effort: a mod
+/// whose files cannot be found just shows the source.
+fn add_other_languages(sheet: &JsonTranslationSheet, info: &mut bridge::InfoTables) {
+    let Some(scan_root) = compare_scan_root(sheet) else {
+        return;
+    };
+    let Some(localization_dir) = sheet
+        .entries
+        .iter()
+        .find_map(|entry| localization_dir_of_entry(&entry.key))
+    else {
+        return;
+    };
+    let source_language = sheet
+        .entries
+        .iter()
+        .find_map(|entry| localization_language_component(Path::new(&split_translation_key(&entry.key).0)));
+    let Ok(language_dirs) = fs::read_dir(scan_root.join(&localization_dir)) else {
+        return;
+    };
+    for language_dir in language_dirs.flatten() {
+        if !language_dir.path().is_dir() {
+            continue;
+        }
+        let language = language_dir.file_name().to_string_lossy().to_string();
+        if Some(&language) == source_language.as_ref()
+            || language.eq_ignore_ascii_case(&sheet.target_language)
+        {
+            continue;
+        }
+        let sample = localization_dir.join(&language);
+        let Ok(values) = compare_translation_language_by_files(sheet, &scan_root, &language, &sample)
+        else {
+            continue;
+        };
+        for value in values {
+            let Some((table, key)) = bridge::sheet_key_table(&value.key) else {
+                continue;
+            };
+            if let Some(entry) = info.get_mut(&table).and_then(|keys| keys.get_mut(&key)) {
+                entry.langs.insert(language.clone(), value.value);
+            }
+        }
+    }
+}
+
+/// `…/localization` of a sheet key's file, relative to the mod root.
+fn localization_dir_of_entry(sheet_key: &str) -> Option<PathBuf> {
+    let (file, _) = split_translation_key(sheet_key);
+    let parts = path_components(Path::new(&file));
+    let index = parts
+        .iter()
+        .position(|part| part.eq_ignore_ascii_case("localization"))?;
+    Some(parts.iter().take(index + 1).collect())
+}
+
 /// Which mod a sheet translates, as the game knows it (manifest id).
 struct BridgeTarget {
     mod_id: String,
@@ -44,14 +101,11 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
     if is_hardcoded_source_file(Path::new(&sheet.source_path)) {
         return Ok(None);
     }
-    let bridge::SheetTables {
-        values: tables,
-        sources,
-        unsupported,
-    } = bridge::sheet_tables(&sheet);
-    if tables.is_empty() {
+    let mut tables = bridge::sheet_tables(&sheet);
+    if tables.values.is_empty() {
         return Ok(None);
     }
+    add_other_languages(&sheet, &mut tables.info);
     let app = app();
     let config = app.config();
     let summary = app
@@ -67,7 +121,6 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
         &target.mod_id,
         &sheet.target_language,
         &tables,
-        &sources,
         target.mod_version.as_deref(),
         epoch_seconds(Some(SystemTime::now())).unwrap_or(0),
     )
@@ -99,8 +152,8 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
             mod_id: target.mod_id,
             language: sheet.target_language.clone(),
             tables: report.tables,
-            unsupported_entries: unsupported.total(),
-            unsupported_hardcoded: unsupported.hardcoded,
+            unsupported_entries: tables.unsupported.total(),
+            unsupported_hardcoded: tables.unsupported.hardcoded,
             disabled_patch_mods,
             bridge_installed: bridge_row.is_some(),
             bridge_active: bridge_row.is_some_and(|record| desired.contains(&record.stable_key())),

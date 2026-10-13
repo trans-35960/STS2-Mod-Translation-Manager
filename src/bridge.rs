@@ -8,7 +8,9 @@
 //! See `docs/architecture/companion-mod.md`.
 
 use crate::error::{AppError, AppResult};
-use crate::json_translation::{JsonTranslationSheet, JsonTranslationStatus};
+use crate::json_translation::{
+    JsonTranslationSheet, JsonTranslationStatus, translation_slot_entries,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::env;
@@ -54,13 +56,32 @@ impl UnsupportedEntries {
     }
 }
 
+/// What the in-game edit panel shows next to a key besides its translation.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EntryInfo {
+    /// The id the translation tool shows (`k001-ab`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    /// Language folder the source text comes from (`zhs`, `eng`, ...).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_lang: Option<String>,
+    /// The mod's own text in its other languages (language folder → text).
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub langs: BTreeMap<String, String>,
+}
+
+/// `table -> key -> info`
+pub type InfoTables = BTreeMap<String, BTreeMap<String, EntryInfo>>;
+
 /// A sheet split into game loc tables.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SheetTables {
     /// Translated values (may be empty; empty ones are not written).
     pub values: TranslationTables,
-    /// Source text per key, shown and searched in the in-game edit panel.
-    pub sources: TranslationTables,
+    /// Id and source per key; other languages are added by the caller.
+    pub info: InfoTables,
     pub unsupported: UnsupportedEntries,
 }
 
@@ -68,18 +89,30 @@ pub struct SheetTables {
 /// from `localization/<lang>/<table>.json` with a top-level key qualify.
 pub fn sheet_tables(sheet: &JsonTranslationSheet) -> SheetTables {
     let mut tables = SheetTables::default();
+    let ids = translation_slot_entries(sheet)
+        .into_iter()
+        .map(|slot| (slot.entry.key.as_str(), slot.id))
+        .collect::<BTreeMap<_, _>>();
     let unsupported = &mut tables.unsupported;
     for entry in &sheet.entries {
         if entry.status == JsonTranslationStatus::Removed || entry.source_value.trim().is_empty() {
             continue;
         }
         match table_location(&entry.key) {
-            TableLocation::Table { table, key } => {
-                tables
-                    .sources
-                    .entry(table.clone())
-                    .or_default()
-                    .insert(key.clone(), entry.source_value.clone());
+            TableLocation::Table {
+                table,
+                key,
+                language,
+            } => {
+                tables.info.entry(table.clone()).or_default().insert(
+                    key.clone(),
+                    EntryInfo {
+                        id: ids.get(entry.key.as_str()).cloned(),
+                        source: Some(entry.source_value.clone()),
+                        source_lang: Some(language),
+                        langs: BTreeMap::new(),
+                    },
+                );
                 tables
                     .values
                     .entry(table)
@@ -95,7 +128,11 @@ pub fn sheet_tables(sheet: &JsonTranslationSheet) -> SheetTables {
 }
 
 enum TableLocation {
-    Table { table: String, key: String },
+    Table {
+        table: String,
+        key: String,
+        language: String,
+    },
     Hardcoded,
     Nested,
     Outside,
@@ -104,7 +141,7 @@ enum TableLocation {
 /// `(table, key)` of a sheet key that maps to a game loc table.
 pub fn sheet_key_table(sheet_key: &str) -> Option<(String, String)> {
     match table_location(sheet_key) {
-        TableLocation::Table { table, key } => Some((table, key)),
+        TableLocation::Table { table, key, .. } => Some((table, key)),
         _ => None,
     }
 }
@@ -120,11 +157,11 @@ fn table_location(sheet_key: &str) -> TableLocation {
         return TableLocation::Outside;
     };
     let parts = file.split('/').collect::<Vec<_>>();
-    let table_file = match parts.as_slice() {
-        [.., localization, _lang, table_file]
+    let (language, table_file) = match parts.as_slice() {
+        [.., localization, language, table_file]
             if localization.eq_ignore_ascii_case("localization") =>
         {
-            *table_file
+            (*language, *table_file)
         }
         _ => return TableLocation::Outside,
     };
@@ -143,6 +180,7 @@ fn table_location(sheet_key: &str) -> TableLocation {
     TableLocation::Table {
         table: table.to_string(),
         key: segment.replace("~1", "/").replace("~0", "~"),
+        language: language.to_string(),
     }
 }
 
@@ -168,13 +206,13 @@ pub struct WriteReport {
 /// Writes one sheet's tables for `mod_id`/`language`. Each table file holds
 /// exactly the sheet's non-empty values, so values cleared in the sheet stop
 /// being applied; tables of other sheets for the same mod are left alone.
-/// `_source/{table}.json` holds the source text of the written keys.
+/// `_info/{table}.json` holds id, source and other languages of the written
+/// keys for the edit panel.
 pub fn write_translations(
     shared: &Path,
     mod_id: &str,
     language: &str,
-    tables: &TranslationTables,
-    sources: &TranslationTables,
+    tables: &SheetTables,
     target_version: Option<&str>,
     updated_at: u64,
 ) -> AppResult<WriteReport> {
@@ -187,23 +225,25 @@ pub fn write_translations(
         dir: dir.clone(),
         ..WriteReport::default()
     };
-    for (table, values) in tables {
+    for (table, values) in &tables.values {
         let path = dir.join(format!("{table}.json"));
-        let source_path = dir.join("_source").join(format!("{table}.json"));
+        let info_path = dir.join("_info").join(format!("{table}.json"));
+        // Written by the first B-3 builds; `_info` replaces it.
+        remove_if_exists(&dir.join("_source").join(format!("{table}.json")))?;
         let values = values
             .iter()
             .filter(|(_, value)| !value.is_empty())
             .collect::<BTreeMap<_, _>>();
         if values.is_empty() {
             remove_if_exists(&path)?;
-            remove_if_exists(&source_path)?;
+            remove_if_exists(&info_path)?;
             continue;
         }
-        let table_sources = sources
+        let table_info = tables
+            .info
             .get(table)
-            .map(|sources| {
-                sources
-                    .iter()
+            .map(|info| {
+                info.iter()
                     .filter(|(key, _)| values.contains_key(key))
                     .collect::<BTreeMap<_, _>>()
             })
@@ -211,9 +251,9 @@ pub fn write_translations(
         let content = serde_json::to_string_pretty(&values)
             .map_err(|error| AppError::InvalidCommand(error.to_string()))?;
         write_atomic(&path, &content)?;
-        let content = serde_json::to_string_pretty(&table_sources)
+        let content = serde_json::to_string_pretty(&table_info)
             .map_err(|error| AppError::InvalidCommand(error.to_string()))?;
-        write_atomic(&source_path, &content)?;
+        write_atomic(&info_path, &content)?;
         report.tables += 1;
         report.entries += values.len();
     }
@@ -373,7 +413,7 @@ mod tests {
 
         let SheetTables {
             values: tables,
-            sources,
+            info,
             unsupported,
         } = sheet_tables(&sheet);
 
@@ -387,7 +427,15 @@ mod tests {
             .or_default()
             .insert("a/b".to_string(), String::new());
         assert_eq!(tables, expected);
-        assert_eq!(sources["cards"]["A.title"], "节制");
+        assert_eq!(info["cards"]["A.title"].source.as_deref(), Some("节制"));
+        assert_eq!(info["cards"]["A.title"].source_lang.as_deref(), Some("zhs"));
+        assert!(
+            info["cards"]["A.title"]
+                .id
+                .as_deref()
+                .is_some_and(|id| id.starts_with("k001-")),
+            "the id the translation tool shows"
+        );
         assert_eq!(
             unsupported,
             UnsupportedEntries {
@@ -405,42 +453,52 @@ mod tests {
         fs::create_dir_all(&dir).expect("create dir");
         fs::write(dir.join("powers.json"), "{\"old\": \"x\"}").expect("old table");
         fs::write(dir.join("_meta.json"), "{\"edits_ack\": \"e-7\"}").expect("old meta");
-        let mut tables = TranslationTables::new();
-        tables.entry("cards".to_string()).or_default().extend([
-            ("A".to_string(), "절제".to_string()),
-            ("B".to_string(), String::new()),
-        ]);
+        fs::create_dir_all(dir.join("_source")).expect("old source dir");
+        fs::write(dir.join("_source").join("cards.json"), "{}").expect("old source");
+        let mut tables = SheetTables::default();
         tables
+            .values
+            .entry("cards".to_string())
+            .or_default()
+            .extend([
+                ("A".to_string(), "절제".to_string()),
+                ("B".to_string(), String::new()),
+            ]);
+        tables
+            .values
             .entry("powers".to_string())
             .or_default()
             .insert("old".to_string(), String::new());
-
-        let mut sources = TranslationTables::new();
-        sources.entry("cards".to_string()).or_default().extend([
-            ("A".to_string(), "节制".to_string()),
-            ("B".to_string(), "空".to_string()),
+        let info = |id: &str, source: &str| EntryInfo {
+            id: Some(id.to_string()),
+            source: Some(source.to_string()),
+            source_lang: Some("zhs".to_string()),
+            langs: BTreeMap::from([("eng".to_string(), "Temperance".to_string())]),
+        };
+        tables.info.entry("cards".to_string()).or_default().extend([
+            ("A".to_string(), info("k001-aa", "节制")),
+            ("B".to_string(), info("k002-bb", "空")),
         ]);
 
-        let report = write_translations(
-            &shared,
-            "MaidenSuccubus",
-            "kor",
-            &tables,
-            &sources,
-            Some("0.1.0"),
-            42,
-        )
-        .expect("write");
+        let report =
+            write_translations(&shared, "MaidenSuccubus", "kor", &tables, Some("0.1.0"), 42)
+                .expect("write");
         let cards = fs::read_to_string(dir.join("cards.json")).expect("cards");
-        let card_sources =
-            fs::read_to_string(dir.join("_source").join("cards.json")).expect("sources");
+        let card_info: BTreeMap<String, EntryInfo> = serde_json::from_str(
+            &fs::read_to_string(dir.join("_info").join("cards.json")).expect("info"),
+        )
+        .expect("info json");
+        let old_source_exists = dir.join("_source").join("cards.json").exists();
         let meta = read_meta(&dir.join("_meta.json"));
         let format = fs::read_to_string(shared.join("format.json")).expect("format");
         let powers_exists = dir.join("powers.json").exists();
         fs::remove_dir_all(&shared).ok();
 
         assert_eq!(cards, "{\n  \"A\": \"절제\"\n}");
-        assert_eq!(card_sources, "{\n  \"A\": \"节制\"\n}");
+        assert_eq!(card_info.len(), 1, "only keys that were written");
+        assert_eq!(card_info["A"].id.as_deref(), Some("k001-aa"));
+        assert_eq!(card_info["A"].langs["eng"], "Temperance");
+        assert!(!old_source_exists);
         assert!(
             !powers_exists,
             "a table emptied in the sheet stops being applied"
