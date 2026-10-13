@@ -321,10 +321,9 @@ fn is_candidate_text(value: &str) -> bool {
 
 fn is_dotnet_user_text(value: &str) -> bool {
     let trimmed = value.trim();
+    // No mojibake check here: #US holds real UTF-16 literals, and much CJK
+    // text (次卡牌奖励 = `k!` `Sa` `rL` `YV`) looks like packed ASCII.
     if trimmed.chars().count() < 2 || trimmed.contains('\u{fffd}') {
-        return false;
-    }
-    if is_probably_mojibake_utf16(trimmed) {
         return false;
     }
     if is_likely_technical_identifier(trimmed) {
@@ -548,6 +547,14 @@ mod tests {
         assert!(!is_dotnet_user_text("com.unifiedsavepath.sts2"));
         assert!(!is_dotnet_user_text("UnifiedSavePath.dll"));
         assert!(is_dotnet_user_text("Current ascension state unavailable."));
+    }
+
+    #[test]
+    fn keeps_cjk_literals_that_look_like_packed_ascii() {
+        // Every character but the last two is two printable ASCII bytes.
+        assert!(is_probably_mojibake_utf16("次卡牌奖励。"));
+        assert!(is_dotnet_user_text("次卡牌奖励。"));
+        assert!(is_dotnet_user_text("最大生命值"));
     }
 
     fn temp_path(name: &str) -> std::path::PathBuf {
