@@ -58,8 +58,16 @@ export function useVirtualRows({
     );
   }, [listRef, scrollRef]);
 
+  // The scroller mounts later than this hook when the page opens before its
+  // sheet has loaded; the listener has to follow it, not just the first render.
+  const [scroller, setScroller] = React.useState<HTMLElement | null>(null);
+  React.useLayoutEffect(() => {
+    if (scrollRef.current !== scroller) {
+      setScroller(scrollRef.current);
+    }
+  });
+
   React.useEffect(() => {
-    const scroller = scrollRef.current;
     if (!scroller) {
       return;
     }
@@ -74,7 +82,7 @@ export function useVirtualRows({
       scroller.removeEventListener("scroll", readViewport);
       observer?.disconnect();
     };
-  }, [readViewport, scrollRef]);
+  }, [readViewport, scroller]);
 
   const rowObserver = React.useMemo(() => {
     if (typeof ResizeObserver === "undefined") {
