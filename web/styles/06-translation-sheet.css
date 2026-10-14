@@ -658,6 +658,19 @@
   background: #e0f2fe;
 }
 
+.validation-fix-all.validation-fix-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-color: rgba(5, 150, 105, 0.35);
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.validation-fix-all.validation-fix-prompt:hover:not(:disabled) {
+  background: #d1fae5;
+}
+
 .issue-hit.square_tags,
 .row-warning-badges button.square_tags {
   background: #fef3c7;

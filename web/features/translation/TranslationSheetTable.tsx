@@ -90,6 +90,7 @@ export function TranslationSheetTable({
   revealWarningEntry,
   revealEntryKey,
   clearFocusEntryKey,
+  onOpenFixPrompt,
 }: {
   props: TranslationToolsPageProps;
   sheetStats: JsonSheetReport | null;
@@ -137,8 +138,15 @@ export function TranslationSheetTable({
   focusEntryInput: boolean;
   revealEntryKey: (key: string) => void;
   clearFocusEntryKey: () => void;
+  /** Opens the AI prompt window with the flagged entries built as one fix prompt. */
+  onOpenFixPrompt: () => void;
 }) {
   const t = props.labels;
+  // Entries the fix prompt re-asks: structure and term problems (empty and
+  // changed-source entries are translated, not fixed).
+  const fixableIssueCount = new Set(
+    [...(props.validation?.format_issues ?? []), ...(props.validation?.glossary_issues ?? [])].map((issue) => issue.key),
+  ).size;
   const rowRefs = React.useRef(new Map<string, HTMLDivElement>());
   const gridRef = React.useRef<HTMLDivElement | null>(null);
   const rowListRef = React.useRef<HTMLDivElement | null>(null);
@@ -370,6 +378,18 @@ export function TranslationSheetTable({
                     {group.kind === "glossary" ? "용어 모두 치환" : "조사 위치 모두 고치기"} <b>{group.updates.length}</b>
                   </button>
                 ))}
+                {fixableIssueCount > 0 && (
+                  <button
+                    className="validation-fix-all validation-fix-prompt"
+                    type="button"
+                    title="원본·현재 번역·문제를 한 프롬프트로 만듭니다. AI 답변을 붙여넣으면 해당 번역이 한 번에 바뀝니다(되돌리기 가능)."
+                    onClick={onOpenFixPrompt}
+                    disabled={Boolean(props.busy)}
+                  >
+                    <MessageSquareText size={13} aria-hidden="true" />
+                    AI 수정 프롬프트 <b>{fixableIssueCount}</b>
+                  </button>
+                )}
               </div>
               <div className="validation-issue-list">
                 {validationItems.map((issue, issueIndex) => (

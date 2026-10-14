@@ -1,6 +1,6 @@
 import React from "react";
 import { BridgeEditsButton } from "./BridgeEditsButton";
-import { AiPromptModal } from "./AiPromptModal";
+import { AiPromptModal, type PromptFocus } from "./AiPromptModal";
 import { GlossaryPanel } from "./GlossaryPanel";
 import {
   AlertTriangle,
@@ -233,8 +233,13 @@ export function TranslationActionsPanel({
   dllTextKeys,
   filledTranslations,
   copyTreeJson,
+  aiPromptFocus,
+  setAiPromptFocus,
 }: {
   props: TranslationToolsPageProps;
+  /** What the AI prompt window is open for; null while closed. */
+  aiPromptFocus: PromptFocus | null;
+  setAiPromptFocus: (focus: PromptFocus | null) => void;
   sheetPath: string;
   projectTree: TranslationProjectNode | null;
   activeProjectPath: string | null;
@@ -261,7 +266,6 @@ export function TranslationActionsPanel({
   const changeEntryCount = props.sheet?.entries.filter((entry) => entry.status === "new" || entry.status === "updated").length ?? 0;
   const currentSheetMatchesTarget = !props.sheet || translationLanguagesMatch(props.sheet.target_language, props.targetLanguage);
   const canUseCurrentSheet = Boolean(props.sheet && currentSheetMatchesTarget);
-  const [aiPromptOpen, setAiPromptOpen] = React.useState(false);
   // Bumped when the AI prompt window saves mod terms, so the glossary reloads them.
   const [modTermsVersion, setModTermsVersion] = React.useState(0);
   return (
@@ -272,7 +276,7 @@ export function TranslationActionsPanel({
             <button
               type="button"
               className="primary icon-button-text compact"
-              onClick={() => setAiPromptOpen(true)}
+              onClick={() => setAiPromptFocus("all")}
               disabled={!canUseCurrentSheet || Boolean(props.busy)}
               title="웹 AI 채팅용 프롬프트를 파트별로 만들고 답변을 받아 적용합니다."
             >
@@ -478,14 +482,15 @@ export function TranslationActionsPanel({
           </label>
         </details>
       </div>
-      {aiPromptOpen && props.sheet && (
+      {aiPromptFocus && props.sheet && (
         <AiPromptModal
           sheet={props.sheet}
           projectInfo={props.projectInfo ?? null}
           onlyEmptyDefault={exportOnlyEmpty}
           dllTextKeys={dllTextKeys}
           validation={props.validation}
-          onClose={() => setAiPromptOpen(false)}
+          initialFocus={aiPromptFocus}
+          onClose={() => setAiPromptFocus(null)}
           onPasteAnswer={props.onPasteStructuredJson}
           onTermsSaved={() => {
             setModTermsVersion((version) => version + 1);

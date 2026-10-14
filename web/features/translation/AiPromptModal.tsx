@@ -46,6 +46,7 @@ export function AiPromptModal({
   onlyEmptyDefault,
   dllTextKeys: dllKeys,
   validation,
+  initialFocus = "all",
   onClose,
   onTermsSaved,
   onPasteAnswer,
@@ -57,9 +58,11 @@ export function AiPromptModal({
   dllTextKeys: Set<string> | null;
   /** The last validation, for re-asking only the flagged entries. */
   validation: JsonValidation | null;
+  /** Opened for fixing ("warnings"): starts on the parts tab with them built. */
+  initialFocus?: PromptFocus;
   onClose: () => void;
   onTermsSaved: () => void;
-  onPasteAnswer: (text: string) => boolean;
+  onPasteAnswer: (text: string, options?: { replace?: boolean }) => boolean;
 }) {
   const projectKey = translationProjectKey(projectInfo);
   const [loaded, setLoaded] = React.useState(false);
@@ -70,7 +73,9 @@ export function AiPromptModal({
   const [includePrompt, setIncludePrompt] = React.useState(true);
   const [onlyEmpty, setOnlyEmpty] = React.useState(onlyEmptyDefault);
   const [dllTextOnly, setDllTextOnly] = React.useState(true);
-  const [focus, setFocus] = React.useState<PromptFocus>("all");
+  const [focus, setFocus] = React.useState<PromptFocus>(initialFocus);
+  // Built once settings are loaded when the window opens for fixing.
+  const autoBuildRef = React.useRef(initialFocus !== "all");
   const updatedCount = React.useMemo(
     () => sheet.entries.filter((entry) => entry.status === "updated" && entry.source_value.trim()).length,
     [sheet],
@@ -81,6 +86,8 @@ export function AiPromptModal({
   const [saveState, setSaveState] = React.useState<"" | "saving" | "saved">("");
   const savedTermsRef = React.useRef("");
   const [result, setResult] = React.useState<AiPromptParts | null>(null);
+  /** What the shown parts ask for; answers to a fix or update re-ask overwrite. */
+  const [resultFocus, setResultFocus] = React.useState<PromptFocus>("all");
   const [selectedPart, setSelectedPart] = React.useState(0);
   const [copiedParts, setCopiedParts] = React.useState<Set<number>>(() => new Set());
   const [pasteReport, setPasteReport] = React.useState<PasteReport | null>(null);
@@ -106,7 +113,13 @@ export function AiPromptModal({
         if (settings.include_prompt != null) setIncludePrompt(settings.include_prompt);
         if (settings.only_empty != null) setOnlyEmpty(settings.only_empty);
         if (settings.max_chars != null && settings.max_chars >= 500) setMaxChars(settings.max_chars);
-        setTab(settings.terms.length > 0 ? "parts" : settings.mod_description || settings.extra_instructions ? "terms" : "settings");
+        setTab(
+          autoBuildRef.current || settings.terms.length > 0
+            ? "parts"
+            : settings.mod_description || settings.extra_instructions
+              ? "terms"
+              : "settings",
+        );
         setLoaded(true);
       })
       .catch((reason) => !cancelled && setError(String(reason)));
@@ -225,6 +238,7 @@ export function AiPromptModal({
             },
           });
       setResult(parts);
+      setResultFocus(focus);
       setSelectedPart(0);
       setCopiedParts(new Set());
       setPasteReport(null);
@@ -235,6 +249,15 @@ export function AiPromptModal({
       setBusy(false);
     }
   }
+
+  React.useEffect(() => {
+    if (loaded && autoBuildRef.current) {
+      autoBuildRef.current = false;
+      void buildParts();
+    }
+    // buildParts reads the settings just loaded; it runs once per opening.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded]);
 
   async function copyPart(index: number) {
     const part = result?.parts[index];
@@ -326,10 +349,14 @@ export function AiPromptModal({
       }
     });
 
-    onPasteAnswer(text);
+    const replace = resultFocus !== "all";
+    onPasteAnswer(text, { replace });
+    const afterPaste = replace
+      ? " 기존 번역을 답변으로 바꿨습니다. 창을 닫은 뒤 되돌리기(Ctrl+Z)로 한 번에 취소할 수 있습니다."
+      : " 기존 번역과 다른 값은 시트의 충돌 후보로 들어갑니다.";
 
     if (partIndex === null || !result) {
-      setPasteReport({ partIndex: null, message: `답변 ${answered.length}개를 시트에 붙여넣었습니다. (자세한 결과는 로그)`, tone: "good" });
+      setPasteReport({ partIndex: null, message: `답변 ${answered.length}개를 시트에 붙여넣었습니다.${afterPaste}`, tone: "good" });
       return;
     }
     const part = result.parts[partIndex];
@@ -343,7 +370,8 @@ export function AiPromptModal({
         (missing.length > 0
           ? ` · 빠진 id ${missing.length}개: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? " ..." : ""}`
           : " 모두 받음") +
-        ". 기존 번역과 다른 값은 시트의 충돌 후보로 들어갑니다.",
+        "." +
+        afterPaste,
     });
   }
 
@@ -612,7 +640,7 @@ async function loadSettings(projectKey: string): Promise<ProjectTranslationSetti
   return invokeCommand("load_project_translation_settings", { projectKey });
 }
 
-type PromptFocus = "all" | "updated" | "warnings";
+export type PromptFocus = "all" | "updated" | "warnings";
 
 /**
  * Format and term problems by entry, the warnings a re-ask can fix. Empty

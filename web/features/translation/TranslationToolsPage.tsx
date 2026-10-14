@@ -1,5 +1,6 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
+import type { PromptFocus } from "./AiPromptModal";
 import { TranslationActionsPanel, TranslationWorkHeader } from "./TranslationActionsPanel";
 import { TranslationSheetTable } from "./TranslationSheetTable";
 import { TranslationPage } from "./TranslationStartPage";
@@ -28,6 +29,7 @@ import {
 
 function TranslationToolsPage(props: TranslationToolsPageProps) {
   const ui = useTranslationToolsUiState(props);
+  const [aiPromptFocus, setAiPromptFocus] = React.useState<PromptFocus | null>(null);
   const applyingPck =
     props.busy === "apply_json_translation_sheet" ||
     props.busy === "export_translation_patch_mod" ||
@@ -134,6 +136,8 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           dllTextKeys={ui.dllTextKeys}
           filledTranslations={ui.filledTranslations}
           copyTreeJson={ui.copyTreeJson}
+          aiPromptFocus={aiPromptFocus}
+          setAiPromptFocus={setAiPromptFocus}
         />
         <TranslationSheetTable
           props={props}
@@ -175,6 +179,7 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           focusEntryInput={ui.focusEntryInput}
           revealEntryKey={ui.revealEntryKey}
           clearFocusEntryKey={ui.clearFocusEntryKey}
+          onOpenFixPrompt={() => setAiPromptFocus("warnings")}
         />
       </div>
       {applyingPck && (

@@ -171,7 +171,12 @@ export function useTranslationSheetActions({
     appendLog(`표 붙여넣기 완료: ${appliedCount}개 적용${candidateCount > 0 ? ` / ${candidateCount}개 충돌 후보` : ""}`);
   }
 
-  function pasteStructuredTranslationJson(text: string): boolean {
+  /**
+   * Applies a pasted JSON answer. A value that differs from an existing
+   * translation becomes a conflict candidate, unless `replace` is set: an
+   * answer to a fix prompt is meant to overwrite (undo still restores it).
+   */
+  function pasteStructuredTranslationJson(text: string, options?: { replace?: boolean }): boolean {
     if (!jsonSheet) {
       return false;
     }
@@ -231,7 +236,11 @@ export function useTranslationSheetActions({
           continue;
         }
         seenEntryKeys.add(sheetEntry.key);
-        if (hasTranslationValue(sheetEntry?.translated_value ?? "") && sheetEntry.translated_value !== entry.translated_value) {
+        if (
+          !options?.replace &&
+          hasTranslationValue(sheetEntry?.translated_value ?? "") &&
+          sheetEntry.translated_value !== entry.translated_value
+        ) {
           candidates[sheetEntry.key] = { value: entry.translated_value, source: entry.source || "붙여넣기 JSON" };
           continue;
         }
@@ -270,7 +279,14 @@ export function useTranslationSheetActions({
       }
     }
     setJsonApplyResult(null);
-    setPasteCandidatesByKey((current) => ({ ...current, ...candidates }));
+    setPasteCandidatesByKey((current) => {
+      const next = { ...current, ...candidates };
+      // A replaced value settles any older conflict candidate for that entry.
+      for (const key of values.keys()) {
+        delete next[key];
+      }
+      return next;
+    });
     const updatedCount = jsonSheet.entries.filter((entry) => {
       const value = values.get(entry.key);
       return value !== undefined && entry.translated_value !== value;
@@ -279,7 +295,7 @@ export function useTranslationSheetActions({
       const value = values.get(entry.key);
       return value !== undefined && entry.translated_value === value;
     }).length;
-    labelNextSheetEdit(`JSON 붙여넣기 ${updatedCount}개`);
+    labelNextSheetEdit(options?.replace ? `AI 수정 답변 ${updatedCount}개` : `JSON 붙여넣기 ${updatedCount}개`);
     setJsonSheet((current) => {
       if (!current) {
         return current;
