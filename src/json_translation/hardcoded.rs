@@ -500,6 +500,7 @@ mod tests {
                 source_value: "Applied value".to_string(),
                 translated_value: "적용됨".to_string(),
                 status: JsonTranslationStatus::Ready,
+                acknowledged_issues: Vec::new(),
             }],
         };
 

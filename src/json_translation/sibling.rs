@@ -117,6 +117,7 @@ mod tests {
             source_value: "source".to_string(),
             translated_value: translated.to_string(),
             status,
+            acknowledged_issues: Vec::new(),
         }
     }
 

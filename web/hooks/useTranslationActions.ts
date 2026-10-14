@@ -289,6 +289,8 @@ export function useTranslationActions(params: TranslationActionsParams) {
     pasteTranslationValues: sheetActions.pasteTranslationValues,
     recalculateTranslationSheet,
     replaceTranslationEntries: sheetActions.replaceTranslationEntries,
+    acknowledgeValidationIssues: sheetActions.acknowledgeValidationIssues,
+    clearAcknowledgedIssues: sheetActions.clearAcknowledgedIssues,
     saveEditedTranslationSheet: ioActions.saveEditedTranslationSheet,
     selectTranslationRow: sheetActions.selectTranslationRow,
     setTargetLanguage: sessionActions.setTargetLanguage,

@@ -21,10 +21,12 @@ pub fn number_mismatch_issues(sheet: &JsonTranslationSheet) -> Vec<JsonValidatio
         .filter(|entry| should_check(entry))
         .filter_map(|entry| {
             let missing = missing_numbers(&entry.source_value, &entry.translated_value);
-            (!missing.is_empty()).then(|| JsonValidationIssue {
-                key: entry.key.clone(),
-                kind: NUMBER_ISSUE_KIND.to_string(),
-                message: format!("원문 숫자 {}이(가) 번역에 없습니다.", missing.join(", ")),
+            (!missing.is_empty() && !entry.acknowledges(NUMBER_ISSUE_KIND)).then(|| {
+                JsonValidationIssue {
+                    key: entry.key.clone(),
+                    kind: NUMBER_ISSUE_KIND.to_string(),
+                    message: format!("원문 숫자 {}이(가) 번역에 없습니다.", missing.join(", ")),
+                }
             })
         })
         .collect()
@@ -155,6 +157,7 @@ mod tests {
             source_value: source.to_string(),
             translated_value: translated.to_string(),
             status: JsonTranslationStatus::Ready,
+            acknowledged_issues: Vec::new(),
         }
     }
 

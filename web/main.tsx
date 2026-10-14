@@ -262,6 +262,8 @@ function App() {
     pasteTranslationValues,
     recalculateTranslationSheet,
     replaceTranslationEntries,
+    acknowledgeValidationIssues,
+    clearAcknowledgedIssues,
     saveEditedTranslationSheet,
     selectTranslationRow,
     setTargetLanguage,
@@ -644,6 +646,8 @@ function App() {
               setTargetLanguage={setTargetLanguage}
               onEditEntry={updateTranslationEntry}
               onReplaceEntries={replaceTranslationEntries}
+              onAcknowledgeIssues={acknowledgeValidationIssues}
+              onClearAcknowledgedIssues={clearAcknowledgedIssues}
               onPasteEntries={pasteTranslationValues}
               onPasteStructuredJson={pasteStructuredTranslationJson}
               onApplyPasteCandidate={applyPasteCandidate}

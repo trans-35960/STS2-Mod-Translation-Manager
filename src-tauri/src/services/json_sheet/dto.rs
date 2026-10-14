@@ -37,6 +37,7 @@ fn json_entry_from_dto(entry: JsonEntryDto) -> Result<JsonTranslationEntry, Stri
             "removed" => JsonTranslationStatus::Removed,
             other => return Err(format!("알 수 없는 번역 상태: {other}")),
         },
+        acknowledged_issues: entry.acknowledged_issues,
     })
 }
 
@@ -57,6 +58,7 @@ fn json_entry_dto(entry: JsonTranslationEntry) -> JsonEntryDto {
         source_value: entry.source_value,
         translated_value: entry.translated_value,
         status: status_label(entry.status).to_string(),
+        acknowledged_issues: entry.acknowledged_issues,
     }
 }
 

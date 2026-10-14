@@ -974,6 +974,7 @@ mod tests {
             source_value: source.to_string(),
             translated_value: translated.to_string(),
             status: JsonTranslationStatus::Ready,
+            acknowledged_issues: Vec::new(),
         }
     }
 

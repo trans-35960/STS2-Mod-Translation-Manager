@@ -1,6 +1,8 @@
 import React from "react";
 import {
   compactTranslationFile,
+  currentAcknowledgements,
+  isCurrentAcknowledgement,
   hasTranslationValue,
   isTabularTranslationPaste,
   isStructuredTranslationJsonPaste,
@@ -102,6 +104,69 @@ export function useTranslationSheetActions({
       });
     }
     appendLog(`치환 완료: ${updates.length}개 항목`);
+  }
+
+  /** Marks warnings as checked and fine, until the entry's texts change. */
+  function acknowledgeValidationIssues(issues: Array<{ key: string; kind: string }>) {
+    if (issues.length === 0) {
+      return;
+    }
+    labelNextSheetEdit(issues.length === 1 ? `경고 확인 (${shortKey(issues[0].key)})` : `경고 확인 ${issues.length}개`);
+    const kindsByKey = new Map<string, Set<string>>();
+    for (const issue of issues) {
+      const kinds = kindsByKey.get(issue.key) ?? new Set<string>();
+      kinds.add(issue.kind);
+      kindsByKey.set(issue.key, kinds);
+    }
+    setJsonSheet((current) => {
+      if (!current) {
+        return current;
+      }
+      const entries = current.entries.map((entry) => {
+        const kinds = kindsByKey.get(entry.key);
+        if (!kinds) {
+          return entry;
+        }
+        // Marks made on older texts no longer apply; drop them while here.
+        const kept = (entry.acknowledged_issues ?? []).filter(
+          (issue) => isCurrentAcknowledgement(entry, issue) && !kinds.has(issue.kind),
+        );
+        const added = [...kinds].map((kind) => ({
+          kind,
+          source_value: entry.source_value,
+          translated_value: entry.translated_value,
+        }));
+        return { ...entry, acknowledged_issues: [...kept, ...added] } satisfies JsonTranslationEntry;
+      });
+      return { ...current, entries };
+    });
+    appendLog(`경고 ${issues.length}개를 문제 없음으로 표시했습니다.`);
+  }
+
+  /** Brings back every warning marked as fine. */
+  function clearAcknowledgedIssues() {
+    const count = (jsonSheet?.entries ?? []).reduce(
+      (total, entry) => total + currentAcknowledgements(entry).length,
+      0,
+    );
+    if (count === 0) {
+      return;
+    }
+    labelNextSheetEdit(`경고 확인 취소 ${count}개`);
+    setJsonSheet((current) => {
+      if (!current) {
+        return current;
+      }
+      const entries = current.entries.map((entry) => {
+        if (!entry.acknowledged_issues?.length) {
+          return entry;
+        }
+        const { acknowledged_issues: _dropped, ...rest } = entry;
+        return rest satisfies JsonTranslationEntry;
+      });
+      return { ...current, entries };
+    });
+    appendLog(`확인한 경고 ${count}개를 다시 표시합니다.`);
   }
 
   function pasteTranslationValues(startIndex: number, text: string) {
@@ -476,7 +541,9 @@ export function useTranslationSheetActions({
   }
 
   return {
+    acknowledgeValidationIssues,
     applyAllPasteCandidates,
+    clearAcknowledgedIssues,
     applyPasteCandidate,
     copySelectedTranslations,
     dismissAllPasteCandidates,

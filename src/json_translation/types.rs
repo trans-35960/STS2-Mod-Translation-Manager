@@ -25,6 +25,29 @@ pub struct JsonTranslationEntry {
     pub source_value: String,
     pub translated_value: String,
     pub status: JsonTranslationStatus,
+    /// Warnings the user checked and marked as fine (false positives).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub acknowledged_issues: Vec<AcknowledgedIssue>,
+}
+
+impl JsonTranslationEntry {
+    /// Whether a warning of `kind` was marked as fine for the current source
+    /// and translation. Editing either brings the warning back.
+    pub fn acknowledges(&self, kind: &str) -> bool {
+        self.acknowledged_issues.iter().any(|issue| {
+            issue.kind == kind
+                && issue.source_value == self.source_value
+                && issue.translated_value == self.translated_value
+        })
+    }
+}
+
+/// A warning the user marked as fine, for the texts it was raised on.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AcknowledgedIssue {
+    pub kind: String,
+    pub source_value: String,
+    pub translated_value: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

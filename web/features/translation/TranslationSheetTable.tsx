@@ -42,6 +42,8 @@ import {
   stableCompareKey,
   splitSheetKey,
   compactTranslationFile,
+  currentAcknowledgements,
+  UNACKNOWLEDGEABLE_ISSUE_KINDS,
   whitespaceValueLabel,
 } from "./translationUtils";
 import { useVirtualRows } from "./useVirtualRows";
@@ -177,6 +179,10 @@ export function TranslationSheetTable({
         ? allValidationItems.filter((issue) => issue.kind === validationIssueKindFilter)
         : allValidationItems,
     [allValidationItems, validationIssueKindFilter],
+  );
+  const acknowledgedCount = React.useMemo(
+    () => (props.sheet?.entries ?? []).reduce((total, entry) => total + currentAcknowledgements(entry).length, 0),
+    [props.sheet?.entries],
   );
   const validationIssueCounts = React.useMemo(
     () => summarizeValidationIssues(allValidationItems),
@@ -354,7 +360,7 @@ export function TranslationSheetTable({
               <ValidationMetric label="참고" value={props.validation.glossary_issues?.length ?? 0} tone={(props.validation.glossary_issues?.length ?? 0) ? "warn" : "good"} />
             </div>
           </div>
-          {!validationCollapsed && validationItems.length > 0 && (
+          {!validationCollapsed && (validationItems.length > 0 || acknowledgedCount > 0) && (
             <div className="validation-issue-panel">
               <div className="validation-issue-chips">
                 {validationIssueCounts.map((item) => (
@@ -390,20 +396,42 @@ export function TranslationSheetTable({
                     AI 수정 프롬프트 <b>{fixableIssueCount}</b>
                   </button>
                 )}
-              </div>
-              <div className="validation-issue-list">
-                {validationItems.map((issue, issueIndex) => (
+                {acknowledgedCount > 0 && (
                   <button
-                    className="validation-issue-row"
                     type="button"
-                    key={`${issue.kind}-${issue.key}-${issueIndex}`}
-                    onClick={() => revealWarningEntry(issue.key)}
+                    title="문제 없음으로 표시한 경고를 모두 다시 표시합니다."
+                    onClick={props.onClearAcknowledgedIssues}
                   >
-                    <code title={issue.key}>{formatValidationIssueKey(issue.key)}</code>
-                    <span>{issue.message}</span>
+                    확인한 경고 다시 보기 <b>{acknowledgedCount}</b>
                   </button>
-                ))}
+                )}
               </div>
+              {validationItems.length > 0 && (
+                <div className="validation-issue-list">
+                  {validationItems.map((issue, issueIndex) => (
+                    <div className="validation-issue-item" key={`${issue.kind}-${issue.key}-${issueIndex}`}>
+                      <button
+                        className="validation-issue-row"
+                        type="button"
+                        onClick={() => revealWarningEntry(issue.key)}
+                      >
+                        <code title={issue.key}>{formatValidationIssueKey(issue.key)}</code>
+                        <span>{issue.message}</span>
+                      </button>
+                      {!UNACKNOWLEDGEABLE_ISSUE_KINDS.has(issue.kind) && (
+                        <button
+                          className="validation-issue-ack"
+                          type="button"
+                          title="확인해 보니 문제가 없는 경고(오탐)로 표시하고 목록에서 뺍니다. 원본이나 번역이 바뀌면 다시 검사합니다."
+                          onClick={() => props.onAcknowledgeIssues([{ key: issue.key, kind: issue.kind }])}
+                        >
+                          문제 없음
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </article>
