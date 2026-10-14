@@ -2326,6 +2326,7 @@ Packed file: Shadowverse/localization/eng/cards.json
             translation_patch_count: 0,
             translation_patch_active_count: 0,
             translation_patch_names: Vec::new(),
+            bridge_stored: Vec::new(),
             needs_recheck: false,
             translation_review_required: false,
             safety_warnings: Vec::new(),

@@ -56,6 +56,11 @@ pub(crate) async fn open_path(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub(crate) async fn open_workshop_page(item_id: String) -> Result<(), String> {
+    run_blocking(move || crate::services::open_workshop_page(item_id)).await
+}
+
+#[tauri::command]
 pub(crate) async fn preview_dropped_mods(
     paths: Vec<String>,
 ) -> Result<Vec<DroppedModPreviewDto>, String> {

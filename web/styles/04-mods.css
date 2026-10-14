@@ -883,19 +883,38 @@
   font-size: 12px;
 }
 
+/* Clickable badges are buttons; keep them the size and look of the status badges next to them. */
+.mod-title button.bridge-edits-row-badge,
+.mod-title button.workshop-link-badge {
+  height: 20px;
+  min-height: 20px;
+  box-shadow: none;
+  transition: none;
+}
+
+.mod-title button.bridge-edits-row-badge:active:not(:disabled),
+.mod-title button.workshop-link-badge:active:not(:disabled) {
+  transform: none;
+}
+
 .bridge-edits-row-badge {
   display: inline-flex;
   align-items: center;
   min-height: 20px;
-  border: 1px solid #fcd34d;
+  border: 1px solid #fed7aa;
   border-radius: 999px;
-  background: #fffbeb;
-  padding: 0 8px;
-  color: #92400e;
+  background: #fff7ed;
+  padding: 0 7px;
+  color: #c2410c;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 850;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.mod-title button.bridge-edits-row-badge:hover:not(:disabled) {
+  border-color: #fdba74;
+  background: #ffedd5;
 }
 
 .bridge-edits-row-badge.static {
@@ -905,4 +924,31 @@
 .bridge-edits-row-badge:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.mod-title button.workshop-link-badge {
+  padding: 0 7px;
+  border-color: #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.mod-title button.workshop-link-badge:hover:not(:disabled) {
+  border-color: #93c5fd;
+  background: #dbeafe;
+}
+
+.status-badge.bridge-stored-badge {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+  color: #047857;
+  text-transform: none;
+}
+
+.workshop-link-badge svg {
+  margin-left: 3px;
 }

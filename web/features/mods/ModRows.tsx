@@ -3,6 +3,7 @@ import {
   ChevronDown,
   ChevronRight,
   DownloadCloud,
+  ExternalLink,
   FolderOpen,
   GitBranch,
   Languages,
@@ -10,9 +11,11 @@ import {
   TriangleAlert,
   Trash2,
 } from "lucide-react";
+import { invokeCommand } from "../../api/tauri";
 import { IconButton, Pill, SourceTags, StatusBadge } from "../../components/Common";
 import { labels } from "../../i18n";
 import type { BranchIssue, ModDependency, ModGroup, ModRow } from "../../types";
+import { isPreviewRuntime } from "../../utils/runtime";
 import { LanguageBadges, RepresentativeLanguageBadge } from "./ModBadges";
 import { ModTranslationActions } from "./ModTranslationActions";
 import {
@@ -108,7 +111,8 @@ function ModTableRow({
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
           <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={() => onStartModTranslation(mod, primaryResourcePath)} />
-          {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
+          <BridgeStoredBadge stored={mod.bridge_stored} />
+          {mod.workshop && <WorkshopBadge mod={mod} />}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
           {mod.previous_version && (
@@ -233,6 +237,7 @@ function ModGroupTableRow({
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           <BridgeEditsGroupBadge mods={group.mods} />
+          <BridgeStoredBadge stored={group.mods.find((mod) => mod.bridge_stored?.length)?.bridge_stored} />
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
         </strong>
@@ -328,6 +333,7 @@ function SimpleModGroupRow({
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           <BridgeEditsGroupBadge mods={group.mods} />
+          <BridgeStoredBadge stored={group.mods.find((mod) => mod.bridge_stored?.length)?.bridge_stored} />
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
         </strong>
@@ -422,7 +428,8 @@ function SimpleModRow({
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
           <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={() => onStartModTranslation(mod, primaryResourcePath)} />
-          {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
+          <BridgeStoredBadge stored={mod.bridge_stored} />
+          {mod.workshop && <WorkshopBadge mod={mod} />}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
           {mod.previous_version && (
@@ -565,6 +572,47 @@ function bridgeEditsLabel(counts: { edits: number; reports: number }): string {
   return [counts.edits > 0 ? `게임 안 수정 ${counts.edits}` : "", counts.reports > 0 ? `오역 신고 ${counts.reports}` : ""]
     .filter(Boolean)
     .join(" · ");
+}
+
+/** Languages the translation bridge holds for this mod and applies in game. */
+function BridgeStoredBadge({ stored }: { stored: ModRow["bridge_stored"] }) {
+  if (!stored || stored.length === 0) {
+    return null;
+  }
+  const details = stored.map(({ language, entries, dll_strings }) => {
+    const parts = [entries > 0 ? `텍스트 ${entries.toLocaleString()}개` : "", dll_strings > 0 ? `DLL 문자열 ${dll_strings.toLocaleString()}개` : ""];
+    return `${language}: ${parts.filter(Boolean).join(" · ")}`;
+  });
+  return (
+    <span className="status-badge bridge-stored-badge" data-tooltip={`번역 브리지에 저장된 번역으로 게임 안에서 적용됩니다 — ${details.join(" / ")}`}>
+      브리지 {stored.map((item) => item.language).join("·")}
+    </span>
+  );
+}
+
+/** Workshop source badge; opens the item's Steam Workshop page when its id is known. */
+function WorkshopBadge({ mod }: { mod: ModRow }) {
+  const itemId = mod.workshop_item_id;
+  if (!itemId) {
+    return <StatusBadge tone="info">창작마당</StatusBadge>;
+  }
+  return (
+    <button
+      type="button"
+      className="workshop-link-badge"
+      data-tooltip="Steam 창작마당 페이지 열기"
+      aria-label={`${mod.name} 창작마당 페이지 열기`}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (!isPreviewRuntime()) {
+          void invokeCommand("open_workshop_page", { itemId }).catch((error) => console.error(error));
+        }
+      }}
+    >
+      창작마당
+      <ExternalLink size={10} aria-hidden="true" />
+    </button>
+  );
 }
 
 function BranchWarningIcon({ issue }: { issue: BranchIssue | null | undefined }) {

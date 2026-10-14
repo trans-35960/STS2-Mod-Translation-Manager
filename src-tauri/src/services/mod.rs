@@ -1,7 +1,7 @@
 use crate::dto::*;
 use crate::fs_ops::{
     copy_dir_all, move_path_or_copy, nearest_existing_parent, open_path_in_system,
-    remove_path_if_exists, replace_dir_or_file,
+    open_url_in_system, remove_path_if_exists, replace_dir_or_file,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
@@ -45,7 +45,7 @@ use sts2_mod_manager::process::{hidden_command, powershell_expand_archive};
 use sts2_mod_manager::save_backup::{self, SaveBackupEntry};
 use sts2_mod_manager::state::{
     ModStateEntry, desired_active_mod_keys, mod_record_state_key, read_mod_state_index,
-    version_change, write_desired_active_mod_keys,
+    version_change, write_desired_active_mod_keys, write_state,
 };
 use sts2_mod_manager::steam_branch::{
     BranchSupport, branch_support, read_game_branch, read_workshop_branches,

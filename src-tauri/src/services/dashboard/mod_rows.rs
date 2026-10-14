@@ -24,6 +24,7 @@ fn mod_rows(
     let mut cache = read_language_preview_cache(config)?;
     trace.mark("read_language_cache");
     let mut current_cache_keys = BTreeSet::new();
+    let change_baseline = session_change_baseline(&report.summary, &config.mod_index_path)?;
     let state_index = read_mod_state_index(&config.mod_index_path)?;
     trace.mark("read_state_index");
     let desired_active_keys = desired_active_mod_keys(&report.summary, &config.state_dir)?;
@@ -38,7 +39,7 @@ fn mod_rows(
             let row_started = Instant::now();
             let desired_active = desired_active_keys.contains(&key);
             let (update_state, change_reasons, previous_version) =
-                builder.change_summary(&state_index);
+                builder.change_summary(&change_baseline);
             let lifecycle = lifecycle.get(&key);
             let translation_apply = translation_applies.get(&key);
             let dto = builder.into_dto(ModRowBuildContext {
@@ -80,6 +81,8 @@ fn mod_rows(
     trace.mark("resolve_branch_issues");
     resolve_bridge_edit_counts(&mut rows, config);
     trace.mark("resolve_bridge_edits");
+    resolve_bridge_stored(&mut rows);
+    trace.mark("resolve_bridge_stored");
 
     cache
         .entries
@@ -91,6 +94,35 @@ fn mod_rows(
     trace.finish(format!("rows={}", rows.len()), 0);
 
     Ok(rows)
+}
+
+/// Mod index as the previous run of the app left it, per index path, kept for
+/// the whole session.
+static CHANGE_BASELINES: std::sync::Mutex<BTreeMap<PathBuf, std::collections::HashMap<String, ModStateEntry>>> =
+    std::sync::Mutex::new(BTreeMap::new());
+
+/// What the mod list compares against to flag changes. A mod that changed
+/// since the previous run stays marked for this session and is clean on the
+/// next start: the current scan is recorded right away as that run's
+/// baseline. With no index yet (first start) nothing is flagged.
+fn session_change_baseline(
+    summary: &ScanSummary,
+    index_path: &Path,
+) -> sts2_mod_manager::error::AppResult<std::collections::HashMap<String, ModStateEntry>> {
+    let mut baselines = CHANGE_BASELINES
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let first_start = !index_path.exists();
+    if !baselines.contains_key(index_path) && !first_start {
+        baselines.insert(index_path.to_path_buf(), read_mod_state_index(index_path)?);
+    }
+    if let Err(error) = write_state(summary, index_path) {
+        eprintln!("mod index write skipped: {error}");
+    }
+    if first_start {
+        baselines.insert(index_path.to_path_buf(), read_mod_state_index(index_path)?);
+    }
+    Ok(baselines.get(index_path).cloned().unwrap_or_default())
 }
 
 /// Marks mods with in-game edits or reports, so the list shows them without
@@ -110,6 +142,33 @@ fn resolve_bridge_edit_counts(rows: &mut [ModRowDto], config: &AppConfig) {
         if edits + reports > 0 {
             row.bridge_edits = Some(BridgeEditCountsDto { edits, reports });
         }
+    }
+}
+
+/// Marks mods whose translations the bridge holds, so the list shows which
+/// mods are translated in game without a patch mod.
+fn resolve_bridge_stored(rows: &mut [ModRowDto]) {
+    let Some(shared) = bridge::shared_root().filter(|shared| shared.is_dir()) else {
+        return;
+    };
+    let mut stored = BTreeMap::<String, Vec<BridgeStoredDto>>::new();
+    for row in rows.iter_mut().filter(|row| !row.is_translation_patch && !row.system_mod) {
+        let Some(mod_id) = row.manifest_id.clone() else {
+            continue;
+        };
+        row.bridge_stored = stored
+            .entry(mod_id.clone())
+            .or_insert_with(|| {
+                bridge::stored_translations(&shared, &mod_id)
+                    .into_iter()
+                    .map(|stored| BridgeStoredDto {
+                        language: stored.language,
+                        entries: stored.entries,
+                        dll_strings: stored.dll_strings,
+                    })
+                    .collect()
+            })
+            .clone();
     }
 }
 
@@ -362,6 +421,7 @@ impl ModRowBuilder {
             translation_patch_count: 0,
             translation_patch_active_count: 0,
             translation_patch_names: Vec::new(),
+            bridge_stored: Vec::new(),
             needs_recheck,
             translation_review_required,
             safety_warnings,
