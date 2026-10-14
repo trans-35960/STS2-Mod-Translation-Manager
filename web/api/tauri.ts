@@ -43,6 +43,7 @@ export type CommandArgs = {
   scan_updates: undefined;
   repair_mod_installations: undefined;
   open_path: { path: string };
+  open_workshop_page: { itemId: string };
   preview_dropped_mods: { paths: string[] };
   import_dropped_mod: { path: string; replacePath?: string | null };
   import_dropped_mods: {
@@ -181,6 +182,7 @@ export type CommandResult = {
   scan_updates: ActionResult;
   repair_mod_installations: ActionResult;
   open_path: void;
+  open_workshop_page: void;
   preview_dropped_mods: DroppedModPreview[];
   import_dropped_mod: ActionResult;
   import_dropped_mods: ActionResult;

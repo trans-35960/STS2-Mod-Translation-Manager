@@ -450,6 +450,87 @@ pub fn read_status(shared: &Path) -> Option<BridgeStatus> {
     serde_json::from_str(text.trim_start_matches('\u{feff}')).ok()
 }
 
+/// Translations the shared folder holds for one mod in one language.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct StoredTranslation {
+    pub language: String,
+    /// Loc table values.
+    pub entries: usize,
+    /// Translated DLL strings.
+    pub dll_strings: usize,
+}
+
+/// What the bridge will apply for `mod_id`, per language; languages with
+/// nothing to apply are left out.
+pub fn stored_translations(shared: &Path, mod_id: &str) -> Vec<StoredTranslation> {
+    let mut by_language = BTreeMap::<String, StoredTranslation>::new();
+    for (language, dir) in language_dirs(&shared.join("translations").join(mod_id)) {
+        let entries = json_files(&dir)
+            .filter_map(|path| read_json::<BTreeMap<String, serde_json::Value>>(&path))
+            .map(|table| table.len())
+            .sum();
+        by_language.entry(language.clone()).or_default().entries = entries;
+    }
+    for (language, dir) in language_dirs(&shared.join("strings").join(mod_id)) {
+        let dll_strings = json_files(&dir)
+            .filter_map(|path| read_json::<StoredStringsFile>(&path))
+            .map(|file| {
+                file.strings
+                    .iter()
+                    .filter(|string| !string.translation.is_empty())
+                    .count()
+            })
+            .sum();
+        by_language.entry(language).or_default().dll_strings = dll_strings;
+    }
+    by_language
+        .into_iter()
+        .map(|(language, stored)| StoredTranslation { language, ..stored })
+        .filter(|stored| stored.entries + stored.dll_strings > 0)
+        .collect()
+}
+
+#[derive(Deserialize)]
+struct StoredStringsFile {
+    #[serde(default)]
+    strings: Vec<DllString>,
+}
+
+fn language_dirs(dir: &Path) -> impl Iterator<Item = (String, PathBuf)> {
+    fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .filter_map(|path| Some((path.file_name()?.to_str()?.to_string(), path)))
+}
+
+/// Table and strings files of a language folder; `_meta.json` and the
+/// `_info` folder are bookkeeping, not translations.
+fn json_files(dir: &Path) -> impl Iterator<Item = PathBuf> {
+    fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.is_file()
+                && path
+                    .extension()
+                    .is_some_and(|extension| extension == "json")
+                && path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| !name.starts_with('_'))
+        })
+}
+
+fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Option<T> {
+    let text = fs::read_to_string(path).ok()?;
+    serde_json::from_str(text.trim_start_matches('\u{feff}')).ok()
+}
+
 /// Version from a bridge manifest (`STS2ModManagerBridge.json`).
 pub fn manifest_version(manifest_path: &Path) -> Option<String> {
     let text = fs::read_to_string(manifest_path).ok()?;
@@ -703,5 +784,58 @@ mod tests {
         assert!(is_newer_version("1.0", "0.9.9"));
         assert!(!is_newer_version("0.2.2", "0.2.2"));
         assert!(!is_newer_version("0.2.2", "v0.2.10"));
+    }
+
+    #[test]
+    fn stored_translations_count_what_the_bridge_applies() {
+        let shared = temp_dir("stored");
+        let mut tables = SheetTables::default();
+        tables
+            .values
+            .entry("cards".to_string())
+            .or_default()
+            .extend([
+                ("A".to_string(), "절제".to_string()),
+                ("B".to_string(), "오만".to_string()),
+            ]);
+        write_translations(&shared, "MaidenSuccubus", "kor", &tables, None, 1).expect("tables");
+        let string = |original: &str, translation: &str| DllString {
+            original: original.to_string(),
+            translation: translation.to_string(),
+            id: None,
+        };
+        write_strings(
+            &shared,
+            "MaidenSuccubus",
+            "kor",
+            "MaidenSuccubus",
+            &[string("进行", "진행"), string("等待", "")],
+            1,
+        )
+        .expect("kor strings");
+        // Only untranslated strings: offered for in-game editing, nothing applied.
+        write_strings(
+            &shared,
+            "MaidenSuccubus",
+            "jpn",
+            "MaidenSuccubus",
+            &[string("等待", "")],
+            1,
+        )
+        .expect("jpn strings");
+
+        let stored = stored_translations(&shared, "MaidenSuccubus");
+        let other = stored_translations(&shared, "OtherMod");
+        fs::remove_dir_all(&shared).ok();
+
+        assert_eq!(
+            stored,
+            vec![StoredTranslation {
+                language: "kor".to_string(),
+                entries: 2,
+                dll_strings: 1,
+            }]
+        );
+        assert!(other.is_empty());
     }
 }

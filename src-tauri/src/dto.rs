@@ -212,6 +212,15 @@ pub(crate) struct TroubleshootDiagnosticDto {
     pub(crate) can_auto_fix: bool,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct BridgeStoredDto {
+    pub(crate) language: String,
+    /// Loc table values.
+    pub(crate) entries: usize,
+    /// Translated DLL strings.
+    pub(crate) dll_strings: usize,
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct ModRowDto {
     pub(crate) key: String,
@@ -241,6 +250,8 @@ pub(crate) struct ModRowDto {
     pub(crate) translation_patch_count: usize,
     pub(crate) translation_patch_active_count: usize,
     pub(crate) translation_patch_names: Vec<String>,
+    /// Translations the bridge holds for this mod and applies in game.
+    pub(crate) bridge_stored: Vec<BridgeStoredDto>,
     pub(crate) needs_recheck: bool,
     pub(crate) translation_review_required: bool,
     pub(crate) safety_warnings: Vec<String>,

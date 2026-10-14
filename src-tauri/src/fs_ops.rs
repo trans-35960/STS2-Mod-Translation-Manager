@@ -49,6 +49,39 @@ pub(crate) fn open_path_in_system(path: &Path) -> Result<(), String> {
     }
 }
 
+/// Opens a web page in the default browser.
+pub(crate) fn open_url_in_system(url: &str) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        if windows_shell::open_with_default_handler(Path::new(url)) {
+            return Ok(());
+        }
+        Command::new("explorer")
+            .arg(url)
+            .spawn()
+            .map_err(|error| format!("웹페이지 열기 실패: {error}"))?;
+        Ok(())
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(url)
+            .spawn()
+            .map_err(|error| format!("웹페이지 열기 실패: {error}"))?;
+        Ok(())
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        Command::new("xdg-open")
+            .arg(url)
+            .spawn()
+            .map_err(|error| format!("웹페이지 열기 실패: {error}"))?;
+        Ok(())
+    }
+}
+
 pub(crate) fn nearest_existing_parent(path: &Path) -> Option<PathBuf> {
     path.ancestors()
         .skip(1)

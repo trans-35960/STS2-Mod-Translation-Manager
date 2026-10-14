@@ -8,12 +8,16 @@ pub(crate) fn load_dashboard() -> Result<DashboardDto, String> {
 
 pub(crate) fn scan_updates() -> Result<ActionDto, String> {
     let app = app();
-    let report = app
-        .scan_and_update_state()
+    app.scan_and_update_state()
         .map_err(|error| error.to_string())?;
+    // Changes count against the previous run, not against the last refresh.
+    let dashboard = dashboard().map_err(|error| error.to_string())?;
     Ok(ActionDto {
-        message: format!("업데이트 스캔 완료: {}개 변경 감지", report.changes.len()),
-        dashboard: dashboard().map_err(|error| error.to_string())?,
+        message: format!(
+            "업데이트 스캔 완료: 지난 실행 이후 {}개 변경 감지",
+            dashboard.stats.detected_changes
+        ),
+        dashboard,
     })
 }
 
@@ -76,6 +80,20 @@ pub(crate) fn open_path(path: String) -> Result<(), String> {
     }
 
     open_path_in_system(&path)
+}
+
+/// Opens a Workshop item's Steam page. Only a numeric item id is accepted, so
+/// nothing else can be handed to the shell.
+pub(crate) fn open_workshop_page(item_id: String) -> Result<(), String> {
+    let item_id = item_id.trim();
+    if item_id.is_empty() || !item_id.chars().all(|character| character.is_ascii_digit()) {
+        return Err(format!("창작마당 항목 번호가 올바르지 않습니다: {item_id}"));
+    }
+    open_url_in_system(&workshop_page_url(item_id))
+}
+
+fn workshop_page_url(item_id: &str) -> String {
+    format!("https://steamcommunity.com/sharedfiles/filedetails/?id={item_id}")
 }
 
 pub(crate) fn preview_dropped_mods(paths: Vec<String>) -> Result<Vec<DroppedModPreviewDto>, String> {
