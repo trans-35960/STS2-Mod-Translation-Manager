@@ -9,7 +9,7 @@
 
 use crate::error::{AppError, AppResult};
 use crate::json_translation::{
-    JsonTranslationSheet, JsonTranslationStatus, translation_slot_entries,
+    JsonTranslationEntry, JsonTranslationSheet, JsonTranslationStatus, translation_slot_entries,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -308,15 +308,24 @@ pub struct DllString {
 /// The DLL strings of a sheet the bridge can replace.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SheetStrings {
+    /// Translated strings first come with their translation; the rest of
+    /// what the bridge may offer for in-game editing has an empty one.
     pub strings: Vec<DllString>,
+    /// How many of `strings` are translated.
+    pub translated: usize,
     /// Regexes, format patterns and similar code, never replaced: changing
     /// them breaks the mod rather than translating anything.
     pub code_like: usize,
 }
 
-/// Translated `dll://` entries of a DLL sheet. Untranslated and unchanged
-/// strings are left out; so is anything that looks like code.
-pub fn sheet_strings(sheet: &JsonTranslationSheet) -> SheetStrings {
+/// The `dll://` entries of a DLL sheet for the bridge: translated ones, and
+/// untranslated ones `is_text` keeps (with an empty translation) so the
+/// in-game edit panel can translate them. Anything that looks like code is
+/// left out.
+pub fn sheet_strings(
+    sheet: &JsonTranslationSheet,
+    is_text: impl Fn(&JsonTranslationEntry) -> bool,
+) -> SheetStrings {
     let ids = translation_slot_entries(sheet)
         .into_iter()
         .map(|slot| (slot.entry.key.as_str(), slot.id))
@@ -324,15 +333,18 @@ pub fn sheet_strings(sheet: &JsonTranslationSheet) -> SheetStrings {
     let mut result = SheetStrings::default();
     let mut seen = std::collections::BTreeSet::new();
     for entry in &sheet.entries {
-        if entry.status == JsonTranslationStatus::Removed
-            || !entry.key.starts_with("dll://")
-            || entry.translated_value.is_empty()
-            || entry.translated_value == entry.source_value
-        {
+        if entry.status == JsonTranslationStatus::Removed || !entry.key.starts_with("dll://") {
+            continue;
+        }
+        let translated =
+            !entry.translated_value.is_empty() && entry.translated_value != entry.source_value;
+        if !translated && !is_text(entry) {
             continue;
         }
         if crate::leftover_text::is_code_like_text(&entry.source_value) {
-            result.code_like += 1;
+            if translated {
+                result.code_like += 1;
+            }
             continue;
         }
         // The #US heap stores each literal once, but a sheet rebuilt from an
@@ -340,9 +352,16 @@ pub fn sheet_strings(sheet: &JsonTranslationSheet) -> SheetStrings {
         if !seen.insert(entry.source_value.clone()) {
             continue;
         }
+        if translated {
+            result.translated += 1;
+        }
         result.strings.push(DllString {
             original: entry.source_value.clone(),
-            translation: entry.translated_value.clone(),
+            translation: if translated {
+                entry.translated_value.clone()
+            } else {
+                String::new()
+            },
             id: ids.get(entry.key.as_str()).cloned(),
         });
     }
@@ -625,9 +644,14 @@ mod tests {
             ],
         };
 
-        let result = sheet_strings(&sheet);
+        let result = sheet_strings(&sheet, |_| false);
+        let with_text = sheet_strings(&sheet, |entry| entry.source_value == "跳过");
 
         assert_eq!(result.strings.len(), 1);
+        assert_eq!(result.translated, 1);
+        assert_eq!(with_text.strings.len(), 2);
+        assert_eq!(with_text.strings[1].translation, "");
+        assert_eq!(with_text.translated, 1);
         assert_eq!(result.strings[0].original, "傲慢");
         assert_eq!(result.strings[0].translation, "오만");
         assert!(result.strings[0].id.is_some());

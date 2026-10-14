@@ -201,9 +201,7 @@ function BridgeEditsModal({
                 <div className={`bridge-edits-item ${item.kind}`} key={item.sheet_key}>
                   <div className="bridge-edits-key">
                     <span className="bridge-edits-kind">{item.kind === "conflict" ? "양쪽 변경" : "게임 안 수정"}</span>
-                    <code>
-                      {item.table} / {item.key}
-                    </code>
+                    <code>{slotLabel(item.table, item.key)}</code>
                   </div>
                   {item.source && <p className="bridge-edits-source">{item.source}</p>}
                   <label className={choices[item.sheet_key] === "sheet" ? "selected" : undefined}>
@@ -232,9 +230,7 @@ function BridgeEditsModal({
               {edits.reports.map((report) => (
                 <div className="bridge-edits-item report" key={report.id}>
                   <div className="bridge-edits-key">
-                    <code>
-                      {report.table} / {report.key}
-                    </code>
+                    <code>{slotLabel(report.table, report.key)}</code>
                   </div>
                   {report.source && <p className="bridge-edits-source">{report.source}</p>}
                   {report.shown && <p>게임 표시: {report.shown}</p>}
@@ -275,4 +271,9 @@ function BridgeEditsModal({
       </section>
     </div>
   );
+}
+
+/** `cards / CARD.title`, or for a DLL string (keyed by its own text) just `DLL Assembly`. */
+function slotLabel(table: string, key: string): string {
+  return table.startsWith("dll:") ? `DLL ${table.slice("dll:".length)}` : `${table} / ${key}`;
 }

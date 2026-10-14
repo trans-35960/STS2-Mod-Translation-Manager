@@ -4,23 +4,34 @@ using System.Text.Json;
 
 namespace Sts2ModManagerBridge;
 
+/// <summary>One DLL string the app sent: its translation is empty when only offered for in-game editing.</summary>
+public sealed record DllEntry(string ModId, string Assembly, string Original, string Translation, string? Id)
+{
+    /// <summary>The edit log table of this string.</summary>
+    public string Table => DllTables.Prefix + Assembly;
+}
+
+public static class DllTables
+{
+    /// <summary>Edit log tables of DLL strings are <c>dll:{assembly}</c>, keyed by the literal.</summary>
+    public const string Prefix = "dll:";
+}
+
 /// <summary>
 /// Reads <c>strings/{modId}/{lang}/{assembly}.json</c>: the DLL string
-/// literals the app wants replaced, per assembly. Pure file logic so it can be
-/// tested without the game.
+/// literals the app wants replaced (or offers for in-game editing), per
+/// assembly. Pure file logic so it can be tested without the game.
 /// </summary>
 public static class StringFiles
 {
-    /// <summary>Assembly name (case-insensitive) → original → translation, with per-file read errors.</summary>
-    public static (Dictionary<string, Dictionary<string, string>> Assemblies, List<string> Errors) Load(
-        string stringsRoot,
-        string language)
+    /// <summary>Every string of every mod for <paramref name="language"/>, with per-file read errors.</summary>
+    public static (List<DllEntry> Entries, List<string> Errors) Load(string stringsRoot, string language)
     {
-        var assemblies = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+        var entries = new List<DllEntry>();
         var errors = new List<string>();
         if (!Directory.Exists(stringsRoot))
         {
-            return (assemblies, errors);
+            return (entries, errors);
         }
         foreach (var modDir in Directory.GetDirectories(stringsRoot).OrderBy(path => path, StringComparer.Ordinal))
         {
@@ -29,32 +40,51 @@ public static class StringFiles
             {
                 continue;
             }
+            var modId = Path.GetFileName(modDir);
             foreach (var file in Directory.GetFiles(languageDir, "*.json").OrderBy(path => path, StringComparer.Ordinal))
             {
                 var assembly = Path.GetFileNameWithoutExtension(file);
+                if (assembly.StartsWith('_'))
+                {
+                    continue; // _meta.json
+                }
                 try
                 {
-                    if (!assemblies.TryGetValue(assembly, out var strings))
+                    foreach (var (original, translation, id) in ReadStrings(file))
                     {
-                        strings = new Dictionary<string, string>(StringComparer.Ordinal);
-                        assemblies[assembly] = strings;
-                    }
-                    foreach (var (original, translation) in ReadStrings(file))
-                    {
-                        strings[original] = translation;
+                        entries.Add(new DllEntry(modId, assembly, original, translation, id));
                     }
                 }
                 catch (Exception exception)
                 {
-                    errors.Add($"{Path.GetFileName(modDir)}/{language}/{assembly}: {exception.Message}");
+                    errors.Add($"{modId}/{language}/{assembly}: {exception.Message}");
                 }
             }
         }
-        return (assemblies, errors);
+        return (entries, errors);
     }
 
-    /// <summary><c>{ "strings": [ { "original", "translation" } ] }</c></summary>
-    public static IEnumerable<(string Original, string Translation)> ReadStrings(string file)
+    /// <summary>Assembly name (case-insensitive) → original → translation, for the strings that have one.</summary>
+    public static Dictionary<string, Dictionary<string, string>> Replacements(IEnumerable<(DllEntry Entry, string Value)> values)
+    {
+        var assemblies = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (entry, value) in values)
+        {
+            if (!assemblies.TryGetValue(entry.Assembly, out var strings))
+            {
+                strings = new Dictionary<string, string>(StringComparer.Ordinal);
+                assemblies[entry.Assembly] = strings;
+            }
+            if (value.Length > 0)
+            {
+                strings[entry.Original] = value;
+            }
+        }
+        return assemblies;
+    }
+
+    /// <summary><c>{ "strings": [ { "original", "translation", "id" } ] }</c>; the translation may be empty.</summary>
+    public static IEnumerable<(string Original, string Translation, string? Id)> ReadStrings(string file)
     {
         using var document = JsonDocument.Parse(File.ReadAllText(file));
         if (!document.RootElement.TryGetProperty("strings", out var list) || list.ValueKind != JsonValueKind.Array)
@@ -63,12 +93,13 @@ public static class StringFiles
         }
         foreach (var item in list.EnumerateArray())
         {
-            if (item.TryGetProperty("original", out var original)
-                && item.TryGetProperty("translation", out var translation)
-                && original.GetString() is { Length: > 0 } from
-                && translation.GetString() is { Length: > 0 } to)
+            if (item.TryGetProperty("original", out var original) && original.GetString() is { Length: > 0 } from)
             {
-                yield return (from, to);
+                var to = item.TryGetProperty("translation", out var translation) ? translation.GetString() ?? "" : "";
+                var id = item.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String
+                    ? idValue.GetString()
+                    : null;
+                yield return (from, to, id);
             }
         }
     }

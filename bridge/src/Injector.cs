@@ -23,6 +23,11 @@ public sealed record CatalogEntry(
     bool Edited)
 {
     public string Tag => $"#{Number}";
+
+    /// <summary>A DLL string (table <c>dll:{assembly}</c>, key = the literal) rather than a loc key.</summary>
+    public bool IsDll => Table.StartsWith(DllTables.Prefix, StringComparison.Ordinal);
+
+    public string Assembly => IsDll ? Table[DllTables.Prefix.Length..] : "";
 }
 
 /// <summary>
@@ -134,6 +139,13 @@ public static class Injector
                 }
             }
 
+            // DLL strings come after the loc keys; they are only known for the
+            // language the game started in.
+            if (language == StringReplacer.Language)
+            {
+                Catalog = Catalog.Concat(DllCatalog(loaded, Catalog.Count)).ToList();
+            }
+
             var applied = new HashSet<(string Table, string Key)>();
             foreach (var group in tables.GroupBy(table => table.Table, StringComparer.Ordinal))
             {
@@ -226,6 +238,21 @@ public static class Injector
             }
         }
         return catalog;
+    }
+
+    /// <summary>The DLL strings of loaded mods, numbered after the first <paramref name="count"/> entries.</summary>
+    private static IEnumerable<CatalogEntry> DllCatalog(HashSet<string>? loaded, int count)
+    {
+        foreach (var (entry, current) in StringReplacer.Entries)
+        {
+            if (loaded != null && !loaded.Contains(entry.ModId))
+            {
+                continue;
+            }
+            var info = new EntryInfo(entry.Id, entry.Original, null, new Dictionary<string, string>());
+            yield return new CatalogEntry(
+                ++count, entry.ModId, entry.Table, entry.Original, info, entry.Translation, current, current != entry.Translation);
+        }
     }
 
     /// <summary>Puts back the original text of keys we no longer translate.</summary>

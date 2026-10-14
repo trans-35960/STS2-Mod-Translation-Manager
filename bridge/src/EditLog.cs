@@ -35,6 +35,10 @@ public static class EditLog
     public static string PathFor(string editsRoot, string modId, string language) =>
         Path.Combine(editsRoot, modId, language + ".jsonl");
 
+    /// <summary>DLL string edits have their own log (and ack), so taking in a loc sheet never acks them.</summary>
+    public static string DllPathFor(string editsRoot, string modId, string language) =>
+        Path.Combine(editsRoot, modId, language + ".dll.jsonl");
+
     /// <summary>Records in file order; lines that do not parse are skipped.</summary>
     public static List<EditRecord> Read(string file)
     {

@@ -105,7 +105,28 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
     let mut tables = bridge::SheetTables::default();
     let mut strings = bridge::SheetStrings::default();
     if dll_assembly.is_some() {
-        strings = bridge::sheet_strings(&sheet);
+        // Untranslated text goes along (empty) so the in-game panel can
+        // translate it; what counts as text is the sheet filter's rule.
+        let analysis = bridge::shared_root()
+            .and_then(|shared| dll_text::analysis_for_dll(&shared, &source_path));
+        let latin_is_text = dll_text::latin_is_text(
+            sheet
+                .entries
+                .iter()
+                .filter(|entry| entry.key.starts_with("dll://"))
+                .map(|entry| entry.source_value.as_str()),
+            &sheet.target_language,
+        );
+        strings = bridge::sheet_strings(&sheet, |entry| {
+            dll_text::is_dll_text(
+                &entry.source_value,
+                &sheet.target_language,
+                analysis
+                    .as_ref()
+                    .and_then(|analysis| analysis.use_of(&entry.source_value)),
+                latin_is_text,
+            )
+        });
     } else {
         tables = bridge::sheet_tables(&sheet);
         if tables.values.is_empty() {
@@ -137,7 +158,7 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
             )
             .map_err(|error| error.to_string())?;
             let dir = path.parent().map(Path::to_path_buf).unwrap_or(path);
-            (dir, strings.strings.len(), 0)
+            (dir, strings.translated, 0)
         }
         None => {
             let report = bridge::write_translations(
@@ -466,15 +487,16 @@ fn bridge_edit_target(sheet: &JsonTranslationSheet) -> Result<(PathBuf, String),
 
 fn bridge_edits_dto(sheet: &JsonTranslationSheet, shared: &Path, mod_id: &str) -> BridgeEditsDto {
     let language = sheet.target_language.as_str();
-    let ack = bridge_edits::read_edits_ack(shared, mod_id, language);
+    let channel = bridge_edits::EditChannel::of_sheet(sheet);
+    let ack = bridge_edits::read_edits_ack(shared, mod_id, language, channel);
     let pending = bridge_edits::pending_edits(
-        &bridge_edits::read_edits(shared, mod_id, language),
+        &bridge_edits::read_edits(shared, mod_id, language, channel),
         ack.as_deref(),
     );
     let sheet_keys = sheet
         .entries
         .iter()
-        .filter_map(|entry| bridge::sheet_key_table(&entry.key).map(|slot| (slot, entry.key.clone())))
+        .filter_map(|entry| bridge_edits::sheet_slot(sheet, entry).map(|slot| (slot, entry.key.clone())))
         .collect::<BTreeMap<_, _>>();
     let report_dto = |record: &bridge_edits::EditRecord, pending: bool| BridgeReportDto {
         id: record.id.clone(),
@@ -491,7 +513,11 @@ fn bridge_edits_dto(sheet: &JsonTranslationSheet, shared: &Path, mod_id: &str) -
     let stored_reports = bridge_edits::read_stored_reports(&app().config().state_dir);
     let stored = stored_reports
         .iter()
-        .filter(|item| item.mod_id == mod_id && item.language == language)
+        .filter(|item| {
+            item.mod_id == mod_id
+                && item.language == language
+                && item.dll == (channel == bridge_edits::EditChannel::Dll)
+        })
         .map(|item| (item.record.id.clone(), item))
         .collect::<BTreeMap<_, _>>();
     let mut reports = stored
@@ -549,6 +575,7 @@ pub(crate) fn acknowledge_bridge_edits(
         &app().config().state_dir,
         &mod_id,
         &sheet.target_language,
+        bridge_edits::EditChannel::of_sheet(&sheet),
         &ack_id,
     )
     .map_err(|error| error.to_string())?;
@@ -592,6 +619,7 @@ pub(crate) fn resolve_bridge_report(sheet: JsonSheetDto, id: String) -> Result<B
         &app().config().state_dir,
         &mod_id,
         &sheet.target_language,
+        bridge_edits::EditChannel::of_sheet(&sheet),
         &id,
     )
     .map_err(|error| error.to_string())?;

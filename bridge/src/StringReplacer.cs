@@ -42,6 +42,18 @@ public static class StringReplacer
     /// <summary>Analysis of DLLs nothing is replaced in runs off the main thread, one at a time.</summary>
     private static Task _analysisQueue = Task.CompletedTask;
 
+    /// <summary>Each mod DLL as read at load, by assembly name and DLL file name, for live edits.</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (Assembly Assembly, AssemblyStrings Read)> Reads =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The strings the app sent, for the in-game edit panel: <c>Translation</c>
+    /// is the app's value, <c>Current</c> what the game uses after edits the
+    /// app has not taken in yet.
+    /// </summary>
+    public static IReadOnlyList<(DllEntry Entry, string Current)> Entries { get; private set; } =
+        Array.Empty<(DllEntry, string)>();
+
     /// <summary>Per assembly results, for <c>status/bridge.json</c>.</summary>
     public static Dictionary<string, AssemblyReport> Reports { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -53,14 +65,118 @@ public static class StringReplacer
     {
         _harmony = harmony;
         Language = StartLanguage();
-        var (assemblies, errors) = StringFiles.Load(SharedPaths.Strings, Language);
+        var (entries, errors) = StringFiles.Load(SharedPaths.Strings, Language);
         Errors.AddRange(errors);
-        _byAssembly = assemblies;
+        Entries = WithPendingEdits(entries, Language);
+        _byAssembly = StringFiles.Replacements(Entries);
         AppDomain.CurrentDomain.AssemblyLoad += (_, args) => OnAssembly(args.LoadedAssembly);
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             OnAssembly(assembly);
         }
+    }
+
+    /// <summary>
+    /// Puts in-game edits the app has not taken in yet on top of the app's
+    /// values. Like loc edits, one only holds while the app's value is still
+    /// the one it replaced.
+    /// </summary>
+    private static List<(DllEntry Entry, string Current)> WithPendingEdits(List<DllEntry> entries, string language)
+    {
+        var result = new List<(DllEntry, string)>(entries.Count);
+        foreach (var mod in entries.GroupBy(entry => entry.ModId, StringComparer.Ordinal))
+        {
+            Dictionary<(string Table, string Key), EditRecord> pending;
+            try
+            {
+                var ack = TranslationFiles.ReadEditsAck(SharedPaths.Strings, mod.Key, language);
+                pending = EditLog.Pending(EditLog.Read(EditLog.DllPathFor(SharedPaths.Edits, mod.Key, language)), ack);
+            }
+            catch (Exception exception)
+            {
+                Errors.Add($"{mod.Key}: DLL edits unreadable: {exception.Message}");
+                pending = new();
+            }
+            foreach (var entry in mod)
+            {
+                var edited = pending.TryGetValue((entry.Table, entry.Original), out var edit)
+                    && (edit.Before ?? "") == entry.Translation;
+                result.Add((entry, edited ? edit!.After ?? "" : entry.Translation));
+            }
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Changes one string while the game runs: the methods that load it are
+    /// patched again, so text built from now on uses the new value. Text a
+    /// screen already built stays until it is built again. Returns the number
+    /// of methods patched, or -1 when the DLL was not read at load.
+    /// </summary>
+    public static int ApplyLive(string assembly, string original, string translation)
+    {
+        if (_harmony == null || !Reads.TryGetValue(assembly, out var loaded))
+        {
+            return -1;
+        }
+        var (target, read) = loaded;
+        var name = target.GetName().Name ?? assembly;
+        var strings = Lookup(name) ?? Lookup(Path.GetFileNameWithoutExtension(target.Location));
+        if (strings == null)
+        {
+            strings = new Dictionary<string, string>(StringComparer.Ordinal);
+            _byAssembly[assembly] = strings;
+        }
+        if (translation.Length == 0)
+        {
+            strings.Remove(original);
+        }
+        else
+        {
+            strings[original] = translation;
+        }
+        Entries = Entries
+            .Select(item => string.Equals(item.Entry.Assembly, assembly, StringComparison.OrdinalIgnoreCase)
+                && item.Entry.Original == original
+                    ? (item.Entry, translation)
+                    : item)
+            .ToList();
+        var patched = 0;
+        foreach (var (method, sites) in read.Methods)
+        {
+            if (!sites.Any(site => site.Literal == original)
+                || method.IsGenericMethodDefinition
+                || method.DeclaringType?.ContainsGenericParameters == true)
+            {
+                continue;
+            }
+            var replace = sites.Select(site => strings.ContainsKey(site.Literal) && read.CanReplace(site)).ToArray();
+            try
+            {
+                _harmony.Unpatch(method, HarmonyPatchType.Transpiler, _harmony.Id);
+                if (replace.Any(replaced => replaced))
+                {
+                    Replacements[method] = replace;
+                    _harmony.Patch(method, transpiler: new HarmonyMethod(typeof(StringReplacer), nameof(Transpiler)));
+                    patched++;
+                }
+                else
+                {
+                    Replacements.TryRemove(method, out _);
+                }
+            }
+            catch (Exception exception)
+            {
+                BridgeMod.Log.Warn($"[{BridgeMod.ModId}] live edit of {method.DeclaringType?.FullName}.{method.Name} failed: {exception.Message}");
+            }
+        }
+        return patched;
+    }
+
+    private static void Remember(Assembly assembly, string name, string fileStem, AssemblyStrings read)
+    {
+        Reads[name] = (assembly, read);
+        Reads[fileStem] = (assembly, read);
     }
 
     /// <summary>The language the game will start in; loc tables are not built yet when mods load.</summary>
@@ -108,6 +224,7 @@ public static class StringReplacer
             try
             {
                 var read = AssemblyStrings.Read(assembly);
+                Remember(assembly, name, fileStem, read);
                 if (!AnalysisFiles.IsCurrent(SharedPaths.Analysis, fileStem, mvid))
                 {
                     AnalysisFiles.Write(SharedPaths.Analysis, fileStem, name, mvid, file.Length, read);
@@ -152,6 +269,7 @@ public static class StringReplacer
             // Every method is read first: text containing a word the code
             // searches for must stay as it is everywhere.
             var read = AssemblyStrings.Read(assembly);
+            Remember(assembly, name, fileStem, read);
             // Text only an unreadable method loads still must not hide a searched-for word.
             foreach (var original in strings.Keys)
             {

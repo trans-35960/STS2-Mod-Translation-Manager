@@ -359,7 +359,7 @@ public partial class EditPanel : Window
             if (!folders.TryGetValue(tablePath, out var table))
             {
                 table = _tree.CreateItem(mod);
-                table.SetText(0, $"{entry.Table}.json");
+                table.SetText(0, entry.IsDll ? $"DLL {entry.Assembly}" : $"{entry.Table}.json");
                 table.SetSelectable(0, false);
                 table.Collapsed = !expand;
                 folders[tablePath] = table;
@@ -412,8 +412,11 @@ public partial class EditPanel : Window
             _value.Text = "";
             return;
         }
-        _info.Text = $"{entry.Tag} · {entry.ModId} · {entry.Table}.json\n도구 id {entry.Info.Id ?? "-"} · 키 {entry.Key}"
-            + (entry.Edited ? $"\n게임 안에서 고친 값입니다. 프로그램 값: {OneLine(entry.SheetValue)}" : "");
+        _info.Text = (entry.IsDll
+                ? $"{entry.Tag} · {entry.ModId} · DLL {entry.Assembly}\n도구 id {entry.Info.Id ?? "-"} · 코드에 들어 있는 문자열"
+                : $"{entry.Tag} · {entry.ModId} · {entry.Table}.json\n도구 id {entry.Info.Id ?? "-"} · 키 {entry.Key}")
+            + (entry.Edited ? $"\n게임 안에서 고친 값입니다. 프로그램 값: {OneLine(entry.SheetValue)}" : "")
+            + (entry.IsDll && entry.SheetValue.Length == 0 && !entry.Edited ? "\n아직 번역하지 않은 문자열입니다." : "");
         _referenceLanguage.AddItem(entry.Info.SourceLang is { } sourceLang ? $"원문 ({sourceLang})" : "원문");
         _referenceLanguage.SetItemMetadata(0, "");
         foreach (var language in entry.Info.Langs.Keys.OrderBy(language => language, StringComparer.Ordinal))
@@ -467,7 +470,7 @@ public partial class EditPanel : Window
             ShowMessage("번역을 비워 둘 수는 없습니다. 원래 값으로 돌리려면 '게임 안 수정 취소'를 누르세요.");
             return;
         }
-        if (!LocValidator.ValidateFormatString(after, out var error))
+        if (entry.IsDll ? !SamePlaceholders(entry.Key, after, out var error) : !LocValidator.ValidateFormatString(after, out error))
         {
             ShowMessage($"저장하지 않았습니다. 형식 오류: {error}");
             return;
@@ -478,7 +481,35 @@ public partial class EditPanel : Window
         {
             return;
         }
-        ReloadAndShow("저장하고 적용했습니다");
+        ReloadAndShow(entry.IsDll ? ApplyDll(entry, kind == EditLog.Edit ? after : entry.SheetValue) : "저장하고 적용했습니다");
+    }
+
+    /// <summary>Patches the methods using a DLL string again; text a screen already built stays until rebuilt.</summary>
+    private static string ApplyDll(CatalogEntry entry, string value)
+    {
+        var patched = StringReplacer.ApplyLive(entry.Assembly, entry.Key, value);
+        return patched < 0
+            ? "저장했습니다. 게임을 다시 시작하면 반영됩니다"
+            : "저장했습니다. 새로 만들어지는 화면부터 바뀝니다(이미 열린 화면은 다시 열어야 함)";
+    }
+
+    /// <summary>
+    /// A DLL string may be a <c>string.Format</c> pattern: the translation must
+    /// keep its <c>{0}</c>-style slots, or the mod throws when it formats it.
+    /// </summary>
+    private static bool SamePlaceholders(string original, string translation, out string? error)
+    {
+        static List<string> Slots(string text) => System.Text.RegularExpressions.Regex
+            .Matches(text, @"\{\d+(?:[,:][^}]*)?\}")
+            .Select(match => match.Value)
+            .OrderBy(slot => slot, StringComparer.Ordinal)
+            .ToList();
+        var expected = Slots(original);
+        var actual = Slots(translation);
+        error = expected.SequenceEqual(actual)
+            ? null
+            : $"원문의 자리표시자 {string.Join(" ", expected)}을(를) 그대로 둬야 합니다";
+        return error == null;
     }
 
     private void Revert()
@@ -487,7 +518,7 @@ public partial class EditPanel : Window
         {
             return;
         }
-        ReloadAndShow("프로그램 값으로 되돌렸습니다");
+        ReloadAndShow(entry.IsDll ? ApplyDll(entry, entry.SheetValue) : "프로그램 값으로 되돌렸습니다");
     }
 
     private void Report()
@@ -512,7 +543,9 @@ public partial class EditPanel : Window
     {
         try
         {
-            var file = EditLog.PathFor(SharedPaths.Edits, entry.ModId, Injector.CatalogLanguage);
+            var file = entry.IsDll
+                ? EditLog.DllPathFor(SharedPaths.Edits, entry.ModId, Injector.CatalogLanguage)
+                : EditLog.PathFor(SharedPaths.Edits, entry.ModId, Injector.CatalogLanguage);
             var before = kind == EditLog.Report ? entry.Current : entry.SheetValue;
             EditLog.Append(file, new EditRecord(
                 EditLog.NewId(DateTimeOffset.Now), kind, entry.Table, entry.Key, entry.Info.Source, before, after, note));

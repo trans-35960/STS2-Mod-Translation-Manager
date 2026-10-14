@@ -7,10 +7,17 @@
 //! edits in means copying the chosen values into the sheet and moving
 //! `edits_ack` past them. Reports the user has not dealt with yet are kept in
 //! the app's state so acking does not lose them.
+//!
+//! Loc table edits and DLL string edits (`{lang}.dll.jsonl`, table
+//! `dll:{assembly}`, key = the literal) are separate logs with separate acks:
+//! a mod has one sheet for each, and taking in one must not ack the other.
 
 use crate::bridge::{read_meta, sheet_key_table, translations_dir, write_atomic};
 use crate::error::{AppError, AppResult};
-use crate::json_translation::{JsonTranslationSheet, JsonTranslationStatus};
+use crate::json_translation::{
+    JsonTranslationEntry, JsonTranslationSheet, JsonTranslationStatus, is_hardcoded_entry_key,
+    is_hardcoded_source_file,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
@@ -39,17 +46,70 @@ pub struct EditRecord {
     pub note: String,
 }
 
-pub fn edits_path(shared: &Path, mod_id: &str, language: &str) -> PathBuf {
+/// Which edit log a sheet takes in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EditChannel {
+    /// Loc table keys (`translations/`).
+    Loc,
+    /// DLL string literals (`strings/`).
+    Dll,
+}
+
+impl EditChannel {
+    pub fn of_sheet(sheet: &JsonTranslationSheet) -> Self {
+        if is_hardcoded_source_file(Path::new(&sheet.source_path)) {
+            Self::Dll
+        } else {
+            Self::Loc
+        }
+    }
+
+    fn log_name(self, language: &str) -> String {
+        match self {
+            Self::Loc => format!("{language}.jsonl"),
+            Self::Dll => format!("{language}.dll.jsonl"),
+        }
+    }
+
+    /// Where `_meta.json` (and its `edits_ack`) lives.
+    fn meta_path(self, shared: &Path, mod_id: &str, language: &str) -> PathBuf {
+        match self {
+            Self::Loc => translations_dir(shared, mod_id, language),
+            Self::Dll => shared.join("strings").join(mod_id).join(language),
+        }
+        .join("_meta.json")
+    }
+}
+
+/// The `(table, key)` an entry has in the edit log: its loc table and key,
+/// or `dll:{assembly}` and the literal for a DLL sheet.
+pub fn sheet_slot(
+    sheet: &JsonTranslationSheet,
+    entry: &JsonTranslationEntry,
+) -> Option<(String, String)> {
+    if is_hardcoded_entry_key(&entry.key) {
+        let assembly = Path::new(&sheet.source_path).file_stem()?.to_string_lossy();
+        return Some((format!("dll:{assembly}"), entry.source_value.clone()));
+    }
+    sheet_key_table(&entry.key)
+}
+
+pub fn edits_path(shared: &Path, mod_id: &str, language: &str, channel: EditChannel) -> PathBuf {
     shared
         .join("edits")
         .join(mod_id)
-        .join(format!("{language}.jsonl"))
+        .join(channel.log_name(language))
 }
 
 /// Records in file order; lines that do not parse (a write cut off by a
 /// crash) are skipped.
-pub fn read_edits(shared: &Path, mod_id: &str, language: &str) -> Vec<EditRecord> {
-    let Ok(text) = fs::read_to_string(edits_path(shared, mod_id, language)) else {
+pub fn read_edits(
+    shared: &Path,
+    mod_id: &str,
+    language: &str,
+    channel: EditChannel,
+) -> Vec<EditRecord> {
+    let Ok(text) = fs::read_to_string(edits_path(shared, mod_id, language, channel)) else {
         return Vec::new();
     };
     text.lines()
@@ -61,13 +121,24 @@ pub fn read_edits(shared: &Path, mod_id: &str, language: &str) -> Vec<EditRecord
         .collect()
 }
 
-pub fn read_edits_ack(shared: &Path, mod_id: &str, language: &str) -> Option<String> {
-    read_meta(&translations_dir(shared, mod_id, language).join("_meta.json")).edits_ack
+pub fn read_edits_ack(
+    shared: &Path,
+    mod_id: &str,
+    language: &str,
+    channel: EditChannel,
+) -> Option<String> {
+    read_meta(&channel.meta_path(shared, mod_id, language)).edits_ack
 }
 
 /// Moves `edits_ack` to `id`; never backwards.
-pub fn write_edits_ack(shared: &Path, mod_id: &str, language: &str, id: &str) -> AppResult<()> {
-    let path = translations_dir(shared, mod_id, language).join("_meta.json");
+pub fn write_edits_ack(
+    shared: &Path,
+    mod_id: &str,
+    language: &str,
+    channel: EditChannel,
+    id: &str,
+) -> AppResult<()> {
+    let path = channel.meta_path(shared, mod_id, language);
     let mut meta = read_meta(&path);
     if meta.edits_ack.as_deref().is_some_and(|ack| ack >= id) {
         return Ok(());
@@ -146,7 +217,7 @@ pub fn edit_import_items(
         if entry.status == JsonTranslationStatus::Removed {
             continue;
         }
-        let Some(slot) = sheet_key_table(&entry.key) else {
+        let Some(slot) = sheet_slot(sheet, entry) else {
             continue;
         };
         let Some(edit) = pending.edits.get(&slot) else {
@@ -182,6 +253,9 @@ pub fn edit_import_items(
 pub struct StoredReport {
     pub mod_id: String,
     pub language: String,
+    /// From the DLL string log, whose ids are acked separately.
+    #[serde(default)]
+    pub dll: bool,
     #[serde(default)]
     pub resolved: bool,
     #[serde(flatten)]
@@ -212,10 +286,14 @@ pub fn acknowledge(
     state_dir: &Path,
     mod_id: &str,
     language: &str,
+    channel: EditChannel,
     ack_id: &str,
 ) -> AppResult<()> {
-    let ack = read_edits_ack(shared, mod_id, language);
-    let pending = pending_edits(&read_edits(shared, mod_id, language), ack.as_deref());
+    let ack = read_edits_ack(shared, mod_id, language, channel);
+    let pending = pending_edits(
+        &read_edits(shared, mod_id, language, channel),
+        ack.as_deref(),
+    );
     let mut stored = read_stored_reports(state_dir);
     for report in pending
         .reports
@@ -226,6 +304,7 @@ pub fn acknowledge(
             stored.push(StoredReport {
                 mod_id: mod_id.to_string(),
                 language: language.to_string(),
+                dll: channel == EditChannel::Dll,
                 resolved: false,
                 record: report,
             });
@@ -236,10 +315,11 @@ pub fn acknowledge(
         !(item.resolved
             && item.mod_id == mod_id
             && item.language == language
+            && item.dll == (channel == EditChannel::Dll)
             && item.record.id.as_str() <= ack_id)
     });
     write_stored_reports(state_dir, &stored)?;
-    write_edits_ack(shared, mod_id, language, ack_id)
+    write_edits_ack(shared, mod_id, language, channel, ack_id)
 }
 
 /// In-game edits and open reports for `mod_id` in every language, for the
@@ -259,11 +339,18 @@ pub fn pending_counts(shared: &Path, state_dir: &Path, mod_id: &str) -> (usize, 
         if path.extension().and_then(|ext| ext.to_str()) != Some("jsonl") {
             continue;
         }
-        let Some(language) = path.file_stem().and_then(|stem| stem.to_str()) else {
+        let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) else {
             continue;
         };
-        let ack = read_edits_ack(shared, mod_id, language);
-        let pending = pending_edits(&read_edits(shared, mod_id, language), ack.as_deref());
+        let (language, channel) = match stem.strip_suffix(".dll") {
+            Some(language) => (language, EditChannel::Dll),
+            None => (stem, EditChannel::Loc),
+        };
+        let ack = read_edits_ack(shared, mod_id, language, channel);
+        let pending = pending_edits(
+            &read_edits(shared, mod_id, language, channel),
+            ack.as_deref(),
+        );
         edits += pending.edits.len();
         reports += pending
             .reports
@@ -281,18 +368,20 @@ pub fn resolve_report(
     state_dir: &Path,
     mod_id: &str,
     language: &str,
+    channel: EditChannel,
     id: &str,
 ) -> AppResult<()> {
     let mut stored = read_stored_reports(state_dir);
     if let Some(item) = stored.iter_mut().find(|item| item.record.id == id) {
         item.resolved = true;
-    } else if let Some(record) = read_edits(shared, mod_id, language)
+    } else if let Some(record) = read_edits(shared, mod_id, language, channel)
         .into_iter()
         .find(|record| record.id == id && record.kind == KIND_REPORT)
     {
         stored.push(StoredReport {
             mod_id: mod_id.to_string(),
             language: language.to_string(),
+            dll: channel == EditChannel::Dll,
             resolved: true,
             record,
         });
@@ -391,11 +480,35 @@ mod tests {
     }
 
     #[test]
+    fn dll_edits_match_sheet_entries_by_their_literal() {
+        let mut sheet = sheet(&[]);
+        sheet.source_path = "Z:/work/source/Mod.dll".to_string();
+        sheet.entries = vec![JsonTranslationEntry {
+            key: "dll://10:8".to_string(),
+            slot_id: None,
+            previous_source_value: None,
+            source_value: "攻击牌".to_string(),
+            translated_value: String::new(),
+            status: JsonTranslationStatus::Missing,
+        }];
+        let mut edit = record("1", KIND_EDIT, "攻击牌", "", Some("공격 카드"));
+        edit.table = "dll:Mod".to_string();
+
+        let items = edit_import_items(&sheet, &pending_edits(&[edit], None));
+
+        assert_eq!(EditChannel::of_sheet(&sheet), EditChannel::Dll);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].kind, EditImportKind::GameChanged);
+        assert_eq!(items[0].sheet_key, "dll://10:8");
+        assert_eq!(items[0].game_value, "공격 카드");
+    }
+
+    #[test]
     fn reports_survive_until_handled_and_ack_moves_forward_only() {
         let root = temp_dir("ack");
         let shared = root.join("shared");
         let state = root.join("state");
-        let log = edits_path(&shared, "M", "kor");
+        let log = edits_path(&shared, "M", "kor", EditChannel::Loc);
         fs::create_dir_all(log.parent().unwrap()).expect("dir");
         let lines = [
             record("1", KIND_EDIT, "A", "가", Some("나")),
@@ -407,12 +520,13 @@ mod tests {
         .join("\n");
         fs::write(&log, format!("{lines}\n{{broken\n")).expect("log");
 
-        resolve_report(&shared, &state, "M", "kor", "2").expect("resolve before ack");
+        resolve_report(&shared, &state, "M", "kor", EditChannel::Loc, "2").expect("resolve before ack");
         let resolved_early = read_stored_reports(&state);
-        let ack_before = read_edits_ack(&shared, "M", "kor");
-        acknowledge(&shared, &state, "M", "kor", "2").expect("ack");
-        acknowledge(&shared, &state, "M", "kor", "1").expect("ack again");
-        let ack = read_edits_ack(&shared, "M", "kor");
+        let ack_before = read_edits_ack(&shared, "M", "kor", EditChannel::Loc);
+        acknowledge(&shared, &state, "M", "kor", EditChannel::Loc, "2").expect("ack");
+        acknowledge(&shared, &state, "M", "kor", EditChannel::Loc, "1").expect("ack again");
+        let ack = read_edits_ack(&shared, "M", "kor", EditChannel::Loc);
+        let dll_ack = read_edits_ack(&shared, "M", "kor", EditChannel::Dll);
         let after_ack = read_stored_reports(&state);
         fs::remove_dir_all(&root).ok();
 
@@ -420,6 +534,7 @@ mod tests {
         assert_eq!(resolved_early[0].record.key, "B");
         assert_eq!(ack_before, None, "resolving a report does not ack edits");
         assert_eq!(ack.as_deref(), Some("2"));
+        assert_eq!(dll_ack, None, "the DLL log keeps its own ack");
         assert!(
             after_ack.is_empty(),
             "handled and acked reports are dropped"
