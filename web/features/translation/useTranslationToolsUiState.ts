@@ -18,6 +18,7 @@ import type {
 import {
   buildTranslationProjectTree,
   dllTextKeys as findDllTextKeys,
+  dllUseOf,
   isHardcodedSheet,
   hasTranslationValue,
   isTranslatableEntry,
@@ -29,6 +30,9 @@ import {
   translationSlotEntries,
   type TranslationProjectNode,
 } from "./translationUtils";
+
+/** How often a DLL sheet re-reads the bridge's analysis and on-screen record. */
+const DLL_USES_REFRESH_MS = 15000;
 
 const defaultColumns: TranslationColumns = {
   status: 76,
@@ -136,30 +140,70 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
   const projectTree = React.useMemo(() => buildTranslationProjectTree(props.sheet), [props.sheet]);
   const dllSourcePath = props.sheet && isHardcodedSheet(props.sheet.source_path) ? props.sheet.source_path : "";
   const [dllUses, setDllUses] = React.useState<DllStringUses | null>(null);
-  // The bridge analyses the DLL in game; look again when the window comes
-  // back into focus, which is when the player returns from the game.
+  // The bridge analyses the DLL and records what it sees on screen while the
+  // game runs. Focus events do not always arrive when coming back from the
+  // game, so also look again every few seconds; nothing re-renders unless
+  // the files changed.
   React.useEffect(() => {
     setDllUses(null);
     if (!dllSourcePath || isPreviewRuntime()) {
       return;
     }
     let cancelled = false;
+    let lastSignature = "";
     const load = () => {
       invokeCommand("dll_string_uses", { sourcePath: dllSourcePath })
-        .then((uses) => !cancelled && setDllUses(uses))
+        .then((uses) => {
+          const signature = uses
+            ? `${uses.analyzed_at}|${uses.seen.length}|${uses.partial.length}|${Object.keys(uses.uses).length}`
+            : "";
+          if (!cancelled && signature !== lastSignature) {
+            lastSignature = signature;
+            setDllUses(uses);
+          }
+        })
         .catch(() => undefined);
     };
     load();
+    const timer = window.setInterval(load, DLL_USES_REFRESH_MS);
+    const onVisible = () => document.visibilityState === "visible" && load();
     window.addEventListener("focus", load);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
       window.removeEventListener("focus", load);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [dllSourcePath]);
+  const dllSeen = React.useMemo(() => (dllUses ? new Set(dllUses.seen) : null), [dllUses]);
+  const dllPartial = React.useMemo(() => (dllUses ? new Set(dllUses.partial ?? []) : null), [dllUses]);
   const dllTextKeys = React.useMemo(
-    () => findDllTextKeys(props.sheet, props.targetLanguage, dllUses?.uses ?? null),
-    [dllUses, props.sheet, props.targetLanguage],
+    () => findDllTextKeys(props.sheet, props.targetLanguage, dllUses?.uses ?? null, dllSeen, dllPartial),
+    [dllPartial, dllSeen, dllUses, props.sheet, props.targetLanguage],
   );
+  /** DLL sheet rows the bridge replaces only where they are shown. */
+  const dllPartialKeys = React.useMemo(() => {
+    if (!dllPartial || dllPartial.size === 0 || !props.sheet) {
+      return null;
+    }
+    return new Set(props.sheet.entries.filter((entry) => dllPartial.has(entry.source_value)).map((entry) => entry.key));
+  }, [dllPartial, props.sheet]);
+  /** DLL sheet rows the bridge saw on screen (and may translate). */
+  const dllSeenKeys = React.useMemo(() => {
+    if (!dllSeen || dllSeen.size === 0 || !props.sheet) {
+      return null;
+    }
+    return new Set(
+      props.sheet.entries
+        .filter(
+          (entry) =>
+            dllUseOf(entry.source_value, dllUses?.uses ?? null, dllSeen, dllPartial) === "shown" &&
+            dllSeen.has(entry.source_value),
+        )
+        .map((entry) => entry.key),
+    );
+  }, [dllPartial, dllSeen, dllUses, props.sheet]);
   const hiddenDllKeys = dllTextOnly ? dllTextKeys : null;
   const filteredEntries = React.useMemo(
     () => {
@@ -403,6 +447,8 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     dllTextCount: dllTextKeys?.size ?? null,
     dllTextKeys,
     dllUses,
+    dllSeenKeys,
+    dllPartialKeys,
     columns,
     sheetPath,
     sheetSourceLanguage,

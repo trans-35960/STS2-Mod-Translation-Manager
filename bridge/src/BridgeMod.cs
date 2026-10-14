@@ -26,6 +26,7 @@ public static class BridgeMod
             var harmony = new Harmony(ModId);
             harmony.PatchAll(typeof(BridgeMod).Assembly);
             ModErrorFilter.DropBranchErrorsOfDisabledMods();
+            ShownStrings.Initialize(harmony);
             StringReplacer.Initialize(harmony);
             Log.Info($"[{ModId}] {Version} initialized, shared folder: {SharedPaths.Root}");
         }

@@ -85,6 +85,10 @@ export type DllStringUses = {
   bridge_version: string;
   /** Literal → use (`key`, `searched_for`, `log`, `shown`, …); unknown uses are left out. */
   uses: Record<string, string>;
+  /** Literals the bridge saw on screen while the game ran. */
+  seen: string[];
+  /** Literals replaced only where shown: the code also compares them. */
+  partial: string[];
 };
 
 export type BridgeEdits = {

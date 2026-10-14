@@ -33,6 +33,9 @@ public static class StringReplacer
     private static Dictionary<string, Dictionary<string, string>> _byAssembly = new(StringComparer.OrdinalIgnoreCase);
 
     private static readonly HashSet<string> Seen = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Per patched method, which <c>ldstr</c> (in IL order) to replace.</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<MethodBase, bool[]> Replacements = new();
     private static readonly object SeenLock = new();
     private static Harmony? _harmony;
 
@@ -98,15 +101,18 @@ public static class StringReplacer
             return;
         }
         var mvid = assembly.ManifestModule.ModuleVersionId;
-        if (AnalysisFiles.IsCurrent(SharedPaths.Analysis, fileStem, mvid))
-        {
-            return;
-        }
+        // Read every start (a few hundred ms, off the main thread): the
+        // on-screen check needs the literals even when the file is current.
         _analysisQueue = _analysisQueue.ContinueWith(_ =>
         {
             try
             {
-                AnalysisFiles.Write(SharedPaths.Analysis, fileStem, name, mvid, file.Length, AssemblyStrings.Read(assembly));
+                var read = AssemblyStrings.Read(assembly);
+                if (!AnalysisFiles.IsCurrent(SharedPaths.Analysis, fileStem, mvid))
+                {
+                    AnalysisFiles.Write(SharedPaths.Analysis, fileStem, name, mvid, file.Length, read);
+                }
+                ShownStrings.Watch(fileStem, mvid, file.Length, read, null);
             }
             catch (Exception exception)
             {
@@ -143,8 +149,8 @@ public static class StringReplacer
         var watch = Stopwatch.StartNew();
         try
         {
-            // Every method is read first: a literal used as a name or key
-            // anywhere must stay as it is everywhere.
+            // Every method is read first: text containing a word the code
+            // searches for must stay as it is everywhere.
             var read = AssemblyStrings.Read(assembly);
             // Text only an unreadable method loads still must not hide a searched-for word.
             foreach (var original in strings.Keys)
@@ -154,28 +160,17 @@ public static class StringReplacer
             StringUses.MarkTextContainingKeys(read.Uses);
             report.Unreadable = read.Unreadable;
             report.FailedMethods.AddRange(read.FailedMethods);
-            foreach (var original in strings.Keys.ToList())
-            {
-                if (read.Uses.TryGetValue(original, out var use) && StringUses.BreaksWhenTranslated(use))
-                {
-                    // The transpiler reads this same dictionary.
-                    strings.Remove(original);
-                    report.ProtectedStrings.Add(original);
-                }
-            }
-            report.Protected = report.ProtectedStrings.Count;
-            report.ProtectedStrings.Sort(StringComparer.Ordinal);
-            if (report.ProtectedStrings.Count > MaxListedProtected)
-            {
-                report.ProtectedStrings.RemoveRange(MaxListedProtected, report.ProtectedStrings.Count - MaxListedProtected);
-            }
 
-            var found = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var (method, loaded) in read.Methods)
+            // Each load is decided on its own: a word compared in one method
+            // and shown by another is replaced only where it is shown.
+            var replacedAt = new HashSet<string>(StringComparer.Ordinal);
+            var keptAt = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var (method, sites) in read.Methods)
             {
-                var hits = loaded.Where(strings.ContainsKey).ToList();
-                if (hits.Count == 0)
+                var replace = sites.Select(site => strings.ContainsKey(site.Literal) && read.CanReplace(site)).ToArray();
+                if (!replace.Any(replaced => replaced))
                 {
+                    keptAt.UnionWith(sites.Select(site => site.Literal).Where(strings.ContainsKey));
                     continue;
                 }
                 if (method.IsGenericMethodDefinition || method.DeclaringType?.ContainsGenericParameters == true)
@@ -186,12 +181,20 @@ public static class StringReplacer
                 }
                 try
                 {
+                    Replacements[method] = replace;
                     _harmony!.Patch(method, transpiler: new HarmonyMethod(typeof(StringReplacer), nameof(Transpiler)));
                     report.Methods++;
-                    found.UnionWith(hits);
+                    foreach (var (site, replaced) in sites.Zip(replace))
+                    {
+                        if (strings.ContainsKey(site.Literal))
+                        {
+                            (replaced ? replacedAt : keptAt).Add(site.Literal);
+                        }
+                    }
                 }
                 catch (Exception exception)
                 {
+                    Replacements.TryRemove(method, out _);
                     report.Failed++;
                     if (report.FailedMethods.Count < 20)
                     {
@@ -199,10 +202,20 @@ public static class StringReplacer
                     }
                 }
             }
-            report.Found = found.Count;
+            report.Found = replacedAt.Count;
+            var protectedStrings = strings.Keys
+                .Where(original => !replacedAt.Contains(original)
+                    && (keptAt.Contains(original) || StringUses.BreaksWhenTranslated(read.Uses[original])))
+                .ToList();
+            report.Protected = protectedStrings.Count;
+            report.ProtectedStrings.AddRange(Listed(protectedStrings));
+            var partial = replacedAt.Where(keptAt.Contains).ToList();
+            report.Partial = partial.Count;
+            report.PartialStrings.AddRange(Listed(partial));
             try
             {
                 AnalysisFiles.Write(SharedPaths.Analysis, fileStem, name, assembly.ManifestModule.ModuleVersionId, file.Length, read);
+                ShownStrings.Watch(fileStem, assembly.ManifestModule.ModuleVersionId, file.Length, read, strings);
             }
             catch (Exception exception)
             {
@@ -215,22 +228,33 @@ public static class StringReplacer
         }
         report.Milliseconds = watch.ElapsedMilliseconds;
         BridgeMod.Log.Info(
-            $"[{BridgeMod.ModId}] {name}: replaced {report.Found}/{report.Translations} DLL strings in {report.Methods} methods ({report.Milliseconds} ms, kept {report.Protected} used as names or keys, failed {report.Failed}, generic {report.SkippedGeneric}, unreadable {report.Unreadable})");
+            $"[{BridgeMod.ModId}] {name}: replaced {report.Found}/{report.Translations} DLL strings in {report.Methods} methods ({report.Milliseconds} ms, kept {report.Protected} used as names or keys, {report.Partial} only where shown, failed {report.Failed}, generic {report.SkippedGeneric}, unreadable {report.Unreadable})");
     }
 
+    private static List<string> Listed(IEnumerable<string> literals) =>
+        literals.OrderBy(literal => literal, StringComparer.Ordinal).Take(MaxListedProtected).ToList();
+
+    /// <summary>Swaps the literals of the loads <see cref="Replacements"/> allows, counted in IL order.</summary>
     private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase __originalMethod)
     {
         var assembly = __originalMethod.Module.Assembly;
         var strings = Lookup(assembly.GetName().Name)
             ?? Lookup(Path.GetFileNameWithoutExtension(assembly.Location));
+        Replacements.TryGetValue(__originalMethod, out var replace);
+        var load = 0;
         foreach (var instruction in instructions)
         {
-            if (strings != null
-                && instruction.opcode == OpCodes.Ldstr
-                && instruction.operand is string original
-                && strings.TryGetValue(original, out var translation))
+            if (instruction.opcode == OpCodes.Ldstr && instruction.operand is string original)
             {
-                instruction.operand = translation;
+                if (strings != null
+                    && replace != null
+                    && load < replace.Length
+                    && replace[load]
+                    && strings.TryGetValue(original, out var translation))
+                {
+                    instruction.operand = translation;
+                }
+                load++;
             }
             yield return instruction;
         }
@@ -252,6 +276,11 @@ public static class StringReplacer
 
         /// <summary>The first of those, for the app to show.</summary>
         public List<string> ProtectedStrings { get; } = new();
+
+        /// <summary>Strings replaced where they are shown but kept where the code compares them.</summary>
+        public int Partial { get; set; }
+
+        public List<string> PartialStrings { get; } = new();
 
         public int Methods { get; set; }
         public int Failed { get; set; }

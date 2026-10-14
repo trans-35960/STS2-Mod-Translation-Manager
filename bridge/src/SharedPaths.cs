@@ -23,6 +23,9 @@ public static class SharedPaths
     /// <summary>How each mod DLL uses its string literals (written by this mod, read by the app).</summary>
     public static string Analysis => Path.Combine(Root, "analysis");
 
+    /// <summary>Mod DLL literals seen on screen, collected over every session.</summary>
+    public static string Seen => Path.Combine(Root, "seen");
+
     public static string StatusFile => Path.Combine(Root, "status", "bridge.json");
 
     public static string FormatFile => Path.Combine(Root, "format.json");

@@ -153,6 +153,8 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           setDllTextOnly={ui.setDllTextOnly}
           dllTextCount={ui.dllTextCount}
           dllAnalyzedAt={ui.dllUses?.analyzed_at ?? null}
+          dllSeenKeys={ui.dllSeenKeys}
+          dllPartialKeys={ui.dllPartialKeys}
           columns={ui.columns}
           sheetSourceLanguage={ui.sheetSourceLanguage}
           selectedCompareLanguages={ui.selectedCompareLanguages}

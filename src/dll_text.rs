@@ -8,7 +8,7 @@
 
 use crate::leftover_text::{contains_foreign_script, is_code_like_text};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -25,12 +25,62 @@ pub struct DllAnalysis {
     /// Literal → use (`key`, `log`, `shown`, …). Unknown uses are left out.
     #[serde(default)]
     pub uses: BTreeMap<String, String>,
+    /// Literals the bridge saw on screen (`seen/{dll}.json`), over every
+    /// session with this build.
+    #[serde(skip)]
+    pub seen: BTreeSet<String>,
+    /// Literals used as a name or key in one place and loaded for other
+    /// things elsewhere; the bridge replaces only the other loads.
+    #[serde(default)]
+    pub mixed: BTreeSet<String>,
 }
 
 impl DllAnalysis {
+    /// The use of a literal for deciding whether to translate it: `shown`
+    /// once it was seen on screen. A name or key stays untranslatable unless
+    /// other loads of it can be replaced (`mixed`); text the code parses
+    /// (`contains_key`) always does.
     pub fn use_of(&self, literal: &str) -> Option<&str> {
-        self.uses.get(literal).map(String::as_str)
+        let mut recorded = self.uses.get(literal).map(String::as_str);
+        if self.is_partial(literal) {
+            recorded = None;
+        }
+        if self.seen.contains(literal) && !recorded.is_some_and(breaks_when_translated) {
+            return Some("shown");
+        }
+        recorded
     }
+
+    /// Replaced only where shown, kept where the code compares it.
+    pub fn is_partial(&self, literal: &str) -> bool {
+        self.mixed.contains(literal) && self.uses.get(literal).is_none_or(|use_| use_ != "contains_key")
+    }
+}
+
+/// `seen/{dll file stem}.json`, written by the bridge.
+#[derive(Debug, Deserialize)]
+struct SeenFile {
+    size: u64,
+    /// The bridge's matching rules; older records held log lines and names.
+    #[serde(default)]
+    rules: u32,
+    #[serde(default)]
+    literals: BTreeSet<String>,
+}
+
+/// Oldest bridge matching rules whose records are trusted.
+const SEEN_RULES: u32 = 3;
+
+pub fn seen_path(shared: &Path, dll_file_stem: &str) -> PathBuf {
+    shared.join("seen").join(format!("{dll_file_stem}.json"))
+}
+
+/// Uses where changing the text breaks the mod.
+fn breaks_when_translated(use_: &str) -> bool {
+    matches!(
+        use_,
+        "key" | "searched_for" | "contains_key" | "reflection" | "node" | "loc"
+    )
 }
 
 pub fn analysis_path(shared: &Path, dll_file_stem: &str) -> PathBuf {
@@ -45,7 +95,16 @@ pub fn analysis_for_dll(shared: &Path, dll: &Path) -> Option<DllAnalysis> {
     let analysis: DllAnalysis =
         serde_json::from_str(&fs::read_to_string(analysis_path(shared, &stem)).ok()?).ok()?;
     let size = fs::metadata(dll).ok()?.len();
-    (analysis.size == size).then_some(analysis)
+    if analysis.size != size {
+        return None;
+    }
+    let seen = fs::read_to_string(seen_path(shared, &stem))
+        .ok()
+        .and_then(|text| serde_json::from_str::<SeenFile>(&text).ok())
+        .filter(|seen| seen.size == size && seen.rules >= SEEN_RULES)
+        .map(|seen| seen.literals)
+        .unwrap_or_default();
+    Some(DllAnalysis { seen, ..analysis })
 }
 
 /// Uses where the text is never shown, or must not change.
@@ -95,6 +154,10 @@ pub fn is_dll_text(
         Some("shown") => return true,
         Some(other) if is_excluded_use(other) => return false,
         _ => {}
+    }
+    // A lone `。` or `攻` is a separator as often as text: only once seen on screen.
+    if literal.trim().chars().count() < 2 {
+        return false;
     }
     if is_code_like_text(literal) {
         return false;
@@ -222,6 +285,54 @@ mod tests {
     }
 
     #[test]
+    fn seen_on_screen_makes_logs_text_but_not_keys() {
+        let analysis = DllAnalysis {
+            assembly: "Mod".to_string(),
+            size: 1,
+            bridge_version: String::new(),
+            analyzed_at: String::new(),
+            uses: BTreeMap::from([
+                ("Run saved".to_string(), "log".to_string()),
+                ("撕裂衣服".to_string(), "searched_for".to_string()),
+            ]),
+            seen: BTreeSet::from([
+                "Run saved".to_string(),
+                "撕裂衣服".to_string(),
+                "Refund".to_string(),
+            ]),
+            mixed: BTreeSet::new(),
+        };
+
+        assert_eq!(analysis.use_of("Run saved"), Some("shown"));
+        assert_eq!(analysis.use_of("Refund"), Some("shown"));
+        assert_eq!(analysis.use_of("撕裂衣服"), Some("searched_for"));
+        assert_eq!(analysis.use_of("Other"), None);
+    }
+
+    #[test]
+    fn mixed_keys_are_text_where_shown_and_single_characters_need_the_screen() {
+        let analysis = DllAnalysis {
+            assembly: "Mod".to_string(),
+            size: 1,
+            bridge_version: String::new(),
+            analyzed_at: String::new(),
+            uses: BTreeMap::from([
+                ("攻击牌".to_string(), "searched_for".to_string()),
+                ("深海黏液".to_string(), "contains_key".to_string()),
+            ]),
+            seen: BTreeSet::from(["。".to_string()]),
+            mixed: BTreeSet::from(["攻击牌".to_string(), "深海黏液".to_string()]),
+        };
+
+        assert!(analysis.is_partial("攻击牌"));
+        assert!(!analysis.is_partial("深海黏液"));
+        assert!(is_dll_text("攻击牌", "kor", analysis.use_of("攻击牌"), true));
+        assert!(!is_dll_text("深海黏液", "kor", analysis.use_of("深海黏液"), true));
+        assert!(is_dll_text("。", "kor", analysis.use_of("。"), true));
+        assert!(!is_dll_text("攻", "kor", None, true));
+    }
+
+    #[test]
     fn latin_sentences_only_count_in_latin_mods() {
         let chinese = vec!["造成伤害"; FOREIGN_TEXT_MAJORITY];
 
@@ -244,6 +355,8 @@ mod tests {
                 bridge_version: String::new(),
                 analyzed_at: String::new(),
                 uses: BTreeMap::from([("x".to_string(), "key".to_string())]),
+                seen: BTreeSet::new(),
+                mixed: BTreeSet::new(),
             };
             fs::write(
                 analysis_path(&dir, "Mod"),

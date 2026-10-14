@@ -323,7 +323,10 @@ fn is_dotnet_user_text(value: &str) -> bool {
     let trimmed = value.trim();
     // No mojibake check here: #US holds real UTF-16 literals, and much CJK
     // text (次卡牌奖励 = `k!` `Sa` `rL` `YV`) looks like packed ASCII.
-    if trimmed.chars().count() < 2 || trimmed.contains('\u{fffd}') {
+    // One character only when it is not ASCII: `。` ends shown sentences,
+    // while `a` or `,` are code. Whether it is shown is the bridge's call.
+    let count = trimmed.chars().count();
+    if count == 0 || (count == 1 && trimmed.is_ascii()) || trimmed.contains('\u{fffd}') {
         return false;
     }
     if is_likely_technical_identifier(trimmed) {
@@ -555,6 +558,8 @@ mod tests {
         assert!(is_probably_mojibake_utf16("次卡牌奖励。"));
         assert!(is_dotnet_user_text("次卡牌奖励。"));
         assert!(is_dotnet_user_text("最大生命值"));
+        assert!(is_dotnet_user_text("。"));
+        assert!(!is_dotnet_user_text(","));
     }
 
     fn temp_path(name: &str) -> std::path::PathBuf {

@@ -89,6 +89,10 @@ pub(crate) struct DllStringUsesDto {
     pub(crate) bridge_version: String,
     /// Literal → use (`key`, `log`, `shown`, …); unknown uses are left out.
     pub(crate) uses: std::collections::BTreeMap<String, String>,
+    /// Literals the bridge saw on screen while the game ran.
+    pub(crate) seen: Vec<String>,
+    /// Literals replaced only where shown (the code also compares them).
+    pub(crate) partial: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]

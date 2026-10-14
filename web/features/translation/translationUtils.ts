@@ -141,6 +141,27 @@ export function isHardcodedSheet(sourcePath: string): boolean {
   return /\.(dll|exe)$/i.test(sourcePath.trim());
 }
 
+/** Uses where changing a DLL literal breaks the mod; mirrors `dll_text::breaks_when_translated`. */
+const BREAKING_DLL_USES = new Set(["key", "searched_for", "contains_key", "reflection", "node", "loc"]);
+
+/**
+ * The use of a DLL literal, `shown` once the bridge saw it on screen unless
+ * the code also uses it as a name or key. Mirrors `DllAnalysis::use_of`.
+ */
+export function dllUseOf(
+  literal: string,
+  uses: Record<string, string> | null,
+  seen: Set<string> | null,
+  partial: Set<string> | null = null,
+): string | undefined {
+  // Replaced where shown, so judged like any other text.
+  const recorded = partial?.has(literal) ? undefined : uses?.[literal];
+  if (seen?.has(literal) && !(recorded && BREAKING_DLL_USES.has(recorded))) {
+    return "shown";
+  }
+  return recorded;
+}
+
 /** Uses where a DLL literal is never shown, or must not change; mirrors `dll_text::is_excluded_use`. */
 const EXCLUDED_DLL_USES = new Set(["key", "searched_for", "contains_key", "reflection", "node", "loc", "exception", "log"]);
 
@@ -167,6 +188,10 @@ export function isDllText(literal: string, targetLanguage: string, use: string |
     return true;
   }
   if (use && EXCLUDED_DLL_USES.has(use)) {
+    return false;
+  }
+  // A lone `。` or `攻` is a separator as often as text: only once seen on screen.
+  if ([...literal.trim()].length < 2) {
     return false;
   }
   if (isCodeLikeText(literal)) {
@@ -207,6 +232,8 @@ export function dllTextKeys(
   sheet: JsonTranslationSheet | null,
   targetLanguage: string,
   uses: Record<string, string> | null = null,
+  seen: Set<string> | null = null,
+  partial: Set<string> | null = null,
 ): Set<string> | null {
   if (!sheet || !isHardcodedSheet(sheet.source_path)) {
     return null;
@@ -219,7 +246,7 @@ export function dllTextKeys(
   const keys = new Set<string>();
   for (const entry of sheet.entries) {
     if (
-      isDllText(entry.source_value, language, uses?.[entry.source_value], latinText) ||
+      isDllText(entry.source_value, language, dllUseOf(entry.source_value, uses, seen, partial), latinText) ||
       hasTranslationValue(entry.translated_value)
     ) {
       keys.add(entry.key);

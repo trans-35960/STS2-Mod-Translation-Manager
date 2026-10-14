@@ -68,6 +68,8 @@ export function TranslationSheetTable({
   setDllTextOnly,
   dllTextCount,
   dllAnalyzedAt,
+  dllSeenKeys,
+  dllPartialKeys,
   columns,
   sheetSourceLanguage,
   selectedCompareLanguages,
@@ -108,6 +110,10 @@ export function TranslationSheetTable({
   dllTextCount: number | null;
   /** When the bridge last analysed this DLL in game; null before it has. */
   dllAnalyzedAt: string | null;
+  /** DLL sheet rows the bridge saw on screen; null when none are known. */
+  dllSeenKeys: Set<string> | null;
+  /** DLL sheet rows replaced only where shown; null when none. */
+  dllPartialKeys: Set<string> | null;
   columns: TranslationColumns;
   sheetSourceLanguage: string;
   selectedCompareLanguages: LanguagePreview[];
@@ -581,7 +587,9 @@ export function TranslationSheetTable({
                       : `DLL 문자열 전체 표시 중. 누르면 번역할 문장 ${dllTextCount}개만`
                   } · ${
                     dllAnalyzedAt
-                      ? `게임에서 분석한 쓰임새 반영(${new Date(dllAnalyzedAt).toLocaleString()})`
+                      ? `게임에서 분석한 쓰임새 반영(${new Date(dllAnalyzedAt).toLocaleString()})${
+                          dllSeenKeys ? ` · 게임 화면에 나온 문자열 ${dllSeenKeys.size}개` : " · 게임을 하면서 화면에 나온 문자열이 쌓입니다"
+                        }`
                       : "아직 글자 모양으로만 판단합니다. 브리지를 켜고 게임을 한 번 실행하면 코드가 쓰는 방식까지 반영됩니다"
                   }`}
                   onClick={() => setDllTextOnly((value) => !value)}
@@ -662,6 +670,8 @@ export function TranslationSheetTable({
                   }
                 }}
                 searchHighlight={searchHighlight}
+                seenOnScreen={dllSeenKeys?.has(entry.key) ?? false}
+                partialReplace={dllPartialKeys?.has(entry.key) ?? false}
                 selected={selectedRowsSet.has(index)}
                 selectedCompareLanguages={selectedCompareLanguages}
                 sheetSourceLanguage={sheetSourceLanguage}
@@ -710,6 +720,10 @@ type JsonEntryRowProps = {
   slotId: string;
   validationIssueKindFilter: string | null;
   wrapSource: boolean;
+  /** The bridge saw this DLL string on screen. */
+  seenOnScreen: boolean;
+  /** The bridge replaces this DLL string only where it is shown. */
+  partialReplace: boolean;
 };
 
 const JsonEntryRow = React.memo(function JsonEntryRow({
@@ -735,6 +749,8 @@ const JsonEntryRow = React.memo(function JsonEntryRow({
   selectedCompareLanguages,
   sheetSourceLanguage,
   showCompareColumn,
+  seenOnScreen,
+  partialReplace,
   showIds,
   slotId,
   validationIssueKindFilter,
@@ -835,6 +851,19 @@ const JsonEntryRow = React.memo(function JsonEntryRow({
         <span className={sourceCellClass} title={entry.source_value}>
           <HighlightedIssueText kinds={issueKinds} text={entry.source_value} query={searchHighlight} />
         </span>
+        {seenOnScreen && (
+          <small className="seen-on-screen" title="브리지가 게임 화면에서 이 문자열(또는 그 번역)을 봤습니다.">
+            게임 화면에 나옴
+          </small>
+        )}
+        {partialReplace && (
+          <small
+            className="partial-replace"
+            title="코드가 이 문자열을 비교·검색에도 써서, 브리지는 화면 문장을 만드는 곳에서만 번역으로 바꿉니다."
+          >
+            일부 위치만 바뀜
+          </small>
+        )}
         {entry.status === "updated" && entry.previous_source_value != null && entry.previous_source_value !== entry.source_value && (
           <SourceChangePreview previous={entry.previous_source_value} current={entry.source_value} />
         )}

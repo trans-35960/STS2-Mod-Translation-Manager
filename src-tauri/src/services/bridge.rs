@@ -566,11 +566,21 @@ pub(crate) fn dll_string_uses(source_path: String) -> Result<Option<DllStringUse
     let Some(shared) = bridge::shared_root() else {
         return Ok(None);
     };
-    Ok(dll_text::analysis_for_dll(&shared, &path).map(|analysis| DllStringUsesDto {
-        assembly: analysis.assembly,
-        analyzed_at: analysis.analyzed_at,
-        bridge_version: analysis.bridge_version,
-        uses: analysis.uses,
+    Ok(dll_text::analysis_for_dll(&shared, &path).map(|analysis| {
+        let partial = analysis
+            .mixed
+            .iter()
+            .filter(|literal| analysis.is_partial(literal))
+            .cloned()
+            .collect();
+        DllStringUsesDto {
+            assembly: analysis.assembly,
+            analyzed_at: analysis.analyzed_at,
+            bridge_version: analysis.bridge_version,
+            uses: analysis.uses,
+            seen: analysis.seen.into_iter().collect(),
+            partial,
+        }
     }))
 }
 

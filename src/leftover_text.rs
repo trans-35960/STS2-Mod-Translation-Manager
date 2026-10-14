@@ -253,7 +253,10 @@ fn push_texts(
     let texts = texts
         .into_iter()
         .map(|text| truncate_snippet(text.trim()))
-        .filter(|text| !text.is_empty() && !looks_like_file_path(text) && seen.insert(text.clone()))
+        // A lone character (`攻`) says nothing about what is left untranslated.
+        .filter(|text| {
+            text.chars().count() >= 2 && !looks_like_file_path(text) && seen.insert(text.clone())
+        })
         .map(|text| LeftoverText {
             code_like: is_code_like_text(&text),
             text,

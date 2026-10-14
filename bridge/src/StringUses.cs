@@ -50,10 +50,11 @@ public static class StringUses
             or StringUse.Loc;
 
     /// <summary>
-    /// Records the use of every literal <paramref name="method"/> loads;
-    /// <paramref name="loaded"/> gets them all.
+    /// Records the use of every literal <paramref name="method"/> loads, the
+    /// strongest per literal in <paramref name="uses"/> and one per
+    /// <c>ldstr</c>, in IL order, in <paramref name="sites"/>.
     /// </summary>
-    public static void Scan(MethodBase method, IDictionary<string, StringUse> uses, ISet<string>? loaded)
+    public static void Scan(MethodBase method, IDictionary<string, StringUse> uses, IList<Site>? sites)
     {
         var il = method.GetMethodBody()?.GetILAsByteArray();
         if (il == null)
@@ -75,13 +76,13 @@ public static class StringUses
             {
                 continue;
             }
-            loaded?.Add(value);
             var (use, consumer) = Follow(method, il, instructions, index);
             if (consumer == OpCodes.Stelem_Ref)
             {
                 storedInArrays.Add(value);
             }
             Merge(uses, value, use);
+            sites?.Add(new Site(value, use, consumer == OpCodes.Stelem_Ref));
         }
         // `foreach (var pattern in new[] { "…", "…" }) text = Regex.Replace(text, pattern, "")`
         if (searchesText)
@@ -90,8 +91,21 @@ public static class StringUses
             {
                 Merge(uses, value, StringUse.SearchedFor);
             }
+            if (sites != null)
+            {
+                for (var index = 0; index < sites.Count; index++)
+                {
+                    if (sites[index].InArray)
+                    {
+                        sites[index] = sites[index] with { Use = StringUse.SearchedFor };
+                    }
+                }
+            }
         }
     }
+
+    /// <summary>One <c>ldstr</c> and what the code does with that load.</summary>
+    public readonly record struct Site(string Literal, StringUse Use, bool InArray);
 
     /// <summary>
     /// Marks text containing a word the code searches for: the code parses
@@ -448,19 +462,33 @@ public sealed class AssemblyStrings
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
     public Dictionary<string, StringUse> Uses { get; } = new(StringComparer.Ordinal);
-    public List<(MethodBase Method, HashSet<string> Loaded)> Methods { get; } = new();
+
+    /// <summary>Methods that load literals, with each load in IL order.</summary>
+    public List<(MethodBase Method, List<StringUses.Site> Sites)> Methods { get; } = new();
+
+    /// <summary>
+    /// Literals the code uses as a name or key in one place but loads for
+    /// other things elsewhere: those other loads can be translated.
+    /// </summary>
+    public HashSet<string> Mixed { get; } = new(StringComparer.Ordinal);
+
     public int Unreadable { get; private set; }
     public List<string> FailedMethods { get; } = new();
+
+    /// <summary>Whether this load may be replaced: not a name or key here, and not text the code parses.</summary>
+    public bool CanReplace(StringUses.Site site) =>
+        !StringUses.BreaksWhenTranslated(site.Use)
+        && !(Uses.TryGetValue(site.Literal, out var use) && use == StringUse.ContainsKey);
 
     public static AssemblyStrings Read(Assembly assembly)
     {
         var result = new AssemblyStrings();
         foreach (var method in AllMethods(assembly))
         {
-            var loaded = new HashSet<string>(StringComparer.Ordinal);
+            var sites = new List<StringUses.Site>();
             try
             {
-                StringUses.Scan(method, result.Uses, loaded);
+                StringUses.Scan(method, result.Uses, sites);
             }
             catch (Exception exception)
             {
@@ -472,12 +500,19 @@ public sealed class AssemblyStrings
                 }
                 continue;
             }
-            if (loaded.Count > 0)
+            if (sites.Count > 0)
             {
-                result.Methods.Add((method, loaded));
+                result.Methods.Add((method, sites));
             }
         }
         StringUses.MarkTextContainingKeys(result.Uses);
+        foreach (var site in result.Methods.SelectMany(method => method.Sites))
+        {
+            if (result.CanReplace(site) && StringUses.BreaksWhenTranslated(result.Uses[site.Literal]))
+            {
+                result.Mixed.Add(site.Literal);
+            }
+        }
         return result;
     }
 
@@ -525,7 +560,8 @@ public sealed class AssemblyStrings
 /// </summary>
 public static class AnalysisFiles
 {
-    public const int Format = 1;
+    /// <summary>2: adds <c>mixed</c>.</summary>
+    public const int Format = 2;
 
     public static string PathFor(string root, string fileStem) => Path.Combine(root, $"{fileStem}.json");
 
@@ -572,6 +608,7 @@ public static class AnalysisFiles
             literals = strings.Uses.Count,
             unreadable_methods = strings.Unreadable,
             uses,
+            mixed = strings.Mixed.OrderBy(literal => literal, StringComparer.Ordinal).ToArray(),
         };
         var path = PathFor(root, fileStem);
         var temp = path + ".tmp";
