@@ -251,7 +251,14 @@ export type ModRow = {
   branch_issue?: BranchIssue | null;
   system_mod?: boolean;
   /** In-game (F8) edits and open reports waiting in the translation tool. */
-  bridge_edits?: { edits: number; reports: number } | null;
+  bridge_edits?: {
+    edits: number;
+    reports: number;
+    /** DLL string edits and reports, taken in from the DLL sheet. */
+    dll_edits?: number;
+    dll_reports?: number;
+    dll_assembly?: string | null;
+  } | null;
   language_preview: LanguagePreview[];
   extraction_tree: ExtractionTreeNode[];
 };

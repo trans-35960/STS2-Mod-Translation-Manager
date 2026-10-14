@@ -97,8 +97,14 @@ pub(crate) struct DllStringUsesDto {
 
 #[derive(Debug, Serialize)]
 pub(crate) struct BridgeEditCountsDto {
+    /// Loc table edits and reports.
     pub(crate) edits: usize,
     pub(crate) reports: usize,
+    /// DLL string edits and reports, taken in from the DLL sheet.
+    pub(crate) dll_edits: usize,
+    pub(crate) dll_reports: usize,
+    /// The DLL those are for, to open its sheet.
+    pub(crate) dll_assembly: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

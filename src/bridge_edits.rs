@@ -322,17 +322,57 @@ pub fn acknowledge(
     write_edits_ack(shared, mod_id, language, channel, ack_id)
 }
 
+/// In-game edits and open reports waiting for one mod, split by sheet.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct PendingCounts {
+    pub edits: usize,
+    pub reports: usize,
+    pub dll_edits: usize,
+    pub dll_reports: usize,
+    /// Assemblies the DLL edits and reports are for, to open their sheet.
+    pub dll_assemblies: std::collections::BTreeSet<String>,
+}
+
+impl PendingCounts {
+    pub fn is_empty(&self) -> bool {
+        self.edits + self.reports + self.dll_edits + self.dll_reports == 0
+    }
+
+    fn add(&mut self, channel: EditChannel, record: &EditRecord, edits: usize, reports: usize) {
+        match channel {
+            EditChannel::Loc => {
+                self.edits += edits;
+                self.reports += reports;
+            }
+            EditChannel::Dll => {
+                self.dll_edits += edits;
+                self.dll_reports += reports;
+                if let Some(assembly) = record.table.strip_prefix("dll:") {
+                    self.dll_assemblies.insert(assembly.to_string());
+                }
+            }
+        }
+    }
+}
+
 /// In-game edits and open reports for `mod_id` in every language, for the
 /// mod list. Edits are counted per key without comparing to the sheet.
-pub fn pending_counts(shared: &Path, state_dir: &Path, mod_id: &str) -> (usize, usize) {
+pub fn pending_counts(shared: &Path, state_dir: &Path, mod_id: &str) -> PendingCounts {
     let stored = read_stored_reports(state_dir);
-    let mut edits = 0;
-    let mut reports = stored
+    let mut counts = PendingCounts::default();
+    for item in stored
         .iter()
         .filter(|item| item.mod_id == mod_id && !item.resolved)
-        .count();
+    {
+        let channel = if item.dll {
+            EditChannel::Dll
+        } else {
+            EditChannel::Loc
+        };
+        counts.add(channel, &item.record, 0, 1);
+    }
     let Ok(files) = fs::read_dir(shared.join("edits").join(mod_id)) else {
-        return (edits, reports);
+        return counts;
     };
     for file in files.flatten() {
         let path = file.path();
@@ -351,14 +391,18 @@ pub fn pending_counts(shared: &Path, state_dir: &Path, mod_id: &str) -> (usize, 
             &read_edits(shared, mod_id, language, channel),
             ack.as_deref(),
         );
-        edits += pending.edits.len();
-        reports += pending
+        for edit in pending.edits.values() {
+            counts.add(channel, edit, 1, 0);
+        }
+        for report in pending
             .reports
             .iter()
             .filter(|report| !stored.iter().any(|item| item.record.id == report.id))
-            .count();
+        {
+            counts.add(channel, report, 0, 1);
+        }
     }
-    (edits, reports)
+    counts
 }
 
 /// Marks a report handled, whether the app took it in already or it is
@@ -477,6 +521,32 @@ mod tests {
         assert_eq!(items[0].game_value, "나");
         assert_eq!(items[1].kind, EditImportKind::Conflict);
         assert_eq!(items[1].sheet_value, "z");
+    }
+
+    #[test]
+    fn pending_counts_keep_loc_and_dll_apart() {
+        let root = temp_dir("counts");
+        let shared = root.join("shared");
+        let write = |channel: EditChannel, records: &[EditRecord]| {
+            let log = edits_path(&shared, "M", "kor", channel);
+            fs::create_dir_all(log.parent().unwrap()).expect("dir");
+            let lines = records
+                .iter()
+                .map(|record| serde_json::to_string(record).unwrap())
+                .collect::<Vec<_>>()
+                .join("\n");
+            fs::write(&log, lines).expect("log");
+        };
+        let mut dll_edit = record("2", KIND_EDIT, "攻击牌", "", Some("공격 카드"));
+        dll_edit.table = "dll:Mod".to_string();
+        write(EditChannel::Loc, &[record("1", KIND_EDIT, "A", "가", Some("나"))]);
+        write(EditChannel::Dll, &[dll_edit]);
+
+        let counts = pending_counts(&shared, &root.join("state"), "M");
+        fs::remove_dir_all(&root).ok();
+
+        assert_eq!((counts.edits, counts.dll_edits), (1, 1));
+        assert_eq!(counts.dll_assemblies.iter().collect::<Vec<_>>(), vec!["Mod"]);
     }
 
     #[test]

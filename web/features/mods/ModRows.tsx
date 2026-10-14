@@ -107,7 +107,7 @@ function ModTableRow({
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
-          <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={() => onStartModTranslation(mod, primaryResourcePath)} />
+          <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={(resourcePath) => onStartModTranslation(mod, resourcePath ?? primaryResourcePath)} />
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
@@ -421,7 +421,7 @@ function SimpleModRow({
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
-          <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={() => onStartModTranslation(mod, primaryResourcePath)} />
+          <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={(resourcePath) => onStartModTranslation(mod, resourcePath ?? primaryResourcePath)} />
           {mod.workshop && <StatusBadge tone="info">창작마당</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
@@ -534,35 +534,65 @@ function DependencyWarningIcon({ dependencies }: { dependencies: ModDependency[]
   );
 }
 
-/** In-game (F8) edits and reports waiting for this mod; opens the translation tool. */
-function BridgeEditsRowBadge({ mod, disabled, onOpen }: { mod: ModRow; disabled: boolean; onOpen: () => void }) {
+/**
+ * In-game (F8) edits and reports waiting for this mod. Loc table and DLL
+ * string edits are taken in from different sheets, so each gets a badge
+ * that opens its own.
+ */
+function BridgeEditsRowBadge({
+  mod,
+  disabled,
+  onOpen,
+}: {
+  mod: ModRow;
+  disabled: boolean;
+  onOpen: (resourcePath?: string) => void;
+}) {
   const counts = mod.bridge_edits;
   if (!counts) {
     return null;
   }
-  return (
+  const dllLabel = bridgeEditsLabel(counts.dll_edits ?? 0, counts.dll_reports ?? 0, "DLL ");
+  const dllPath = counts.dll_assembly ? `${counts.dll_assembly}.dll` : undefined;
+  const badge = (label: string, tooltip: string, resourcePath?: string) => (
     <button
       type="button"
       className="bridge-edits-row-badge"
-      data-tooltip="번역 도구에서 게임 안 수정을 가져오거나 오역 신고를 확인합니다"
+      data-tooltip={tooltip}
       onClick={(event) => {
         event.stopPropagation();
-        onOpen();
+        onOpen(resourcePath);
       }}
       disabled={disabled}
     >
-      {bridgeEditsLabel(counts)}
+      {label}
     </button>
+  );
+  const locLabel = bridgeEditsLabel(counts.edits, counts.reports, "");
+  return (
+    <>
+      {locLabel && badge(locLabel, "번역 도구에서 게임 안 수정을 가져오거나 오역 신고를 확인합니다")}
+      {dllLabel && dllPath && badge(dllLabel, `번역 도구에서 ${dllPath} 시트를 열어 게임 안 수정을 가져옵니다`, dllPath)}
+    </>
   );
 }
 
 function BridgeEditsGroupBadge({ mods }: { mods: ModRow[] }) {
   const counts = mods.find((mod) => mod.bridge_edits)?.bridge_edits;
-  return counts ? <span className="bridge-edits-row-badge static">{bridgeEditsLabel(counts)}</span> : null;
+  if (!counts) {
+    return null;
+  }
+  const label = [
+    bridgeEditsLabel(counts.edits, counts.reports, ""),
+    bridgeEditsLabel(counts.dll_edits ?? 0, counts.dll_reports ?? 0, "DLL "),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return <span className="bridge-edits-row-badge static">{label}</span>;
 }
 
-function bridgeEditsLabel(counts: { edits: number; reports: number }): string {
-  return [counts.edits > 0 ? `게임 안 수정 ${counts.edits}` : "", counts.reports > 0 ? `오역 신고 ${counts.reports}` : ""]
+function bridgeEditsLabel(edits: number, reports: number, prefix: string): string {
+  return [edits > 0 ? `${prefix}게임 안 수정 ${edits}` : "", reports > 0 ? `${prefix}오역 신고 ${reports}` : ""]
     .filter(Boolean)
     .join(" · ");
 }

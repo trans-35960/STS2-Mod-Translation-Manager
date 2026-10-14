@@ -99,16 +99,22 @@ fn resolve_bridge_edit_counts(rows: &mut [ModRowDto], config: &AppConfig) {
     let Some(shared) = bridge::shared_root().filter(|shared| shared.is_dir()) else {
         return;
     };
-    let mut counts = BTreeMap::<String, (usize, usize)>::new();
+    let mut counts = BTreeMap::<String, bridge_edits::PendingCounts>::new();
     for row in rows.iter_mut().filter(|row| !row.is_translation_patch) {
         let Some(mod_id) = row.manifest_id.clone() else {
             continue;
         };
-        let (edits, reports) = *counts
+        let pending = counts
             .entry(mod_id.clone())
             .or_insert_with(|| bridge_edits::pending_counts(&shared, &config.state_dir, &mod_id));
-        if edits + reports > 0 {
-            row.bridge_edits = Some(BridgeEditCountsDto { edits, reports });
+        if !pending.is_empty() {
+            row.bridge_edits = Some(BridgeEditCountsDto {
+                edits: pending.edits,
+                reports: pending.reports,
+                dll_edits: pending.dll_edits,
+                dll_reports: pending.dll_reports,
+                dll_assembly: pending.dll_assemblies.iter().next().cloned(),
+            });
         }
     }
 }
