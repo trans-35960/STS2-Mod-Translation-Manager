@@ -1,6 +1,6 @@
 use crate::dto::*;
 use crate::fs_ops::{
-    copy_dir_all, move_path_or_copy, nearest_existing_parent, open_path_in_system,
+    copy_dir_all, move_path_or_copy, nearest_existing_parent, open_path_in_system, open_steam_url,
     open_url_in_system, remove_path_if_exists, replace_dir_or_file,
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -30,7 +30,8 @@ use sts2_mod_manager::glossary::{
 };
 use sts2_mod_manager::json_translation::{
     JsonImportReport, JsonSheetReport, JsonTranslationEntry, JsonTranslationSheet,
-    JsonTranslationStatus, JsonValidationReport, apply_sheet, apply_sheet_to_target_language,
+    JsonTranslationStatus, JsonValidationReport, SiblingSheet, apply_sheet,
+    apply_sheet_to_target_language, carry_over_sibling_translations,
     compact_source_translation_map_with_keys, compact_validation_issue_translation_map_with_keys,
     create_or_update_sheet, import_translations, is_hardcoded_source_file, number_mismatch_issues,
     read_sheet, target_language_output_path, translation_slot_entries, validate_sheet,

@@ -82,14 +82,19 @@ pub(crate) fn open_path(path: String) -> Result<(), String> {
     open_path_in_system(&path)
 }
 
-/// Opens a Workshop item's Steam page. Only a numeric item id is accepted, so
-/// nothing else can be handed to the shell.
+/// Opens a Workshop item's page in the Steam client, or in the browser when
+/// Steam is not there to take the link. Only a numeric item id is accepted,
+/// so nothing else can be handed to the shell.
 pub(crate) fn open_workshop_page(item_id: String) -> Result<(), String> {
     let item_id = item_id.trim();
     if item_id.is_empty() || !item_id.chars().all(|character| character.is_ascii_digit()) {
         return Err(format!("창작마당 항목 번호가 올바르지 않습니다: {item_id}"));
     }
-    open_url_in_system(&workshop_page_url(item_id))
+    let page = workshop_page_url(item_id);
+    if open_steam_url(&format!("steam://openurl/{page}")) {
+        return Ok(());
+    }
+    open_url_in_system(&page)
 }
 
 fn workshop_page_url(item_id: &str) -> String {

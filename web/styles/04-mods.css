@@ -942,11 +942,25 @@
   background: #dbeafe;
 }
 
-.status-badge.bridge-stored-badge {
-  border-color: #bbf7d0;
-  background: #ecfdf5;
-  color: #047857;
-  text-transform: none;
+.language-badge-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.language-badge-line:empty {
+  display: none;
+}
+
+.language-badge.bridge {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.language-badge em.bridge {
+  background: rgba(109, 40, 217, 0.12);
 }
 
 .workshop-link-badge svg {

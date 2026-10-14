@@ -49,6 +49,22 @@ pub(crate) fn open_path_in_system(path: &Path) -> Result<(), String> {
     }
 }
 
+/// Opens a `steam://` link in the Steam client. `false` when no Steam client
+/// is registered for the scheme, so the caller can fall back to the web.
+pub(crate) fn open_steam_url(url: &str) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        windows_shell::has_url_handler("steam")
+            && windows_shell::open_with_default_handler(Path::new(url))
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = url;
+        false
+    }
+}
+
 /// Opens a web page in the default browser.
 pub(crate) fn open_url_in_system(url: &str) -> Result<(), String> {
     #[cfg(target_os = "windows")]
@@ -179,7 +195,8 @@ mod windows_shell {
     };
     use windows_sys::Win32::UI::Shell::Common::ITEMIDLIST;
     use windows_sys::Win32::UI::Shell::{
-        ILFree, SHOpenFolderAndSelectItems, SHParseDisplayName, ShellExecuteW,
+        ASSOCF_NONE, ASSOCSTR_COMMAND, AssocQueryStringW, ILFree, SHOpenFolderAndSelectItems,
+        SHParseDisplayName, ShellExecuteW,
     };
     use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 
@@ -227,6 +244,26 @@ mod windows_shell {
         };
         // ShellExecuteW reports success with a value greater than 32.
         instance as isize > 32
+    }
+
+    /// Whether some program is registered to open `scheme:` links; without
+    /// this check Windows offers to find an app in the Store instead.
+    pub(super) fn has_url_handler(scheme: &str) -> bool {
+        let scheme = wide(scheme.as_ref());
+        let verb = wide("open".as_ref());
+        let mut length = 0u32;
+        // With no output buffer it only reports the command's length.
+        let result = unsafe {
+            AssocQueryStringW(
+                ASSOCF_NONE,
+                ASSOCSTR_COMMAND,
+                scheme.as_ptr(),
+                verb.as_ptr(),
+                null_mut(),
+                &mut length,
+            )
+        };
+        result >= 0 && length > 1
     }
 
     pub(super) fn reveal_item(path: &Path) -> bool {

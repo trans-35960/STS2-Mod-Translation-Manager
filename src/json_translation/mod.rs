@@ -4,6 +4,7 @@ mod import;
 mod language_path;
 mod numbers;
 mod sheet;
+mod sibling;
 mod slots;
 mod source_json;
 mod types;
@@ -18,6 +19,7 @@ pub use numbers::{NUMBER_ISSUE_KIND, number_mismatch_issues};
 pub use sheet::{
     create_or_update_sheet, read_sheet, validate_sheet, validate_translation_sheet, write_sheet,
 };
+pub use sibling::{SiblingSheet, carry_over_sibling_translations, language_neutral_key};
 pub use slots::{
     compact_source_translation_map, compact_source_translation_map_with_keys,
     compact_validation_issue_translation_map, compact_validation_issue_translation_map_with_keys,

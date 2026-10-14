@@ -26,19 +26,72 @@ pub(crate) fn create_json_translation_sheet(
         .filter(|value| !value.is_empty())
         .map(PathBuf::from);
 
+    let output_saved = sheet_saved_time(&output);
     let report = create_or_update_sheet(&source, &language, existing.as_deref(), &output)
         .map_err(|error| error.to_string())?;
-    let sheet = read_sheet(&report.sheet_path).map_err(|error| error.to_string())?;
+    let mut sheet = read_sheet(&report.sheet_path).map_err(|error| error.to_string())?;
+    let siblings = sibling_language_sheets(&report.sheet_path, &sheet);
+    let shared = carry_over_sibling_translations(&mut sheet, output_saved, &siblings);
+    let report = if shared > 0 {
+        write_sheet(&report.sheet_path, &sheet).map_err(|error| error.to_string())?;
+        sheet = read_sheet(&report.sheet_path).map_err(|error| error.to_string())?;
+        create_report_for_saved_sheet(&report.sheet_path, &sheet)
+    } else {
+        report
+    };
 
+    let mut message = format!(
+        "{} 번역 시트 생성 완료: {}개 항목, 신규 {}개, 업데이트 {}개",
+        if is_hardcoded_source_file(&source) { "DLL" } else { "JSON" },
+        report.entries, report.new_entries, report.updated_entries
+    );
+    if shared > 0 {
+        message.push_str(&format!(", 다른 원본 언어 시트의 번역 {shared}개 반영"));
+    }
     Ok(JsonSheetActionDto {
-        message: format!(
-            "{} 번역 시트 생성 완료: {}개 항목, 신규 {}개, 업데이트 {}개",
-            if is_hardcoded_source_file(&source) { "DLL" } else { "JSON" },
-            report.entries, report.new_entries, report.updated_entries
-        ),
+        message,
         report: json_report_dto(report),
         sheet: json_sheet_dto(sheet),
     })
+}
+
+fn sheet_saved_time(path: &Path) -> Option<SystemTime> {
+    fs::metadata(path).and_then(|metadata| metadata.modified()).ok()
+}
+
+/// Sheets next to `sheet_path` (one mod's translation memory) for the same
+/// target language but another source language, so translations made from
+/// one source language show up in the others.
+fn sibling_language_sheets(sheet_path: &Path, sheet: &JsonTranslationSheet) -> Vec<SiblingSheet> {
+    if is_hardcoded_source_file(Path::new(&sheet.source_path)) {
+        return Vec::new();
+    }
+    let Some(dir) = sheet_path.parent() else {
+        return Vec::new();
+    };
+    let suffix = format!(".{}.translation.json", sheet.target_language).to_ascii_lowercase();
+    let Ok(entries) = fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    entries
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path != sheet_path
+                && path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name.to_ascii_lowercase().ends_with(&suffix))
+        })
+        .filter_map(|path| {
+            let saved = sheet_saved_time(&path)?;
+            let sibling = read_sheet(&path).ok()?;
+            (sibling.source_path != sheet.source_path).then_some(SiblingSheet {
+                sheet: sibling,
+                saved,
+            })
+        })
+        .collect()
 }
 
 pub(crate) fn recalculate_json_translation_sheet(
