@@ -310,24 +310,101 @@ export function pathMatchesProjectNode(filePath: string, activePath: string): bo
   return normalizedFile === normalizedActive || normalizedFile.startsWith(`${normalizedActive}/`);
 }
 
+/**
+ * Reads a pasted answer: plain JSON, a ```json block, or JSON copied out of
+ * a chat page together with whatever surrounds it (a "JSON" label from the
+ * code block header, a sentence before or after). An answer split over
+ * several blocks is merged into one.
+ */
 export function parsePastedTranslationJson(text: string): unknown | null {
   const trimmed = text.trim();
   if (!trimmed) {
     return null;
   }
-  const candidates = [trimmed];
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  if (fenced) {
-    candidates.push(fenced[1].trim());
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Not bare JSON; look for the JSON inside.
   }
-  for (const candidate of candidates) {
-    try {
-      return JSON.parse(candidate);
-    } catch {
-      // Try the next clipboard-friendly shape.
+  const values = embeddedJsonValues(trimmed);
+  if (values.length === 0) {
+    return null;
+  }
+  return values.length === 1 ? values[0] : mergeJsonValues(values);
+}
+
+/** Every top-level JSON object or array in `text`, in order. */
+function embeddedJsonValues(text: string): unknown[] {
+  const values: unknown[] = [];
+  let index = 0;
+  while (index < text.length) {
+    const start = text.slice(index).search(/[{[]/);
+    if (start < 0) {
+      break;
+    }
+    const open = index + start;
+    const close = matchingJsonClose(text, open);
+    if (close !== null) {
+      try {
+        values.push(JSON.parse(text.slice(open, close + 1)));
+        index = close + 1;
+        continue;
+      } catch {
+        // Braces in prose; keep looking after this one.
+      }
+    }
+    index = open + 1;
+  }
+  return values;
+}
+
+/** Index of the bracket closing the one at `open`, skipping strings. */
+function matchingJsonClose(text: string, open: number): number | null {
+  let depth = 0;
+  let inString = false;
+  for (let index = open; index < text.length; index += 1) {
+    const character = text[index];
+    if (inString) {
+      if (character === "\\") {
+        index += 1;
+      } else if (character === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (character === '"') {
+      inString = true;
+    } else if (character === "{" || character === "[") {
+      depth += 1;
+    } else if (character === "}" || character === "]") {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
     }
   }
   return null;
+}
+
+/** Arrays are joined; objects are merged one level deep (file → id → value). */
+function mergeJsonValues(values: unknown[]): unknown {
+  if (values.every(Array.isArray)) {
+    return (values as unknown[][]).flat();
+  }
+  const merged: Record<string, unknown> = {};
+  for (const value of values) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      continue;
+    }
+    for (const [key, child] of Object.entries(value)) {
+      const existing = merged[key];
+      merged[key] =
+        existing && typeof existing === "object" && !Array.isArray(existing) && child && typeof child === "object" && !Array.isArray(child)
+          ? { ...existing, ...child }
+          : child;
+    }
+  }
+  return merged;
 }
 
 export function looksLikeJsonPaste(text: string): boolean {
