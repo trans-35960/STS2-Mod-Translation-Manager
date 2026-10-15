@@ -93,11 +93,11 @@ public partial class EditPanel : Window
             Refilter(keepSelection: true);
         };
         searchRow.AddChild(_viewToggle);
-        _showKeys = new CheckBox { Text = "화면에 #번호 표시", TooltipText = "번역된 문장 앞에 [#번호]를 붙여 게임 화면에서 본 문장을 찾기 쉽게 합니다 (Ctrl+F8)" };
+        _showKeys = new CheckBox { Text = "화면에 #번호 표시", TooltipText = "번역된 문장 앞에 (#번호)를 붙여 게임 화면에서 본 문장을 찾기 쉽게 합니다 (Ctrl+F8)" };
         _showKeys.Toggled += pressed =>
         {
             Injector.ShowKeys = pressed;
-            ReloadAndShow(pressed ? "화면의 번역 문장 앞에 [#번호]를 붙였습니다. #번호로 검색하세요" : "#번호 표시를 껐습니다");
+            ReloadAndShow(pressed ? "화면의 번역 문장 앞에 (#번호)를 붙였습니다. #번호로 검색하세요" : "#번호 표시를 껐습니다");
         };
         searchRow.AddChild(_showKeys);
         var reload = new Button { Text = "다시 불러오기" };
@@ -285,8 +285,8 @@ public partial class EditPanel : Window
     private void Refilter(bool keepSelection)
     {
         var previous = keepSelection ? _selected : null;
-        // "[#123]" copied from the screen searches for the number inside it.
-        var query = _search.Text.Replace('[', ' ').Replace(']', ' ');
+        // "(#123)" copied from the screen searches for the number inside it.
+        var query = _search.Text.Replace('(', ' ').Replace(')', ' ');
         var tokens = Normalize(query).Split(' ', StringSplitOptions.RemoveEmptyEntries);
         // Number hits first (exact before prefix), then plain text hits, each in catalog order.
         var matches = Injector.Catalog

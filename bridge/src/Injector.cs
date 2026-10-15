@@ -60,7 +60,7 @@ public static class Injector
     public static IReadOnlyList<CatalogEntry> Catalog { get; private set; } = Array.Empty<CatalogEntry>();
 
     /// <summary>
-    /// Prefix every translated text with <c>[#number]</c> so a line seen in
+    /// Prefix every translated text with <c>(#number)</c> so a line seen in
     /// game can be found in the edit panel. Off again after a restart.
     /// </summary>
     public static bool ShowKeys { get; set; }
@@ -133,7 +133,7 @@ public static class Injector
                     {
                         if (tags.TryGetValue((table.ModId, table.Table, key), out var tag))
                         {
-                            table.Values[key] = $"[{tag}] {table.Values[key]}";
+                            table.Values[key] = $"({tag}) {table.Values[key]}";
                         }
                     }
                 }
@@ -386,7 +386,7 @@ public static class Injector
         var result = text;
         foreach (var (old, replacement) in partial)
         {
-            // `[#12] text` contains `text`: a label the game already updated
+            // `(#12) text` contains `text`: a label the game already updated
             // would get the tag twice.
             if (result.Contains(replacement, StringComparison.Ordinal))
             {
