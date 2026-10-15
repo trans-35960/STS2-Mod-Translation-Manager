@@ -36,6 +36,7 @@ import {
   groupTranslationSummary,
   isDownloadingMod,
   languageResourceRoot,
+  rememberedTranslationResourcePath,
   needsDeferredTranslationAnalysis,
   recommendedSourceLanguage,
   representativeLanguage,
@@ -85,7 +86,9 @@ function ModTableRow({
   showChangeDetails?: boolean;
 }) {
   const primaryLanguage = recommendedSourceLanguage(mod.language_preview);
-  const primaryResourcePath = primaryLanguage ? languageResourceRoot(primaryLanguage.sample_path) : defaultTranslatableResourcePath(mod);
+  const primaryResourcePath =
+    rememberedTranslationResourcePath(mod) ||
+    (primaryLanguage ? languageResourceRoot(primaryLanguage.sample_path) : defaultTranslatableResourcePath(mod));
   const changed = showChangeDetails && mod.update_state !== "clean";
   const rowChangeClass = changed ? ` ${modChangeClass(mod.update_state)}` : "";
   const dependencyWarnings = warningDependencies(mod);
@@ -412,7 +415,9 @@ function SimpleModRow({
   showChangeDetails?: boolean;
 }) {
   const selectedLanguage = representativeLanguage(mod.language_preview, targetLanguage);
-  const primaryResourcePath = selectedLanguage ? languageResourceRoot(selectedLanguage.sample_path) : defaultTranslatableResourcePath(mod);
+  const primaryResourcePath =
+    rememberedTranslationResourcePath(mod) ||
+    (selectedLanguage ? languageResourceRoot(selectedLanguage.sample_path) : defaultTranslatableResourcePath(mod));
   const changed = showChangeDetails && mod.update_state !== "clean";
   const rowChangeClass = changed ? ` ${modChangeClass(mod.update_state)}` : "";
   const dependencyWarnings = warningDependencies(mod);

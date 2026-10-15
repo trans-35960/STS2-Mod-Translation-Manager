@@ -11,6 +11,7 @@ import type {
   Preset,
   TranslationApplyFilter,
 } from "../../types";
+import { readStoredTranslationSource } from "../../utils/storage";
 
 export function presetPreviewSummary(preset: Preset, mods: ModRow[]): string {
   const active = mods.filter((mod) => mod.active);
@@ -664,7 +665,27 @@ export function languageResourceRoot(samplePath: string): string {
   return parts.join("/");
 }
 
+/** The source language resource this mod was last translated from, if it still exists. */
+export function rememberedTranslationResourcePath(mod: ModRow): string {
+  const stored = normalizeResourcePath(readStoredTranslationSource(mod.key));
+  if (!stored) {
+    return "";
+  }
+  const match = (mod.language_preview ?? []).find(
+    (language) => language.sample_path && normalizeResourcePath(languageResourceRoot(language.sample_path)) === stored,
+  );
+  return match ? languageResourceRoot(match.sample_path) : "";
+}
+
+function normalizeResourcePath(path: string) {
+  return path.replace(/\\/g, "/").replace(/\/$/, "").toLowerCase();
+}
+
 export function defaultTranslationResourcePath(mod: ModRow): string {
+  const remembered = rememberedTranslationResourcePath(mod);
+  if (remembered) {
+    return remembered;
+  }
   const languages = mod.language_preview ?? [];
   const found = recommendedSourceLanguage(languages) ?? languages.find((language) => language.sample_path) ?? null;
   return found ? languageResourceRoot(found.sample_path) : "";

@@ -17,6 +17,7 @@ export const TRANSLATION_SESSION_STORAGE_KEY = "sts2.translationSession.v1";
 export const MOD_VIEW_MODE_STORAGE_KEY = "sts2.modViewMode.v1";
 export const MOD_TABLE_COLUMNS_STORAGE_KEY = "sts2.modTableColumns.v1";
 export const EXTERNAL_MOD_PROMPT_STORAGE_KEY = "sts2.externalModPrompt.v1";
+export const TRANSLATION_SOURCE_STORAGE_KEY = "sts2.translationSource.v1";
 
 export const LOADING_STEPS = [
   "초기 설정을 확인하고 있습니다",
