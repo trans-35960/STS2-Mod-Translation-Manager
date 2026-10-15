@@ -463,6 +463,7 @@ function modSearchTokens(mod: ModRow): string[] {
     mod.name,
     mod.key,
     modGroupName(mod),
+    mod.workshop_title ?? "",
     mod.version_hint ?? "",
     mod.path,
     mod.source_label,

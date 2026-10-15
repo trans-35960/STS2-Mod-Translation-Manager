@@ -142,6 +142,44 @@ export function useDashboardLoader({
     return () => window.clearInterval(intervalId);
   }, [loading]);
 
+  // Workshop titles live on Steam, not on disk: the dashboard carries the cached
+  // ones and the rest are fetched once per session in the background.
+  const requestedWorkshopIdsRef = React.useRef(new Set<string>());
+  React.useEffect(() => {
+    if (isPreviewRuntime() || !dashboard) {
+      return;
+    }
+    const missing = Array.from(
+      new Set(
+        dashboard.mods
+          .filter((mod) => mod.workshop_item_id && !mod.workshop_title)
+          .map((mod) => mod.workshop_item_id as string),
+      ),
+    ).filter((itemId) => !requestedWorkshopIdsRef.current.has(itemId));
+    if (missing.length === 0) {
+      return;
+    }
+    missing.forEach((itemId) => requestedWorkshopIdsRef.current.add(itemId));
+    invokeCommand("refresh_workshop_titles", { itemIds: missing })
+      .then((titles) => {
+        if (Object.keys(titles).length === 0) {
+          return;
+        }
+        setDashboard((current) =>
+          current
+            ? {
+                ...current,
+                mods: current.mods.map((mod) => {
+                  const title = mod.workshop_item_id ? titles[mod.workshop_item_id] : undefined;
+                  return title && !mod.workshop_title ? { ...mod, workshop_title: title } : mod;
+                }),
+              }
+            : current,
+        );
+      })
+      .catch((error) => appendLog(formatCommandError("refresh_workshop_titles", undefined, error)));
+  }, [appendLog, dashboard]);
+
   React.useEffect(() => {
     if (isPreviewRuntime()) {
       return;

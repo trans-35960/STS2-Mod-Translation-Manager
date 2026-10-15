@@ -2324,6 +2324,7 @@ Packed file: Shadowverse/localization/eng/cards.json
             external: false,
             workshop: false,
             workshop_item_id: None,
+            workshop_title: None,
             source_label: String::new(),
             kind: String::new(),
             version_hint: None,

@@ -83,6 +83,8 @@ fn mod_rows(
     trace.mark("resolve_translation_patches");
     resolve_branch_issues(&mut rows, config);
     trace.mark("resolve_branch_issues");
+    resolve_workshop_titles(&mut rows, config);
+    trace.mark("resolve_workshop_titles");
     resolve_compat_issues(&mut rows, config, &record_dirs);
     trace.mark("resolve_compat_issues");
     resolve_bridge_edit_counts(&mut rows, config);
@@ -181,6 +183,22 @@ fn resolve_bridge_stored(rows: &mut [ModRowDto]) {
                     .collect()
             })
             .clone();
+    }
+}
+
+/// Fills in Workshop page titles already cached; the mod list fetches the
+/// missing ones from Steam afterwards so loading never waits on the network.
+fn resolve_workshop_titles(rows: &mut [ModRowDto], config: &AppConfig) {
+    if !rows.iter().any(|row| row.workshop_item_id.is_some()) {
+        return;
+    }
+    let titles = workshop_titles::cached_titles(&config.state_dir);
+    for row in rows.iter_mut() {
+        row.workshop_title = row
+            .workshop_item_id
+            .as_deref()
+            .and_then(|item_id| titles.get(item_id))
+            .cloned();
     }
 }
 
@@ -520,6 +538,7 @@ impl ModRowBuilder {
             workshop_item_id: record
                 .workshop_item_id()
                 .or_else(|| self.workshop.as_ref().and_then(ModRecord::workshop_item_id)),
+            workshop_title: None,
             source_label: sources,
             kind: kind_label(record.kind).to_string(),
             version_hint,

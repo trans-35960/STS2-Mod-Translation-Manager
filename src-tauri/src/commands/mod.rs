@@ -61,6 +61,13 @@ pub(crate) async fn open_workshop_page(item_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub(crate) async fn refresh_workshop_titles(
+    item_ids: Vec<String>,
+) -> Result<std::collections::BTreeMap<String, String>, String> {
+    run_blocking(move || crate::services::refresh_workshop_titles(item_ids)).await
+}
+
+#[tauri::command]
 pub(crate) async fn preview_dropped_mods(
     paths: Vec<String>,
 ) -> Result<Vec<DroppedModPreviewDto>, String> {

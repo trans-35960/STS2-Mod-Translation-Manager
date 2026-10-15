@@ -27,3 +27,4 @@ pub mod text_ui;
 pub mod translation;
 pub mod vault;
 pub mod vendor_tools;
+pub mod workshop_titles;

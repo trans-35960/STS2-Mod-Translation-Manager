@@ -233,6 +233,8 @@ pub(crate) struct ModRowDto {
     pub(crate) external: bool,
     pub(crate) workshop: bool,
     pub(crate) workshop_item_id: Option<String>,
+    /// Title of the Steam Workshop page, once fetched; often differs from the manifest id.
+    pub(crate) workshop_title: Option<String>,
     pub(crate) source_label: String,
     pub(crate) kind: String,
     pub(crate) version_hint: Option<String>,
