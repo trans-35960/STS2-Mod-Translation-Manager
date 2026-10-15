@@ -1958,6 +1958,7 @@ Packed file: Shadowverse/localization/eng/cards.json
             target_mod_version: None,
             target_languages: Vec::new(),
             is_translation_patch: false,
+            min_game_version: None,
         };
 
         assert!(mod_safety_warnings(&manifest).is_empty());
@@ -2355,6 +2356,8 @@ Packed file: Shadowverse/localization/eng/cards.json
             translation_target_version: None,
             dependencies: Vec::new(),
             branch_issue: None,
+            min_game_version: None,
+            compat_issue: None,
             system_mod: false,
             bridge_edits: None,
             language_preview: Vec::new(),
@@ -2370,6 +2373,7 @@ Packed file: Shadowverse/localization/eng/cards.json
             active: false,
             available: false,
             version_required: None,
+            version_minimum: false,
             version_current: None,
             version_matches: None,
         }
@@ -2410,6 +2414,91 @@ Packed file: Shadowverse/localization/eng/cards.json
         let dependency = &rows[2].dependencies[0];
         assert_eq!(dependency.key.as_deref(), Some("baselib-b"));
         assert_eq!(dependency.version_matches, Some(true));
+    }
+
+    #[test]
+    fn dependency_min_version_accepts_newer_installs() {
+        let manifest = mod_manifest_info_from_value(&serde_json::json!({
+            "id": "MEP SakurabaEma",
+            "min_game_version": "0.107.1",
+            "dependencies": [
+                { "id": "Manosaba", "min_version": "v1.6.6" },
+                { "id": "BaseLib", "min_version": "3.3.0" }
+            ]
+        }));
+        assert_eq!(manifest.min_game_version.as_deref(), Some("0.107.1"));
+        let base_lib = &manifest.dependencies[0];
+        assert_eq!((base_lib.id.as_str(), base_lib.minimum), ("BaseLib", true));
+
+        let mut dependent = dependency_test_row("mep", "MEP SakurabaEma", true);
+        for (id, minimum) in [("BaseLib", "3.3.0"), ("Manosaba", "v1.6.6")] {
+            let mut needs = dependency_on(id);
+            needs.version_required = Some(minimum.to_string());
+            needs.version_minimum = true;
+            dependent.dependencies.push(needs);
+        }
+        let mut base_lib = dependency_test_row("baselib", "BaseLib", true);
+        base_lib.version_hint = Some("v3.4.7".to_string());
+        let mut manosaba = dependency_test_row("manosaba", "Manosaba", true);
+        manosaba.version_hint = Some("v1.6.5".to_string());
+        let mut rows = vec![base_lib, manosaba, dependent];
+
+        resolve_mod_dependencies(&mut rows);
+
+        let matches = rows[2]
+            .dependencies
+            .iter()
+            .map(|dependency| dependency.version_matches)
+            .collect::<Vec<_>>();
+        assert_eq!(matches, [Some(true), Some(false)]);
+    }
+
+    /// Prints the compatibility flags the mod list would show for the mods
+    /// installed on this machine:
+    /// `cargo test --manifest-path src-tauri/Cargo.toml installed_mod_compat -- --ignored --nocapture`.
+    #[test]
+    #[ignore]
+    fn installed_mod_compat_report() {
+        let workspace = env::temp_dir().join(format!("sts2-compat-report-{}", std::process::id()));
+        let config = AppConfig::from_workspace(&workspace);
+        let report = App::new(config.clone()).scan_preview_report().expect("scan");
+        let started = Instant::now();
+        let rows = mod_rows(&report, &config, &BTreeSet::new(), None).expect("rows");
+        println!("first load {}ms", started.elapsed().as_millis());
+        let started = Instant::now();
+        mod_rows(&report, &config, &BTreeSet::new(), None).expect("rows");
+        println!("cached load {}ms", started.elapsed().as_millis());
+        for row in &rows {
+            let Some(issue) = &row.compat_issue else {
+                continue;
+            };
+            println!("== {} ({}): {}", row.name, row.key, issue.message);
+            for missing in &issue.missing {
+                println!("   {}", missing.message);
+            }
+        }
+        fs::remove_dir_all(&workspace).ok();
+    }
+
+    #[test]
+    fn compat_issue_names_game_version_and_missing_members() {
+        let issue = compat_issue_dto(
+            Some("v0.111.0".to_string()),
+            Some("0.112.0".to_string()),
+            vec![sts2_mod_manager::dll_refs::MissingReference {
+                assembly: "sts2".to_string(),
+                kind: sts2_mod_manager::dll_refs::MissingKind::Method,
+                display: "CreatureCmd.Damage(Creature)".to_string(),
+                available: vec!["CreatureCmd.Damage(Creature, CardPlay)".to_string()],
+            }],
+        );
+        assert_eq!(issue.missing[0].kind, "method");
+        assert_eq!(
+            issue.missing[0].message,
+            "CreatureCmd.Damage(Creature) — 게임에서 시그니처가 바뀜"
+        );
+        assert!(issue.message.starts_with("게임 0.112.0 이상용 모드입니다(현재 v0.111.0)."));
+        assert!(issue.message.contains("현재 게임에 없는 코드 1개"));
     }
 
     #[test]

@@ -11,12 +11,15 @@ struct ModManifestInfo {
     target_mod_version: Option<String>,
     target_languages: Vec<String>,
     is_translation_patch: bool,
+    min_game_version: Option<String>,
 }
 
 #[derive(Clone, Default)]
 struct ManifestDependency {
     id: String,
     version: Option<String>,
+    /// `version` is a minimum (`min_version`), not an exact version.
+    minimum: bool,
 }
 
 fn read_mod_manifest_info(scan_root: &Path) -> ModManifestInfo {
@@ -58,6 +61,7 @@ fn mod_manifest_info_from_value(value: &serde_json::Value) -> ModManifestInfo {
             value,
             &["is_translation_patch", "translation_mod", "is_translation_mod"],
         ),
+        min_game_version: string_field(value, &["min_game_version"]),
     };
     with_dependency_versions(info, value)
 }
@@ -95,6 +99,7 @@ fn merge_manifest_info(mut primary: ModManifestInfo, fallback: ModManifestInfo) 
     primary.target_mod_name = primary.target_mod_name.or(fallback.target_mod_name);
     primary.target_mod_version = primary.target_mod_version.or(fallback.target_mod_version);
     primary.is_translation_patch |= fallback.is_translation_patch;
+    primary.min_game_version = primary.min_game_version.or(fallback.min_game_version);
     if primary.target_languages.is_empty() {
         primary.target_languages = fallback.target_languages;
     }
@@ -245,7 +250,11 @@ fn dependency_list_field(value: &serde_json::Value, keys: &[&str]) -> Vec<Manife
     let ids = string_list_field(value, keys);
     let mut dependencies = ids
         .into_iter()
-        .map(|id| ManifestDependency { id, version: None })
+        .map(|id| ManifestDependency {
+            id,
+            version: None,
+            minimum: false,
+        })
         .collect::<Vec<_>>();
     let Some(field) = keys.iter().find_map(|key| value.get(*key)) else {
         return dependencies;
@@ -263,9 +272,15 @@ fn dependency_list_field(value: &serde_json::Value, keys: &[&str]) -> Vec<Manife
                 if id.is_empty() {
                     return None;
                 }
+                let exact = string_field(item, &["version", "required_version", "target_version"]);
+                let minimum = exact
+                    .is_none()
+                    .then(|| string_field(item, &["min_version", "minimum_version"]))
+                    .flatten();
                 Some(ManifestDependency {
                     id,
-                    version: string_field(item, &["version", "required_version", "target_version"]),
+                    minimum: minimum.is_some(),
+                    version: exact.or(minimum),
                 })
             })
             .collect();

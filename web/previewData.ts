@@ -167,7 +167,28 @@ export const previewDashboard: Dashboard = {
       translation_target_key: null,
       translation_target_name: null,
       translation_target_version: null,
-      dependencies: [{ id: "BaseLib", key: "baselib", name: "BaseLib", active: true, available: true, version_required: null, version_current: null, version_matches: null }],
+      dependencies: [{ id: "BaseLib", key: "baselib", name: "BaseLib", active: true, available: true, version_required: "3.3.0", version_minimum: true, version_current: "v3.4.7", version_matches: true }],
+      compat_issue: {
+        game_version: "v0.111.0",
+        min_game_version: null,
+        missing: [
+          {
+            assembly: "sts2",
+            kind: "method",
+            display: "CreatureCmd.Damage(PlayerChoiceContext, Creature, decimal, ValueProp, Creature, CardModel)",
+            available: ["CreatureCmd.Damage(PlayerChoiceContext, Creature, decimal, ValueProp, Creature, CardModel, CardPlay)"],
+            message: "CreatureCmd.Damage(PlayerChoiceContext, Creature, decimal, ValueProp, Creature, CardModel) — 게임에서 시그니처가 바뀜",
+          },
+          {
+            assembly: "sts2",
+            kind: "type",
+            display: "SavedPropertiesTypeCache",
+            available: [],
+            message: "SavedPropertiesTypeCache 타입 — 게임에 없음",
+          },
+        ],
+        message: "현재 게임에 없는 코드 2개를 사용합니다. 해당 기능이 쓰이는 순간 게임이 오류로 튕길 수 있습니다.",
+      },
       language_preview: [
         { code: "en", label: "English", files: 4, sample_path: "localization/en/relics.json" },
       ],

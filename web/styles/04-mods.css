@@ -507,6 +507,73 @@
   stroke-width: 2.5;
 }
 
+.compat-warning-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  flex: 0 0 auto;
+}
+
+.compat-warning-icon svg {
+  display: block;
+  stroke-width: 2.5;
+}
+
+.compat-issue-list {
+  max-width: 100%;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  border-radius: 8px;
+  padding: 5px 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 12px;
+}
+
+.compat-issue-list summary {
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.compat-issue-list summary span {
+  margin-right: 6px;
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: #fee2e2;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.compat-issue-list ul {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 4px;
+  padding-left: 16px;
+}
+
+.compat-issue-list li {
+  min-width: 0;
+}
+
+.compat-issue-list li code {
+  font-size: 11px;
+  white-space: normal;
+}
+
+.compat-issue-list li em {
+  margin-left: 6px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.mod-title .compat-issue-list small {
+  overflow: visible;
+  white-space: normal;
+}
+
 .mod-title small,
 .language-cell small,
 .panel p,
