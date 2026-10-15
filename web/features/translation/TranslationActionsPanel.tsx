@@ -488,7 +488,6 @@ export function TranslationActionsPanel({
           projectInfo={props.projectInfo ?? null}
           onlyEmptyDefault={exportOnlyEmpty}
           dllTextKeys={dllTextKeys}
-          validation={props.validation}
           initialFocus={aiPromptFocus}
           onClose={() => setAiPromptFocus(null)}
           onPasteAnswer={props.onPasteStructuredJson}

@@ -5,13 +5,13 @@ import type {
   AiPromptParts,
   GlossaryTerm,
   JsonTranslationSheet,
-  JsonValidation,
   ProjectTranslationSettings,
   TranslationProjectInfo,
 } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
 import { TermCandidatesPanel } from "./TermCandidatesPanel";
 import { TermTableEditor } from "./TermTableEditor";
+import { MAX_CHARS_STORAGE_KEY, budgetOf, loadPromptSettings, readStoredMaxChars, slotKey } from "./aiPromptShared";
 import {
   compactTranslationFile,
   normalizeSlotId,
@@ -21,8 +21,8 @@ import {
   translationSlotEntries,
 } from "./translationUtils";
 
-const MAX_CHARS_STORAGE_KEY = "sts2.aiPrompt.maxChars.v1";
-const DEFAULT_MAX_CHARS = 5000;
+/** Large enough that the whole request fits one prompt. */
+const SINGLE_PROMPT_BUDGET = 1_000_000_000;
 const AUTOSAVE_DELAY_MS = 600;
 
 const TONE_OPTIONS = [
@@ -45,7 +45,6 @@ export function AiPromptModal({
   projectInfo,
   onlyEmptyDefault,
   dllTextKeys: dllKeys,
-  validation,
   initialFocus = "all",
   onClose,
   onTermsSaved,
@@ -56,9 +55,7 @@ export function AiPromptModal({
   onlyEmptyDefault: boolean;
   /** Strings worth translating in a DLL sheet; null for other sheets. */
   dllTextKeys: Set<string> | null;
-  /** The last validation, for re-asking only the flagged entries. */
-  validation: JsonValidation | null;
-  /** Opened for fixing ("warnings"): starts on the parts tab with them built. */
+  /** Opened for re-asking ("updated"): starts on the parts tab with them built. */
   initialFocus?: PromptFocus;
   onClose: () => void;
   onTermsSaved: () => void;
@@ -80,13 +77,11 @@ export function AiPromptModal({
     () => sheet.entries.filter((entry) => entry.status === "updated" && entry.source_value.trim()).length,
     [sheet],
   );
-  const issuesByKey = React.useMemo(() => validationIssuesByKey(validation), [validation]);
-  const issueCount = Object.keys(issuesByKey).length;
   const [maxChars, setMaxChars] = React.useState(readStoredMaxChars);
   const [saveState, setSaveState] = React.useState<"" | "saving" | "saved">("");
   const savedTermsRef = React.useRef("");
   const [result, setResult] = React.useState<AiPromptParts | null>(null);
-  /** What the shown parts ask for; answers to a fix or update re-ask overwrite. */
+  /** What the shown parts ask for; answers to an update re-ask overwrite. */
   const [resultFocus, setResultFocus] = React.useState<PromptFocus>("all");
   const [selectedPart, setSelectedPart] = React.useState(0);
   const [copiedParts, setCopiedParts] = React.useState<Set<number>>(() => new Set());
@@ -100,7 +95,7 @@ export function AiPromptModal({
   React.useEffect(() => {
     let cancelled = false;
     setLoaded(false);
-    loadSettings(projectKey)
+    loadPromptSettings(projectKey)
       .then((settings) => {
         if (cancelled) {
           return;
@@ -188,23 +183,28 @@ export function AiPromptModal({
     [result, translatedSlots],
   );
 
-  const registeredSources = React.useMemo(
-    () => new Set(settings.terms.map((term) => term.source.toLowerCase())),
-    [settings.terms],
-  );
-
-  /** Adds terms to the mod glossary, replacing entries for the same source. */
-  function addTerms(added: Array<{ source: string; target: string }>) {
-    setTerms((current) => {
-      const sources = new Set(added.map((term) => term.source.toLowerCase()));
-      return [
-        ...current.filter((term) => !sources.has(term.source.toLowerCase())),
-        ...added.map((term) => ({
-          source: term.source,
-          targets: term.target.split("/").map((target) => target.trim()).filter(Boolean),
-        })),
-      ];
-    });
+  /** Prompt parts for the current options, each at most `budget` characters. */
+  async function requestParts(budget: number, partFocus: PromptFocus): Promise<AiPromptParts> {
+    // Entries keep their stored ids, so answers still land on the full sheet.
+    const promptSheet =
+      dllKeys && dllTextOnly ? { ...sheet, entries: sheet.entries.filter((entry) => dllKeys.has(entry.key)) } : sheet;
+    return isPreviewRuntime()
+      ? previewParts(promptSheet, includePrompt, budget)
+      : await invokeCommand("build_ai_prompt_parts", {
+          sheet: promptSheet,
+          request: {
+            projectKey: projectKey || null,
+            modName: projectInfo?.modName ?? "",
+            modDescription: settings.mod_description,
+            tone,
+            extraInstructions: settings.extra_instructions,
+            includePrompt,
+            maxChars: budget,
+            onlyEmpty,
+            focus: partFocus === "all" ? null : partFocus,
+            issues: null,
+          },
+        });
   }
 
   async function buildParts() {
@@ -217,26 +217,7 @@ export function AiPromptModal({
       } catch {
         // Remembering the budget is only a convenience.
       }
-      // Entries keep their stored ids, so answers still land on the full sheet.
-      const promptSheet =
-        dllKeys && dllTextOnly ? { ...sheet, entries: sheet.entries.filter((entry) => dllKeys.has(entry.key)) } : sheet;
-      const parts = isPreviewRuntime()
-        ? previewParts(promptSheet, includePrompt, budget)
-        : await invokeCommand("build_ai_prompt_parts", {
-            sheet: promptSheet,
-            request: {
-              projectKey: projectKey || null,
-              modName: projectInfo?.modName ?? "",
-              modDescription: settings.mod_description,
-              tone,
-              extraInstructions: settings.extra_instructions,
-              includePrompt,
-              maxChars: budget,
-              onlyEmpty,
-              focus: focus === "all" ? null : focus,
-              issues: focus === "warnings" ? issuesByKey : null,
-            },
-          });
+      const parts = await requestParts(budget, focus);
       setResult(parts);
       setResultFocus(focus);
       setSelectedPart(0);
@@ -294,7 +275,7 @@ export function AiPromptModal({
       const outputPath = isPreviewRuntime()
         ? `translation_work/${base}.${extension}`
         : await saveDialog({
-            title: format === "txt" ? "프롬프트 파트를 한 파일로 내보내기" : "프롬프트 파트별 파일 내보내기 (이름 뒤에 .partNN이 붙습니다)",
+            title: format === "txt" ? "프롬프트 전체를 한 파일로 내보내기" : "프롬프트 파트별 파일 내보내기 (이름 뒤에 .partNN이 붙습니다)",
             defaultPath: `${base}.${extension}`,
             filters: [{ name: extension.toUpperCase(), extensions: [extension] }],
           });
@@ -302,13 +283,19 @@ export function AiPromptModal({
         return;
       }
       setBusy(true);
+      // One file holds the whole request as a single prompt, not the parts
+      // stacked one after another.
+      const texts =
+        format === "txt"
+          ? (await requestParts(SINGLE_PROMPT_BUDGET, resultFocus)).parts.map((part) => part.text)
+          : result.parts.map((part) => part.text);
       const written = isPreviewRuntime()
         ? format === "txt"
           ? [outputPath]
           : result.parts.map((_, index) => outputPath.replace(/\.(txt|pdf)$/i, `.part${String(index + 1).padStart(2, "0")}.$1`))
         : await invokeCommand("export_ai_prompt_parts", {
             outputPath,
-            parts: result.parts.map((part) => part.text),
+            parts: texts,
             format,
           });
       setExportMessage(
@@ -460,8 +447,8 @@ export function AiPromptModal({
               extraInstructions: settings.extra_instructions,
               maxChars: budgetOf(maxChars),
             }}
-            registeredSources={registeredSources}
-            onAddTerms={addTerms}
+            terms={terms}
+            onChangeTerms={setTerms}
           />
         </div>
         <div className="ai-prompt-tab" role="tabpanel" hidden={tab !== "parts"}>
@@ -470,15 +457,12 @@ export function AiPromptModal({
               <input type="checkbox" checked={includePrompt} onChange={(event) => setIncludePrompt(event.target.checked)} />
               <span>프롬프트 포함</span>
             </label>
-            <label className="ai-prompt-focus" title="업데이트·경고는 기존 번역과 용어집을 함께 보내 고쳐 달라고 합니다.">
+            <label className="ai-prompt-focus" title="원문 바뀐 항목은 기존 번역과 이전 원문을 함께 보내 고쳐 달라고 합니다. 경고 수정은 검증 결과의 AI 수정 프롬프트에서 만듭니다.">
               <span>대상</span>
               <select value={focus} onChange={(event) => setFocus(event.target.value as PromptFocus)}>
                 <option value="all">번역할 항목</option>
                 <option value="updated" disabled={updatedCount === 0}>
                   원문 바뀐 항목 ({updatedCount})
-                </option>
-                <option value="warnings" disabled={issueCount === 0}>
-                  {validation ? `경고 항목 (${issueCount})` : "경고 항목 (검증 먼저)"}
                 </option>
               </select>
             </label>
@@ -557,9 +541,15 @@ export function AiPromptModal({
                   </p>
                   <div className="ai-prompt-export">
                     <span>모두 내보내기</span>
-                    <button type="button" className="icon-button-text compact" disabled={busy} onClick={() => void exportParts("txt")}>
+                    <button
+                      type="button"
+                      className="icon-button-text compact"
+                      disabled={busy}
+                      title="파트로 나누지 않고 전체를 프롬프트 하나로 만들어 한 파일에 저장합니다."
+                      onClick={() => void exportParts("txt")}
+                    >
                       <FileText size={14} />
-                      TXT 한 파일
+                      TXT 전체 한 파일
                     </button>
                     <button type="button" className="icon-button-text compact" disabled={busy} onClick={() => void exportParts("txt_parts")}>
                       <Files size={14} />
@@ -616,43 +606,7 @@ function fileName(path: string) {
   return path.split(/[\\/]/).pop() ?? path;
 }
 
-function slotKey(file: string, id: string) {
-  return `${file}\u0000${normalizeSlotId(id) ?? id}`;
-}
-
-function budgetOf(value: number) {
-  return Math.max(500, Math.round(value) || DEFAULT_MAX_CHARS);
-}
-
-function readStoredMaxChars() {
-  try {
-    const stored = Number(window.localStorage.getItem(MAX_CHARS_STORAGE_KEY));
-    return Number.isFinite(stored) && stored >= 500 ? stored : DEFAULT_MAX_CHARS;
-  } catch {
-    return DEFAULT_MAX_CHARS;
-  }
-}
-
-async function loadSettings(projectKey: string): Promise<ProjectTranslationSettings> {
-  if (!projectKey || isPreviewRuntime()) {
-    return { mod_description: "", tone: "official", terms: [], extra_instructions: "" };
-  }
-  return invokeCommand("load_project_translation_settings", { projectKey });
-}
-
-export type PromptFocus = "all" | "updated" | "warnings";
-
-/**
- * Format and term problems by entry, the warnings a re-ask can fix. Empty
- * and changed-source entries have their own options (빈 값만, 원문 바뀐 항목).
- */
-function validationIssuesByKey(validation: JsonValidation | null): Record<string, string[]> {
-  const issues: Record<string, string[]> = {};
-  for (const issue of [...(validation?.format_issues ?? []), ...(validation?.glossary_issues ?? [])]) {
-    (issues[issue.key] ??= []).push(issue.message);
-  }
-  return issues;
-}
+export type PromptFocus = "all" | "updated";
 
 function previewParts(sheet: JsonTranslationSheet, includePrompt: boolean, budget: number): AiPromptParts {
   const slots = translationSlotEntries(sheet);

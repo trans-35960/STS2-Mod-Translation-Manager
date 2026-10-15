@@ -43,11 +43,15 @@ import {
   splitSheetKey,
   compactTranslationFile,
   currentAcknowledgements,
+  translationProjectKey,
   UNACKNOWLEDGEABLE_ISSUE_KINDS,
   whitespaceValueLabel,
 } from "./translationUtils";
 import { useVirtualRows } from "./useVirtualRows";
 import { diffSourceValues } from "./sourceDiff";
+import { useCandidateRecheck, type CandidateCheck } from "./useCandidateRecheck";
+import { WarningFixPanel } from "./WarningFixPanel";
+import { fixableValidationIssues } from "./aiPromptShared";
 import { normalizeLanguageTag } from "../mods/modUtils";
 
 const EMPTY_VALIDATION_ISSUES: DisplayValidationIssue[] = [];
@@ -92,7 +96,6 @@ export function TranslationSheetTable({
   revealWarningEntry,
   revealEntryKey,
   clearFocusEntryKey,
-  onOpenFixPrompt,
 }: {
   props: TranslationToolsPageProps;
   sheetStats: JsonSheetReport | null;
@@ -140,15 +143,26 @@ export function TranslationSheetTable({
   focusEntryInput: boolean;
   revealEntryKey: (key: string) => void;
   clearFocusEntryKey: () => void;
-  /** Opens the AI prompt window with the flagged entries built as one fix prompt. */
-  onOpenFixPrompt: () => void;
 }) {
   const t = props.labels;
   // Entries the fix prompt re-asks: structure and term problems (empty and
   // changed-source entries are translated, not fixed).
-  const fixableIssueCount = new Set(
-    [...(props.validation?.format_issues ?? []), ...(props.validation?.glossary_issues ?? [])].map((issue) => issue.key),
-  ).size;
+  const fixableIssueCount = new Set(fixableValidationIssues(props.validation).map((issue) => issue.key)).size;
+  const [fixPanelOpen, setFixPanelOpen] = React.useState(false);
+  const pendingKeys = React.useMemo(() => new Set(Object.keys(props.pasteCandidatesByKey)), [props.pasteCandidatesByKey]);
+  const candidateChecks = useCandidateRecheck(
+    props.sheet,
+    props.pasteCandidatesByKey,
+    props.validation,
+    translationProjectKey(props.projectInfo),
+  );
+  const passingCandidateKeys = React.useMemo(
+    () =>
+      candidateChecks
+        ? [...candidateChecks.entries()].filter(([, check]) => check.state === "fixed" || check.state === "clean").map(([key]) => key)
+        : [],
+    [candidateChecks],
+  );
   const rowRefs = React.useRef(new Map<string, HTMLDivElement>());
   const gridRef = React.useRef<HTMLDivElement | null>(null);
   const rowListRef = React.useRef<HTMLDivElement | null>(null);
@@ -386,11 +400,11 @@ export function TranslationSheetTable({
                 ))}
                 {fixableIssueCount > 0 && (
                   <button
-                    className="validation-fix-all validation-fix-prompt"
+                    className={fixPanelOpen ? "validation-fix-all validation-fix-prompt active" : "validation-fix-all validation-fix-prompt"}
                     type="button"
-                    title="원본·현재 번역·문제를 한 프롬프트로 만듭니다. AI 답변을 붙여넣으면 해당 번역이 한 번에 바뀝니다(되돌리기 가능)."
-                    onClick={onOpenFixPrompt}
-                    disabled={Boolean(props.busy)}
+                    aria-expanded={fixPanelOpen}
+                    title="원본·현재 번역·문제를 프롬프트로 만듭니다. 보낼 문제 종류는 열린 패널에서 고릅니다. AI 답변은 바로 덮어쓰지 않고 붙여넣기 검토에서 비교한 뒤 허가합니다."
+                    onClick={() => setFixPanelOpen((open) => !open)}
                   >
                     <MessageSquareText size={13} aria-hidden="true" />
                     AI 수정 프롬프트 <b>{fixableIssueCount}</b>
@@ -406,6 +420,17 @@ export function TranslationSheetTable({
                   </button>
                 )}
               </div>
+              {fixPanelOpen && fixableIssueCount > 0 && props.sheet && (
+                <WarningFixPanel
+                  sheet={props.sheet}
+                  projectInfo={props.projectInfo}
+                  validation={props.validation}
+                  focusKind={validationIssueKindFilter}
+                  kindLabel={validationIssueLabel}
+                  pendingKeys={pendingKeys}
+                  onPasteAnswer={(text) => props.onPasteStructuredJson(text)}
+                />
+              )}
               {validationItems.length > 0 && (
                 <div className="validation-issue-list">
                   {validationItems.map((issue, issueIndex) => (
@@ -454,9 +479,9 @@ export function TranslationSheetTable({
             <div>
               <strong>
                 {pasteConflictCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                붙여넣기 충돌 {pasteCandidateCount}개
+                붙여넣기 검토 {pasteCandidateCount}개
               </strong>
-              <span>기존 번역값과 다른 새 값은 바로 덮어쓰지 않고 후보로 남겼습니다.</span>
+              <span>기존 번역과 다른 새 값은 바로 덮어쓰지 않고 후보로 남겼습니다. 바뀐 부분과 다시 검증한 결과를 보고 허가하세요.</span>
             </div>
             <div className="paste-conflict-actions" onKeyDown={(event) => event.stopPropagation()}>
               <button type="button" onClick={(event) => {
@@ -465,6 +490,18 @@ export function TranslationSheetTable({
               }}>
                 충돌만 보기
               </button>
+              {passingCandidateKeys.length > 0 && passingCandidateKeys.length < pasteCandidateCount && (
+                <button
+                  type="button"
+                  title="다시 검증해서 경고가 없는 후보만 적용합니다."
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    props.onApplyAllPasteCandidates(passingCandidateKeys);
+                  }}
+                >
+                  경고 없는 것만 허가 {passingCandidateKeys.length}
+                </button>
+              )}
               <button type="button" onClick={(event) => {
                 event.stopPropagation();
                 props.onApplyAllPasteCandidates();
@@ -502,14 +539,18 @@ export function TranslationSheetTable({
                     <code>{parts.key}</code>
                   </div>
                   <div className="paste-conflict-values">
-                    <span className="paste-conflict-value current">
-                      <em>현재</em>
-                      <p>{entry.translated_value || "-"}</p>
+                    <span className="paste-conflict-value source">
+                      <em>원문</em>
+                      <p>{entry.source_value || "-"}</p>
                     </span>
                     <span className="paste-conflict-value candidate">
-                      <em>붙여넣기</em>
-                      <p>{candidate.value || "-"}</p>
+                      <em>현재 → 붙여넣기</em>
+                      <TranslationDiff before={entry.translated_value} after={candidate.value} />
                     </span>
+                    <CandidateCheckLine
+                      check={candidateChecks?.get(entryKey) ?? null}
+                      before={issuesByEntryKey.get(entryKey) ?? EMPTY_VALIDATION_ISSUES}
+                    />
                     <span className="paste-conflict-source">{candidate.source}</span>
                   </div>
                   <div className="paste-conflict-row-actions">
@@ -1023,6 +1064,54 @@ function areJsonEntryRowsEqual(
     previous.wrapSource === next.wrapSource &&
     previous.compareValuesByLanguage === next.compareValuesByLanguage &&
     previous.copiedIdKey === next.copiedIdKey
+  );
+}
+
+function TranslationDiff({ before, after }: { before: string; after: string }) {
+  const segments = React.useMemo(() => diffSourceValues(before, after), [before, after]);
+  return (
+    <p className="translation-diff" title={`현재: ${before}\n붙여넣기: ${after}`}>
+      {segments.length === 0
+        ? "-"
+        : segments.map((segment, index) =>
+            segment.kind === "removed" ? (
+              <del key={index}>{segment.text}</del>
+            ) : segment.kind === "added" ? (
+              <ins key={index}>{segment.text}</ins>
+            ) : (
+              <React.Fragment key={index}>{segment.text}</React.Fragment>
+            ),
+          )}
+    </p>
+  );
+}
+
+const UNFIXABLE_ISSUE_KINDS = new Set(["missing", "updated", "removed"]);
+
+/** What re-validating a pasted candidate found, against the entry's current warnings. */
+function CandidateCheckLine({ check, before }: { check: CandidateCheck | null; before: DisplayValidationIssue[] }) {
+  const fixable = before.filter((issue) => !UNFIXABLE_ISSUE_KINDS.has(issue.kind));
+  const fixableLabels = [...new Set(fixable.map((issue) => validationIssueLabel(issue.kind)))].join(", ");
+  if (!check) {
+    return fixable.length > 0 ? <span className="candidate-check pending">현재 경고: {fixableLabels}</span> : null;
+  }
+  const label = {
+    fixed: "경고 해결",
+    clean: "경고 없음",
+    still: "경고 남음",
+    new: "새 경고",
+  }[check.state];
+  const detail =
+    check.after.length > 0
+      ? check.after.map((issue) => issue.message).join(" / ")
+      : fixable.length > 0
+        ? `해결: ${fixableLabels}`
+        : "";
+  return (
+    <span className={`candidate-check ${check.state}`} title={detail}>
+      <b>{label}</b>
+      {detail && <span>{detail}</span>}
+    </span>
   );
 }
 

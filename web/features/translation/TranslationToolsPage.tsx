@@ -179,7 +179,6 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           focusEntryInput={ui.focusEntryInput}
           revealEntryKey={ui.revealEntryKey}
           clearFocusEntryKey={ui.clearFocusEntryKey}
-          onOpenFixPrompt={() => setAiPromptFocus("warnings")}
         />
       </div>
       {applyingPck && (

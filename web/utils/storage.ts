@@ -1,4 +1,9 @@
-import { MOD_TABLE_COLUMNS_STORAGE_KEY, MOD_VIEW_MODE_STORAGE_KEY, TRANSLATION_SESSION_STORAGE_KEY } from "../constants";
+import {
+  MOD_TABLE_COLUMNS_STORAGE_KEY,
+  MOD_VIEW_MODE_STORAGE_KEY,
+  TRANSLATION_SESSION_STORAGE_KEY,
+  TRANSLATION_SOURCE_STORAGE_KEY,
+} from "../constants";
 import type { ApplyResultState, TranslationSessionState } from "../types";
 
 export function readStoredTranslationSession(): TranslationSessionState | null {
@@ -45,6 +50,34 @@ export function writeStoredTranslationSession(session: TranslationSessionState |
     window.localStorage.setItem(TRANSLATION_SESSION_STORAGE_KEY, JSON.stringify(session));
   } catch {
     // Local storage can be unavailable in restricted preview contexts.
+  }
+}
+
+/**
+ * The source language resource each mod was last translated from, so opening
+ * the mod again keeps comparing against the same source instead of switching
+ * to the language with the most keys.
+ */
+export function readStoredTranslationSource(modKey: string): string {
+  try {
+    const raw = window.localStorage.getItem(TRANSLATION_SOURCE_STORAGE_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    const value = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>)[modKey] : undefined;
+    return typeof value === "string" ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+export function writeStoredTranslationSource(modKey: string, resourcePath: string) {
+  try {
+    const raw = window.localStorage.getItem(TRANSLATION_SOURCE_STORAGE_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    const stored = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, string>) : {};
+    stored[modKey] = resourcePath;
+    window.localStorage.setItem(TRANSLATION_SOURCE_STORAGE_KEY, JSON.stringify(stored));
+  } catch {
+    // Remembering the source language is a convenience; the default still works.
   }
 }
 

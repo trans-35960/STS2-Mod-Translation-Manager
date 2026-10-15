@@ -16,6 +16,7 @@ import { previewJsonReport, previewJsonSheet } from "../../previewData";
 import type { ExtractionTreeNode, ModRow, TranslationPreparationProgress } from "../../types";
 import { formatError } from "../../utils/logging";
 import { isPreviewRuntime } from "../../utils/runtime";
+import { writeStoredTranslationSource } from "../../utils/storage";
 import type { TranslationActionsParams } from "./types";
 
 export function useTranslationSessionActions({
@@ -146,6 +147,9 @@ export function useTranslationSessionActions({
       const prepared = await prepareTreeNode(sourceMod, sourceNode, outputDir, force);
       const prepareMs = Math.round(window.performance.now() - startedAt);
       appendLog(`[perf] 번역 항목 준비 ${prepareMs}ms · 파일 ${prepared.copied_files}개`);
+      if (sourceNode.kind === "language" && sourceNode.path) {
+        writeStoredTranslationSource(sourceMod.key, sourceNode.path);
+      }
       setJsonSource(prepared.source_path);
       setJsonExistingSheet(prepared.existing_sheet_path || prepared.output_sheet_path);
       setJsonOutputSheet(prepared.output_sheet_path);

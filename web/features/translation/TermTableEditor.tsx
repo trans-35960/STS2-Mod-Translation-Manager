@@ -1,6 +1,7 @@
 import React from "react";
-import { Braces, Plus, Table2, Trash2 } from "lucide-react";
+import { Braces, Plus, RotateCcw, Table2, Trash2, Undo2 } from "lucide-react";
 import type { GlossaryTerm } from "../../types";
+import { TermConflictList, termMergeSummary, useTermConflicts } from "./termMerge";
 
 type Row = { id: number; source: string; targets: string };
 
@@ -10,7 +11,9 @@ const FILTER_THRESHOLD = 12;
 /**
  * Edits `원문 → 번역` terms as a table, or as JSON (`{"원문": "번역"}`) for
  * bulk edits. Pasting a JSON object or `원문 = 번역` lines into any cell adds
- * those terms instead of filling the cell. With `keepUntranslated`, terms
+ * those terms right away; a source already registered with another
+ * translation is asked about. Deleting, resetting and pasting can be undone
+ * once. With `keepUntranslated`, terms
  * without a translation are kept (to fill in later) and can be listed alone.
  */
 export function TermTableEditor({
@@ -35,8 +38,17 @@ export function TermTableEditor({
   const [mode, setMode] = React.useState<"table" | "json">("table");
   const [jsonText, setJsonText] = React.useState("");
   const [jsonError, setJsonError] = React.useState("");
-  const [filter, setFilter] = React.useState("");
+  const [filter, setFilterText] = React.useState("");
+  // Rows edited under the current search stay listed even when the edit no
+  // longer matches it, so a term can be changed without it disappearing.
+  const [editedIds, setEditedIds] = React.useState<Set<number>>(() => new Set());
+  const setFilter = (value: string) => {
+    setFilterText(value);
+    setEditedIds(new Set());
+  };
   const [notice, setNotice] = React.useState("");
+  /** Rows before the last paste, delete or reset, for one-step undo. */
+  const [undoRows, setUndoRows] = React.useState<Row[] | null>(null);
   // Rows shown by the "빈 번역" filter, fixed when it is turned on so a row
   // does not vanish while its translation is being typed.
   const [untranslatedIds, setUntranslatedIds] = React.useState<Set<number> | null>(null);
@@ -49,6 +61,8 @@ export function TermTableEditor({
       emitted.current = signature;
       setRows(toRows(terms));
       setUntranslatedIds(null);
+      setUndoRows(null);
+      setNotice("");
     }
   }, [terms, toRows]);
 
@@ -59,17 +73,45 @@ export function TermTableEditor({
     onChange(parsed);
   }
 
+  const conflicts = useTermConflicts(rowsToTerms(rows, keepUntranslated), (next) => commit(toRows(next)));
+
+  /** Changes rows and remembers the previous ones for 되돌리기. */
+  function commitUndoable(next: Row[], message: string) {
+    setUndoRows(rows);
+    commit(next);
+    setNotice(message);
+  }
+
+  function undo() {
+    if (!undoRows) {
+      return;
+    }
+    commit(undoRows);
+    setUndoRows(null);
+    conflicts.clear();
+    setNotice("되돌렸습니다.");
+  }
+
+  function reset() {
+    commitUndoable([], `용어 ${rowsToTerms(rows, true).length}개를 모두 지웠습니다.`);
+    conflicts.clear();
+    setFilter("");
+    setUntranslatedIds(null);
+  }
+
   function update(id: number, field: "source" | "targets", value: string) {
+    if (filter.trim() && !editedIds.has(id)) {
+      setEditedIds((current) => new Set(current).add(id));
+    }
     commit(rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
   }
 
   function merge(added: GlossaryTerm[]) {
-    const bySource = new Map(added.map((term) => [term.source.toLowerCase(), term]));
-    const kept = rows.filter((row) => !bySource.has(row.source.trim().toLowerCase()));
-    commit([...kept.filter((row) => row.source.trim() || row.targets.trim()), ...toRows(added)]);
+    setUndoRows(rows);
+    const result = conflicts.add(added);
     setFilter("");
     setUntranslatedIds(null);
-    setNotice(`용어 ${added.length}개를 넣었습니다.`);
+    setNotice(termMergeSummary(result));
   }
 
   function onCellPaste(event: React.ClipboardEvent<HTMLInputElement>) {
@@ -96,17 +138,17 @@ export function TermTableEditor({
       setJsonError('JSON을 읽지 못했습니다. {"원문": "번역"} 또는 {"원문": ["번역1", "번역2"]} 형식으로 적어 주세요.');
       return;
     }
-    commit(toRows(parsed));
+    commitUndoable(toRows(parsed), `용어 ${parsed.length}개로 바꿨습니다.`);
+    conflicts.clear();
     setUntranslatedIds(null);
     setMode("table");
-    setNotice(`용어 ${parsed.length}개로 바꿨습니다.`);
   }
 
   const query = filter.trim().toLowerCase();
   const visible = rows.filter(
     (row) =>
       (!untranslatedIds || untranslatedIds.has(row.id)) &&
-      (!query || row.source.toLowerCase().includes(query) || row.targets.toLowerCase().includes(query)),
+      (!query || editedIds.has(row.id) || row.source.toLowerCase().includes(query) || row.targets.toLowerCase().includes(query)),
   );
   const filled = rows.filter((row) => row.source.trim()).length;
   const untranslated = rows.filter((row) => row.source.trim() && !row.targets.trim()).length;
@@ -156,6 +198,18 @@ export function TermTableEditor({
             <Plus size={14} />
           </button>
         )}
+        {mode === "table" && (
+          <button
+            className="toolbar-icon-button"
+            type="button"
+            aria-label="용어 모두 지우기"
+            data-tooltip="초기화 (되돌리기 가능)"
+            disabled={rows.length === 0}
+            onClick={reset}
+          >
+            <RotateCcw size={14} />
+          </button>
+        )}
       </div>
 
       {mode === "table" ? (
@@ -176,18 +230,45 @@ export function TermTableEditor({
                   className="toolbar-icon-button"
                   type="button"
                   aria-label={`${row.source || "빈"} 용어 삭제`}
-                  onClick={() => commit(rows.filter((other) => other.id !== row.id))}
+                  onClick={() =>
+                    commitUndoable(
+                      rows.filter((other) => other.id !== row.id),
+                      row.source.trim() ? `"${row.source.trim()}"을(를) 지웠습니다.` : "빈 줄을 지웠습니다.",
+                    )
+                  }
                 >
                   <Trash2 size={13} />
                 </button>
               </div>
             ))}
-            {rows.length === 0 && <p className="term-table-empty">{emptyText} + 로 추가하거나 JSON을 칸에 붙여넣으세요.</p>}
+            {rows.length === 0 && <p className="term-table-empty">{emptyText} + 로 추가하거나 JSON·`원문 = 번역` 줄을 칸에 붙여넣으세요.</p>}
             {rows.length > 0 && visible.length === 0 && (
               <p className="term-table-empty">{untranslatedIds && !query ? "번역이 빈 용어가 없습니다." : `"${filter}"에 맞는 용어가 없습니다.`}</p>
             )}
           </div>
-          {notice && <p className="term-table-notice">{notice}</p>}
+          {rows.length === 0 && (
+            <input
+              className="term-table-paste"
+              data-own-paste
+              value=""
+              onChange={() => undefined}
+              onPaste={onCellPaste}
+              placeholder='여기에 붙여넣기: {"Ammo": "탄약"} 또는 Ammo = 탄약'
+              aria-label="용어 붙여넣기"
+            />
+          )}
+          <TermConflictList conflicts={conflicts.conflicts} onResolve={conflicts.resolve} />
+          {notice && (
+            <p className="term-table-notice">
+              {notice}
+              {undoRows && (
+                <button type="button" className="term-table-undo" onClick={undo}>
+                  <Undo2 size={12} />
+                  되돌리기
+                </button>
+              )}
+            </p>
+          )}
         </>
       ) : (
         <div className="term-table-json">

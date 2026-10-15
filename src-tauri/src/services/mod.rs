@@ -17,9 +17,9 @@ use sts2_mod_manager::ai_prompt::{
 use sts2_mod_manager::app::App;
 use sts2_mod_manager::bridge;
 use sts2_mod_manager::bridge_edits;
-use sts2_mod_manager::dll_text;
 use sts2_mod_manager::config::AppConfig;
 use sts2_mod_manager::discovery::scan_mod_directory;
+use sts2_mod_manager::dll_text;
 use sts2_mod_manager::domain::{ModFingerprint, ModKind, ModRecord, ModSource, ScanSummary};
 use sts2_mod_manager::game_settings;
 use sts2_mod_manager::glossary::{
@@ -38,10 +38,10 @@ use sts2_mod_manager::json_translation::{
     validate_translation_sheet, write_sheet,
 };
 use sts2_mod_manager::launcher::{LaunchReport, LaunchStatus};
+use sts2_mod_manager::leftover_text;
 use sts2_mod_manager::mod_compat::{
     ReferenceChecker, mod_dll_paths, read_game_release, version_at_least,
 };
-use sts2_mod_manager::leftover_text;
 use sts2_mod_manager::path_guard::{ensure_existing_path_in_roots, ensure_path_in_roots};
 use sts2_mod_manager::pck_reader::extract_pck_files;
 use sts2_mod_manager::preset::{Preset, PresetApplyReport};

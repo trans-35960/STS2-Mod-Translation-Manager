@@ -540,14 +540,20 @@ mod tests {
         };
         let mut dll_edit = record("2", KIND_EDIT, "攻击牌", "", Some("공격 카드"));
         dll_edit.table = "dll:Mod".to_string();
-        write(EditChannel::Loc, &[record("1", KIND_EDIT, "A", "가", Some("나"))]);
+        write(
+            EditChannel::Loc,
+            &[record("1", KIND_EDIT, "A", "가", Some("나"))],
+        );
         write(EditChannel::Dll, &[dll_edit]);
 
         let counts = pending_counts(&shared, &root.join("state"), "M");
         fs::remove_dir_all(&root).ok();
 
         assert_eq!((counts.edits, counts.dll_edits), (1, 1));
-        assert_eq!(counts.dll_assemblies.iter().collect::<Vec<_>>(), vec!["Mod"]);
+        assert_eq!(
+            counts.dll_assemblies.iter().collect::<Vec<_>>(),
+            vec!["Mod"]
+        );
     }
 
     #[test]
@@ -592,7 +598,8 @@ mod tests {
         .join("\n");
         fs::write(&log, format!("{lines}\n{{broken\n")).expect("log");
 
-        resolve_report(&shared, &state, "M", "kor", EditChannel::Loc, "2").expect("resolve before ack");
+        resolve_report(&shared, &state, "M", "kor", EditChannel::Loc, "2")
+            .expect("resolve before ack");
         let resolved_early = read_stored_reports(&state);
         let ack_before = read_edits_ack(&shared, "M", "kor", EditChannel::Loc);
         acknowledge(&shared, &state, "M", "kor", EditChannel::Loc, "2").expect("ack");
