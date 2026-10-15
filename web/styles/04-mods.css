@@ -1030,7 +1030,7 @@
   background: rgba(109, 40, 217, 0.12);
 }
 
-.mod-title .workshop-title {
+.mod-title .mod-manifest-name {
   overflow: hidden;
   max-width: 320px;
   color: #7a8796;

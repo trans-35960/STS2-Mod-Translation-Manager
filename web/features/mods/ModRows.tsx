@@ -112,8 +112,7 @@ function ModTableRow({
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
           <CompatWarningIcon issue={mod.compat_issue} />
-          {child ? childModTitle(mod) : mod.name}
-          {!child && <WorkshopTitle title={workshopTitleFor(mod)} />}
+          {child ? childModTitle(mod) : <ModName name={mod.name} workshopTitle={workshopTitleFor(mod)} showName />}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
           <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={(resourcePath) => onStartModTranslation(mod, resourcePath ?? primaryResourcePath)} />
@@ -244,8 +243,7 @@ function ModGroupTableRow({
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           <CompatWarningIcon issue={groupCompatIssue(group.mods)} />
-          {group.name}
-          <WorkshopTitle title={groupWorkshopTitle(group)} />
+          <ModName name={group.name} workshopTitle={groupWorkshopTitle(group)} showName />
           <StatusBadge>GROUP</StatusBadge>
           <BridgeEditsGroupBadge mods={group.mods} />
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
@@ -344,8 +342,7 @@ function SimpleModGroupRow({
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           <CompatWarningIcon issue={groupCompatIssue(group.mods)} />
-          {group.name}
-          <WorkshopTitle title={groupWorkshopTitle(group)} />
+          <ModName name={group.name} workshopTitle={groupWorkshopTitle(group)} />
           <StatusBadge>GROUP</StatusBadge>
           <BridgeEditsGroupBadge mods={group.mods} />
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
@@ -444,8 +441,7 @@ function SimpleModRow({
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
           <CompatWarningIcon issue={mod.compat_issue} />
-          {child ? childModTitle(mod) : mod.name}
-          {!child && <WorkshopTitle title={workshopTitleFor(mod)} />}
+          {child ? childModTitle(mod) : <ModName name={mod.name} workshopTitle={workshopTitleFor(mod)} />}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
           <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={(resourcePath) => onStartModTranslation(mod, resourcePath ?? primaryResourcePath)} />
@@ -632,15 +628,26 @@ function groupBridgeStored(mods: ModRow[]): ModRow["bridge_stored"] {
   return mods.find((mod) => mod.bridge_stored?.length)?.bridge_stored;
 }
 
-/** Steam Workshop page title shown beside the manifest name, so a mod can be found by the name seen on Steam. */
-function WorkshopTitle({ title }: { title: string | null }) {
-  if (!title) {
-    return null;
+/**
+ * The Steam Workshop title as the mod's name, since that is the name seen on
+ * Steam; the manifest name follows it in the detail view and is otherwise in
+ * the tooltip.
+ */
+function ModName({ name, workshopTitle, showName = false }: { name: string; workshopTitle: string | null; showName?: boolean }) {
+  if (!workshopTitle) {
+    return <>{name}</>;
   }
   return (
-    <span className="workshop-title" title="Steam 창작마당 제목">
-      {title}
-    </span>
+    <>
+      <span className="mod-workshop-name" title={`Steam 창작마당 제목 · 모드 이름: ${name}`}>
+        {workshopTitle}
+      </span>
+      {showName && (
+        <span className="mod-manifest-name" title="모드 이름">
+          {name}
+        </span>
+      )}
+    </>
   );
 }
 
