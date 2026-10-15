@@ -38,7 +38,14 @@ export function TermTableEditor({
   const [mode, setMode] = React.useState<"table" | "json">("table");
   const [jsonText, setJsonText] = React.useState("");
   const [jsonError, setJsonError] = React.useState("");
-  const [filter, setFilter] = React.useState("");
+  const [filter, setFilterText] = React.useState("");
+  // Rows edited under the current search stay listed even when the edit no
+  // longer matches it, so a term can be changed without it disappearing.
+  const [editedIds, setEditedIds] = React.useState<Set<number>>(() => new Set());
+  const setFilter = (value: string) => {
+    setFilterText(value);
+    setEditedIds(new Set());
+  };
   const [notice, setNotice] = React.useState("");
   /** Rows before the last paste, delete or reset, for one-step undo. */
   const [undoRows, setUndoRows] = React.useState<Row[] | null>(null);
@@ -93,6 +100,9 @@ export function TermTableEditor({
   }
 
   function update(id: number, field: "source" | "targets", value: string) {
+    if (filter.trim() && !editedIds.has(id)) {
+      setEditedIds((current) => new Set(current).add(id));
+    }
     commit(rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
   }
 
@@ -138,7 +148,7 @@ export function TermTableEditor({
   const visible = rows.filter(
     (row) =>
       (!untranslatedIds || untranslatedIds.has(row.id)) &&
-      (!query || row.source.toLowerCase().includes(query) || row.targets.toLowerCase().includes(query)),
+      (!query || editedIds.has(row.id) || row.source.toLowerCase().includes(query) || row.targets.toLowerCase().includes(query)),
   );
   const filled = rows.filter((row) => row.source.trim()).length;
   const untranslated = rows.filter((row) => row.source.trim() && !row.targets.trim()).length;
