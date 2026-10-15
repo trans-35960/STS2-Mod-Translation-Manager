@@ -61,6 +61,25 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
   const [focusEntryInput, setFocusEntryInput] = React.useState(true);
   const [validationIssueKindFilter, setValidationIssueKindFilter] = React.useState<string | null>(null);
   const splitKeyCacheRef = React.useRef(new Map<string, ReturnType<typeof splitSheetKey>>());
+  // Rows edited under the current filter and search stay listed even when the
+  // edit no longer matches them (e.g. typing into an "empty" row), so the cell
+  // being typed in does not vanish. Changing the filter or search drops them.
+  const [editedEntryKeys, setEditedEntryKeys] = React.useState<Set<string>>(() => new Set());
+  React.useEffect(() => {
+    setEditedEntryKeys((current) => (current.size === 0 ? current : new Set()));
+  }, [activeProjectPath, dllTextOnly, entryFilter, entrySearch, sheetPath, validationIssueKindFilter]);
+  const sheetForEditRef = React.useRef(props.sheet);
+  sheetForEditRef.current = props.sheet;
+  const onEditEntryRef = React.useRef(props.onEditEntry);
+  onEditEntryRef.current = props.onEditEntry;
+  // Stable, because sheet rows are memoized without comparing callbacks.
+  const editEntry = React.useCallback((index: number, value: string) => {
+    const key = sheetForEditRef.current?.entries[index]?.key;
+    if (key) {
+      setEditedEntryKeys((current) => (current.has(key) ? current : new Set(current).add(key)));
+    }
+    onEditEntryRef.current(index, value);
+  }, []);
 
   const sheetSourceLanguage = React.useMemo(
     () =>
@@ -229,6 +248,9 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
           if (activeProjectPath && !pathMatchesProjectNode(parts.file, activeProjectPath)) {
             return false;
           }
+          if (editedEntryKeys.has(entry.key)) {
+            return true;
+          }
           let matchesFilter = true;
           if (entryFilter === "empty") {
             matchesFilter = isTranslatableEntry(entry) && !hasTranslationValue(entry.translated_value);
@@ -257,6 +279,7 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     },
     [
       activeProjectPath,
+      editedEntryKeys,
       entryFilter,
       entrySearch,
       hiddenDllKeys,
@@ -479,6 +502,7 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     revealEntryKey,
     showChangedEntry,
     clearFocusEntryKey: () => setFocusEntryKey(null),
+    editEntry,
   };
 }
 

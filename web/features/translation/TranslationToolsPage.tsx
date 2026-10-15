@@ -179,6 +179,7 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           focusEntryInput={ui.focusEntryInput}
           revealEntryKey={ui.revealEntryKey}
           clearFocusEntryKey={ui.clearFocusEntryKey}
+          editEntry={ui.editEntry}
         />
       </div>
       {applyingPck && (

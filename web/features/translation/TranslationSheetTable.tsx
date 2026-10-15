@@ -96,6 +96,7 @@ export function TranslationSheetTable({
   revealWarningEntry,
   revealEntryKey,
   clearFocusEntryKey,
+  editEntry,
 }: {
   props: TranslationToolsPageProps;
   sheetStats: JsonSheetReport | null;
@@ -143,6 +144,8 @@ export function TranslationSheetTable({
   focusEntryInput: boolean;
   revealEntryKey: (key: string) => void;
   clearFocusEntryKey: () => void;
+  /** Edits a translation and keeps that row listed under the current filter. */
+  editEntry: (index: number, value: string) => void;
 }) {
   const t = props.labels;
   // Entries the fix prompt re-asks: structure and term problems (empty and
@@ -738,11 +741,11 @@ export function TranslationSheetTable({
                 entry={entry}
                 index={index}
                 issues={showValidationWarnings ? issuesByEntryKey.get(entry.key) ?? EMPTY_VALIDATION_ISSUES : EMPTY_VALIDATION_ISSUES}
-                key={`${entry.status}-${entry.key}`}
+                key={entry.key}
                 onApplyPasteCandidate={props.onApplyPasteCandidate}
                 onCopyEntryId={copyEntryId}
                 onDismissPasteCandidate={props.onDismissPasteCandidate}
-                onEditEntry={props.onEditEntry}
+                onEditEntry={editEntry}
                 onPasteEntries={props.onPasteEntries}
                 onPasteStructuredJson={props.onPasteStructuredJson}
                 onSelectRow={props.onSelectRow}
