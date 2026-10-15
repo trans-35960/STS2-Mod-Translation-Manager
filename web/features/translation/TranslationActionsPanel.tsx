@@ -436,9 +436,10 @@ export function TranslationActionsPanel({
                     onClick={() => props.onToggleCompareLanguage(language.sample_path)}
                     disabled={Boolean(props.busy)}
                     key={`${language.code}-${language.sample_path}`}
+                    title={`${languageKeyCount(language)} keys / ${language.files} files: ${language.sample_path}`}
                   >
                     <strong>{languageFolderCode(language)}</strong>
-                    <small>{language.files}</small>
+                    <small>{languageKeyCount(language)} keys</small>
                   </button>
                 );
               })}
