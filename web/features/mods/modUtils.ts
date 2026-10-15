@@ -12,6 +12,7 @@ import type {
   TranslationApplyFilter,
 } from "../../types";
 import { readStoredTranslationSource } from "../../utils/storage";
+import { isTranslated } from "./translationStatus";
 
 export function presetPreviewSummary(preset: Preset, mods: ModRow[]): string {
   const active = mods.filter((mod) => mod.active);
@@ -123,6 +124,7 @@ export function buildModGroups(
   changeFilter: ChangeFilter,
   translationApplyFilter: TranslationApplyFilter,
   sort: ModSort,
+  targetLanguage: string,
 ): ModGroup[] {
   const normalizedSearch = search.trim().toLowerCase();
   const targetGroupNames = new Map(
@@ -133,7 +135,7 @@ export function buildModGroups(
   const targetGroupsByToken = buildTargetGroupsByToken(mods);
   const groups = new Map<string, ModGroup>();
   for (const mod of mods) {
-    if (!matchesStatFilter(mod, statFilter) || !matchesModFilters(mod, activeFilter, changeFilter, translationApplyFilter) || !matchesModSearch(mod, normalizedSearch)) {
+    if (!matchesStatFilter(mod, statFilter) || !matchesModFilters(mod, activeFilter, changeFilter, translationApplyFilter, targetLanguage) || !matchesModSearch(mod, normalizedSearch)) {
       continue;
     }
     const name = modDisplayGroupName(mod, targetGroupNames, targetGroupsByToken);
@@ -426,17 +428,48 @@ function updateRank(value: string): number {
   return 0;
 }
 
-function matchesModFilters(mod: ModRow, activeFilter: ActiveFilter, changeFilter: ChangeFilter, translationApplyFilter: TranslationApplyFilter): boolean {
+function matchesModFilters(
+  mod: ModRow,
+  activeFilter: ActiveFilter,
+  changeFilter: ChangeFilter,
+  translationApplyFilter: TranslationApplyFilter,
+  targetLanguage: string,
+): boolean {
   if (activeFilter === "enabled" && !mod.active) return false;
   if (activeFilter === "disabled" && mod.active) return false;
   if (changeFilter === "changed" && mod.update_state === "clean") return false;
   if (changeFilter === "new" && mod.update_state !== "new") return false;
   if (changeFilter === "updated" && mod.update_state !== "updated") return false;
   if (changeFilter === "clean" && mod.update_state !== "clean") return false;
-  const hasTranslation = mod.translation_applied || mod.translation_patch_active_count > 0 || mod.translation_patch_count > 0;
+  // Translation mods and the bridge follow the mod they belong to.
+  const hasTranslation = mod.is_translation_patch || mod.system_mod || isTranslated(mod, targetLanguage);
   if (translationApplyFilter === "applied" && !hasTranslation) return false;
   if (translationApplyFilter === "notApplied" && hasTranslation) return false;
   return true;
+}
+
+/**
+ * A file inside a mod as a path relative to the mod folder, which is how the
+ * translation tool finds it in its working copy.
+ */
+export function modRelativePath(modPath: string, filePath: string): string {
+  const root = slashPath(modPath);
+  const file = slashPath(filePath);
+  if (file.toLowerCase().startsWith(`${root.toLowerCase()}/`)) {
+    return file.slice(root.length + 1);
+  }
+  return file.split("/").pop() || file;
+}
+
+function slashPath(value: string): string {
+  return value.replace(/\\/g, "/").replace(/\/+$/, "");
+}
+
+/** Names the game log may use for a mod: id, name, folder, DLLs, Workshop item. */
+export function modErrorTokens(mod: ModRow): string[] {
+  const folder = slashPath(mod.path).split("/").pop() ?? "";
+  const dlls = (mod.dll_files ?? []).map((path) => (slashPath(path).split("/").pop() ?? "").replace(/\.dll$/i, ""));
+  return [mod.manifest_id ?? "", mod.name, folder, ...dlls, mod.workshop_item_id ?? ""].filter((token) => token.trim().length > 0);
 }
 
 export function canDeleteMod(mod: ModRow): boolean {

@@ -27,6 +27,8 @@ import type {
   ModDeleteRequest,
   ModToggleRequest,
   NodeTranslationResult,
+  ModErrorIdentity,
+  ModErrorReport,
   SaveSettingsRequest,
   ShortJsonExport,
   TranslationPatchExport,
@@ -40,6 +42,7 @@ export type CommandArgs = {
   save_settings: { request: SaveSettingsRequest };
   save_mod_view_mode: { modViewMode: "detail" | "simple" };
   read_game_logs: undefined;
+  read_mod_errors: { mods: ModErrorIdentity[] };
   scan_updates: undefined;
   repair_mod_installations: undefined;
   open_path: { path: string };
@@ -180,6 +183,7 @@ export type CommandResult = {
   save_settings: ActionResult;
   save_mod_view_mode: void;
   read_game_logs: GameLog[];
+  read_mod_errors: ModErrorReport;
   scan_updates: ActionResult;
   repair_mod_installations: ActionResult;
   open_path: void;

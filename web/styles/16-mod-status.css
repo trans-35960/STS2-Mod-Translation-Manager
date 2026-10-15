@@ -1,0 +1,473 @@
+/* Simple mod list: sections, translation chips, game errors, DLL translation. */
+
+.mod-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  min-height: 34px;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  background: #f8fafc;
+  padding: 6px 14px;
+  color: #334155;
+  text-align: left;
+  font-size: 12px;
+}
+
+/* As wide as the rows (.mod-simple-grid) when the table scrolls sideways. */
+.mod-table.simple .mod-section-header {
+  min-width: calc(var(--mod-simple-name-col, 420px) + var(--mod-simple-translation-col, 150px) + var(--mod-simple-actions-col, 220px) + 70px);
+}
+
+.mod-section-header:first-of-type {
+  border-top: 0;
+}
+
+.mod-section-header:hover:not(:disabled) {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+}
+
+.mod-section-header:active:not(:disabled) {
+  transform: none;
+}
+
+.mod-section-header strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.mod-section-header small {
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 1px 8px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.mod-section-count {
+  min-width: 22px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  padding: 1px 7px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.mod-section-header.system {
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.mod-section-header.translated .mod-section-count {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.mod-section-header.untranslated .mod-section-count {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.translation-status-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.translation-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-height: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 0 9px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.translation-chip small {
+  color: inherit;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.translation-chip.translated {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.translation-chip.translated.bridge {
+  border-color: #99f6e4;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.translation-chip.translated.package {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.translation-chip.translated.patch {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.translation-chip.untranslated {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.translation-chip.system {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.translation-chip.muted {
+  color: #94a3b8;
+}
+
+.mod-title button.mod-error-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  min-height: 20px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background: #fef2f2;
+  padding: 0 7px;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: none;
+}
+
+.mod-title button.mod-error-badge:hover:not(:disabled) {
+  border-color: #fca5a5;
+  background: #fee2e2;
+}
+
+.mod-title button.mod-error-badge:active:not(:disabled) {
+  transform: none;
+}
+
+.mod-error-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  padding: 6px 8px 6px 12px;
+  color: #991b1b;
+  font-size: 12px;
+}
+
+.mod-error-summary svg {
+  flex: none;
+  color: #dc2626;
+}
+
+.mod-error-summary span {
+  flex: 1;
+  min-width: 0;
+}
+
+.mod-error-summary button {
+  height: 28px;
+  border-color: #fca5a5;
+  background: #ffffff;
+  padding: 0 10px;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.mod-error-summary button:hover:not(:disabled) {
+  border-color: #f87171;
+  background: #fee2e2;
+}
+
+.dll-translate-button {
+  position: relative;
+}
+
+.dll-translate-warn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #ffffff;
+  border-radius: 999px;
+  background: #f59e0b;
+}
+
+.row-more-menu {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  min-width: 148px;
+  border: 1px solid #d8e1ec;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 4px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+}
+
+.row-more-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  padding: 0 10px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.row-more-menu button:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.row-more-menu button.danger {
+  color: #b91c1c;
+}
+
+.row-more-menu button.danger:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+/* Game errors dialog */
+
+.modal.mod-errors-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(860px, 100%);
+  overflow: hidden;
+}
+
+.mod-errors-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal .mod-errors-header p {
+  margin-bottom: 8px;
+}
+
+.mod-errors-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.mod-errors-hint {
+  margin: 0 0 10px;
+  border-radius: 6px;
+  background: #f0fdfa;
+  padding: 8px 10px;
+  color: #115e59;
+  font-size: 12px;
+}
+
+.mod-errors-failed {
+  margin: 0 0 10px;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.mod-errors-body {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.mod-errors-empty {
+  margin: 12px 0;
+  color: #64748b;
+}
+
+.mod-errors-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.mod-errors-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mod-errors-section-head strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-errors-section-head .mod-error-copy {
+  margin-left: auto;
+}
+
+.mod-errors-count {
+  flex: none;
+  border-radius: 999px;
+  background: #fee2e2;
+  padding: 1px 7px;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.mod-errors-muted {
+  color: #64748b;
+  font-size: 12px;
+}
+
+p.mod-errors-muted {
+  margin: 0 0 6px;
+}
+
+.mod-errors-section ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mod-errors-section li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 4px;
+}
+
+.mod-errors-section li details {
+  flex: 1;
+  min-width: 0;
+}
+
+.mod-errors-section summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.mod-error-message {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: "Cascadia Mono", Consolas, monospace;
+}
+
+.mod-errors-section details[open] .mod-error-message {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.mod-errors-section pre {
+  max-height: 260px;
+  margin: 4px 0;
+  overflow: auto;
+  border-radius: 6px;
+  background: #0f172a;
+  padding: 8px 10px;
+  color: #e2e8f0;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+button.mod-error-copy {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+button.mod-error-copy.done {
+  border-color: #6ee7b7;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+/* DLL translation warning */
+
+.modal.dll-translate-modal header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b45309;
+}
+
+.dll-translate-risks {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  background: #fffbeb;
+  padding: 12px 14px 12px 30px;
+  color: #78350f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dll-translate-pick {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dll-translate-path {
+  display: block;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.dll-translate-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 800;
+}

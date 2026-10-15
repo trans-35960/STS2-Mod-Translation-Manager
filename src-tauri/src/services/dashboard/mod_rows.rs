@@ -247,6 +247,11 @@ fn resolve_compat_issues(
                 .is_some_and(|game| version_at_least(game, minimum) == Some(false))
         });
         let mod_dlls = dlls_by_key.get(row.key.as_str()).cloned().unwrap_or_default();
+        row.dll_files = mod_dlls
+            .iter()
+            .filter(|path| is_translatable_mod_dll(path))
+            .map(|path| display_path(path))
+            .collect();
         let missing = if mod_dlls.is_empty() || !checker.has_game() {
             Vec::new()
         } else {
@@ -271,6 +276,18 @@ fn resolve_compat_issues(
     if let Err(error) = checker.save() {
         eprintln!("mod compatibility cache write skipped: {error}");
     }
+}
+
+/// Libraries mods bundle hold no text of the mod.
+fn is_translatable_mod_dll(path: &Path) -> bool {
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    !["0harmony", "system.", "microsoft.", "newtonsoft.", "mono.", "monomod."]
+        .iter()
+        .any(|prefix| name.starts_with(prefix))
 }
 
 fn compat_issue_dto(
@@ -575,6 +592,7 @@ impl ModRowBuilder {
             compat_issue: None,
             system_mod,
             bridge_edits: None,
+            dll_files: Vec::new(),
             language_preview,
             extraction_tree,
         }

@@ -284,6 +284,8 @@ pub(crate) struct ModRowDto {
     pub(crate) system_mod: bool,
     /// In-game (F8) edits and open reports waiting in the translation tool.
     pub(crate) bridge_edits: Option<BridgeEditCountsDto>,
+    /// The mod's own DLLs (absolute paths) whose strings can be translated.
+    pub(crate) dll_files: Vec<String>,
     pub(crate) language_preview: Vec<LanguagePreviewDto>,
     pub(crate) extraction_tree: Vec<ExtractionTreeNodeDto>,
 }
@@ -467,6 +469,36 @@ pub(crate) struct CacheUsageDto {
 pub(crate) struct ActionDto {
     pub(crate) message: String,
     pub(crate) dashboard: DashboardDto,
+}
+
+/// A mod the game log may mention, by the names it can appear under.
+#[derive(Debug, Deserialize)]
+pub(crate) struct ModErrorIdentityDto {
+    pub(crate) key: String,
+    pub(crate) active: bool,
+    pub(crate) tokens: Vec<String>,
+}
+
+/// Errors of the latest game run, traced to mods.
+#[derive(Debug, Serialize)]
+pub(crate) struct ModErrorReportDto {
+    pub(crate) log_path: String,
+    pub(crate) exists: bool,
+    pub(crate) modified_epoch: Option<u64>,
+    pub(crate) errors: Vec<ModErrorDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct ModErrorDto {
+    pub(crate) id: String,
+    pub(crate) mod_key: Option<String>,
+    /// `mod_id`, `log_tag`, `path` or `stack`.
+    pub(crate) matched_by: Option<String>,
+    pub(crate) message: String,
+    pub(crate) text: String,
+    pub(crate) count: usize,
+    pub(crate) first_line: usize,
+    pub(crate) patched_game_code: bool,
 }
 
 #[derive(Debug, Deserialize)]

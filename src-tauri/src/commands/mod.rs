@@ -41,6 +41,13 @@ pub(crate) async fn read_game_logs() -> Result<Vec<GameLogDto>, String> {
 }
 
 #[tauri::command]
+pub(crate) async fn read_mod_errors(
+    mods: Vec<ModErrorIdentityDto>,
+) -> Result<ModErrorReportDto, String> {
+    run_blocking(move || crate::services::read_mod_errors(mods)).await
+}
+
+#[tauri::command]
 pub(crate) async fn scan_updates() -> Result<ActionDto, String> {
     run_blocking(crate::services::scan_updates).await
 }

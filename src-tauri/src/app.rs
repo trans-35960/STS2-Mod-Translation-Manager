@@ -12,6 +12,7 @@ pub fn run() {
             commands::save_settings,
             commands::save_mod_view_mode,
             commands::read_game_logs,
+            commands::read_mod_errors,
             commands::scan_updates,
             commands::repair_mod_installations,
             commands::open_path,

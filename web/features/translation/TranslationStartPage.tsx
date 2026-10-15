@@ -33,7 +33,7 @@ export function TranslationPage({
     [mods],
   );
   const groupedMods = React.useMemo(
-    () => buildModGroups(translatableMods, modSearch, "all", activeOnly ? "enabled" : "all", "all", "all", "name"),
+    () => buildModGroups(translatableMods, modSearch, "all", activeOnly ? "enabled" : "all", "all", "all", "name", ""),
     [activeOnly, modSearch, translatableMods],
   );
 

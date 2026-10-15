@@ -1,7 +1,7 @@
 import React from "react";
 import { labels } from "../../i18n";
 import type { ExtractionTreeNode, LeftoverReport, ModRow } from "../../types";
-import { hasLocalizationBranch, joinResourcePath } from "./modUtils";
+import { hasLocalizationBranch, joinResourcePath, modRelativePath } from "./modUtils";
 
 const LEFTOVER_LOCATION_LABELS: Record<LeftoverReport["files"][number]["location"], string> = {
   dll: "DLL 코드 문자열",
@@ -84,21 +84,6 @@ function LeftoverTextSection({
       )}
     </div>
   );
-}
-
-/**
- * The scan reports where the DLL sits in the mod folder; the translation tool
- * looks for it in its working copy of that folder, so it needs the path
- * relative to the mod.
- */
-function modRelativePath(modPath: string, filePath: string): string {
-  const normalize = (value: string) => value.replace(/\\/g, "/").replace(/\/+$/, "");
-  const root = normalize(modPath);
-  const file = normalize(filePath);
-  if (file.toLowerCase().startsWith(`${root.toLowerCase()}/`)) {
-    return file.slice(root.length + 1);
-  }
-  return file.split("/").pop() || file;
 }
 
 function ExtractConfirmModal(props: {

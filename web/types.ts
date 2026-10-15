@@ -266,8 +266,39 @@ export type ModRow = {
     dll_reports?: number;
     dll_assembly?: string | null;
   } | null;
+  /** The mod's own DLLs (absolute paths) whose strings can be translated. */
+  dll_files?: string[];
   language_preview: LanguagePreview[];
   extraction_tree: ExtractionTreeNode[];
+};
+
+/** A mod the game log may mention, by the names it can appear under. */
+export type ModErrorIdentity = {
+  key: string;
+  active: boolean;
+  tokens: string[];
+};
+
+/** Errors of the latest game run, traced to mods. */
+export type ModErrorReport = {
+  log_path: string;
+  exists: boolean;
+  modified_epoch: number | null;
+  errors: ModError[];
+};
+
+export type ModError = {
+  id: string;
+  /** null when the log does not say which mod caused it. */
+  mod_key: string | null;
+  matched_by: "mod_id" | "log_tag" | "path" | "stack" | null;
+  message: string;
+  /** The logged block: header and stack, as it was written. */
+  text: string;
+  count: number;
+  first_line: number;
+  /** The stack runs through game code some mod patched (Harmony). */
+  patched_game_code: boolean;
 };
 
 export type LeftoverText = {

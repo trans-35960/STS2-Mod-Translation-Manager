@@ -5,6 +5,7 @@ import type {
   JsonTranslationEntry,
   JsonTranslationSheet,
   JsonValidation,
+  ModErrorReport,
   TranslationProjectInfo,
 } from "./types";
 export const previewDashboard: Dashboard = {
@@ -249,6 +250,7 @@ export const previewDashboard: Dashboard = {
       translation_target_name: null,
       translation_target_version: null,
       dependencies: [{ id: "MissingLib", key: null, name: "MissingLib", active: false, available: false, version_required: null, version_current: null, version_matches: null }],
+      dll_files: ["Z:/downloads/challenge-pack/ChallengePack.dll"],
       language_preview: [],
       extraction_tree: [
         {
@@ -354,6 +356,80 @@ export const previewDashboard: Dashboard = {
     shared_dir: "C:/Users/preview/AppData/Roaming/STS2ModTranslationManager/shared",
     status: null,
   },
+};
+
+previewDashboard.mods.push(
+  {
+    ...previewDashboard.mods[1],
+    key: "sts2modmanagerbridge",
+    name: "STS2ModManagerBridge",
+    manifest_id: "STS2ModManagerBridge",
+    group_name: "STS2ModManagerBridge",
+    active: true,
+    source_label: "게임 mods",
+    path: "Z:/game/sts2/mods/STS2ModManagerBridge",
+    update_state: "clean",
+    change_reasons: [],
+    needs_recheck: false,
+    compat_issue: null,
+    dependencies: [],
+    system_mod: true,
+    language_preview: [],
+    extraction_tree: [],
+  },
+  {
+    ...previewDashboard.mods[1],
+    key: "workshop:3747559888",
+    name: "CuteSakikoMod",
+    manifest_id: "CuteSakikoMod",
+    group_name: "CuteSakikoMod",
+    active: true,
+    workshop: true,
+    workshop_item_id: "3747559888",
+    workshop_title: "Cute Sakiko Mod",
+    source_label: "창작마당",
+    path: "Z:/steam/workshop/content/2868840/3747559888",
+    update_state: "clean",
+    change_reasons: [],
+    needs_recheck: false,
+    compat_issue: null,
+    dependencies: [],
+    dll_files: ["Z:/steam/workshop/content/2868840/3747559888/CuteSakikoMod.dll"],
+    bridge_stored: [{ language: "kor", entries: 812, dll_strings: 40 }],
+    language_preview: [{ code: "zhs", label: "Chinese", files: 6, keys: 900, sample_path: "CuteSakikoMod/localization/zhs/cards.json" }],
+  },
+);
+
+export const previewModErrors: ModErrorReport = {
+  log_path: "C:/Users/me/AppData/Roaming/SlayTheSpire2/logs/godot.log",
+  exists: true,
+  modified_epoch: 1777730400,
+  errors: [
+    {
+      id: "2086-a",
+      mod_key: "workshop:3747559888",
+      matched_by: "path",
+      message: "No loader found for resource: res://CuteSakikoMod/images/ui/map/StarAnon_outline.png (expected type: unknown)",
+      text: `ERROR: No loader found for resource: res://CuteSakikoMod/images/ui/map/StarAnon_outline.png (expected type: unknown)
+   at: _load (core/io/resource_loader.cpp:328)
+   C# backtrace (most recent call first):
+       [0] Godot.Resource <unknown>.MegaCrit.Sts2.Core.Assets.AssetCache.LoadAsset_Patch1(MegaCrit.Sts2.Core.Assets.AssetCache, string)`,
+      count: 4,
+      first_line: 2086,
+      patched_game_code: true,
+    },
+    {
+      id: "11289-b",
+      mod_key: null,
+      matched_by: null,
+      message: "System.NullReferenceException: Object reference not set to an instance of an object.",
+      text: `[ERROR] System.NullReferenceException: Object reference not set to an instance of an object.
+   at MegaCrit.Sts2.Core.Hooks.Hook.AfterEnergyReset_Patch3(ICombatState combatState, Player player)`,
+      count: 2,
+      first_line: 11289,
+      patched_game_code: true,
+    },
+  ],
 };
 
 export const previewGameLogs: GameLog[] = [

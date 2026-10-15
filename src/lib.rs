@@ -15,6 +15,7 @@ pub mod json_translation;
 pub mod launcher;
 pub mod leftover_text;
 pub mod mod_compat;
+pub mod mod_errors;
 pub mod path_guard;
 pub mod pck_reader;
 pub mod preset;

@@ -18,7 +18,7 @@
   }
 
   .mod-simple-grid {
-    grid-template-columns: minmax(var(--mod-simple-name-col, 420px), 1fr) var(--mod-simple-version-col, 104px) var(--mod-simple-language-col, 104px) var(--mod-simple-actions-col, 220px);
+    grid-template-columns: minmax(var(--mod-simple-name-col, 420px), 1fr) var(--mod-simple-translation-col, 150px) var(--mod-simple-actions-col, 220px);
     gap: 7px;
   }
 

@@ -1,27 +1,41 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import {
+  Bug,
+  Check,
   ChevronDown,
   ChevronRight,
+  Cog,
   DownloadCloud,
   ExternalLink,
+  FileCode2,
   FolderOpen,
   GitBranch,
   Languages,
   Loader2,
+  MoreHorizontal,
   Package,
   ShieldAlert,
   TriangleAlert,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import { invokeCommand } from "../../api/tauri";
 import { IconButton, Pill, SourceTags, StatusBadge } from "../../components/Common";
 import { labels } from "../../i18n";
-import type { BranchIssue, CompatIssue, ModDependency, ModGroup, ModRow } from "../../types";
+import type { BranchIssue, CompatIssue, ModDependency, ModError, ModGroup, ModRow } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
 import { BridgeLanguageBadges, LanguageBadges, RepresentativeLanguageBadge } from "./ModBadges";
 import { ModTranslationActions } from "./ModTranslationActions";
 import { useWorkshopThumbnail } from "./workshopThumbnails";
+import {
+  TRANSLATION_SOURCE_HINTS,
+  TRANSLATION_SOURCE_LABELS,
+  groupTranslationStatus,
+  translationStatus,
+  type TranslationStatus,
+} from "./translationStatus";
+import { errorOccurrences } from "./useModErrors";
 import {
   activeModSummary,
   activeModVersionSummary,
@@ -67,6 +81,9 @@ function ModTableRow({
   onToggleExpand,
   focused = false,
   showChangeDetails = false,
+  errors = [],
+  onOpenErrors,
+  onTranslateDll,
 }: {
   labels: typeof labels.ko;
   mod: ModRow;
@@ -87,6 +104,9 @@ function ModTableRow({
   onToggleExpand?: () => void;
   focused?: boolean;
   showChangeDetails?: boolean;
+  errors?: ModError[];
+  onOpenErrors?: (modKey: string) => void;
+  onTranslateDll?: (mod: ModRow) => void;
 }) {
   const primaryLanguage = recommendedSourceLanguage(mod.language_preview);
   const primaryResourcePath =
@@ -117,6 +137,7 @@ function ModTableRow({
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
           <CompatWarningIcon issue={mod.compat_issue} />
           {child ? childModTitle(mod) : <ModName name={mod.name} workshopTitle={workshopTitleFor(mod)} showName />}
+          {onOpenErrors && <ModErrorBadge errors={errors} onOpen={() => onOpenErrors(mod.key)} />}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
           <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={(resourcePath) => onStartModTranslation(mod, resourcePath ?? primaryResourcePath)} />
@@ -144,7 +165,7 @@ function ModTableRow({
         <Pill tone={mod.update_state === "clean" ? "good" : "warn"}>{changeStateLabel(mod.update_state)}</Pill>
       </div>
       <DateCell mod={mod} showChangeDetails={showChangeDetails} />
-      <TranslationApplyCell mod={mod} />
+      <TranslationApplyCell mod={mod} targetLanguage={targetLanguage} />
       <div className="language-cell">
         <div className="language-badge-line">
           <LanguageBadges languages={uniqueLanguagePreviews(mod.language_preview)} fallback={mod.translation_state} targetLanguage={targetLanguage} />
@@ -174,6 +195,7 @@ function ModTableRow({
           disabled={Boolean(busy) || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0 && !canAnalyzeOnDemand)}
           loading={translationBusy}
         />
+        <DllTranslateButton mod={mod} disabled={Boolean(busy) || downloading} onTranslateDll={onTranslateDll} />
         <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />
         <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || downloading} />
         <IconButton
@@ -200,6 +222,8 @@ function ModGroupTableRow({
   onSelectGroup,
   onToggleExpand,
   showChangeDetails = false,
+  errorsByMod,
+  onOpenErrors,
 }: {
   group: ModGroup;
   busy: string | null;
@@ -212,9 +236,13 @@ function ModGroupTableRow({
   onSelectGroup: () => void;
   onToggleExpand: () => void;
   showChangeDetails?: boolean;
+  errorsByMod?: Map<string, ModError[]>;
+  onOpenErrors?: (modKey: string) => void;
 }) {
   const changed = showChangeDetails && group.updateCount > 0;
   const rowChangeClass = changed ? ` ${groupChangeClass(group.mods)}` : "";
+  const erroredMod = group.mods.find((mod) => errorsByMod?.get(mod.key)?.length);
+  const groupErrors = group.mods.flatMap((mod) => errorsByMod?.get(mod.key) ?? []);
   const dependencyWarnings = warningDependenciesForGroup(group.mods);
   const downloading = group.mods.some(isDownloadingMod);
   const summaryMods = activeSummaryMods(group.mods);
@@ -249,6 +277,7 @@ function ModGroupTableRow({
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           <CompatWarningIcon issue={groupCompatIssue(group.mods)} />
           <ModName name={group.name} workshopTitle={groupWorkshopTitle(group)} showName />
+          {erroredMod && onOpenErrors && <ModErrorBadge errors={groupErrors} onOpen={() => onOpenErrors(erroredMod.key)} />}
           <StatusBadge>GROUP</StatusBadge>
           <BridgeEditsGroupBadge mods={group.mods} />
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
@@ -299,6 +328,8 @@ function SimpleModGroupRow({
   onSelectGroup,
   onToggleExpand,
   showChangeDetails = false,
+  errorsByMod,
+  onOpenErrors,
 }: {
   group: ModGroup;
   targetLanguage: string;
@@ -312,12 +343,17 @@ function SimpleModGroupRow({
   onSelectGroup: () => void;
   onToggleExpand: () => void;
   showChangeDetails?: boolean;
+  errorsByMod?: Map<string, ModError[]>;
+  onOpenErrors?: (modKey: string) => void;
 }) {
   const changed = showChangeDetails && group.updateCount > 0;
   const rowChangeClass = changed ? ` changed-mod ${groupChangeClass(group.mods)}` : "";
   const dependencyWarnings = warningDependenciesForGroup(group.mods);
   const downloading = group.mods.some(isDownloadingMod);
   const summaryMods = activeSummaryMods(group.mods);
+  const status = groupTranslationStatus(group.mods, targetLanguage);
+  const erroredMod = group.mods.find((mod) => errorsByMod?.get(mod.key)?.length);
+  const groupErrors = group.mods.flatMap((mod) => errorsByMod?.get(mod.key) ?? []);
   const handleBlankClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (isExpandableRowBlankClick(event)) {
       onToggleExpand();
@@ -349,25 +385,16 @@ function SimpleModGroupRow({
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           <CompatWarningIcon issue={groupCompatIssue(group.mods)} />
           <ModName name={group.name} workshopTitle={groupWorkshopTitle(group)} />
-          <StatusBadge>GROUP</StatusBadge>
+          {erroredMod && onOpenErrors && <ModErrorBadge errors={groupErrors} onOpen={() => onOpenErrors(erroredMod.key)} />}
           <BridgeEditsGroupBadge mods={group.mods} />
-          {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
         </strong>
-        <small>{group.mods.length}개 버전 · {activeModSummary(group.mods)}</small>
+        <small>
+          {group.activeCount > 0 ? activeModVersionSummary(group.mods) : compactVersionSummary(summaryMods)} · {group.mods.length}개 버전
+        </small>
       </div>
-      <div className="version-source-cell">
-        <span>{compactVersionSummary(summaryMods)}</span>
-      </div>
-      <div className="language-cell">
-        <div className="language-badge-line">
-          <RepresentativeLanguageBadge
-            languages={uniqueLanguagePreviews(summaryMods.flatMap((mod) => mod.language_preview))}
-            fallback={groupTranslationSummary(summaryMods)}
-            targetLanguage={targetLanguage}
-          />
-          <BridgeLanguageBadges stored={groupBridgeStored(group.mods)} />
-        </div>
+      <div className="translation-status-cell">
+        <TranslationStatusChip status={status} />
       </div>
       <div className="row-actions simple-row-actions" onClick={(event) => event.stopPropagation()}>
         <ToggleSwitch active={group.activeCount > 0} pending={toggling} locked={Boolean(busy) || (downloading && group.activeCount === 0)} label={`${group.name} 그룹`} onToggle={onToggleGroup} />
@@ -399,6 +426,9 @@ function SimpleModRow({
   onToggleExpand,
   focused = false,
   showChangeDetails = false,
+  errors = [],
+  onOpenErrors,
+  onTranslateDll,
 }: {
   labels: typeof labels.ko;
   mod: ModRow;
@@ -419,6 +449,9 @@ function SimpleModRow({
   onToggleExpand?: () => void;
   focused?: boolean;
   showChangeDetails?: boolean;
+  errors?: ModError[];
+  onOpenErrors?: (modKey: string) => void;
+  onTranslateDll?: (mod: ModRow) => void;
 }) {
   const selectedLanguage = representativeLanguage(mod.language_preview, targetLanguage);
   const primaryResourcePath =
@@ -430,6 +463,7 @@ function SimpleModRow({
   const translationBusy = isTranslationPreparing(busy, mod.key);
   const downloading = isDownloadingMod(mod);
   const canAnalyzeOnDemand = needsDeferredTranslationAnalysis(mod);
+  const status = translationStatus(mod, targetLanguage);
   return (
     <div
       className={`${child ? "table-row mod-simple-grid mod-version-row simple" : "table-row mod-simple-grid simple"}${mod.active ? "" : " inactive"}${focused ? " focused-mod" : ""}${changed ? " changed-mod" : ""}${rowChangeClass}`}
@@ -449,32 +483,21 @@ function SimpleModRow({
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
           <CompatWarningIcon issue={mod.compat_issue} />
           {child ? childModTitle(mod) : <ModName name={mod.name} workshopTitle={workshopTitleFor(mod)} />}
-          {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
-          {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
+          {onOpenErrors && <ModErrorBadge errors={errors} onOpen={() => onOpenErrors(mod.key)} />}
           <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={(resourcePath) => onStartModTranslation(mod, resourcePath ?? primaryResourcePath)} />
-          {mod.workshop && <WorkshopBadge mod={mod} />}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
-          {mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
-          {mod.previous_version && (
+          {changed && mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
+          {changed && mod.previous_version && (
             <StatusBadge tone="info">
               UPDATE {mod.previous_version} → {displayModVersion(mod)}
             </StatusBadge>
           )}
-          {mod.needs_recheck && <StatusBadge tone="danger">Recheck</StatusBadge>}
-          {mod.dependencies.some((dependency) => !dependency.available) && <StatusBadge tone="danger">Missing Dep</StatusBadge>}
-          {hasDependencyVersionMismatch(mod) && <StatusBadge tone="danger">Dep Version</StatusBadge>}
         </strong>
-        <small>{sourcePathLine(mod)}</small>
+        <small>{simpleSubtitle(mod)}</small>
         {changed && <ChangeReasonList reasons={mod.change_reasons} />}
       </div>
-      <div className={changeCellClass(mod, "version-source-cell", showChangeDetails, ["파일 크기", "새로 감지"])}>
-        <span>{displayModVersion(mod)}</span>
-      </div>
-      <div className="language-cell">
-        <div className="language-badge-line">
-          <RepresentativeLanguageBadge languages={uniqueLanguagePreviews(mod.language_preview)} fallback={mod.translation_state} targetLanguage={targetLanguage} />
-          <BridgeLanguageBadges stored={mod.bridge_stored} />
-        </div>
+      <div className="translation-status-cell">
+        <TranslationStatusChip status={status} />
       </div>
       <div className="row-actions simple-row-actions">
         {attachedChildCount > 0 && (
@@ -494,20 +517,195 @@ function SimpleModRow({
           label={translationBusy ? `${mod.name} 번역 도구 준비 중...` : `${mod.name} 번역 도구에서 열기`}
           icon={translationBusy ? Loader2 : Languages}
           onClick={() => onStartModTranslation(mod, primaryResourcePath)}
-          disabled={Boolean(busy) || downloading || (!primaryResourcePath && mod.extraction_tree.length === 0 && !canAnalyzeOnDemand)}
+          disabled={Boolean(busy) || downloading || Boolean(mod.system_mod) || (!primaryResourcePath && mod.extraction_tree.length === 0 && !canAnalyzeOnDemand)}
           loading={translationBusy}
         />
-        <IconButton label={`${mod.name} 경로 열기`} icon={FolderOpen} onClick={() => onOpenPath(mod.path)} disabled={Boolean(busy) || !mod.path} />
-        <IconButton label={`${mod.name} ${t.extract}`} icon={DownloadCloud} onClick={() => onExtract(mod)} disabled={Boolean(busy) || downloading} />
-        <IconButton
-          label={`${mod.name} 삭제`}
-          icon={Trash2}
-          onClick={() => onDelete(mod)}
-          disabled={Boolean(busy) || locked || !canDeleteMod(mod)}
-          danger
+        <DllTranslateButton mod={mod} disabled={Boolean(busy) || downloading} onTranslateDll={onTranslateDll} />
+        <RowMoreMenu
+          label={`${mod.name} 더 보기`}
+          items={[
+            { label: "경로 열기", icon: FolderOpen, onClick: () => onOpenPath(mod.path), disabled: Boolean(busy) || !mod.path },
+            { label: t.extract, icon: DownloadCloud, onClick: () => onExtract(mod), disabled: Boolean(busy) || downloading },
+            { label: "삭제", icon: Trash2, onClick: () => onDelete(mod), disabled: Boolean(busy) || locked || !canDeleteMod(mod), danger: true },
+          ]}
         />
       </div>
     </div>
+  );
+}
+
+/** Version and where the mod came from; the full path is in the detail view. */
+function simpleSubtitle(mod: ModRow): string {
+  return [displayModVersion(mod), mod.source_label].filter(Boolean).join(" · ");
+}
+
+/** One chip for where the mod's text in the target language comes from. */
+function TranslationStatusChip({ status }: { status: TranslationStatus }) {
+  switch (status.kind) {
+    case "system":
+      return (
+        <span className="translation-chip system" data-tooltip="이 프로그램이 설치·관리하는 번역 브리지 모드입니다. 브리지 번역을 쓰려면 켜 두세요">
+          <Cog size={12} />
+          시스템
+        </span>
+      );
+    case "patchMod":
+      return (
+        <span className="translation-chip source" data-tooltip="다른 모드를 번역하는 별도 번역 모드입니다">
+          번역 모드
+        </span>
+      );
+    case "translated": {
+      const [first, ...rest] = status.sources;
+      const tooltip = status.sources.map((source) => `${TRANSLATION_SOURCE_LABELS[source]}: ${TRANSLATION_SOURCE_HINTS[source]}`).join("\n");
+      return (
+        <span className={`translation-chip translated ${first}`} data-tooltip={tooltip}>
+          <Check size={12} />
+          {TRANSLATION_SOURCE_LABELS[first]}
+          {rest.length > 0 && <small>+{rest.length}</small>}
+        </span>
+      );
+    }
+    case "untranslated":
+      return status.patchOff ? (
+        <span className="translation-chip untranslated" data-tooltip="번역 모드가 설치돼 있지만 꺼져 있습니다. 펼쳐서 번역 모드를 켜세요">
+          번역 모드 꺼짐
+        </span>
+      ) : (
+        <span className="translation-chip untranslated" data-tooltip="내 언어 번역이 없습니다. 번역 버튼으로 번역할 수 있습니다">
+          번역 안 됨
+        </span>
+      );
+    case "noText":
+      return (
+        <span
+          className="translation-chip muted"
+          data-tooltip="언어 파일을 찾지 못했습니다. 그림·기능만 바꾸는 모드이거나, PCK 안에 있어 번역 도구를 열 때 확인됩니다"
+        >
+          언어 파일 없음
+        </span>
+      );
+  }
+}
+
+/** Errors the latest game run logged for this mod; opens them to read and copy. */
+function ModErrorBadge({ errors, onOpen }: { errors: ModError[]; onOpen: () => void }) {
+  if (errors.length === 0) {
+    return null;
+  }
+  const total = errorOccurrences(errors);
+  return (
+    <button
+      type="button"
+      className="mod-error-badge"
+      data-tooltip={`최근 게임 실행에서 오류 ${errors.length}종 (${total}회). 눌러서 내용 보기·복사`}
+      aria-label={`오류 ${total}회 보기`}
+      onClick={(event) => {
+        event.stopPropagation();
+        onOpen();
+      }}
+    >
+      <Bug size={12} />
+      오류 {total}
+    </button>
+  );
+}
+
+/** Opens the mod's DLL strings for translation, behind a warning dialog. */
+function DllTranslateButton({ mod, disabled, onTranslateDll }: { mod: ModRow; disabled: boolean; onTranslateDll?: (mod: ModRow) => void }) {
+  if (!onTranslateDll || mod.system_mod || mod.is_translation_patch || (mod.dll_files ?? []).length === 0) {
+    return null;
+  }
+  return (
+    <button
+      type="button"
+      className="icon-only-button dll-translate-button"
+      aria-label={`${mod.name} DLL 문자열 번역`}
+      data-tooltip="DLL 문자열 번역 (주의: 잘못 바꾸면 모드가 깨질 수 있음)"
+      onClick={() => onTranslateDll(mod)}
+      disabled={disabled}
+    >
+      <FileCode2 size={16} />
+      <span className="dll-translate-warn" aria-hidden="true" />
+    </button>
+  );
+}
+
+type RowMenuItem = { label: string; icon: LucideIcon; onClick: () => void; disabled?: boolean; danger?: boolean };
+
+/**
+ * Less used row actions. The menu is portalled to the body so the mod table's
+ * scroll container does not clip it.
+ */
+function RowMoreMenu({ label, items }: { label: string; items: RowMenuItem[] }) {
+  const [anchor, setAnchor] = React.useState<DOMRect | null>(null);
+  React.useEffect(() => {
+    if (!anchor) {
+      return;
+    }
+    const close = () => setAnchor(null);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("blur", close);
+    document.addEventListener("mousedown", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("blur", close);
+      document.removeEventListener("mousedown", close);
+    };
+  }, [anchor]);
+  const openUp = anchor ? anchor.bottom + 40 * items.length + 16 > window.innerHeight : false;
+  return (
+    <>
+      <button
+        type="button"
+        className="icon-only-button"
+        aria-label={label}
+        data-tooltip="더 보기"
+        aria-expanded={Boolean(anchor)}
+        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          setAnchor((current) => (current ? null : rect));
+        }}
+      >
+        <MoreHorizontal size={16} />
+      </button>
+      {anchor &&
+        createPortal(
+          <div
+            className="row-more-menu"
+            role="menu"
+            style={{
+              right: Math.max(8, window.innerWidth - anchor.right),
+              ...(openUp ? { bottom: window.innerHeight - anchor.top + 4 } : { top: anchor.bottom + 4 }),
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            {items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={item.danger ? "danger" : undefined}
+                  key={item.label}
+                  disabled={item.disabled}
+                  onClick={() => {
+                    setAnchor(null);
+                    item.onClick();
+                  }}
+                >
+                  <Icon size={15} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
@@ -891,11 +1089,9 @@ function ToggleSwitch({
   );
 }
 
-/** An inactive mod cannot miss an inactive dependency, but a version mismatch still matters once it is on. */
+/** An inactive mod cannot miss a dependency, but a version mismatch still matters once it is on. */
 function warningDependencies(mod: ModRow): ModDependency[] {
-  return mod.dependencies.filter(
-    (dependency) => (mod.active && dependency.available && !dependency.active) || dependency.version_matches === false,
-  );
+  return mod.dependencies.filter((dependency) => (mod.active && !dependency.active) || dependency.version_matches === false);
 }
 
 function warningDependenciesForGroup(mods: ModRow[]): ModDependency[] {
@@ -914,7 +1110,7 @@ function dependencyWarningLabel(dependency: ModDependency): string {
   if (dependency.version_matches === false) {
     return `${dependency.name} 버전 불일치 (${dependency.version_current ?? "-"} / 필요 ${requiredVersionLabel(dependency)})`;
   }
-  return `${dependency.name} 비활성`;
+  return dependency.available ? `${dependency.name} 비활성` : `${dependency.id} 없음`;
 }
 
 function requiredVersionLabel(dependency: ModDependency): string {
@@ -964,11 +1160,22 @@ function sourcePathLine(mod: ModRow): string {
   return mod.source_label ? `${mod.source_label} · ${path}` : path;
 }
 
-function TranslationApplyCell({ mod }: { mod: ModRow }) {
+function TranslationApplyCell({ mod, targetLanguage }: { mod: ModRow; targetLanguage: string }) {
+  const status = translationStatus(mod, targetLanguage);
+  const tone = status.kind === "translated" ? "good" : status.kind === "untranslated" ? "warn" : "info";
+  const label =
+    status.kind === "translated"
+      ? status.sources.map((source) => TRANSLATION_SOURCE_LABELS[source]).join(" + ")
+      : status.kind === "untranslated"
+        ? status.patchOff
+          ? "번역모드 꺼짐"
+          : "미번역"
+        : status.kind === "noText"
+          ? "언어 파일 없음"
+          : status.kind === "system"
+            ? "시스템"
+            : "번역 모드";
   const hasPatch = mod.translation_patch_count > 0;
-  const patchActive = mod.translation_patch_active_count > 0;
-  const tone = mod.translation_applied || patchActive ? "good" : hasPatch ? "info" : "warn";
-  const label = mod.translation_applied ? "적용됨" : patchActive ? "번역모드 활성" : hasPatch ? "번역모드 있음" : "미적용";
   const detail = mod.translation_applied
     ? formatShortDate(mod.translation_applied_epoch)
     : hasPatch

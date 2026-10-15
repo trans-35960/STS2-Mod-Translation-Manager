@@ -7,6 +7,92 @@ pub(crate) fn read_game_logs() -> Result<Vec<GameLogDto>, String> {
         .collect())
 }
 
+/// Errors of the latest game run (`godot.log`), traced to the mods that
+/// likely caused them. The log is only read here, not on every dashboard
+/// load: it grows to megabytes while the game runs.
+pub(crate) fn read_mod_errors(
+    mut mods: Vec<ModErrorIdentityDto>,
+) -> Result<ModErrorReportDto, String> {
+    /// A long session logs a few MB; older errors of it matter less.
+    const MAX_LOG_BYTES: u64 = 8 * 1024 * 1024;
+
+    let config = AppConfig::from_workspace(resolve_workspace_dir());
+    let settings = read_ui_settings(&config).map_err(|error| error.to_string())?;
+    let candidates = game_log_candidates(&config, settings.game_log_path.trim());
+    let Some(log) = candidates.iter().find(|path| path.is_file()) else {
+        return Ok(ModErrorReportDto {
+            log_path: candidates.first().map(|path| display_path(path)).unwrap_or_default(),
+            exists: false,
+            modified_epoch: None,
+            errors: Vec::new(),
+        });
+    };
+    let modified_epoch = epoch_seconds(fs::metadata(log).and_then(|meta| meta.modified()).ok());
+    let text = read_tail_text(log, MAX_LOG_BYTES)?;
+
+    // Versions of one mod share their names; the loaded one should get the blame.
+    mods.sort_by_key(|identity| !identity.active);
+    let inactive = mods
+        .iter()
+        .filter(|identity| !identity.active)
+        .map(|identity| identity.key.clone())
+        .collect::<BTreeSet<_>>();
+    let identities = mods
+        .into_iter()
+        .map(|identity| sts2_mod_manager::mod_errors::ModIdentity {
+            key: identity.key,
+            tokens: identity.tokens,
+        })
+        .collect::<Vec<_>>();
+    let errors = sts2_mod_manager::mod_errors::collect_errors(&text, &identities)
+        .into_iter()
+        // The game checks branches before it drops mods disabled in settings,
+        // so it logs this even for mods it never meant to load.
+        .filter(|error| {
+            !(error.matched_by == Some("mod_id")
+                && error.mod_key.as_ref().is_some_and(|key| inactive.contains(key))
+                && error.message.to_ascii_lowercase().contains("steam branch"))
+        })
+        .map(|error| ModErrorDto {
+            id: format!(
+                "{}-{:016x}",
+                error.first_line,
+                stable_hash(&format!("{:?}{}", error.mod_key, error.message))
+            ),
+            mod_key: error.mod_key,
+            matched_by: error.matched_by.map(str::to_string),
+            message: error.message,
+            text: error.text,
+            count: error.count,
+            first_line: error.first_line,
+            patched_game_code: error.patched_game_code,
+        })
+        .collect();
+    Ok(ModErrorReportDto {
+        log_path: display_path(log),
+        exists: true,
+        modified_epoch,
+        errors,
+    })
+}
+
+/// The end of a text file, from its first whole line.
+fn read_tail_text(path: &Path, max_bytes: u64) -> Result<String, String> {
+    let mut file = fs::File::open(path).map_err(|error| error.to_string())?;
+    let len = file.metadata().map_err(|error| error.to_string())?.len();
+    let start = len.saturating_sub(max_bytes);
+    file.seek(SeekFrom::Start(start))
+        .map_err(|error| error.to_string())?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes)
+        .map_err(|error| error.to_string())?;
+    let text = String::from_utf8_lossy(&bytes).into_owned();
+    if start == 0 {
+        return Ok(text);
+    }
+    Ok(text.split_once('\n').map(|(_, rest)| rest.to_string()).unwrap_or_default())
+}
+
 
 fn troubleshoot_diagnostics(
     config: &AppConfig,

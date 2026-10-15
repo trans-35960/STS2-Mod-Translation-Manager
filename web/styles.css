@@ -13,4 +13,5 @@
 @import "./styles/13-menu-titlebar.css";
 @import "./styles/14-mobile.css";
 @import "./styles/15-tooltips.css";
+@import "./styles/16-mod-status.css";
 .has-issue { outline: 2px solid #ef4444; outline-offset: 1px; border-radius: 4px; }
