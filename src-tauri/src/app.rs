@@ -16,7 +16,7 @@ pub fn run() {
             commands::repair_mod_installations,
             commands::open_path,
             commands::open_workshop_page,
-            commands::refresh_workshop_titles,
+            commands::refresh_workshop_details,
             commands::preview_dropped_mods,
             commands::import_dropped_mod,
             commands::import_dropped_mods,

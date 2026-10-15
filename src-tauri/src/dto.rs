@@ -19,6 +19,14 @@ pub(crate) struct DashboardDto {
     pub(crate) bridge: BridgeDto,
 }
 
+/// Steam Workshop titles and thumbnails by item id.
+#[derive(Debug, Serialize)]
+pub(crate) struct WorkshopDetailsDto {
+    pub(crate) titles: std::collections::BTreeMap<String, String>,
+    /// Small preview images as `data:` URLs.
+    pub(crate) thumbnails: std::collections::BTreeMap<String, String>,
+}
+
 /// The in-game companion mod that applies translations from the shared folder.
 #[derive(Debug, Serialize)]
 pub(crate) struct BridgeDto {

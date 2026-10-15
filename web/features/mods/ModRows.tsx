@@ -8,6 +8,7 @@ import {
   GitBranch,
   Languages,
   Loader2,
+  Package,
   ShieldAlert,
   TriangleAlert,
   Trash2,
@@ -19,6 +20,7 @@ import type { BranchIssue, CompatIssue, ModDependency, ModGroup, ModRow } from "
 import { isPreviewRuntime } from "../../utils/runtime";
 import { BridgeLanguageBadges, LanguageBadges, RepresentativeLanguageBadge } from "./ModBadges";
 import { ModTranslationActions } from "./ModTranslationActions";
+import { useWorkshopThumbnail } from "./workshopThumbnails";
 import {
   activeModSummary,
   activeModVersionSummary,
@@ -108,6 +110,7 @@ function ModTableRow({
           label={`${mod.name} 선택`}
           onChange={() => onSelect(mod)}
         />
+        {!child && <ModThumbnail itemId={mod.workshop_item_id} />}
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
@@ -239,6 +242,7 @@ function ModGroupTableRow({
           label={`${group.name} 그룹 선택`}
           onChange={onSelectGroup}
         />
+        <ModThumbnail itemId={group.mods.find((mod) => mod.workshop_item_id)?.workshop_item_id} />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
@@ -338,6 +342,7 @@ function SimpleModGroupRow({
           label={`${group.name} 그룹 선택`}
           onChange={onSelectGroup}
         />
+        <ModThumbnail itemId={group.mods.find((mod) => mod.workshop_item_id)?.workshop_item_id} />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
@@ -437,6 +442,7 @@ function SimpleModRow({
           label={`${mod.name} 선택`}
           onChange={() => onSelect(mod)}
         />
+        {!child && <ModThumbnail itemId={mod.workshop_item_id} />}
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
@@ -626,6 +632,16 @@ function bridgeEditsLabel(edits: number, reports: number, prefix: string): strin
 /** Every version of a mod shares one manifest id, so any version's bridge translations stand for the group. */
 function groupBridgeStored(mods: ModRow[]): ModRow["bridge_stored"] {
   return mods.find((mod) => mod.bridge_stored?.length)?.bridge_stored;
+}
+
+/** Steam Workshop preview image, or a placeholder that keeps names lined up. */
+function ModThumbnail({ itemId }: { itemId: string | null | undefined }) {
+  const src = useWorkshopThumbnail(itemId);
+  return (
+    <span className={src ? "mod-thumbnail" : "mod-thumbnail placeholder"} aria-hidden="true">
+      {src ? <img src={src} alt="" draggable={false} /> : <Package size={16} />}
+    </span>
+  );
 }
 
 /**

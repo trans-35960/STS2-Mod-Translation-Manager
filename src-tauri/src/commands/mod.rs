@@ -61,10 +61,10 @@ pub(crate) async fn open_workshop_page(item_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub(crate) async fn refresh_workshop_titles(
+pub(crate) async fn refresh_workshop_details(
     item_ids: Vec<String>,
-) -> Result<std::collections::BTreeMap<String, String>, String> {
-    run_blocking(move || crate::services::refresh_workshop_titles(item_ids)).await
+) -> Result<crate::dto::WorkshopDetailsDto, String> {
+    run_blocking(move || crate::services::refresh_workshop_details(item_ids)).await
 }
 
 #[tauri::command]

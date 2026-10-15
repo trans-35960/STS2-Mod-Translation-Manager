@@ -1,6 +1,7 @@
 import React from "react";
 import { invokeCommand } from "../api/tauri";
 import { LOADING_STEPS } from "../constants";
+import { addWorkshopThumbnails } from "../features/mods/workshopThumbnails";
 import { previewDashboard } from "../previewData";
 import type { Dashboard, Page, UiSettings } from "../types";
 import { formatCommandError } from "../utils/logging";
@@ -142,8 +143,9 @@ export function useDashboardLoader({
     return () => window.clearInterval(intervalId);
   }, [loading]);
 
-  // Workshop titles live on Steam, not on disk: the dashboard carries the cached
-  // ones and the rest are fetched once per session in the background.
+  // Workshop titles and thumbnails live on Steam, not on disk: the dashboard
+  // carries the cached titles, and each item is checked once per session in the
+  // background (the backend only goes online for missing or stale ones).
   const requestedWorkshopIdsRef = React.useRef(new Set<string>());
   React.useEffect(() => {
     if (isPreviewRuntime() || !dashboard) {
@@ -152,7 +154,7 @@ export function useDashboardLoader({
     const missing = Array.from(
       new Set(
         dashboard.mods
-          .filter((mod) => mod.workshop_item_id && !mod.workshop_title)
+          .filter((mod) => mod.workshop_item_id)
           .map((mod) => mod.workshop_item_id as string),
       ),
     ).filter((itemId) => !requestedWorkshopIdsRef.current.has(itemId));
@@ -160,8 +162,9 @@ export function useDashboardLoader({
       return;
     }
     missing.forEach((itemId) => requestedWorkshopIdsRef.current.add(itemId));
-    invokeCommand("refresh_workshop_titles", { itemIds: missing })
-      .then((titles) => {
+    invokeCommand("refresh_workshop_details", { itemIds: missing })
+      .then(({ titles, thumbnails }) => {
+        addWorkshopThumbnails(thumbnails);
         if (Object.keys(titles).length === 0) {
           return;
         }
@@ -171,13 +174,13 @@ export function useDashboardLoader({
                 ...current,
                 mods: current.mods.map((mod) => {
                   const title = mod.workshop_item_id ? titles[mod.workshop_item_id] : undefined;
-                  return title && !mod.workshop_title ? { ...mod, workshop_title: title } : mod;
+                  return title && title !== mod.workshop_title ? { ...mod, workshop_title: title } : mod;
                 }),
               }
             : current,
         );
       })
-      .catch((error) => appendLog(formatCommandError("refresh_workshop_titles", undefined, error)));
+      .catch((error) => appendLog(formatCommandError("refresh_workshop_details", undefined, error)));
   }, [appendLog, dashboard]);
 
   React.useEffect(() => {

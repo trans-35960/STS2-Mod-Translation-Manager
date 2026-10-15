@@ -44,7 +44,7 @@ export type CommandArgs = {
   repair_mod_installations: undefined;
   open_path: { path: string };
   open_workshop_page: { itemId: string };
-  refresh_workshop_titles: { itemIds: string[] };
+  refresh_workshop_details: { itemIds: string[] };
   preview_dropped_mods: { paths: string[] };
   import_dropped_mod: { path: string; replacePath?: string | null };
   import_dropped_mods: {
@@ -184,7 +184,7 @@ export type CommandResult = {
   repair_mod_installations: ActionResult;
   open_path: void;
   open_workshop_page: void;
-  refresh_workshop_titles: Record<string, string>;
+  refresh_workshop_details: { titles: Record<string, string>; thumbnails: Record<string, string> };
   preview_dropped_mods: DroppedModPreview[];
   import_dropped_mod: ActionResult;
   import_dropped_mods: ActionResult;
