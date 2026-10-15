@@ -97,6 +97,17 @@ pub(crate) fn open_workshop_page(item_id: String) -> Result<(), String> {
     open_url_in_system(&page)
 }
 
+/// Looks up Steam Workshop page titles for the given item ids, fetching the
+/// ones not cached yet. Returns item id → title for those with a public title.
+pub(crate) fn refresh_workshop_titles(
+    item_ids: Vec<String>,
+) -> Result<BTreeMap<String, String>, String> {
+    let config = app().config().clone();
+    workshop_titles::refresh_titles(&config.state_dir, &item_ids)
+        .map(|titles| titles.into_iter().collect())
+        .map_err(|error| error.to_string())
+}
+
 fn workshop_page_url(item_id: &str) -> String {
     format!("https://steamcommunity.com/sharedfiles/filedetails/?id={item_id}")
 }

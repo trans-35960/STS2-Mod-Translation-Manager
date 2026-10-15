@@ -1030,6 +1030,16 @@
   background: rgba(109, 40, 217, 0.12);
 }
 
+.mod-title .workshop-title {
+  overflow: hidden;
+  max-width: 320px;
+  color: #7a8796;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .workshop-link-badge svg {
   margin-left: 3px;
 }

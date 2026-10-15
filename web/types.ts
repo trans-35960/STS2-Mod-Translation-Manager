@@ -218,6 +218,8 @@ export type ModRow = {
   external: boolean;
   workshop: boolean;
   workshop_item_id: string | null;
+  /** Steam Workshop page title, once fetched; often differs from the manifest id. */
+  workshop_title?: string | null;
   /** Translations the bridge holds for this mod: loc table values and translated DLL strings per language. */
   bridge_stored?: Array<{ language: string; entries: number; dll_strings: number }>;
   source_label: string;

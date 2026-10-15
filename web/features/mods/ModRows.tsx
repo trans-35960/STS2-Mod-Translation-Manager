@@ -110,6 +110,7 @@ function ModTableRow({
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
           <CompatWarningIcon issue={mod.compat_issue} />
           {child ? childModTitle(mod) : mod.name}
+          {!child && <WorkshopTitle title={workshopTitleFor(mod)} />}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
           <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={(resourcePath) => onStartModTranslation(mod, resourcePath ?? primaryResourcePath)} />
@@ -241,6 +242,7 @@ function ModGroupTableRow({
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           <CompatWarningIcon issue={groupCompatIssue(group.mods)} />
           {group.name}
+          <WorkshopTitle title={groupWorkshopTitle(group)} />
           <StatusBadge>GROUP</StatusBadge>
           <BridgeEditsGroupBadge mods={group.mods} />
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
@@ -340,6 +342,7 @@ function SimpleModGroupRow({
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
           <CompatWarningIcon issue={groupCompatIssue(group.mods)} />
           {group.name}
+          <WorkshopTitle title={groupWorkshopTitle(group)} />
           <StatusBadge>GROUP</StatusBadge>
           <BridgeEditsGroupBadge mods={group.mods} />
           {group.activeCount > 0 && <StatusBadge tone="info">{activeModVersionSummary(group.mods)}</StatusBadge>}
@@ -437,6 +440,7 @@ function SimpleModRow({
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
           <CompatWarningIcon issue={mod.compat_issue} />
           {child ? childModTitle(mod) : mod.name}
+          {!child && <WorkshopTitle title={workshopTitleFor(mod)} />}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
           <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={(resourcePath) => onStartModTranslation(mod, resourcePath ?? primaryResourcePath)} />
@@ -623,6 +627,38 @@ function groupBridgeStored(mods: ModRow[]): ModRow["bridge_stored"] {
   return mods.find((mod) => mod.bridge_stored?.length)?.bridge_stored;
 }
 
+/** Steam Workshop page title shown beside the manifest name, so a mod can be found by the name seen on Steam. */
+function WorkshopTitle({ title }: { title: string | null }) {
+  if (!title) {
+    return null;
+  }
+  return (
+    <span className="workshop-title" title="Steam 창작마당 제목">
+      {title}
+    </span>
+  );
+}
+
+/** The Workshop title when it says something the shown name does not. */
+function workshopTitleFor(mod: ModRow, shownName = mod.name): string | null {
+  const title = mod.workshop_title?.trim();
+  if (!title) {
+    return null;
+  }
+  const comparable = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+  return comparable(title) === comparable(shownName) ? null : title;
+}
+
+function groupWorkshopTitle(group: ModGroup): string | null {
+  for (const mod of group.mods) {
+    const title = workshopTitleFor(mod, group.name);
+    if (title) {
+      return title;
+    }
+  }
+  return null;
+}
+
 /** Workshop source badge; opens the item's Steam Workshop page when its id is known. */
 function WorkshopBadge({ mod }: { mod: ModRow }) {
   const itemId = mod.workshop_item_id;
@@ -633,7 +669,7 @@ function WorkshopBadge({ mod }: { mod: ModRow }) {
     <button
       type="button"
       className="workshop-link-badge"
-      data-tooltip="Steam 창작마당 페이지 열기"
+      data-tooltip={mod.workshop_title ? `Steam 창작마당: ${mod.workshop_title}` : "Steam 창작마당 페이지 열기"}
       aria-label={`${mod.name} 창작마당 페이지 열기`}
       onClick={(event) => {
         event.stopPropagation();

@@ -59,6 +59,7 @@ use sts2_mod_manager::translation::{
     TranslationWorkspace, has_translatable_hardcoded_values, scan_translation_candidates,
 };
 use sts2_mod_manager::vendor_tools::VendorTool;
+use sts2_mod_manager::workshop_titles;
 
 include!("common.rs");
 include!("settings.rs");
