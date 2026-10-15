@@ -186,25 +186,36 @@ function ModsPage(props: {
   // while the game runs; deleting moves folders the game may hold open.
   const modChangesLocked = props.launchRunning;
 
+  // The focused mod stays highlighted, but the list scrolls to it only once
+  // per visit: re-running on every list update (polling, Workshop titles and
+  // thumbnails arriving) kept dragging the view back to it.
+  const scrolledFocusKeyRef = React.useRef<string | null>(null);
+  const focusScrollTimerRef = React.useRef<number | undefined>(undefined);
   React.useEffect(() => {
     if (!props.focusedModKey) {
+      scrolledFocusKeyRef.current = null;
+      return;
+    }
+    if (scrolledFocusKeyRef.current === props.focusedModKey) {
       return;
     }
     const group = groups.find((item) => item.mods.some((mod) => mod.key === props.focusedModKey));
     if (!group) {
       return;
     }
+    scrolledFocusKeyRef.current = props.focusedModKey;
     if (group.mods.length > 1) {
       setExpandedGroups((current) => ({ ...current, [group.id]: true }));
     }
     const escapedKey = props.focusedModKey.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-    const timeoutId = window.setTimeout(() => {
+    // Not cancelled by a list update that lands meanwhile, only on unmount.
+    focusScrollTimerRef.current = window.setTimeout(() => {
       const row = document.querySelector<HTMLElement>(`[data-mod-key="${escapedKey}"]`);
       row?.scrollIntoView({ behavior: "smooth", block: "center" });
       row?.focus({ preventScroll: true });
     }, 120);
-    return () => window.clearTimeout(timeoutId);
   }, [groups, props.focusedModKey]);
+  React.useEffect(() => () => window.clearTimeout(focusScrollTimerRef.current), []);
 
   function setStoredSimpleView(value: boolean) {
     setSimpleView(value);
