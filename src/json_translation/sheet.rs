@@ -124,6 +124,9 @@ pub fn create_or_update_sheet(
             source_value,
             translated_value,
             status,
+            acknowledged_issues: previous_entry
+                .map(|previous| previous.acknowledged_issues.clone())
+                .unwrap_or_default(),
         });
     }
 
@@ -139,6 +142,7 @@ pub fn create_or_update_sheet(
                 source_value: previous.source_value,
                 translated_value: previous.translated_value,
                 status: JsonTranslationStatus::Removed,
+                acknowledged_issues: previous.acknowledged_issues,
             });
         }
     }
@@ -165,7 +169,9 @@ pub fn validate_translation_sheet(sheet: &JsonTranslationSheet) -> JsonValidatio
     let analysis = is_hardcoded_source_file(Path::new(&sheet.source_path))
         .then(crate::bridge::shared_root)
         .flatten()
-        .and_then(|shared| crate::dll_text::analysis_for_dll(&shared, Path::new(&sheet.source_path)));
+        .and_then(|shared| {
+            crate::dll_text::analysis_for_dll(&shared, Path::new(&sheet.source_path))
+        });
     validate_translation_sheet_with(sheet, analysis.as_ref())
 }
 
@@ -363,6 +369,7 @@ fn validation_format_issues(entry: &JsonTranslationEntry) -> Vec<JsonValidationI
         &mut issues,
     );
 
+    issues.retain(|issue| !entry.acknowledges(&issue.kind));
     issues
 }
 
@@ -419,9 +426,12 @@ fn bracket_tokens(value: &str, open: char, close: char) -> Vec<String> {
 }
 
 fn placeholder_tokens(value: &str) -> Vec<String> {
+    // The length limit applies after the variant text is normalized away, so
+    // a long `{IfMod:a|b}` in a wide script (3 bytes a character) still counts.
     placeholder_bracket_tokens(value)
         .into_iter()
         .map(normalize_placeholder_token)
+        .filter(|token| token.len() <= 120)
         .collect()
 }
 
@@ -454,7 +464,7 @@ fn collect_placeholder_bracket_tokens(
         collect_placeholder_bracket_tokens(chars, token_start + 1, token_end, output);
 
         let token = chars[token_start..=token_end].iter().collect::<String>();
-        if token.len() <= 120 && token_has_placeholder_shape(&token) {
+        if token_has_placeholder_shape(&token) {
             output.push(token);
         }
         index = token_end + 1;

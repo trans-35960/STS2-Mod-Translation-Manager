@@ -71,6 +71,7 @@ mod tests {
                     source_value: "名称".to_string(),
                     translated_value: "이름".to_string(),
                     status: JsonTranslationStatus::Ready,
+                    acknowledged_issues: Vec::new(),
                 }],
             },
         )
@@ -111,6 +112,7 @@ mod tests {
                 source_value: "打击".to_string(),
                 translated_value: "타격".to_string(),
                 status: JsonTranslationStatus::Ready,
+                acknowledged_issues: Vec::new(),
             }],
         };
 
@@ -151,6 +153,7 @@ mod tests {
                 source_value: "Continue".to_string(),
                 translated_value: "계속".to_string(),
                 status: JsonTranslationStatus::Ready,
+                acknowledged_issues: Vec::new(),
             }],
         };
 
@@ -204,6 +207,7 @@ mod tests {
                     source_value: "Continue".to_string(),
                     translated_value: "계속".to_string(),
                     status: JsonTranslationStatus::Ready,
+                    acknowledged_issues: Vec::new(),
                 }],
             },
         )
@@ -1230,6 +1234,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                 source_value: "Strike".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
+                acknowledged_issues: Vec::new(),
             }],
         };
         let output = root.join("sheet.csv");
@@ -1262,6 +1267,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     source_value: "New source".to_string(),
                     translated_value: "기존 번역".to_string(),
                     status: JsonTranslationStatus::Updated,
+                    acknowledged_issues: Vec::new(),
                 },
                 JsonTranslationEntry {
                     key: "file://cards.json#/new".to_string(),
@@ -1270,6 +1276,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     source_value: "Brand new".to_string(),
                     translated_value: String::new(),
                     status: JsonTranslationStatus::New,
+                    acknowledged_issues: Vec::new(),
                 },
                 JsonTranslationEntry {
                     key: "file://cards.json#/ready".to_string(),
@@ -1278,6 +1285,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     source_value: "Ready".to_string(),
                     translated_value: "완료".to_string(),
                     status: JsonTranslationStatus::Ready,
+                    acknowledged_issues: Vec::new(),
                 },
             ],
         };
@@ -1320,6 +1328,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                 source_value: "Deal {Damage:diff()} damage.".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
+                acknowledged_issues: Vec::new(),
             }],
         };
         let output = root.join("mod.kor.short.json");
@@ -1590,6 +1599,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     source_value: "荒疫".to_string(),
                     translated_value: "황역".to_string(),
                     status: JsonTranslationStatus::New,
+                    acknowledged_issues: Vec::new(),
                 }],
             },
         )
@@ -1642,6 +1652,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     source_value: "Name".to_string(),
                     translated_value: "이름".to_string(),
                     status: JsonTranslationStatus::Ready,
+                    acknowledged_issues: Vec::new(),
                 }],
             },
         )
@@ -1667,6 +1678,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     source_value: "名称".to_string(),
                     translated_value: "이름".to_string(),
                     status: JsonTranslationStatus::Ready,
+                    acknowledged_issues: Vec::new(),
                 }],
             },
         )
@@ -1703,6 +1715,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     source_value: "Name".to_string(),
                     translated_value: "이름".to_string(),
                     status: JsonTranslationStatus::Ready,
+                    acknowledged_issues: Vec::new(),
                 }],
             },
         )
@@ -1746,6 +1759,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     source_value: "荒疫".to_string(),
                     translated_value: String::new(),
                     status: JsonTranslationStatus::Missing,
+                    acknowledged_issues: Vec::new(),
                 }],
             },
         )
@@ -1771,6 +1785,7 @@ Packed file: Shadowverse/localization/eng/cards.json
                     source_value: "荒疫".to_string(),
                     translated_value: "황역".to_string(),
                     status: JsonTranslationStatus::Ready,
+                    acknowledged_issues: Vec::new(),
                 }],
             },
         )

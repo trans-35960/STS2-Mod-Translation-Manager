@@ -103,6 +103,7 @@ fn empty_dll_strings_are_missing_only_when_meant_to_be_read() {
         source_value: source.to_string(),
         translated_value: translated.to_string(),
         status: JsonTranslationStatus::Missing,
+        acknowledged_issues: Vec::new(),
     };
     let sheet = JsonTranslationSheet {
         source_path: "Mod/Mod.dll".to_string(),
@@ -141,6 +142,7 @@ fn drops_removed_hardcoded_candidates_when_updating_sheet() {
             source_value: stale_value.to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::Ready,
+            acknowledged_issues: Vec::new(),
         }],
     };
     write_sheet(&sheet_path, &existing).expect("write existing sheet");
@@ -407,6 +409,106 @@ fn validation_reports_missing_nested_placeholder() {
             .iter()
             .any(|issue| issue.kind == "placeholders")
     );
+}
+
+#[test]
+fn validation_allows_long_placeholder_variants_in_wide_scripts() {
+    let fixture = TestDir::create("json_translation_long_wide_placeholder_variant");
+    fixture.write_file(
+        "source.json",
+        r#"{"greet":"せ、先生……！{IfMod:miyu:私のModのこと、あの……ありがとうございます！|ずっと……お待ちしていました}"}"#,
+    );
+    let sheet_path = fixture.path().join("sheet.json");
+    create_or_update_sheet(
+        &fixture.path().join("source.json"),
+        "kor",
+        None,
+        &sheet_path,
+    )
+    .expect("create sheet");
+    let mut sheet = read_sheet(&sheet_path).expect("read sheet");
+    sheet.entries[0].translated_value =
+        "서, 선생님......! {IfMod:miyu:제 모드, 저기...... 감사합니다.|계속...... 기다리고 있었어요.}"
+            .to_string();
+    sheet.entries[0].status = JsonTranslationStatus::Ready;
+
+    let validation = validate_translation_sheet(&sheet);
+
+    assert!(
+        validation
+            .format_issues
+            .iter()
+            .all(|issue| issue.kind != "placeholders")
+    );
+}
+
+#[test]
+fn acknowledged_issue_is_hidden_until_the_texts_change() {
+    let mut sheet = JsonTranslationSheet {
+        source_path: "source.json".to_string(),
+        target_language: "kor".to_string(),
+        updated_epoch: 0,
+        entries: vec![JsonTranslationEntry {
+            key: "/a".to_string(),
+            slot_id: None,
+            previous_source_value: None,
+            source_value: "Line\nbreak".to_string(),
+            translated_value: "한 줄".to_string(),
+            status: JsonTranslationStatus::Ready,
+            acknowledged_issues: vec![AcknowledgedIssue {
+                kind: "line_breaks".to_string(),
+                source_value: "Line\nbreak".to_string(),
+                translated_value: "한 줄".to_string(),
+            }],
+        }],
+    };
+
+    let validation = validate_translation_sheet(&sheet);
+    assert!(validation.format_issues.is_empty());
+    assert!(validation.valid);
+
+    sheet.entries[0].translated_value = "다른 한 줄".to_string();
+    let validation = validate_translation_sheet(&sheet);
+    assert!(
+        validation
+            .format_issues
+            .iter()
+            .any(|issue| issue.kind == "line_breaks")
+    );
+}
+
+#[test]
+fn sheet_update_keeps_acknowledged_issues() {
+    let fixture = TestDir::create("json_translation_keeps_acknowledged");
+    fixture.write_file("source.json", r#"{"a":"Line\nbreak"}"#);
+    let sheet_path = fixture.path().join("sheet.json");
+    create_or_update_sheet(
+        &fixture.path().join("source.json"),
+        "kor",
+        None,
+        &sheet_path,
+    )
+    .expect("create sheet");
+    let mut sheet = read_sheet(&sheet_path).expect("read sheet");
+    sheet.entries[0].translated_value = "한 줄".to_string();
+    sheet.entries[0].status = JsonTranslationStatus::Ready;
+    sheet.entries[0].acknowledged_issues = vec![AcknowledgedIssue {
+        kind: "line_breaks".to_string(),
+        source_value: "Line\nbreak".to_string(),
+        translated_value: "한 줄".to_string(),
+    }];
+    write_sheet(&sheet_path, &sheet).expect("write sheet");
+
+    create_or_update_sheet(
+        &fixture.path().join("source.json"),
+        "kor",
+        Some(&sheet_path),
+        &sheet_path,
+    )
+    .expect("update sheet");
+
+    let validation = validate_sheet(&sheet_path).expect("validate sheet");
+    assert!(validation.format_issues.is_empty());
 }
 
 #[test]
@@ -789,6 +891,7 @@ fn imports_csv_values_by_translation_slot_id() {
             source_value: "Strike".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
+            acknowledged_issues: Vec::new(),
         }],
     };
     fixture.write_file(
@@ -819,6 +922,7 @@ fn imports_slot_translation_json_values_into_sheet() {
             source_value: "Deal damage.".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
+            acknowledged_issues: Vec::new(),
         }],
     };
     let id = translation_slot_entries(&sheet)
@@ -856,6 +960,7 @@ fn exports_compact_translation_json_grouped_by_file() {
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
+            acknowledged_issues: Vec::new(),
         }],
     };
 
@@ -889,6 +994,7 @@ fn exports_compact_validation_issue_json_with_context() {
             source_value: "[orange]标记[/orange]\n获得 {Block:diff()} 格挡。".to_string(),
             translated_value: "표식을 얻습니다. {Block:diff()} 방어도.".to_string(),
             status: JsonTranslationStatus::Ready,
+            acknowledged_issues: Vec::new(),
         }],
     };
     let validation = validate_translation_sheet(&sheet);
@@ -935,6 +1041,7 @@ fn imports_grouped_compact_translation_json_values_into_sheet() {
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
+            acknowledged_issues: Vec::new(),
         }],
     };
     let id = translation_slot_entries(&sheet)
@@ -970,6 +1077,7 @@ fn imports_source_identical_grouped_compact_values() {
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
+            acknowledged_issues: Vec::new(),
         }],
     };
     let id = translation_slot_entries(&sheet)
@@ -1004,6 +1112,7 @@ fn compact_translation_json_uses_document_slot_ids() {
                 source_value: "A".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
+                acknowledged_issues: Vec::new(),
             },
             JsonTranslationEntry {
                 key: "file://cards.json#/b".to_string(),
@@ -1012,6 +1121,7 @@ fn compact_translation_json_uses_document_slot_ids() {
                 source_value: "B".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
+                acknowledged_issues: Vec::new(),
             },
         ],
     };
@@ -1039,6 +1149,7 @@ fn compact_translation_json_keeps_full_document_slots_when_exporting_empty_only(
                 source_value: "A".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
+                acknowledged_issues: Vec::new(),
             },
             JsonTranslationEntry {
                 key: "file://cards.json#/b".to_string(),
@@ -1047,6 +1158,7 @@ fn compact_translation_json_keeps_full_document_slots_when_exporting_empty_only(
                 source_value: "B".to_string(),
                 translated_value: "번역됨".to_string(),
                 status: JsonTranslationStatus::Ready,
+                acknowledged_issues: Vec::new(),
             },
             JsonTranslationEntry {
                 key: "file://cards.json#/c".to_string(),
@@ -1055,6 +1167,7 @@ fn compact_translation_json_keeps_full_document_slots_when_exporting_empty_only(
                 source_value: "C".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
+                acknowledged_issues: Vec::new(),
             },
         ],
     };
@@ -1085,6 +1198,7 @@ fn compact_translation_json_keeps_full_document_slots_when_filtering_keys() {
                 source_value: "A".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
+                acknowledged_issues: Vec::new(),
             },
             JsonTranslationEntry {
                 key: "file://cards.json#/b".to_string(),
@@ -1093,6 +1207,7 @@ fn compact_translation_json_keeps_full_document_slots_when_filtering_keys() {
                 source_value: "B".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
+                acknowledged_issues: Vec::new(),
             },
             JsonTranslationEntry {
                 key: "file://cards.json#/c".to_string(),
@@ -1101,6 +1216,7 @@ fn compact_translation_json_keeps_full_document_slots_when_filtering_keys() {
                 source_value: "C".to_string(),
                 translated_value: String::new(),
                 status: JsonTranslationStatus::New,
+                acknowledged_issues: Vec::new(),
             },
         ],
     };
@@ -1127,6 +1243,7 @@ fn compact_validation_json_keeps_full_document_slots_when_filtering_keys() {
                 source_value: "[orange]A[/orange]".to_string(),
                 translated_value: "[orange]A[/orange]".to_string(),
                 status: JsonTranslationStatus::Ready,
+                acknowledged_issues: Vec::new(),
             },
             JsonTranslationEntry {
                 key: "file://cards.json#/b".to_string(),
@@ -1135,6 +1252,7 @@ fn compact_validation_json_keeps_full_document_slots_when_filtering_keys() {
                 source_value: "[orange]B[/orange]".to_string(),
                 translated_value: "[orange]B[/orange]".to_string(),
                 status: JsonTranslationStatus::Ready,
+                acknowledged_issues: Vec::new(),
             },
             JsonTranslationEntry {
                 key: "file://cards.json#/c".to_string(),
@@ -1143,6 +1261,7 @@ fn compact_validation_json_keeps_full_document_slots_when_filtering_keys() {
                 source_value: "[orange]C[/orange]".to_string(),
                 translated_value: "C".to_string(),
                 status: JsonTranslationStatus::Ready,
+                acknowledged_issues: Vec::new(),
             },
         ],
     };
@@ -1170,6 +1289,7 @@ fn compact_translation_json_expands_padding_after_999_entries() {
             source_value: format!("Source {index}"),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
+            acknowledged_issues: Vec::new(),
         })
         .collect();
     let sheet = JsonTranslationSheet {
@@ -1202,6 +1322,7 @@ fn rejects_unknown_or_empty_slot_ids() {
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
+            acknowledged_issues: Vec::new(),
         }],
     };
     let bad_id = {
@@ -1248,6 +1369,7 @@ fn imports_matching_slot_ids_and_reports_the_rest() {
         source_value: format!("Source {name}"),
         translated_value: String::new(),
         status: JsonTranslationStatus::New,
+        acknowledged_issues: Vec::new(),
     };
     let sheet = JsonTranslationSheet {
         source_path: fixture.path().join("source").display().to_string(),
@@ -1296,6 +1418,7 @@ fn imports_tree_translation_json_without_source_values() {
             source_value: "造成伤害。".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::New,
+            acknowledged_issues: Vec::new(),
         }],
     };
     let id = translation_slot_entries(&sheet)

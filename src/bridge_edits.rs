@@ -466,6 +466,7 @@ mod tests {
                     source_value: "原文".to_string(),
                     translated_value: value.to_string(),
                     status: JsonTranslationStatus::Ready,
+                    acknowledged_issues: Vec::new(),
                 })
                 .collect(),
         }
@@ -560,6 +561,7 @@ mod tests {
             source_value: "攻击牌".to_string(),
             translated_value: String::new(),
             status: JsonTranslationStatus::Missing,
+            acknowledged_issues: Vec::new(),
         }];
         let mut edit = record("1", KIND_EDIT, "攻击牌", "", Some("공격 카드"));
         edit.table = "dll:Mod".to_string();

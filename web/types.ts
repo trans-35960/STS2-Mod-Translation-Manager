@@ -481,6 +481,14 @@ export type JsonTranslationEntry = {
   source_value: string;
   translated_value: string;
   status: "new" | "ready" | "updated" | "missing" | "removed";
+  /** Warnings marked as fine; each holds only for the texts it was marked on. */
+  acknowledged_issues?: AcknowledgedIssue[];
+};
+
+export type AcknowledgedIssue = {
+  kind: string;
+  source_value: string;
+  translated_value: string;
 };
 
 export type JsonValidation = {

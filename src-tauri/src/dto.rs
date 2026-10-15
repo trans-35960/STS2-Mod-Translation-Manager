@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sts2_mod_manager::json_translation::AcknowledgedIssue;
 
 #[derive(Debug, Serialize)]
 pub(crate) struct DashboardDto {
@@ -484,6 +485,8 @@ pub(crate) struct JsonEntryDto {
     pub(crate) source_value: String,
     pub(crate) translated_value: String,
     pub(crate) status: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) acknowledged_issues: Vec<AcknowledgedIssue>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

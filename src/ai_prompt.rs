@@ -640,6 +640,7 @@ mod tests {
                         "번역".to_string()
                     },
                     status: JsonTranslationStatus::Ready,
+                    acknowledged_issues: Vec::new(),
                 })
                 .collect(),
         }

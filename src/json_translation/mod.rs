@@ -26,8 +26,8 @@ pub use slots::{
     translation_slot_entries,
 };
 pub use types::{
-    JsonApplyReport, JsonImportReport, JsonSheetReport, JsonTranslationEntry, JsonTranslationSheet,
-    JsonTranslationStatus, JsonValidationIssue, JsonValidationReport,
+    AcknowledgedIssue, JsonApplyReport, JsonImportReport, JsonSheetReport, JsonTranslationEntry,
+    JsonTranslationSheet, JsonTranslationStatus, JsonValidationIssue, JsonValidationReport,
 };
 
 #[cfg(test)]

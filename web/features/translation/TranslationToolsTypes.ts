@@ -45,6 +45,10 @@ export type TranslationToolsPageProps = {
   setTargetLanguage: (value: string) => void;
   onEditEntry: (index: number, value: string) => void;
   onReplaceEntries: (updates: Array<{ index: number; value: string }>, label?: string) => void;
+  /** Marks warnings as checked and fine (false positives) until the texts change. */
+  onAcknowledgeIssues: (issues: Array<{ key: string; kind: string }>) => void;
+  /** Shows every warning marked as fine again. */
+  onClearAcknowledgedIssues: () => void;
   onPasteEntries: (index: number, text: string) => void;
   onPasteStructuredJson: (text: string, options?: { replace?: boolean }) => boolean;
   onApplyPasteCandidate: (entryKey: string) => void;

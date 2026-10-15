@@ -1,4 +1,4 @@
-import type { JsonTranslationEntry, JsonTranslationSheet, LanguageCompareValue, LanguagePreview } from "../../types";
+import type { AcknowledgedIssue, JsonTranslationEntry, JsonTranslationSheet, LanguageCompareValue, LanguagePreview } from "../../types";
 
 export type TranslationProjectNode = {
   name: string;
@@ -642,4 +642,16 @@ export function countUnsavedChanges(sheet: JsonTranslationSheet | null, saved: J
     }
   }
   return changes;
+}
+
+/** Warnings that cannot be marked as fine: they are resolved by translating. */
+export const UNACKNOWLEDGEABLE_ISSUE_KINDS = new Set(["missing", "updated", "removed"]);
+
+/** Warnings marked as fine that still hold for the entry's current texts. */
+export function currentAcknowledgements(entry: JsonTranslationEntry) {
+  return (entry.acknowledged_issues ?? []).filter((issue) => isCurrentAcknowledgement(entry, issue));
+}
+
+export function isCurrentAcknowledgement(entry: JsonTranslationEntry, issue: AcknowledgedIssue) {
+  return issue.source_value === entry.source_value && issue.translated_value === entry.translated_value;
 }

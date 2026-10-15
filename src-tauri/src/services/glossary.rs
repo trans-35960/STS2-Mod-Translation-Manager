@@ -45,6 +45,17 @@ fn sheet_glossary_issues(
                 suggestion: Some(issue.suggestion),
             }),
     );
+    // Warnings the user marked as fine stay hidden while the texts are unchanged.
+    let entries = sheet
+        .entries
+        .iter()
+        .map(|entry| (entry.key.as_str(), entry))
+        .collect::<BTreeMap<_, _>>();
+    issues.retain(|issue| {
+        !entries
+            .get(issue.key.as_str())
+            .is_some_and(|entry| entry.acknowledges(&issue.kind))
+    });
     issues
 }
 
