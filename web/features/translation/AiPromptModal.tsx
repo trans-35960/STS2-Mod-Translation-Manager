@@ -21,6 +21,8 @@ import {
   translationSlotEntries,
 } from "./translationUtils";
 
+/** Large enough that the whole request fits one prompt. */
+const SINGLE_PROMPT_BUDGET = 1_000_000_000;
 const AUTOSAVE_DELAY_MS = 600;
 
 const TONE_OPTIONS = [
@@ -181,6 +183,30 @@ export function AiPromptModal({
     [result, translatedSlots],
   );
 
+  /** Prompt parts for the current options, each at most `budget` characters. */
+  async function requestParts(budget: number, partFocus: PromptFocus): Promise<AiPromptParts> {
+    // Entries keep their stored ids, so answers still land on the full sheet.
+    const promptSheet =
+      dllKeys && dllTextOnly ? { ...sheet, entries: sheet.entries.filter((entry) => dllKeys.has(entry.key)) } : sheet;
+    return isPreviewRuntime()
+      ? previewParts(promptSheet, includePrompt, budget)
+      : await invokeCommand("build_ai_prompt_parts", {
+          sheet: promptSheet,
+          request: {
+            projectKey: projectKey || null,
+            modName: projectInfo?.modName ?? "",
+            modDescription: settings.mod_description,
+            tone,
+            extraInstructions: settings.extra_instructions,
+            includePrompt,
+            maxChars: budget,
+            onlyEmpty,
+            focus: partFocus === "all" ? null : partFocus,
+            issues: null,
+          },
+        });
+  }
+
   async function buildParts() {
     setBusy(true);
     setError("");
@@ -191,26 +217,7 @@ export function AiPromptModal({
       } catch {
         // Remembering the budget is only a convenience.
       }
-      // Entries keep their stored ids, so answers still land on the full sheet.
-      const promptSheet =
-        dllKeys && dllTextOnly ? { ...sheet, entries: sheet.entries.filter((entry) => dllKeys.has(entry.key)) } : sheet;
-      const parts = isPreviewRuntime()
-        ? previewParts(promptSheet, includePrompt, budget)
-        : await invokeCommand("build_ai_prompt_parts", {
-            sheet: promptSheet,
-            request: {
-              projectKey: projectKey || null,
-              modName: projectInfo?.modName ?? "",
-              modDescription: settings.mod_description,
-              tone,
-              extraInstructions: settings.extra_instructions,
-              includePrompt,
-              maxChars: budget,
-              onlyEmpty,
-              focus: focus === "all" ? null : focus,
-              issues: null,
-            },
-          });
+      const parts = await requestParts(budget, focus);
       setResult(parts);
       setResultFocus(focus);
       setSelectedPart(0);
@@ -268,7 +275,7 @@ export function AiPromptModal({
       const outputPath = isPreviewRuntime()
         ? `translation_work/${base}.${extension}`
         : await saveDialog({
-            title: format === "txt" ? "프롬프트 파트를 한 파일로 내보내기" : "프롬프트 파트별 파일 내보내기 (이름 뒤에 .partNN이 붙습니다)",
+            title: format === "txt" ? "프롬프트 전체를 한 파일로 내보내기" : "프롬프트 파트별 파일 내보내기 (이름 뒤에 .partNN이 붙습니다)",
             defaultPath: `${base}.${extension}`,
             filters: [{ name: extension.toUpperCase(), extensions: [extension] }],
           });
@@ -276,13 +283,19 @@ export function AiPromptModal({
         return;
       }
       setBusy(true);
+      // One file holds the whole request as a single prompt, not the parts
+      // stacked one after another.
+      const texts =
+        format === "txt"
+          ? (await requestParts(SINGLE_PROMPT_BUDGET, resultFocus)).parts.map((part) => part.text)
+          : result.parts.map((part) => part.text);
       const written = isPreviewRuntime()
         ? format === "txt"
           ? [outputPath]
           : result.parts.map((_, index) => outputPath.replace(/\.(txt|pdf)$/i, `.part${String(index + 1).padStart(2, "0")}.$1`))
         : await invokeCommand("export_ai_prompt_parts", {
             outputPath,
-            parts: result.parts.map((part) => part.text),
+            parts: texts,
             format,
           });
       setExportMessage(
@@ -528,9 +541,15 @@ export function AiPromptModal({
                   </p>
                   <div className="ai-prompt-export">
                     <span>모두 내보내기</span>
-                    <button type="button" className="icon-button-text compact" disabled={busy} onClick={() => void exportParts("txt")}>
+                    <button
+                      type="button"
+                      className="icon-button-text compact"
+                      disabled={busy}
+                      title="파트로 나누지 않고 전체를 프롬프트 하나로 만들어 한 파일에 저장합니다."
+                      onClick={() => void exportParts("txt")}
+                    >
                       <FileText size={14} />
-                      TXT 한 파일
+                      TXT 전체 한 파일
                     </button>
                     <button type="button" className="icon-button-text compact" disabled={busy} onClick={() => void exportParts("txt_parts")}>
                       <Files size={14} />

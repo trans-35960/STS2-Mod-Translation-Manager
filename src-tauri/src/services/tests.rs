@@ -17,6 +17,36 @@ mod tests {
     }
 
     #[test]
+    fn single_prompt_txt_export_has_no_part_header() {
+        let root = std::env::temp_dir().join(format!("sts2-prompt-export-{}", timestamp_string()));
+        let single = root.join("single.txt");
+        let parts = root.join("parts.txt");
+
+        export_ai_prompt_parts(
+            display_path(&single),
+            vec!["전체 프롬프트\n".to_string()],
+            "txt".to_string(),
+            None,
+        )
+        .expect("single export");
+        export_ai_prompt_parts(
+            display_path(&parts),
+            vec!["첫째".to_string(), "둘째".to_string()],
+            "txt".to_string(),
+            None,
+        )
+        .expect("parts export");
+
+        assert_eq!(
+            fs::read_to_string(&single).expect("single"),
+            "전체 프롬프트\n"
+        );
+        let joined = fs::read_to_string(&parts).expect("parts");
+        assert!(joined.contains("===== 파트 1/2 =====") && joined.contains("===== 파트 2/2 ====="));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn pck_folder_output_drops_accidental_json_target_file() {
         let language_output = Path::new(
             r"Z:\game\sts2\modmanager\translation_work\selected\mod\workspace\translated\AkiSister\localization\kor",

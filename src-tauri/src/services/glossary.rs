@@ -404,7 +404,7 @@ pub(crate) fn build_term_prompt(
 }
 
 /// Writes prompt parts for pasting or uploading elsewhere: `txt` puts every
-/// part in one file, `txt_parts` and `pdf` write one file per part next to
+/// part in one file (a single part as is, without a part header), `txt_parts` and `pdf` write one file per part next to
 /// `output_path` (`name.part01.txt`). Returns the written paths.
 pub(crate) fn export_ai_prompt_parts(
     output_path: String,
@@ -427,12 +427,22 @@ pub(crate) fn export_ai_prompt_parts(
     let total = parts.len();
 
     if format == "txt" {
-        let content = parts
-            .iter()
-            .enumerate()
-            .map(|(index, text)| format!("===== 파트 {}/{total} =====\n\n{}\n", index + 1, text.trim_end()))
-            .collect::<Vec<_>>()
-            .join("\n");
+        let content = if total == 1 {
+            format!("{}\n", parts[0].trim_end())
+        } else {
+            parts
+                .iter()
+                .enumerate()
+                .map(|(index, text)| {
+                    format!(
+                        "===== 파트 {}/{total} =====\n\n{}\n",
+                        index + 1,
+                        text.trim_end()
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
+        };
         fs::write(&output_path, content).map_err(|error| error.to_string())?;
         return Ok(vec![display_path(&output_path)]);
     }
