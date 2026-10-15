@@ -8,13 +8,14 @@ import {
   GitBranch,
   Languages,
   Loader2,
+  ShieldAlert,
   TriangleAlert,
   Trash2,
 } from "lucide-react";
 import { invokeCommand } from "../../api/tauri";
 import { IconButton, Pill, SourceTags, StatusBadge } from "../../components/Common";
 import { labels } from "../../i18n";
-import type { BranchIssue, ModDependency, ModGroup, ModRow } from "../../types";
+import type { BranchIssue, CompatIssue, ModDependency, ModGroup, ModRow } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
 import { BridgeLanguageBadges, LanguageBadges, RepresentativeLanguageBadge } from "./ModBadges";
 import { ModTranslationActions } from "./ModTranslationActions";
@@ -107,6 +108,7 @@ function ModTableRow({
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
+          <CompatWarningIcon issue={mod.compat_issue} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
@@ -127,6 +129,7 @@ function ModTableRow({
         <small>{sourcePathLine(mod)}</small>
         {changed && <ChangeReasonList reasons={mod.change_reasons} />}
         {mod.dependencies.length > 0 && <DependencyList dependencies={mod.dependencies} />}
+        {mod.compat_issue && <CompatIssueList issue={mod.compat_issue} />}
       </div>
       <div className={changeCellClass(mod, "version-source-cell", showChangeDetails, ["파일 크기", "새로 감지"])}>
         <span>{displayModVersion(mod)}</span>
@@ -236,6 +239,7 @@ function ModGroupTableRow({
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
+          <CompatWarningIcon issue={groupCompatIssue(group.mods)} />
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           <BridgeEditsGroupBadge mods={group.mods} />
@@ -334,6 +338,7 @@ function SimpleModGroupRow({
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
+          <CompatWarningIcon issue={groupCompatIssue(group.mods)} />
           {group.name}
           <StatusBadge>GROUP</StatusBadge>
           <BridgeEditsGroupBadge mods={group.mods} />
@@ -430,6 +435,7 @@ function SimpleModRow({
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
+          <CompatWarningIcon issue={mod.compat_issue} />
           {child ? childModTitle(mod) : mod.name}
           {mod.is_translation_patch && <StatusBadge tone="info">번역</StatusBadge>}
           {mod.system_mod && <StatusBadge tone="info">번역 브리지</StatusBadge>}
@@ -654,6 +660,68 @@ function BranchWarningIcon({ issue }: { issue: BranchIssue | null | undefined })
   );
 }
 
+/** Cap on missing members named in a tooltip; the row lists them all. */
+const COMPAT_TOOLTIP_ITEMS = 5;
+
+function CompatWarningIcon({ issue }: { issue: CompatIssue | null | undefined }) {
+  if (!issue) {
+    return null;
+  }
+  const label = "현재 게임 버전과 맞지 않음";
+  const items = issue.missing.slice(0, COMPAT_TOOLTIP_ITEMS).map((item) => `- ${item.message}`);
+  if (issue.missing.length > COMPAT_TOOLTIP_ITEMS) {
+    items.push(`- 외 ${issue.missing.length - COMPAT_TOOLTIP_ITEMS}개`);
+  }
+  return (
+    <span className="compat-warning-icon" title={[`${label}: ${issue.message}`, ...items].join("\n")} aria-label={label}>
+      <ShieldAlert size={15} />
+    </span>
+  );
+}
+
+/**
+ * Members the mod's DLLs call that the game no longer has. Each one throws
+ * when that code runs; mods that look names up by reflection can still break
+ * without showing up here.
+ */
+function CompatIssueList({ issue }: { issue: CompatIssue }) {
+  return (
+    <details className="compat-issue-list" onClick={(event) => event.stopPropagation()}>
+      <summary>
+        <span>호환성</span>
+        {issue.message}
+      </summary>
+      {issue.missing.length > 0 && (
+        <ul>
+          {issue.missing.map((item) => (
+            <li key={`${item.assembly}:${item.display}`}>
+              <code>{item.display}</code>
+              <em>{missingReferenceReason(item.kind, item.assembly, item.available.length > 0)}</em>
+              {item.available.map((available) => (
+                <small key={available}>있는 것: {available}</small>
+              ))}
+            </li>
+          ))}
+        </ul>
+      )}
+      <small>DLL에 들어 있는 참조만 검사합니다. 경고가 없어도 리플렉션으로 이름을 찾는 코드는 튕길 수 있습니다.</small>
+    </details>
+  );
+}
+
+function missingReferenceReason(kind: string, assembly: string, hasOverloads: boolean): string {
+  const target = assembly.toLowerCase() === "sts2" ? "게임" : assembly;
+  if (kind === "type") {
+    return `${target}에 없음`;
+  }
+  return hasOverloads ? `${target}에서 시그니처가 바뀜` : `${target}에서 없어짐`;
+}
+
+/** The loaded version's problem first, else any version's: an inactive version still tells what turning it on would do. */
+function groupCompatIssue(mods: ModRow[]): CompatIssue | null {
+  return (mods.find((mod) => mod.active && mod.compat_issue) ?? mods.find((mod) => mod.compat_issue))?.compat_issue ?? null;
+}
+
 /** Only the version the game will load can fail to load; inactive versions never warn. */
 function groupBranchIssue(mods: ModRow[]): BranchIssue | null {
   return mods.find((mod) => mod.active && mod.branch_issue)?.branch_issue ?? null;
@@ -732,9 +800,16 @@ function hasDependencyVersionMismatch(mod: ModRow): boolean {
 
 function dependencyWarningLabel(dependency: ModDependency): string {
   if (dependency.version_matches === false) {
-    return `${dependency.name} 버전 불일치 (${dependency.version_current ?? "-"} / 필요 ${dependency.version_required ?? "-"})`;
+    return `${dependency.name} 버전 불일치 (${dependency.version_current ?? "-"} / 필요 ${requiredVersionLabel(dependency)})`;
   }
   return `${dependency.name} 비활성`;
+}
+
+function requiredVersionLabel(dependency: ModDependency): string {
+  if (!dependency.version_required) {
+    return "-";
+  }
+  return dependency.version_minimum ? `${dependency.version_required} 이상` : dependency.version_required;
 }
 
 function childModTitle(mod: ModRow): string {
@@ -802,9 +877,9 @@ function DependencyList({ dependencies }: { dependencies: ModDependency[] }) {
       {dependencies.map((dependency) => {
         const tone = !dependency.available ? "missing" : dependency.active ? "active" : "inactive";
         const label = dependency.available ? dependency.name : dependency.id;
-        const versionLabel = dependency.version_required ? ` @ ${dependency.version_required}` : "";
+        const versionLabel = dependency.version_required ? ` @ ${dependency.version_minimum ? "≥" : ""}${dependency.version_required}` : "";
         const title = dependency.available
-          ? `${dependency.name}: ${dependency.active ? "활성" : "비활성"}${dependency.version_required ? ` / 필요 ${dependency.version_required}, 현재 ${dependency.version_current ?? "-"}` : ""}`
+          ? `${dependency.name}: ${dependency.active ? "활성" : "비활성"}${dependency.version_required ? ` / 필요 ${requiredVersionLabel(dependency)}, 현재 ${dependency.version_current ?? "-"}` : ""}`
           : `${dependency.id}: 없음`;
         return (
           <b className={dependency.version_matches === false ? "missing" : tone} title={title} key={dependency.id}>

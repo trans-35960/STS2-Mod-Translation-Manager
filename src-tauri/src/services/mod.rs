@@ -38,6 +38,9 @@ use sts2_mod_manager::json_translation::{
     validate_translation_sheet, write_sheet,
 };
 use sts2_mod_manager::launcher::{LaunchReport, LaunchStatus};
+use sts2_mod_manager::mod_compat::{
+    ReferenceChecker, mod_dll_paths, read_game_release, version_at_least,
+};
 use sts2_mod_manager::leftover_text;
 use sts2_mod_manager::path_guard::{ensure_existing_path_in_roots, ensure_path_in_roots};
 use sts2_mod_manager::pck_reader::extract_pck_files;

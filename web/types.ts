@@ -251,6 +251,9 @@ export type ModRow = {
   translation_target_version: string | null;
   dependencies: ModDependency[];
   branch_issue?: BranchIssue | null;
+  min_game_version?: string | null;
+  /** What does not fit the installed game: a newer min_game_version, or code the game lacks. */
+  compat_issue?: CompatIssue | null;
   system_mod?: boolean;
   /** In-game (F8) edits and open reports waiting in the translation tool. */
   bridge_edits?: {
@@ -285,6 +288,24 @@ export type LeftoverReport = {
   files: LeftoverFile[];
 };
 
+export type CompatIssue = {
+  game_version: string | null;
+  /** Set only when the game is older than this. */
+  min_game_version: string | null;
+  missing: MissingReference[];
+  message: string;
+};
+
+/** A type or member a mod DLL uses that the game (or a dependency mod) does not have. */
+export type MissingReference = {
+  assembly: string;
+  kind: "type" | "method" | "field";
+  display: string;
+  /** Same-named methods that do exist, closest first. */
+  available: string[];
+  message: string;
+};
+
 export type BranchIssue = {
   kind: "unsupported" | "awaiting_download";
   current_branch: string;
@@ -308,6 +329,8 @@ export type ModDependency = {
   active: boolean;
   available: boolean;
   version_required: string | null;
+  /** version_required is a minimum (manifest min_version). */
+  version_minimum?: boolean;
   version_current: string | null;
   version_matches: boolean | null;
 };

@@ -20,6 +20,10 @@ fn mod_rows(
         rows.entry(record.stable_key()).or_default().workshop = Some(record.clone());
     }
     trace.mark("group_records");
+    let record_dirs = rows
+        .iter()
+        .filter_map(|(key, builder)| Some((key.clone(), builder.record_dir()?)))
+        .collect::<BTreeMap<_, _>>();
 
     let mut cache = read_language_preview_cache(config)?;
     trace.mark("read_language_cache");
@@ -79,6 +83,8 @@ fn mod_rows(
     trace.mark("resolve_translation_patches");
     resolve_branch_issues(&mut rows, config);
     trace.mark("resolve_branch_issues");
+    resolve_compat_issues(&mut rows, config, &record_dirs);
+    trace.mark("resolve_compat_issues");
     resolve_bridge_edit_counts(&mut rows, config);
     trace.mark("resolve_bridge_edits");
     resolve_bridge_stored(&mut rows);
@@ -200,6 +206,98 @@ fn resolve_branch_issues(rows: &mut [ModRowDto], config: &AppConfig) {
     }
 }
 
+/// Flags mods that do not fit the installed game: a `min_game_version`
+/// above it, or DLL references to game or dependency members it lacks. Only
+/// sure problems are reported; names a mod looks up by reflection are not
+/// seen, so no flag is no guarantee.
+fn resolve_compat_issues(
+    rows: &mut [ModRowDto],
+    config: &AppConfig,
+    record_dirs: &BTreeMap<String, PathBuf>,
+) {
+    let release = read_game_release(&config.game_dir);
+    let mut checker = ReferenceChecker::new(&config.game_dir, &config.state_dir);
+    let dlls_by_key = record_dirs
+        .iter()
+        .map(|(key, dir)| (key.as_str(), mod_dll_paths(dir)))
+        .collect::<BTreeMap<_, _>>();
+    for row in rows.iter_mut().filter(|row| row.download_state.is_none()) {
+        let required_game = row.min_game_version.clone().filter(|minimum| {
+            release
+                .version
+                .as_deref()
+                .is_some_and(|game| version_at_least(game, minimum) == Some(false))
+        });
+        let mod_dlls = dlls_by_key.get(row.key.as_str()).cloned().unwrap_or_default();
+        let missing = if mod_dlls.is_empty() || !checker.has_game() {
+            Vec::new()
+        } else {
+            let dependency_dlls = row
+                .dependencies
+                .iter()
+                .filter_map(|dependency| dlls_by_key.get(dependency.key.as_deref()?))
+                .flatten()
+                .cloned()
+                .collect::<Vec<_>>();
+            checker.check(&mod_dlls, &dependency_dlls)
+        };
+        if required_game.is_none() && missing.is_empty() {
+            continue;
+        }
+        row.compat_issue = Some(compat_issue_dto(
+            release.version.clone(),
+            required_game,
+            missing,
+        ));
+    }
+    if let Err(error) = checker.save() {
+        eprintln!("mod compatibility cache write skipped: {error}");
+    }
+}
+
+fn compat_issue_dto(
+    game_version: Option<String>,
+    min_game_version: Option<String>,
+    missing: Vec<sts2_mod_manager::dll_refs::MissingReference>,
+) -> CompatIssueDto {
+    let mut message = Vec::new();
+    if let Some(minimum) = &min_game_version {
+        message.push(format!(
+            "게임 {minimum} 이상용 모드입니다(현재 {}).",
+            game_version.as_deref().unwrap_or("-")
+        ));
+    }
+    if !missing.is_empty() {
+        let only_game = missing.iter().all(|item| {
+            item.assembly
+                .eq_ignore_ascii_case(sts2_mod_manager::dll_refs::GAME_ASSEMBLY)
+        });
+        message.push(format!(
+            "{}에 없는 코드 {}개를 사용합니다. 해당 기능이 쓰이는 순간 게임이 오류로 튕길 수 있습니다.",
+            if only_game { "현재 게임" } else { "현재 게임이나 선행 모드" },
+            missing.len()
+        ));
+    }
+    CompatIssueDto {
+        game_version,
+        min_game_version,
+        missing: missing
+            .into_iter()
+            .map(|item| MissingReferenceDto {
+                message: item.describe(),
+                kind: serde_json::to_value(item.kind)
+                    .ok()
+                    .and_then(|value| value.as_str().map(str::to_string))
+                    .unwrap_or_default(),
+                assembly: item.assembly,
+                display: item.display,
+                available: item.available,
+            })
+            .collect(),
+        message: message.join(" "),
+    }
+}
+
 fn branch_issue_dto(support: BranchSupport, current_branch: &str) -> Option<BranchIssueDto> {
     let (kind, branch_min, branch_max) = match support {
         BranchSupport::Supported | BranchSupport::Unknown => return None,
@@ -284,6 +382,17 @@ struct ModRowBuildContext<'a> {
 }
 
 impl ModRowBuilder {
+    /// Folder of the record the row stands for, when it is unpacked.
+    fn record_dir(&self) -> Option<PathBuf> {
+        let record = self
+            .active
+            .as_ref()
+            .or(self.disabled.as_ref())
+            .or(self.external.as_ref())
+            .or(self.workshop.as_ref())?;
+        (record.kind == ModKind::Directory).then(|| record.path.clone())
+    }
+
     fn into_dto(self, context: ModRowBuildContext<'_>) -> ModRowDto {
         let record = self
             .active
@@ -356,6 +465,7 @@ impl ModRowBuilder {
                 active: false,
                 available: false,
                 version_required: dependency.version,
+                version_minimum: dependency.minimum,
                 version_current: None,
                 version_matches: None,
             })
@@ -375,6 +485,7 @@ impl ModRowBuilder {
                 active: false,
                 available: false,
                 version_required: manifest.target_mod_version.clone(),
+                version_minimum: false,
                 version_current: None,
                 version_matches: None,
             });
@@ -441,6 +552,8 @@ impl ModRowBuilder {
             translation_target_version: manifest.target_mod_version,
             dependencies,
             branch_issue: None,
+            min_game_version: manifest.min_game_version,
+            compat_issue: None,
             system_mod,
             bridge_edits: None,
             language_preview,
@@ -568,7 +681,13 @@ fn resolve_mod_dependencies(rows: &mut [ModRowDto]) {
                 .filter_map(|(position, candidate)| {
                     let strength = candidate.match_strength(&needle)?;
                     let version_ok = dependency.version_required.as_deref().is_none_or(
-                        |required| dependency_version_matches(required, candidate.version.as_deref()),
+                        |required| {
+                            dependency_version_matches(
+                                required,
+                                candidate.version.as_deref(),
+                                dependency.version_minimum,
+                            )
+                        },
                     );
                     Some((
                         (candidate.active, version_ok, strength, std::cmp::Reverse(position)),
@@ -593,7 +712,13 @@ fn resolve_mod_dependencies(rows: &mut [ModRowDto]) {
             dependency.version_matches = dependency
                 .version_required
                 .as_ref()
-                .map(|required| dependency_version_matches(required, candidate.version.as_deref()));
+                .map(|required| {
+                    dependency_version_matches(
+                        required,
+                        candidate.version.as_deref(),
+                        dependency.version_minimum,
+                    )
+                });
             if row
                 .translation_target_id
                 .as_deref()
@@ -713,12 +838,17 @@ fn resolve_translation_patch_summaries(rows: &mut [ModRowDto]) {
     }
 }
 
-fn dependency_version_matches(required: &str, current: Option<&str>) -> bool {
+/// Whether an installed version satisfies a dependency: equal to an exact
+/// `version`, or at least a `min_version`.
+fn dependency_version_matches(required: &str, current: Option<&str>, minimum: bool) -> bool {
     let required = normalize_version_token(required);
     if required.is_empty() || required == "-" {
         return true;
     }
     let current = current.map(normalize_version_token).unwrap_or_default();
+    if minimum && let Some(at_least) = version_at_least(&current, &required) {
+        return at_least;
+    }
     !current.is_empty() && current == required
 }
 

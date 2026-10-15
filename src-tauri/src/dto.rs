@@ -266,6 +266,10 @@ pub(crate) struct ModRowDto {
     pub(crate) translation_target_version: Option<String>,
     pub(crate) dependencies: Vec<ModDependencyDto>,
     pub(crate) branch_issue: Option<BranchIssueDto>,
+    /// Manifest `min_game_version`.
+    pub(crate) min_game_version: Option<String>,
+    /// What does not fit the installed game, if anything.
+    pub(crate) compat_issue: Option<CompatIssueDto>,
     /// The bridge mod: installed and updated by the app, not deletable.
     pub(crate) system_mod: bool,
     /// In-game (F8) edits and open reports waiting in the translation tool.
@@ -315,6 +319,28 @@ pub(crate) struct BranchIssueDto {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub(crate) struct CompatIssueDto {
+    pub(crate) game_version: Option<String>,
+    /// Set when the game is older than the mod's `min_game_version`.
+    pub(crate) min_game_version: Option<String>,
+    /// Types and members the mod's DLLs use that the game or a dependency
+    /// does not have; each one throws (`MissingMethodException`, …) when hit.
+    pub(crate) missing: Vec<MissingReferenceDto>,
+    pub(crate) message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct MissingReferenceDto {
+    pub(crate) assembly: String,
+    /// `type`, `method` or `field`.
+    pub(crate) kind: String,
+    pub(crate) display: String,
+    pub(crate) available: Vec<String>,
+    /// `CreatureCmd.Damage(…) — 게임에서 시그니처가 바뀜`.
+    pub(crate) message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub(crate) struct ModDependencyDto {
     pub(crate) id: String,
     pub(crate) key: Option<String>,
@@ -322,6 +348,8 @@ pub(crate) struct ModDependencyDto {
     pub(crate) active: bool,
     pub(crate) available: bool,
     pub(crate) version_required: Option<String>,
+    /// `version_required` is a minimum rather than an exact version.
+    pub(crate) version_minimum: bool,
     pub(crate) version_current: Option<String>,
     pub(crate) version_matches: Option<bool>,
 }

@@ -89,6 +89,21 @@ export function useModActions({
           return;
         }
       }
+      const compatWarnings = launchCompatWarnings(dashboard?.mods ?? []);
+      if (compatWarnings.length > 0) {
+        const confirmed = window.confirm(
+          [
+            "현재 게임 버전과 맞지 않는 활성 모드가 있습니다. 해당 기능이 쓰이는 순간 게임이 튕길 수 있습니다.",
+            ...compatWarnings,
+            "",
+            "모드 업데이트를 기다리거나 해당 모드를 비활성화하세요.",
+            "그대로 실행할까요?",
+          ].join("\n"),
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
       const backupCount = dashboard?.save_backups.length ?? 0;
       if (backupCount === 0) {
         const confirmed = window.confirm(
@@ -552,4 +567,38 @@ function normalizeDependencyToken(value: string): string {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9가-힣]/g, "");
+}
+
+/** Missing members named per mod before launch; the mod list shows them all. */
+const LAUNCH_COMPAT_ITEMS = 3;
+
+/**
+ * Active mods that do not fit the installed game: a newer min_game_version,
+ * code the game lacks, or a dependency that is missing or too old.
+ */
+function launchCompatWarnings(mods: ModRow[]): string[] {
+  const lines: string[] = [];
+  for (const mod of mods.filter((item) => item.active)) {
+    if (mod.compat_issue) {
+      lines.push(`- ${mod.name}: ${mod.compat_issue.message}`);
+      for (const missing of mod.compat_issue.missing.slice(0, LAUNCH_COMPAT_ITEMS)) {
+        lines.push(`    · ${missing.message}`);
+      }
+      if (mod.compat_issue.missing.length > LAUNCH_COMPAT_ITEMS) {
+        lines.push(`    · 외 ${mod.compat_issue.missing.length - LAUNCH_COMPAT_ITEMS}개`);
+      }
+    }
+    if (mod.is_translation_patch) {
+      continue;
+    }
+    for (const dependency of mod.dependencies) {
+      if (!dependency.available) {
+        lines.push(`- ${mod.name}: 선행 모드 ${dependency.id}이(가) 설치되어 있지 않습니다.`);
+      } else if (dependency.version_matches === false) {
+        const required = `${dependency.version_required ?? "-"}${dependency.version_minimum ? " 이상" : ""}`;
+        lines.push(`- ${mod.name}: 선행 모드 ${dependency.name} 버전이 맞지 않습니다 (현재 ${dependency.version_current ?? "-"} / 필요 ${required}).`);
+      }
+    }
+  }
+  return lines;
 }
