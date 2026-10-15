@@ -26,12 +26,24 @@
   border-top: 0;
 }
 
-.mod-section-header:hover:not(:disabled) {
-  border-color: #e2e8f0;
-  background: #f1f5f9;
+/* Title half: collapses the section. */
+.mod-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0 6px 0 2px;
+  color: inherit;
 }
 
-.mod-section-header:active:not(:disabled) {
+.mod-section-toggle:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.mod-section-toggle:active:not(:disabled) {
   transform: none;
 }
 
@@ -40,14 +52,54 @@
   font-weight: 900;
 }
 
-.mod-section-header small {
+/* Facet half: filter chips, clearly buttons. */
+.mod-section-facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: 6px;
+  padding-left: 10px;
+  border-left: 1px solid #e2e8f0;
+}
+
+button.mod-section-facet {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  border: 1px solid #cbd5e1;
   border-radius: 999px;
   background: #ffffff;
-  padding: 1px 8px;
-  color: #64748b;
+  padding: 0 9px;
+  color: #475569;
   font-size: 11px;
   font-weight: 800;
-  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+button.mod-section-facet b {
+  color: #0f172a;
+  font-weight: 900;
+}
+
+button.mod-section-facet:hover:not(:disabled) {
+  border-color: #0f766e;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+button.mod-section-facet.active {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #ffffff;
+}
+
+button.mod-section-facet.active b {
+  color: #ffffff;
+}
+
+button.mod-section-facet.active:hover:not(:disabled) {
+  background: #115e59;
+  color: #ffffff;
 }
 
 .mod-section-count {
@@ -301,6 +353,9 @@
 
 .mod-errors-body {
   display: grid;
+  /* Grid items would otherwise grow to the widest stack line (pre) and push
+     the copy buttons out of view; the stack scrolls inside its own box. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   min-height: 0;
   overflow: auto;
@@ -312,6 +367,7 @@
 }
 
 .mod-errors-section {
+  min-width: 0;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px;
@@ -356,6 +412,7 @@ p.mod-errors-muted {
 
 .mod-errors-section ul {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 4px;
   margin: 0;
   padding: 0;
@@ -466,8 +523,21 @@ button.mod-error-copy.done {
 .dll-translate-confirm {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
+  cursor: pointer;
   margin-bottom: 14px;
   font-size: 13px;
   font-weight: 800;
+}
+
+/* The global input rule stretches inputs; this one is a plain checkbox. */
+.dll-translate-confirm input[type="checkbox"] {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: #0f766e;
 }

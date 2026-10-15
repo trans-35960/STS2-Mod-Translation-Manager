@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Square,
   Trash2,
+  X,
 } from "lucide-react";
 import { invokeCommand } from "../../api/tauri";
 import { labels } from "../../i18n";
@@ -47,6 +48,7 @@ import {
   preferredGroupActivationTarget,
 } from "./modUtils";
 import {
+  TRANSLATION_SOURCE_HINTS,
   TRANSLATION_SOURCE_LABELS,
   groupTranslationStatus,
   translationSection,
@@ -167,6 +169,7 @@ function ModsPage(props: {
   const [errorModalKey, setErrorModalKey] = React.useState<string | null>(null);
   const [dllMod, setDllMod] = React.useState<ModRow | null>(null);
   const [collapsedSections, setCollapsedSections] = React.useState<Partial<Record<TranslationSection, boolean>>>({});
+  const [sectionFacets, setSectionFacets] = React.useState<Partial<Record<TranslationSection, string>>>({});
   const showChangeDetails = props.statFilter === "changed";
   const vortexDownloadCount = React.useMemo(
     () => props.mods.filter((mod) => isVortexDownloadMod(mod) && mod.download_state !== "downloading").length,
@@ -233,6 +236,7 @@ function ModsPage(props: {
     scrolledFocusKeyRef.current = props.focusedModKey;
     const section = translationSection(groupTranslationStatus(group.mods, props.targetLanguage));
     setCollapsedSections((current) => (current[section] ? { ...current, [section]: false } : current));
+    setSectionFacets((current) => (current[section] ? { ...current, [section]: undefined } : current));
     if (group.mods.length > 1) {
       setExpandedGroups((current) => ({ ...current, [group.id]: true }));
     }
@@ -584,9 +588,16 @@ function ModsPage(props: {
                 <ModSectionHeader
                   section={section}
                   collapsed={Boolean(collapsedSections[section.id])}
+                  facetKey={sectionFacets[section.id]}
                   onToggle={() => setCollapsedSections((current) => ({ ...current, [section.id]: !current[section.id] }))}
+                  onFacet={(key) => {
+                    setSectionFacets((current) => ({ ...current, [section.id]: key }));
+                    if (key) {
+                      setCollapsedSections((current) => ({ ...current, [section.id]: false }));
+                    }
+                  }}
                 />
-                {!collapsedSections[section.id] && section.groups.map(renderGroup)}
+                {!collapsedSections[section.id] && visibleSectionGroups(section, sectionFacets[section.id]).map(renderGroup)}
               </React.Fragment>
             ))
           : groups.map(renderGroup)}
@@ -741,13 +752,23 @@ function attachedTranslationMods(group: ModGroup): { parent: ModRow; children: M
 
 const ALL_ERRORS = "*";
 
+/** A filter chip in a section header: how many mods are translated (or not) a given way. */
+type SectionFacet = {
+  key: string;
+  label: string;
+  count: number;
+  hint: string;
+  matches: (status: TranslationStatus) => boolean;
+};
+
 type ModSection = {
   id: TranslationSection;
   title: string;
   hint: string;
   groups: ModGroup[];
-  /** Counts shown beside the title, e.g. how many are translated which way. */
-  breakdown: string[];
+  /** Status of each group, in the same order. */
+  statuses: TranslationStatus[];
+  facets: SectionFacet[];
 };
 
 const SECTION_ORDER: TranslationSection[] = ["system", "translated", "untranslated"];
@@ -769,40 +790,111 @@ function buildModSections(groups: ModGroup[], targetLanguage: string): ModSectio
     if (!entry) {
       return [];
     }
+    const facets = (candidates: Array<Omit<SectionFacet, "count">>) =>
+      candidates
+        .map((facet) => ({ ...facet, count: entry.statuses.filter(facet.matches).length }))
+        .filter((facet) => facet.count > 0);
     if (id === "system") {
-      return [{ id, title: "시스템 모드", hint: "이 프로그램이 설치·관리하는 모드입니다", groups: entry.groups, breakdown: [] }];
+      return [{ id, title: "시스템 모드", hint: "이 프로그램이 설치·관리하는 모드입니다", ...entry, facets: [] }];
     }
     if (id === "translated") {
-      const counts = new Map<TranslationSource, number>();
-      for (const status of entry.statuses) {
-        if (status.kind === "translated") {
-          for (const source of status.sources) {
-            counts.set(source, (counts.get(source) ?? 0) + 1);
-          }
-        }
-      }
-      const breakdown = (Object.keys(TRANSLATION_SOURCE_LABELS) as TranslationSource[])
-        .filter((source) => counts.has(source))
-        .map((source) => `${TRANSLATION_SOURCE_LABELS[source]} ${counts.get(source)}`);
-      return [{ id, title: `${language} 번역됨`, hint: "자체 번역, 패키지 수정, 브리지 번역, 번역 모드 중 하나 이상으로 번역된 모드", groups: entry.groups, breakdown }];
+      return [
+        {
+          id,
+          title: `${language} 번역됨`,
+          hint: "자체 번역, 패키지 수정, 브리지 번역, 번역 모드 중 하나 이상으로 번역된 모드",
+          ...entry,
+          facets: facets(
+            (Object.keys(TRANSLATION_SOURCE_LABELS) as TranslationSource[]).map((source) => ({
+              key: source,
+              label: TRANSLATION_SOURCE_LABELS[source],
+              hint: TRANSLATION_SOURCE_HINTS[source],
+              matches: (status: TranslationStatus) => status.kind === "translated" && status.sources.includes(source),
+            })),
+          ),
+        },
+      ];
     }
-    const noText = entry.statuses.filter((status) => status.kind === "noText").length;
-    const patchOff = entry.statuses.filter((status) => status.kind === "untranslated" && status.patchOff).length;
-    const breakdown = [patchOff > 0 ? `번역 모드 꺼짐 ${patchOff}` : "", noText > 0 ? `언어 파일 없음 ${noText}` : ""].filter(Boolean);
-    return [{ id, title: `${language} 번역 안 됨`, hint: "내 언어 번역이 없는 모드", groups: entry.groups, breakdown }];
+    return [
+      {
+        id,
+        title: `${language} 번역 안 됨`,
+        hint: "내 언어 번역이 없는 모드",
+        ...entry,
+        facets: facets([
+          {
+            key: "needsTranslation",
+            label: "번역 필요",
+            hint: "언어 파일이나 DLL 문자열이 있어 번역할 수 있는 모드",
+            matches: (status) => status.kind === "untranslated" && !status.patchOff,
+          },
+          {
+            key: "patchOff",
+            label: "번역 모드 꺼짐",
+            hint: "번역 모드가 설치돼 있지만 꺼져 있는 모드",
+            matches: (status) => status.kind === "untranslated" && status.patchOff,
+          },
+          {
+            key: "noText",
+            label: "언어 파일 없음",
+            hint: "언어 파일을 찾지 못한 모드",
+            matches: (status) => status.kind === "noText",
+          },
+        ]),
+      },
+    ];
   });
 }
 
-function ModSectionHeader({ section, collapsed, onToggle }: { section: ModSection; collapsed: boolean; onToggle: () => void }) {
+/** The section's groups narrowed to the chosen facet, if any. */
+function visibleSectionGroups(section: ModSection, facetKey: string | undefined): ModGroup[] {
+  const facet = section.facets.find((item) => item.key === facetKey);
+  return facet ? section.groups.filter((_, index) => facet.matches(section.statuses[index])) : section.groups;
+}
+
+function ModSectionHeader({
+  section,
+  collapsed,
+  facetKey,
+  onToggle,
+  onFacet,
+}: {
+  section: ModSection;
+  collapsed: boolean;
+  facetKey: string | undefined;
+  onToggle: () => void;
+  onFacet: (key: string | undefined) => void;
+}) {
+  const shown = visibleSectionGroups(section, facetKey).length;
   return (
-    <button type="button" className={`mod-section-header ${section.id}`} aria-expanded={!collapsed} onClick={onToggle} data-tooltip={section.hint}>
-      {collapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
-      <strong>{section.title}</strong>
-      <span className="mod-section-count">{section.groups.length}</span>
-      {section.breakdown.map((item) => (
-        <small key={item}>{item}</small>
-      ))}
-    </button>
+    <div className={`mod-section-header ${section.id}`}>
+      <button type="button" className="mod-section-toggle" aria-expanded={!collapsed} onClick={onToggle} data-tooltip={collapsed ? "펼치기" : "접기"}>
+        {collapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
+        <strong>{section.title}</strong>
+        <span className="mod-section-count">{facetKey ? `${shown}/${section.groups.length}` : section.groups.length}</span>
+      </button>
+      {section.facets.length > 0 && (
+        <div className="mod-section-facets" role="group" aria-label={`${section.title} 필터`}>
+          {section.facets.map((facet) => {
+            const active = facet.key === facetKey;
+            return (
+              <button
+                type="button"
+                className={active ? "mod-section-facet active" : "mod-section-facet"}
+                aria-pressed={active}
+                key={facet.key}
+                data-tooltip={active ? "필터 해제" : `${facet.hint}만 보기`}
+                onClick={() => onFacet(active ? undefined : facet.key)}
+              >
+                {facet.label}
+                <b>{facet.count}</b>
+                {active && <X size={11} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -485,6 +485,7 @@ function SimpleModRow({
           {child ? childModTitle(mod) : <ModName name={mod.name} workshopTitle={workshopTitleFor(mod)} />}
           {onOpenErrors && <ModErrorBadge errors={errors} onOpen={() => onOpenErrors(mod.key)} />}
           <BridgeEditsRowBadge mod={mod} disabled={Boolean(busy)} onOpen={(resourcePath) => onStartModTranslation(mod, resourcePath ?? primaryResourcePath)} />
+          {mod.workshop && <WorkshopBadge mod={mod} />}
           {downloading && <StatusBadge tone="info">다운로드 중</StatusBadge>}
           {changed && mod.update_state === "new" && <StatusBadge tone="info">NEW</StatusBadge>}
           {changed && mod.previous_version && (
@@ -526,7 +527,13 @@ function SimpleModRow({
           items={[
             { label: "경로 열기", icon: FolderOpen, onClick: () => onOpenPath(mod.path), disabled: Boolean(busy) || !mod.path },
             { label: t.extract, icon: DownloadCloud, onClick: () => onExtract(mod), disabled: Boolean(busy) || downloading },
-            { label: "삭제", icon: Trash2, onClick: () => onDelete(mod), disabled: Boolean(busy) || locked || !canDeleteMod(mod), danger: true },
+            ...(mod.workshop_item_id
+              ? [
+                  { label: "창작마당 페이지 열기", icon: ExternalLink, onClick: () => openWorkshopPage(mod.workshop_item_id) },
+                  // Steam puts deleted Workshop files back; unsubscribing is how they go.
+                  { label: "창작마당에서 구독 해제", icon: Trash2, onClick: () => openWorkshopPage(mod.workshop_item_id), danger: true },
+                ]
+              : [{ label: "삭제", icon: Trash2, onClick: () => onDelete(mod), disabled: Boolean(busy) || locked || !canDeleteMod(mod), danger: true }]),
           ]}
         />
       </div>
@@ -947,15 +954,19 @@ function WorkshopBadge({ mod }: { mod: ModRow }) {
       aria-label={`${mod.name} 창작마당 페이지 열기`}
       onClick={(event) => {
         event.stopPropagation();
-        if (!isPreviewRuntime()) {
-          void invokeCommand("open_workshop_page", { itemId }).catch((error) => console.error(error));
-        }
+        openWorkshopPage(itemId);
       }}
     >
       창작마당
       <ExternalLink size={10} aria-hidden="true" />
     </button>
   );
+}
+
+function openWorkshopPage(itemId: string | null | undefined) {
+  if (itemId && !isPreviewRuntime()) {
+    void invokeCommand("open_workshop_page", { itemId }).catch((error) => console.error(error));
+  }
 }
 
 function BranchWarningIcon({ issue }: { issue: BranchIssue | null | undefined }) {
