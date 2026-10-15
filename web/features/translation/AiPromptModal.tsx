@@ -5,13 +5,13 @@ import type {
   AiPromptParts,
   GlossaryTerm,
   JsonTranslationSheet,
-  JsonValidation,
   ProjectTranslationSettings,
   TranslationProjectInfo,
 } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
 import { TermCandidatesPanel } from "./TermCandidatesPanel";
 import { TermTableEditor } from "./TermTableEditor";
+import { MAX_CHARS_STORAGE_KEY, budgetOf, loadPromptSettings, readStoredMaxChars, slotKey } from "./aiPromptShared";
 import {
   compactTranslationFile,
   normalizeSlotId,
@@ -21,8 +21,6 @@ import {
   translationSlotEntries,
 } from "./translationUtils";
 
-const MAX_CHARS_STORAGE_KEY = "sts2.aiPrompt.maxChars.v1";
-const DEFAULT_MAX_CHARS = 5000;
 const AUTOSAVE_DELAY_MS = 600;
 
 const TONE_OPTIONS = [
@@ -45,7 +43,6 @@ export function AiPromptModal({
   projectInfo,
   onlyEmptyDefault,
   dllTextKeys: dllKeys,
-  validation,
   initialFocus = "all",
   onClose,
   onTermsSaved,
@@ -56,9 +53,7 @@ export function AiPromptModal({
   onlyEmptyDefault: boolean;
   /** Strings worth translating in a DLL sheet; null for other sheets. */
   dllTextKeys: Set<string> | null;
-  /** The last validation, for re-asking only the flagged entries. */
-  validation: JsonValidation | null;
-  /** Opened for fixing ("warnings"): starts on the parts tab with them built. */
+  /** Opened for re-asking ("updated"): starts on the parts tab with them built. */
   initialFocus?: PromptFocus;
   onClose: () => void;
   onTermsSaved: () => void;
@@ -80,13 +75,11 @@ export function AiPromptModal({
     () => sheet.entries.filter((entry) => entry.status === "updated" && entry.source_value.trim()).length,
     [sheet],
   );
-  const issuesByKey = React.useMemo(() => validationIssuesByKey(validation), [validation]);
-  const issueCount = Object.keys(issuesByKey).length;
   const [maxChars, setMaxChars] = React.useState(readStoredMaxChars);
   const [saveState, setSaveState] = React.useState<"" | "saving" | "saved">("");
   const savedTermsRef = React.useRef("");
   const [result, setResult] = React.useState<AiPromptParts | null>(null);
-  /** What the shown parts ask for; answers to a fix or update re-ask overwrite. */
+  /** What the shown parts ask for; answers to an update re-ask overwrite. */
   const [resultFocus, setResultFocus] = React.useState<PromptFocus>("all");
   const [selectedPart, setSelectedPart] = React.useState(0);
   const [copiedParts, setCopiedParts] = React.useState<Set<number>>(() => new Set());
@@ -100,7 +93,7 @@ export function AiPromptModal({
   React.useEffect(() => {
     let cancelled = false;
     setLoaded(false);
-    loadSettings(projectKey)
+    loadPromptSettings(projectKey)
       .then((settings) => {
         if (cancelled) {
           return;
@@ -188,25 +181,6 @@ export function AiPromptModal({
     [result, translatedSlots],
   );
 
-  const registeredSources = React.useMemo(
-    () => new Set(settings.terms.map((term) => term.source.toLowerCase())),
-    [settings.terms],
-  );
-
-  /** Adds terms to the mod glossary, replacing entries for the same source. */
-  function addTerms(added: Array<{ source: string; target: string }>) {
-    setTerms((current) => {
-      const sources = new Set(added.map((term) => term.source.toLowerCase()));
-      return [
-        ...current.filter((term) => !sources.has(term.source.toLowerCase())),
-        ...added.map((term) => ({
-          source: term.source,
-          targets: term.target.split("/").map((target) => target.trim()).filter(Boolean),
-        })),
-      ];
-    });
-  }
-
   async function buildParts() {
     setBusy(true);
     setError("");
@@ -234,7 +208,7 @@ export function AiPromptModal({
               maxChars: budget,
               onlyEmpty,
               focus: focus === "all" ? null : focus,
-              issues: focus === "warnings" ? issuesByKey : null,
+              issues: null,
             },
           });
       setResult(parts);
@@ -460,8 +434,8 @@ export function AiPromptModal({
               extraInstructions: settings.extra_instructions,
               maxChars: budgetOf(maxChars),
             }}
-            registeredSources={registeredSources}
-            onAddTerms={addTerms}
+            terms={terms}
+            onChangeTerms={setTerms}
           />
         </div>
         <div className="ai-prompt-tab" role="tabpanel" hidden={tab !== "parts"}>
@@ -470,15 +444,12 @@ export function AiPromptModal({
               <input type="checkbox" checked={includePrompt} onChange={(event) => setIncludePrompt(event.target.checked)} />
               <span>프롬프트 포함</span>
             </label>
-            <label className="ai-prompt-focus" title="업데이트·경고는 기존 번역과 용어집을 함께 보내 고쳐 달라고 합니다.">
+            <label className="ai-prompt-focus" title="원문 바뀐 항목은 기존 번역과 이전 원문을 함께 보내 고쳐 달라고 합니다. 경고 수정은 검증 결과의 AI 수정 프롬프트에서 만듭니다.">
               <span>대상</span>
               <select value={focus} onChange={(event) => setFocus(event.target.value as PromptFocus)}>
                 <option value="all">번역할 항목</option>
                 <option value="updated" disabled={updatedCount === 0}>
                   원문 바뀐 항목 ({updatedCount})
-                </option>
-                <option value="warnings" disabled={issueCount === 0}>
-                  {validation ? `경고 항목 (${issueCount})` : "경고 항목 (검증 먼저)"}
                 </option>
               </select>
             </label>
@@ -616,43 +587,7 @@ function fileName(path: string) {
   return path.split(/[\\/]/).pop() ?? path;
 }
 
-function slotKey(file: string, id: string) {
-  return `${file}\u0000${normalizeSlotId(id) ?? id}`;
-}
-
-function budgetOf(value: number) {
-  return Math.max(500, Math.round(value) || DEFAULT_MAX_CHARS);
-}
-
-function readStoredMaxChars() {
-  try {
-    const stored = Number(window.localStorage.getItem(MAX_CHARS_STORAGE_KEY));
-    return Number.isFinite(stored) && stored >= 500 ? stored : DEFAULT_MAX_CHARS;
-  } catch {
-    return DEFAULT_MAX_CHARS;
-  }
-}
-
-async function loadSettings(projectKey: string): Promise<ProjectTranslationSettings> {
-  if (!projectKey || isPreviewRuntime()) {
-    return { mod_description: "", tone: "official", terms: [], extra_instructions: "" };
-  }
-  return invokeCommand("load_project_translation_settings", { projectKey });
-}
-
-export type PromptFocus = "all" | "updated" | "warnings";
-
-/**
- * Format and term problems by entry, the warnings a re-ask can fix. Empty
- * and changed-source entries have their own options (빈 값만, 원문 바뀐 항목).
- */
-function validationIssuesByKey(validation: JsonValidation | null): Record<string, string[]> {
-  const issues: Record<string, string[]> = {};
-  for (const issue of [...(validation?.format_issues ?? []), ...(validation?.glossary_issues ?? [])]) {
-    (issues[issue.key] ??= []).push(issue.message);
-  }
-  return issues;
-}
+export type PromptFocus = "all" | "updated";
 
 function previewParts(sheet: JsonTranslationSheet, includePrompt: boolean, budget: number): AiPromptParts {
   const slots = translationSlotEntries(sheet);

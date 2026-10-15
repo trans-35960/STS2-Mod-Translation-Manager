@@ -1,9 +1,10 @@
 import React from "react";
-import { Check, Copy, ListPlus, Loader2, Search } from "lucide-react";
+import { Check, Copy, ListPlus, Loader2, Search, Undo2 } from "lucide-react";
 import { invokeCommand } from "../../api/tauri";
-import type { AiPromptParts, JsonTranslationSheet, TermCandidate } from "../../types";
+import type { AiPromptParts, GlossaryTerm, JsonTranslationSheet, TermCandidate } from "../../types";
 import { isPreviewRuntime } from "../../utils/runtime";
-import { parsePastedTranslationJson } from "./translationUtils";
+import { parseTermsInput } from "./TermTableEditor";
+import { TermConflictList, termMergeSummary, useTermConflicts } from "./termMerge";
 
 type Row = TermCandidate & { checked: boolean; translation: string };
 
@@ -15,22 +16,28 @@ const KIND_LABELS: Record<string, string> = {
 
 /**
  * Mechanical glossary candidates for the open sheet. The user reviews them,
- * fills missing translations (by hand or with a terms-only AI prompt), and
- * adds the chosen ones to the mod glossary before translating the sheet.
+ * fills missing translations by hand and adds the chosen ones, or asks a
+ * terms-only AI prompt whose pasted answer goes straight into the mod
+ * glossary (a different translation for a registered term is asked about).
  */
 export function TermCandidatesPanel({
   sheet,
   projectKey,
   context,
-  registeredSources,
-  onAddTerms,
+  terms,
+  onChangeTerms,
 }: {
   sheet: JsonTranslationSheet;
   projectKey: string;
   context: { modName: string; modDescription: string; tone: string; extraInstructions: string; maxChars: number };
-  registeredSources: Set<string>;
-  onAddTerms: (terms: Array<{ source: string; target: string }>) => void;
+  /** The mod glossary the candidates are added to. */
+  terms: GlossaryTerm[];
+  onChangeTerms: (terms: GlossaryTerm[]) => void;
 }) {
+  const registeredSources = React.useMemo(() => new Set(terms.map((term) => term.source.toLowerCase())), [terms]);
+  const conflicts = useTermConflicts(terms, onChangeTerms);
+  /** Glossary and candidates before the last add, for one-step undo. */
+  const [undo, setUndo] = React.useState<{ terms: GlossaryTerm[]; rows: Row[] | null } | null>(null);
   const [rows, setRows] = React.useState<Row[] | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [message, setMessage] = React.useState("");
@@ -112,39 +119,38 @@ export function TermCandidatesPanel({
     }
   }
 
-  function applyTermAnswer(text: string) {
-    const parsed = parsePastedTranslationJson(text);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      setMessage("용어 답변 JSON({\"원문\": \"번역\"})을 찾지 못했습니다.");
-      return;
-    }
-    const answers = new Map(
-      Object.entries(parsed as Record<string, unknown>)
-        .filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim() !== "")
-        .map(([source, target]) => [source.trim().toLowerCase(), target.trim()]),
-    );
-    if (!rows) {
-      return;
-    }
-    let filled = 0;
-    const next = rows.map((row) => {
-      const answer = answers.get(row.source.toLowerCase());
-      if (!answer) {
-        return row;
-      }
-      filled += 1;
-      return { ...row, translation: answer, checked: true };
-    });
-    setRows(next);
+  /** Adds terms to the glossary now and drops them from the candidates. */
+  function addTerms(added: GlossaryTerm[]) {
+    setUndo({ terms, rows });
+    const result = conflicts.add(added);
+    const sources = new Set(added.map((term) => term.source.toLowerCase()));
+    setRows((current) => current?.filter((row) => !sources.has(row.source.toLowerCase())) ?? current);
     setUntranslatedOnly(null);
-    setMessage(`용어 답변 ${answers.size}개 중 ${filled}개를 채웠습니다. 확인 후 "용어에 추가"를 누르세요.`);
+    setMessage(termMergeSummary(result));
+  }
+
+  function applyTermAnswer(text: string) {
+    const parsed = parseTermsInput(text);
+    if (!parsed || parsed.length === 0) {
+      setMessage('용어 답변({"원문": "번역"} 또는 `원문 = 번역` 줄)을 찾지 못했습니다.');
+      return;
+    }
+    addTerms(parsed);
   }
 
   function addReady() {
-    onAddTerms(ready.map((row) => ({ source: row.source, target: row.translation.trim() })));
-    const added = new Set(ready.map((row) => row.source));
-    setRows((current) => current?.filter((row) => !added.has(row.source)) ?? current);
-    setMessage(`${added.size}개를 모드 전용 용어에 추가했습니다.`);
+    addTerms(ready.map((row) => ({ source: row.source, targets: splitTranslation(row.translation) })));
+  }
+
+  function undoAdd() {
+    if (!undo) {
+      return;
+    }
+    onChangeTerms(undo.terms);
+    setRows(undo.rows);
+    conflicts.clear();
+    setUndo(null);
+    setMessage("되돌렸습니다.");
   }
 
   return (
@@ -180,7 +186,18 @@ export function TermCandidatesPanel({
           </>
         )}
       </div>
-      {message && <p className="term-candidates-message">{message}</p>}
+      {message && (
+        <p className="term-candidates-message">
+          {message}
+          {undo && (
+            <button type="button" className="term-table-undo" onClick={undoAdd}>
+              <Undo2 size={12} />
+              되돌리기
+            </button>
+          )}
+        </p>
+      )}
+      <TermConflictList conflicts={conflicts.conflicts} onResolve={conflicts.resolve} />
 
       {prompts && prompts.parts.length > 0 && (
         <div className="term-prompt-parts">
@@ -199,7 +216,7 @@ export function TermCandidatesPanel({
               event.preventDefault();
               applyTermAnswer(event.clipboardData.getData("text/plain"));
             }}
-            placeholder='용어 답변 붙여넣기: {"Ammo": "탄약", ...}'
+            placeholder='용어 답변 붙여넣기 (바로 용어에 추가): {"Ammo": "탄약", ...}'
           />
         </div>
       )}
@@ -248,6 +265,13 @@ export function TermCandidatesPanel({
       )}
     </div>
   );
+}
+
+function splitTranslation(value: string) {
+  return value
+    .split("/")
+    .map((target) => target.trim())
+    .filter(Boolean);
 }
 
 function previewCandidates(): TermCandidate[] {

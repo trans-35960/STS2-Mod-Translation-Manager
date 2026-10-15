@@ -476,8 +476,9 @@ export function useTranslationSheetActions({
     applyPasteCandidates([entryKey]);
   }
 
-  function applyAllPasteCandidates() {
-    applyPasteCandidates(Object.keys(pasteCandidatesByKey), true);
+  /** Applies every candidate, or only `entryKeys` (e.g. the ones that fix their warnings). */
+  function applyAllPasteCandidates(entryKeys?: string[]) {
+    applyPasteCandidates(entryKeys ?? Object.keys(pasteCandidatesByKey), true);
   }
 
   function dismissPasteCandidates(entryKeys: string[], logBulk = false) {

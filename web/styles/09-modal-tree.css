@@ -933,3 +933,91 @@
   max-height: min(52vh, 520px);
 }
 
+
+.term-table-undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  border: 1px solid rgba(22, 101, 52, 0.3);
+  border-radius: 5px;
+  background: #fff;
+  padding: 1px 7px;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.term-table-paste {
+  border-style: dashed;
+  font-size: 12px;
+}
+
+.term-conflicts {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  border-radius: 7px;
+  background: #fffbeb;
+  padding: 7px 9px;
+}
+
+.term-conflicts-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.term-conflicts-head strong {
+  flex: 1 1 200px;
+  color: #92400e;
+  font-size: 12px;
+}
+
+.term-conflicts button {
+  border: 1px solid rgba(146, 64, 14, 0.3);
+  border-radius: 5px;
+  background: #fff;
+  padding: 2px 8px;
+  color: #78350f;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.term-conflicts button:hover {
+  background: #fef3c7;
+}
+
+.term-conflict {
+  display: grid;
+  grid-template-columns: minmax(80px, 160px) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid rgba(217, 119, 6, 0.18);
+  padding-top: 4px;
+  font-size: 12px;
+}
+
+.term-conflict b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.term-conflict del {
+  color: #991b1b;
+}
+
+.term-conflict ins {
+  color: #166534;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.term-conflict > div {
+  display: flex;
+  gap: 4px;
+}
