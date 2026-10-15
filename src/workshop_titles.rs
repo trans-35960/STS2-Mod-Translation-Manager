@@ -24,8 +24,8 @@ const REFRESH_AFTER_SECS: u64 = 7 * 24 * 60 * 60;
 const MAX_ITEMS_PER_REQUEST: usize = 100;
 const REQUEST_TIMEOUT_SECS: &str = "15";
 const THUMBNAIL_DIR: &str = "workshop_thumbnails";
-/// Thumbnails are shown at about 40px; 128px stays sharp on high-DPI screens.
-const THUMBNAIL_SIZE: u32 = 128;
+/// Rows show thumbnails at 36-56px and enlarge them to 256px on hover.
+const THUMBNAIL_SIZE: u32 = 256;
 const THUMBNAIL_TIMEOUT_SECS: &str = "30";
 /// Larger files are not thumbnails worth keeping (the resize was ignored).
 const MAX_THUMBNAIL_BYTES: u64 = 2 * 1024 * 1024;
@@ -254,6 +254,8 @@ fn keep_download(state_dir: &Path, item_id: &str) -> bool {
         .is_ok_and(|meta| meta.len() > 0 && meta.len() <= MAX_THUMBNAIL_BYTES)
         && fs::read(&partial).is_ok_and(|bytes| image_mime(&bytes).is_some());
     if usable && fs::rename(&partial, thumbnail_path(state_dir, item_id)).is_ok() {
+        // Thumbnails saved at an earlier size are replaced, not kept beside.
+        let _ = fs::remove_file(thumbnail_dir(state_dir).join(format!("{item_id}.img")));
         return true;
     }
     let _ = fs::remove_file(&partial);
@@ -299,8 +301,9 @@ fn thumbnail_dir(state_dir: &Path) -> PathBuf {
     state_dir.join(THUMBNAIL_DIR)
 }
 
+/// The size is in the name, so changing it downloads the thumbnails again.
 fn thumbnail_path(state_dir: &Path, item_id: &str) -> PathBuf {
-    thumbnail_dir(state_dir).join(format!("{item_id}.img"))
+    thumbnail_dir(state_dir).join(format!("{item_id}-{THUMBNAIL_SIZE}.img"))
 }
 
 fn partial_path(state_dir: &Path, item_id: &str) -> PathBuf {

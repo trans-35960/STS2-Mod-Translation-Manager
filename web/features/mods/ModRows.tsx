@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import {
   ChevronDown,
   ChevronRight,
@@ -110,7 +111,7 @@ function ModTableRow({
           label={`${mod.name} 선택`}
           onChange={() => onSelect(mod)}
         />
-        {!child && <ModThumbnail itemId={mod.workshop_item_id} />}
+        {!child && <ModThumbnail itemId={mod.workshop_item_id} large />}
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={mod.active ? mod.branch_issue : null} />
@@ -242,7 +243,7 @@ function ModGroupTableRow({
           label={`${group.name} 그룹 선택`}
           onChange={onSelectGroup}
         />
-        <ModThumbnail itemId={group.mods.find((mod) => mod.workshop_item_id)?.workshop_item_id} />
+        <ModThumbnail itemId={group.mods.find((mod) => mod.workshop_item_id)?.workshop_item_id} large />
         <strong>
           <DependencyWarningIcon dependencies={dependencyWarnings} />
           <BranchWarningIcon issue={groupBranchIssue(group.mods)} />
@@ -634,12 +635,59 @@ function groupBridgeStored(mods: ModRow[]): ModRow["bridge_stored"] {
   return mods.find((mod) => mod.bridge_stored?.length)?.bridge_stored;
 }
 
-/** Steam Workshop preview image, or a placeholder that keeps names lined up. */
-function ModThumbnail({ itemId }: { itemId: string | null | undefined }) {
+const THUMBNAIL_PREVIEW_SIZE = 256;
+
+/**
+ * Steam Workshop preview image, or a placeholder that keeps names lined up.
+ * Hovering shows it larger beside the row; the enlarged copy is portalled to
+ * the body so the mod table's scroll container does not clip it.
+ */
+function ModThumbnail({ itemId, large = false }: { itemId: string | null | undefined; large?: boolean }) {
   const src = useWorkshopThumbnail(itemId);
+  const [preview, setPreview] = React.useState<{ left: number; top: number } | null>(null);
+
+  React.useEffect(() => {
+    if (!preview) {
+      return;
+    }
+    const close = () => setPreview(null);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("blur", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("blur", close);
+    };
+  }, [preview]);
+
+  const className = ["mod-thumbnail", large ? "large" : "", src ? "" : "placeholder"].filter(Boolean).join(" ");
   return (
-    <span className={src ? "mod-thumbnail" : "mod-thumbnail placeholder"} aria-hidden="true">
-      {src ? <img src={src} alt="" draggable={false} /> : <Package size={16} />}
+    <span
+      className={className}
+      aria-hidden="true"
+      onMouseEnter={(event) => {
+        if (!src) {
+          return;
+        }
+        const rect = event.currentTarget.getBoundingClientRect();
+        const gap = 10;
+        const fitsRight = rect.right + gap + THUMBNAIL_PREVIEW_SIZE <= window.innerWidth - 8;
+        setPreview({
+          left: fitsRight ? rect.right + gap : Math.max(8, rect.left - gap - THUMBNAIL_PREVIEW_SIZE),
+          top: Math.min(
+            Math.max(8, rect.top + rect.height / 2 - THUMBNAIL_PREVIEW_SIZE / 2),
+            window.innerHeight - THUMBNAIL_PREVIEW_SIZE - 8,
+          ),
+        });
+      }}
+      onMouseLeave={() => setPreview(null)}
+    >
+      {src ? <img src={src} alt="" draggable={false} /> : <Package size={large ? 22 : 16} />}
+      {src &&
+        preview &&
+        createPortal(
+          <img className="mod-thumbnail-preview" src={src} alt="" style={{ left: preview.left, top: preview.top }} />,
+          document.body,
+        )}
     </span>
   );
 }
