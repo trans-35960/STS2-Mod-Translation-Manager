@@ -180,9 +180,7 @@ pub fn build_prompt_parts(
                 .is_none_or(|keys| keys.contains(&slot.entry.key))
         })
         .filter(|slot| match options.focus {
-            PromptFocus::Translate => {
-                !options.only_empty || slot.entry.translated_value.is_empty()
-            }
+            PromptFocus::Translate => !options.only_empty || slot.entry.translated_value.is_empty(),
             PromptFocus::Revise => slot.entry.status == JsonTranslationStatus::Updated,
             PromptFocus::Fix => options
                 .issues
@@ -724,7 +722,11 @@ mod tests {
         assert_eq!(revise.len(), 1);
         assert_eq!(revise[0].rows, 1);
         assert!(revise[0].text.contains("모드 업데이트로 원문이 바뀌었다"));
-        assert!(revise[0].text.contains("  - 이전 원문: \"Old text\"\n  - 기존 번역: \"번역\"\n"));
+        assert!(
+            revise[0]
+                .text
+                .contains("  - 이전 원문: \"Old text\"\n  - 기존 번역: \"번역\"\n")
+        );
         assert_eq!(fix[0].rows, 1);
         assert!(fix[0].text.contains("## 기존 번역과 문제"));
         assert!(fix[0].text.contains("  - 문제: 줄바꿈 수가 다릅니다\n"));

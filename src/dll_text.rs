@@ -53,7 +53,11 @@ impl DllAnalysis {
 
     /// Replaced only where shown, kept where the code compares it.
     pub fn is_partial(&self, literal: &str) -> bool {
-        self.mixed.contains(literal) && self.uses.get(literal).is_none_or(|use_| use_ != "contains_key")
+        self.mixed.contains(literal)
+            && self
+                .uses
+                .get(literal)
+                .is_none_or(|use_| use_ != "contains_key")
     }
 }
 
@@ -183,12 +187,14 @@ pub fn looks_like_sentence(text: &str) -> bool {
     }
     let real_words = words
         .iter()
-        .filter(|word| word.chars().filter(|character| character.is_alphabetic()).count() >= 2)
+        .filter(|word| {
+            word.chars()
+                .filter(|character| character.is_alphabetic())
+                .count()
+                >= 2
+        })
         .count();
-    real_words >= 2
-        && trimmed
-            .chars()
-            .any(|character| character.is_lowercase())
+    real_words >= 2 && trimmed.chars().any(|character| character.is_lowercase())
 }
 
 /// `[ControlProjection] refresh complete`: a log prefix, unlike `[gold]`.
@@ -278,7 +284,12 @@ mod tests {
     fn analysis_decides_before_shape() {
         assert!(is_dll_text("撕裂衣服", "kor", None, true));
         assert!(!is_dll_text("撕裂衣服", "kor", Some("searched_for"), true));
-        assert!(!is_dll_text("Saved config to disk", "kor", Some("log"), true));
+        assert!(!is_dll_text(
+            "Saved config to disk",
+            "kor",
+            Some("log"),
+            true
+        ));
         assert!(is_dll_text("Refund", "kor", Some("shown"), true));
         assert!(!is_dll_text("Refund", "kor", None, true));
         assert!(!is_dll_text("^(?:进行)\\d+$", "kor", None, true));
@@ -326,8 +337,18 @@ mod tests {
 
         assert!(analysis.is_partial("攻击牌"));
         assert!(!analysis.is_partial("深海黏液"));
-        assert!(is_dll_text("攻击牌", "kor", analysis.use_of("攻击牌"), true));
-        assert!(!is_dll_text("深海黏液", "kor", analysis.use_of("深海黏液"), true));
+        assert!(is_dll_text(
+            "攻击牌",
+            "kor",
+            analysis.use_of("攻击牌"),
+            true
+        ));
+        assert!(!is_dll_text(
+            "深海黏液",
+            "kor",
+            analysis.use_of("深海黏液"),
+            true
+        ));
         assert!(is_dll_text("。", "kor", analysis.use_of("。"), true));
         assert!(!is_dll_text("攻", "kor", None, true));
     }
@@ -339,7 +360,12 @@ mod tests {
         assert!(!latin_is_text(chinese.iter().copied(), "kor"));
         assert!(latin_is_text(["Open Logs Folder", "造成伤害"], "kor"));
         assert!(!is_dll_text("fourth act holy route", "kor", None, false));
-        assert!(is_dll_text("fourth act holy route", "kor", Some("shown"), false));
+        assert!(is_dll_text(
+            "fourth act holy route",
+            "kor",
+            Some("shown"),
+            false
+        ));
     }
 
     #[test]
@@ -371,7 +397,10 @@ mod tests {
         let stale = analysis_for_dll(&dir, &dll);
         fs::remove_dir_all(&dir).ok();
 
-        assert_eq!(current.and_then(|a| a.use_of("x").map(str::to_string)), Some("key".to_string()));
+        assert_eq!(
+            current.and_then(|a| a.use_of("x").map(str::to_string)),
+            Some("key".to_string())
+        );
         assert!(stale.is_none());
     }
 }
