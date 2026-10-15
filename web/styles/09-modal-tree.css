@@ -771,8 +771,14 @@
   font-size: 12px;
 }
 
+/* Only the first icon button takes the free space, so the add and reset
+   buttons sit together at the right edge. */
 .term-table-toolbar .toolbar-icon-button {
   margin-left: auto;
+}
+
+.term-table-toolbar .toolbar-icon-button + .toolbar-icon-button {
+  margin-left: 0;
 }
 
 .term-table-untranslated {
