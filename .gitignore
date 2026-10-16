@@ -33,3 +33,8 @@
 !/vendor/bridge
 /vendor/bridge/*
 !/vendor/bridge/README.md
+
+# Dependency license notices (scripts/generate-dependency-licenses.ps1 writes them at release time).
+!/vendor/licenses
+/vendor/licenses/*
+!/vendor/licenses/README.md
