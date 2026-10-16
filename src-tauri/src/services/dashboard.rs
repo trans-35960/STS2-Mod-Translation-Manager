@@ -97,6 +97,47 @@ pub(crate) fn open_workshop_page(item_id: String) -> Result<(), String> {
     open_url_in_system(&page)
 }
 
+/// Unsubscribes from a Workshop item through the Steam client (deleting the
+/// files would not stick: Steam downloads them again), then waits briefly for
+/// Steam to remove the item's folder so the refreshed list no longer shows it.
+pub(crate) fn unsubscribe_workshop_item(item_id: String) -> Result<ActionDto, String> {
+    use sts2_mod_manager::steam_workshop;
+
+    let item_id = item_id.trim();
+    let numeric_id = item_id
+        .parse::<u64>()
+        .map_err(|_| format!("창작마당 항목 번호가 올바르지 않습니다: {item_id}"))?;
+    let config = app().config().clone();
+    let dll = steam_workshop::find_steam_api_dll(&config.game_dir).ok_or_else(|| {
+        format!(
+            "게임 폴더에서 steam_api64.dll을 찾지 못했습니다: {}",
+            config.game_dir.display()
+        )
+    })?;
+    let exe = env::current_exe().map_err(|error| format!("실행 파일 경로 확인 실패: {error}"))?;
+    steam_workshop::unsubscribe(&exe, &dll, numeric_id)?;
+
+    let item_dirs: Vec<PathBuf> = config
+        .workshop_dirs
+        .iter()
+        .map(|dir| dir.join(item_id))
+        .filter(|dir| dir.exists())
+        .collect();
+    let started = Instant::now();
+    while item_dirs.iter().any(|dir| dir.exists()) && started.elapsed().as_secs() < 5 {
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    let removed = item_dirs.iter().all(|dir| !dir.exists());
+    Ok(ActionDto {
+        message: if removed {
+            format!("창작마당 구독 해제 완료: {item_id}")
+        } else {
+            format!("창작마당 구독 해제 완료: {item_id} (Steam이 곧 파일을 정리합니다)")
+        },
+        dashboard: dashboard().map_err(|error| error.to_string())?,
+    })
+}
+
 /// Looks up Steam Workshop page titles and thumbnails for the given item ids,
 /// fetching and downloading the ones not cached yet.
 pub(crate) fn refresh_workshop_details(item_ids: Vec<String>) -> Result<WorkshopDetailsDto, String> {

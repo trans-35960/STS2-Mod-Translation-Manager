@@ -531,7 +531,7 @@ function SimpleModRow({
               ? [
                   { label: "창작마당 페이지 열기", icon: ExternalLink, onClick: () => openWorkshopPage(mod.workshop_item_id) },
                   // Steam puts deleted Workshop files back; unsubscribing is how they go.
-                  { label: "창작마당에서 구독 해제", icon: Trash2, onClick: () => openWorkshopPage(mod.workshop_item_id), danger: true },
+                  { label: "창작마당에서 구독 해제", icon: Trash2, onClick: () => onDelete(mod), disabled: Boolean(busy) || locked, danger: true },
                 ]
               : [{ label: "삭제", icon: Trash2, onClick: () => onDelete(mod), disabled: Boolean(busy) || locked || !canDeleteMod(mod), danger: true }]),
           ]}
