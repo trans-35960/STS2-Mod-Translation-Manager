@@ -411,6 +411,11 @@ fn translation_sheet_matches_resource(sheet_path: &Path, resource_path: &str) ->
         return false;
     };
     let source_path = PathBuf::from(sheet.source_path);
+    // DLL sheets and pck/json language sheets never stand in for each other.
+    let resource_is_dll = is_hardcoded_source_file(Path::new(resource_path.trim().trim_end_matches(['/', '\\'])));
+    if is_hardcoded_source_file(&source_path) != resource_is_dll {
+        return false;
+    }
     let Some(mut relative) = relative_after_named_component(&source_path, "source") else {
         return false;
     };

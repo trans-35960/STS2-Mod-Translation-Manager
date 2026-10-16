@@ -1738,6 +1738,51 @@ Packed file: Shadowverse/localization/eng/cards.json
     }
 
     #[test]
+    fn dll_and_language_sheets_stay_separate() {
+        let root = std::env::temp_dir().join(format!("sts2-dll-separate-{}", timestamp_string()));
+        let memory = root.join("translation_memory").join("mod");
+        fs::create_dir_all(&memory).expect("create memory");
+        let entry = |key: &str| JsonTranslationEntry {
+            key: key.to_string(),
+            slot_id: None,
+            previous_source_value: None,
+            source_value: "Hello".to_string(),
+            translated_value: "안녕".to_string(),
+            status: JsonTranslationStatus::Ready,
+            acknowledged_issues: Vec::new(),
+        };
+        let source = |parts: &[&str]| {
+            parts
+                .iter()
+                .fold(root.join("selected").join("mod"), |path, part| path.join(part))
+                .to_string_lossy()
+                .to_string()
+        };
+        let dll_sheet = memory.join("dll.kor.translation.json");
+        let loc_sheet = memory.join("localization-jpn.kor.translation.json");
+        let dll = JsonTranslationSheet {
+            source_path: source(&["dll", "source", "Mod.dll"]),
+            target_language: "kor".to_string(),
+            updated_epoch: 1,
+            entries: vec![entry("dll://Mod.dll#0")],
+        };
+        let loc = JsonTranslationSheet {
+            source_path: source(&["jpn", "source", "localization", "jpn"]),
+            target_language: "kor".to_string(),
+            updated_epoch: 1,
+            entries: vec![entry("file://cards.json#/name")],
+        };
+        write_sheet(&dll_sheet, &dll).expect("write dll");
+        write_sheet(&loc_sheet, &loc).expect("write loc");
+
+        assert!(!translation_sheet_matches_resource(&dll_sheet, "res://localization/jpn"));
+        assert!(!translation_sheet_matches_resource(&loc_sheet, "Mod.dll"));
+        assert!(sibling_language_sheets(&loc_sheet, &loc).is_empty());
+        assert!(sibling_language_sheets(&dll_sheet, &dll).is_empty());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn translation_memory_fallback_requires_same_source_resource() {
         let root =
             std::env::temp_dir().join(format!("sts2-memory-resource-{}", timestamp_string()));

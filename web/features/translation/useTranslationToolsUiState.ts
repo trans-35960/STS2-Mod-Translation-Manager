@@ -88,18 +88,23 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
       "",
     [props.sheet],
   );
+  // A DLL sheet has no source language: the mod's localization languages
+  // belong to its pck/json sheets, so they are neither sources nor comparisons.
+  const isDllSession = isHardcodedSheet(props.sheet?.source_path || props.sourcePath);
   const compareLanguageOptions = React.useMemo(
     () =>
-      uniqueLanguagePreviews(props.availableLanguages).filter(
-        (language) =>
-          language.sample_path &&
-          normalizeLanguageTag(languageFolderCode(language)) !== normalizeLanguageTag(props.targetLanguage),
-      ),
-    [props.availableLanguages, props.targetLanguage],
+      isDllSession
+        ? []
+        : uniqueLanguagePreviews(props.availableLanguages).filter(
+            (language) =>
+              language.sample_path &&
+              normalizeLanguageTag(languageFolderCode(language)) !== normalizeLanguageTag(props.targetLanguage),
+          ),
+    [isDllSession, props.availableLanguages, props.targetLanguage],
   );
   const sourceLanguageOptions = React.useMemo(
-    () => uniqueLanguagePreviews(props.availableLanguages).filter((language) => language.sample_path),
-    [props.availableLanguages],
+    () => (isDllSession ? [] : uniqueLanguagePreviews(props.availableLanguages).filter((language) => language.sample_path)),
+    [isDllSession, props.availableLanguages],
   );
   const selectedSourceLanguage = React.useMemo(
     () =>
@@ -475,6 +480,7 @@ export function useTranslationToolsUiState(props: TranslationToolsPageProps) {
     columns,
     sheetPath,
     sheetSourceLanguage,
+    isDllSession,
     compareLanguageOptions,
     sourceLanguageOptions,
     selectedSourceLanguage,
