@@ -3,6 +3,11 @@
 This application bundles the following third-party command-line tools and
 native libraries as application resources.
 
+License notices for the Rust crates and npm packages compiled into the
+application are generated at release time into
+`vendor/licenses/THIRD_PARTY_DEPENDENCIES.md` by
+`scripts/generate-dependency-licenses.ps1` and shipped with the app.
+
 ## 7-Zip
 
 - Files: `vendor/7zip/7z.exe`, `vendor/7zip/7z.dll`

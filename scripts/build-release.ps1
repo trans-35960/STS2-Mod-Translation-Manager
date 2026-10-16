@@ -123,9 +123,13 @@ function New-PortablePackage {
     $cliExe = Join-Path $RepoRoot "target\release\sts2_mod_manager.exe"
     $vendorDir = Join-Path $RepoRoot "vendor"
     $thirdPartyNotices = Join-Path $RepoRoot "THIRD_PARTY_NOTICES.md"
+    $dependencyLicenses = Join-Path $RepoRoot "vendor\licenses\THIRD_PARTY_DEPENDENCIES.md"
 
     Copy-RequiredItem -Source $guiExe -Destination (Join-Path $stagingDir "STS2 Mod Manager.exe")
     Copy-RequiredItem -Source $cliExe -Destination (Join-Path $stagingDir "sts2_mod_manager.exe")
+    if (-not (Test-Path -LiteralPath $dependencyLicenses)) {
+        throw "Required release item is missing: $dependencyLicenses. Run scripts/generate-dependency-licenses.ps1."
+    }
     Copy-RequiredItem -Source $vendorDir -Destination (Join-Path $stagingDir "vendor")
     Copy-RequiredItem -Source $thirdPartyNotices -Destination (Join-Path $stagingDir "THIRD_PARTY_NOTICES.md")
 
@@ -160,6 +164,7 @@ try {
         cargo build --release
         # The installer bundles vendor/bridge, so the bridge must be built first.
         & (Join-Path $PSScriptRoot "build-bridge.ps1")
+        & (Join-Path $PSScriptRoot "generate-dependency-licenses.ps1")
         Assert-ExecutableNotRunning -Path (Join-Path $repoRoot "src-tauri\target\release\sts2_mod_manager_tauri.exe")
         Invoke-Npm run tauri build
     }

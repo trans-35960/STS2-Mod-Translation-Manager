@@ -18,7 +18,7 @@
 - 이 저장소의 GitHub Release 배포 대상은 `trans-35960/STS2-Mod-Translation-Manager`입니다.
 - `git push`는 SSH 별칭(`github-trans-35960`)을 사용하므로 `gh` 활성 계정과 무관합니다. 계정이 문제가 되는 것은 `gh release` 등 `gh` 명령뿐입니다.
 - `gh`의 활성 계정이 다른 계정이어도 전역 계정을 함부로 바꾸지 않습니다. 릴리즈가 필요하면 먼저 `gh auth status`로 계정을 확인하고, 필요 시 사용자에게 확인한 뒤 배포용 계정 또는 `GH_TOKEN` 방식으로 진행합니다.
-- 릴리즈 전에는 `scripts/check.ps1` → `scripts/build-release.ps1` 순서로 실행합니다. `build-release.ps1`은 `cargo fmt --check`, `cargo test`, `cargo build --release`, 브리지 모드 빌드(필수), `npm run tauri build`와 smoke check를 포함합니다. 브리지 버전은 빌드 시 `src-tauri/tauri.conf.json` 버전으로 맞춰집니다. 필요하면 `npm run e2e:smoke`도 실행합니다.
+- 릴리즈 전에는 `scripts/check.ps1` → `scripts/build-release.ps1` 순서로 실행합니다. `build-release.ps1`은 `cargo fmt --check`, `cargo test`, `cargo build --release`, 브리지 모드 빌드(필수), 의존성 라이선스 고지 생성(`scripts/generate-dependency-licenses.ps1`), `npm run tauri build`와 smoke check를 포함합니다. 브리지 버전은 빌드 시 `src-tauri/tauri.conf.json` 버전으로 맞춰집니다. 필요하면 `npm run e2e:smoke`도 실행합니다.
 - 버전을 올릴 때는 아래 파일을 모두 같은 버전으로 맞춥니다.
   - `package.json`, `package-lock.json`
   - `Cargo.toml`, `Cargo.lock`
