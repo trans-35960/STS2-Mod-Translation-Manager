@@ -125,37 +125,13 @@
   line-height: 1.5;
 }
 
-.project-summary {
-  display: grid;
-  gap: 8px;
-  border-bottom: 1px solid #e7eeeb;
-  padding-bottom: 14px;
-}
-
 .translation-session-header {
   display: grid;
   gap: 10px;
 }
 
-.translation-session-header .project-summary {
-  border-bottom: 0;
-  padding-bottom: 0;
-}
-
 .translation-session-header button {
   width: 100%;
-}
-
-.project-summary > span {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.project-summary div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
 }
 
 .primary-action-row {

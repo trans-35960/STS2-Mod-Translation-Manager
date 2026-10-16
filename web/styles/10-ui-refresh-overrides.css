@@ -858,7 +858,6 @@ select {
   padding: 12px 14px;
 }
 
-.work-summary-accordion summary span,
 .compare-card-header > span,
 .language-compare-card > span,
 .preset-controls label span,
@@ -869,11 +868,6 @@ select {
   font-weight: 900;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-}
-
-.work-summary-accordion summary strong {
-  color: #0f172a;
-  font-size: 15px;
 }
 
 .translation-work-actions button {

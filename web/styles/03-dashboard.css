@@ -64,37 +64,101 @@
   padding: 12px 14px;
 }
 
-.work-summary-accordion {
+.work-title {
+  display: grid;
+  gap: 5px;
   min-width: 0;
 }
 
-.work-summary-accordion summary {
+.work-title-line {
   display: flex;
   align-items: center;
   gap: 10px;
-  cursor: pointer;
-  list-style-position: inside;
+  min-width: 0;
 }
 
-.work-summary-accordion summary span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.work-summary-accordion summary strong {
+.work-title-line h2 {
   overflow: hidden;
-  font-size: 16px;
+  margin: 0;
+  color: #0f172a;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.work-summary-accordion .project-summary {
-  margin-top: 12px;
-  border-top: 1px solid #e7eeeb;
-  border-bottom: 0;
-  padding-top: 12px;
-  padding-bottom: 0;
+.work-title-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.work-title-meta > span:not(:last-child)::after {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  margin: 0 9px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  vertical-align: middle;
+}
+
+.work-title-langs {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+}
+
+.work-title-langs b {
+  border-radius: 4px;
+  background: #ecfdf5;
+  padding: 1px 6px;
+  color: #047857;
+  font-weight: 900;
+}
+
+.work-title-desc {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  max-width: 880px;
+}
+
+.work-title-desc p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.work-title-desc.expanded p {
+  display: block;
+  white-space: pre-line;
+}
+
+.work-title-desc button {
+  flex: 0 0 auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: none;
+  cursor: pointer;
 }
 
 .translation-work-actions {
@@ -200,8 +264,8 @@
   color: var(--warn);
 }
 
-.work-summary-accordion .save-state {
-  margin-left: 10px;
+.work-title .save-state {
+  flex: 0 0 auto;
   border-radius: 999px;
   background: #ecfdf5;
   padding: 2px 8px;
@@ -211,12 +275,12 @@
   font-weight: 800;
 }
 
-.work-summary-accordion .save-state.pending {
+.work-title .save-state.pending {
   background: #f1f5f9;
   color: #475569;
 }
 
-.work-summary-accordion .save-state.error {
+.work-title .save-state.error {
   background: #fef2f2;
   color: #b91c1c;
 }
