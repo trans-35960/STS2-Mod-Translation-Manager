@@ -97,31 +97,21 @@ impl AppConfig {
 pub fn default_save_dir() -> Option<PathBuf> {
     let app_data = env::var_os("APPDATA").map(PathBuf::from)?;
     let steam_root = app_data.join("SlayTheSpire2").join("steam");
-    let preferred = steam_root.join("76561198093641030");
-    if preferred.exists() {
-        return Some(preferred);
+    let mut candidates: Vec<PathBuf> = std::fs::read_dir(&steam_root)
+        .ok()?
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .collect();
+    candidates.sort();
+    if let Some(path) = candidates
+        .iter()
+        .find(|path| looks_like_save_dir(path))
+        .cloned()
+    {
+        return Some(path);
     }
-
-    if let Ok(entries) = std::fs::read_dir(&steam_root) {
-        let mut candidates: Vec<PathBuf> = entries
-            .flatten()
-            .map(|entry| entry.path())
-            .filter(|path| path.is_dir())
-            .collect();
-        candidates.sort();
-        if let Some(path) = candidates
-            .iter()
-            .find(|path| looks_like_save_dir(path))
-            .cloned()
-        {
-            return Some(path);
-        }
-        if let Some(path) = candidates.into_iter().next() {
-            return Some(path);
-        }
-    }
-
-    Some(preferred)
+    candidates.into_iter().next()
 }
 
 fn looks_like_save_dir(path: &Path) -> bool {

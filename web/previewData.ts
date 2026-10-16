@@ -13,7 +13,7 @@ export const previewDashboard: Dashboard = {
     workspace: "Z:/game/sts2/modmanager",
     game: "Z:/game/sts2",
     game_mods: "Z:/game/sts2/mods",
-    save_dir: "C:/Users/angel/AppData/Roaming/SlayTheSpire2/steam/76561198093641030",
+    save_dir: "C:/Users/preview/AppData/Roaming/SlayTheSpire2/steam/76561190000000000",
     save_backup: "Z:/game/sts2/modmanager/backups",
     disabled: "Z:/game/sts2/mods.disabled",
     presets: "Z:/game/sts2/modmanager/presets",
@@ -27,8 +27,8 @@ export const previewDashboard: Dashboard = {
     translation_work_dir: "Z:/game/sts2/modmanager/translation_work",
     target_language: "kor",
       game_exe_path: "",
-      game_log_path: "C:/Users/angel/AppData/Roaming/SlayTheSpire2/logs/godot.log",
-      save_dir: "C:/Users/angel/AppData/Roaming/SlayTheSpire2/steam/76561198093641030",
+      game_log_path: "C:/Users/preview/AppData/Roaming/SlayTheSpire2/logs/godot.log",
+      save_dir: "C:/Users/preview/AppData/Roaming/SlayTheSpire2/steam/76561190000000000",
       save_backup_dir: "Z:/game/sts2/modmanager/backups",
       save_backup_retention_days: 7,
       save_backup_max_entries: 14,
@@ -69,7 +69,7 @@ export const previewDashboard: Dashboard = {
       title: "모드 로딩 실패 로그가 있습니다",
       detail: "[Error] zsproject 모드를 불러오던 중 ReflectionTypeLoadException 예외가 발생했습니다.",
       action_label: "로그 위치 열기",
-      related_path: "C:/Users/angel/AppData/Roaming/SlayTheSpire2/logs/godot.log",
+      related_path: "C:/Users/preview/AppData/Roaming/SlayTheSpire2/logs/godot.log",
       mod_key: null,
       can_auto_fix: false,
     },
@@ -434,7 +434,7 @@ export const previewModErrors: ModErrorReport = {
 
 export const previewGameLogs: GameLog[] = [
   {
-    path: "C:/Users/angel/AppData/Roaming/SlayTheSpire2/logs/godot.log",
+    path: "C:/Users/preview/AppData/Roaming/SlayTheSpire2/logs/godot.log",
     exists: true,
     modified_epoch: Math.floor(Date.now() / 1000),
     bytes: 147538872,

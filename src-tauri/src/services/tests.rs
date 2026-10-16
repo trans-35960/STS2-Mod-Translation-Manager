@@ -1995,7 +1995,7 @@ Packed file: Shadowverse/localization/eng/cards.json
         let record = ModRecord {
             name: "AkiSister".to_string(),
             path: PathBuf::from(
-                r"C:\Users\angel\AppData\Roaming\Vortex\downloads\slaythespire2\AkiSister.rar",
+                r"C:\Users\player\AppData\Roaming\Vortex\downloads\slaythespire2\AkiSister.rar",
             ),
             source: ModSource::ExternalManager,
             kind: ModKind::Archive,
