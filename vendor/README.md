@@ -16,9 +16,14 @@ vendor/
     7z.dll
     License.txt
     readme.txt
+  bridge/
+    STS2ModManagerBridge.dll
+    STS2ModManagerBridge.json
 ```
 
 The 7-Zip CLI is embedded so `.7z` and `.rar` mod archives can be inspected and
 language files can be extracted without a system-wide install. Godot PCK
 Explorer is embedded so nested `.pck` payloads can be opened after archive
-extraction. Keep provenance and version notes in `docs/vendor/`.
+extraction. `bridge/` holds the in-game translation bridge built by
+`scripts/build-bridge.ps1` (not committed; see `bridge/README.md`).
+Third-party licenses are listed in `THIRD_PARTY_NOTICES.md` at the repo root.
