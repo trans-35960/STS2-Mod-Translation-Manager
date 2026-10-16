@@ -18,3 +18,9 @@ ttf-parser = "0.25.1"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_System_Com", "Win32_UI_Shell", "Win32_UI_Shell_Common", "Win32_UI_WindowsAndMessaging"] }
+
+# Optimize dependencies, including the root `sts2_mod_manager` crate that does
+# the mod scanning, so `tauri dev` loads close to release speed. The app crate
+# itself stays unoptimized for fast rebuilds.
+[profile.dev.package."*"]
+opt-level = 2
