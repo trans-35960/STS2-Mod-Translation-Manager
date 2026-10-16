@@ -223,6 +223,9 @@ export function useModActions({
   }
 
   async function deleteMod(mod: ModRow) {
+    if (mod.workshop_item_id) {
+      return unsubscribeWorkshopMod(mod, mod.workshop_item_id);
+    }
     const answer = await askModConfirm({
       title: "모드 삭제",
       body: [
@@ -237,6 +240,26 @@ export function useModActions({
       return false;
     }
     const result = await runAction("delete_mod", { key: mod.key, path: mod.path });
+    return Boolean(result);
+  }
+
+  /** Steam puts deleted Workshop files back, so Workshop mods are unsubscribed instead. */
+  async function unsubscribeWorkshopMod(mod: ModRow, itemId: string) {
+    const answer = await askModConfirm({
+      title: "창작마당 구독 해제",
+      body: [
+        `${mod.name} 모드의 Steam 창작마당 구독을 해제할까요?`,
+        "Steam이 모드 파일을 지우며, 다시 쓰려면 창작마당에서 다시 구독해야 합니다.",
+        "Steam이 실행 중이어야 합니다.",
+      ],
+      items: [mod.path],
+      confirmLabel: "구독 해제",
+      cancelLabel: "취소",
+    });
+    if (answer !== "confirm") {
+      return false;
+    }
+    const result = await runAction("unsubscribe_workshop_item", { itemId });
     return Boolean(result);
   }
 

@@ -68,6 +68,11 @@ pub(crate) async fn open_workshop_page(item_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub(crate) async fn unsubscribe_workshop_item(item_id: String) -> Result<ActionDto, String> {
+    run_blocking(move || crate::services::unsubscribe_workshop_item(item_id)).await
+}
+
+#[tauri::command]
 pub(crate) async fn refresh_workshop_details(
     item_ids: Vec<String>,
 ) -> Result<crate::dto::WorkshopDetailsDto, String> {

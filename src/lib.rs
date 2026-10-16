@@ -23,6 +23,7 @@ pub mod process;
 pub mod save_backup;
 pub mod state;
 pub mod steam_branch;
+pub mod steam_workshop;
 pub mod term_candidates;
 pub mod text_ui;
 pub mod translation;
