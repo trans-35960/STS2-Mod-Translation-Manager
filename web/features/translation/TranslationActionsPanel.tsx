@@ -29,7 +29,7 @@ import {
 } from "../mods/modUtils";
 import type { TranslationToolsPageProps } from "./TranslationToolsTypes";
 import { TranslationProjectTree } from "./TranslationProjectTree";
-import { ProjectSummary } from "./TranslationWidgets";
+import { WorkTitle } from "./TranslationWidgets";
 import {
   languageFolderCode,
   projectNameFromPath,
@@ -78,7 +78,7 @@ export function TranslationWorkHeader({
   onRevealEntry: (key: string) => void;
 }) {
   const t = props.labels;
-  const workTitle = props.projectInfo?.modName || props.sheet?.source_path || t.translationTools;
+  const workTitle = props.projectInfo?.modName || projectNameFromPath(props.sheet?.source_path ?? t.translationTools);
   const validating =
     props.busy === "validate_json_translation_sheet" ||
     props.busy === "validate_json_translation_sheet_data";
@@ -87,21 +87,15 @@ export function TranslationWorkHeader({
   const canExportPatchMod = props.projectInfo?.canExportPatchMod ?? Boolean(props.pckTargetPath);
   return (
     <section className="translation-work-header">
-      <details className="work-summary-accordion">
-        <summary>
-          <span>현재 작업</span>
-          <strong>{workTitle}</strong>
-          {props.sheet && <SaveStateBadge props={props} />}
-        </summary>
-        <ProjectSummary
-          title={props.projectInfo?.modName || projectNameFromPath(props.sheet?.source_path ?? t.translationTools)}
-          version={props.projectInfo?.version}
-          author={props.projectInfo?.author}
-          targetLanguage={props.sheet?.target_language}
-          languages={props.projectInfo?.languages ?? []}
-          description={props.projectInfo?.description}
-        />
-      </details>
+      <WorkTitle
+        title={workTitle}
+        version={props.projectInfo?.version}
+        author={props.projectInfo?.author}
+        targetLanguage={props.sheet?.target_language}
+        languages={props.projectInfo?.languages ?? []}
+        description={props.projectInfo?.description}
+        badge={props.sheet && <SaveStateBadge props={props} />}
+      />
       <div className="translation-work-actions">
         <button
           className="toolbar-icon-button"

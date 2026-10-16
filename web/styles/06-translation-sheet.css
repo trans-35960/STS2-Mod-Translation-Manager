@@ -1,10 +1,14 @@
+/* Issue/paste panels stack above the sheet; the panel scrolls instead of
+   squeezing the sheet when they grow. */
 .tool-results {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: 0;
   height: 100%;
-  overflow: hidden;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .result-strip {
@@ -407,8 +411,8 @@
 .json-entry-list {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  flex: 1 1 260px;
-  min-height: 0;
+  flex: 1 0 260px;
+  min-height: min(520px, 70vh);
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;

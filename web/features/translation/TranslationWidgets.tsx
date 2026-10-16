@@ -1,5 +1,4 @@
 import React from "react";
-import { Pill } from "../../components/Common";
 import type {
   ApplyResultState,
   LanguagePreview,
@@ -69,13 +68,14 @@ export function PasteCandidateCard({
   );
 }
 
-export function ProjectSummary({
+export function WorkTitle({
   title,
   version,
   author,
   targetLanguage,
   languages,
   description,
+  badge,
 }: {
   title: string;
   version?: string;
@@ -83,21 +83,56 @@ export function ProjectSummary({
   targetLanguage?: string;
   languages: LanguagePreview[];
   description?: string;
+  badge?: React.ReactNode;
 }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const [overflowing, setOverflowing] = React.useState(false);
+  const descriptionRef = React.useRef<HTMLParagraphElement | null>(null);
+  const target = targetLanguage?.toLowerCase();
+  const sourceCodes = Array.from(
+    new Set(languages.map((language) => languageFolderCode(language)).filter((code) => code.toLowerCase() !== target)),
+  );
+
+  React.useLayoutEffect(() => {
+    const element = descriptionRef.current;
+    if (!element || expanded) {
+      return;
+    }
+    const measure = () => setOverflowing(element.scrollHeight > element.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [description, expanded]);
+
   return (
-    <section className="project-summary">
-      <span>번역 중</span>
-      <h2>{title}</h2>
-      <div>
-        <Pill>{version || "-"}</Pill>
-        {author && <Pill>{author}</Pill>}
-        {targetLanguage && <Pill>{targetLanguage}</Pill>}
-        {languages.slice(0, 4).map((language) => (
-          <Pill key={`${language.code}-${language.sample_path}`}>{languageFolderCode(language)}</Pill>
-        ))}
+    <div className="work-title">
+      <div className="work-title-line">
+        <h2 title={title}>{title}</h2>
+        {badge}
       </div>
-      {description && <p>{description}</p>}
-    </section>
+      <div className="work-title-meta">
+        {version && <span>v{version.replace(/^v/i, "")}</span>}
+        {author && <span title={author}>{author}</span>}
+        {(sourceCodes.length > 0 || targetLanguage) && (
+          <span className="work-title-langs">
+            {sourceCodes.length > 0 && <span>{sourceCodes.slice(0, 4).join(" · ")}</span>}
+            {sourceCodes.length > 0 && targetLanguage && <span aria-hidden="true">→</span>}
+            {targetLanguage && <b>{targetLanguage}</b>}
+          </span>
+        )}
+      </div>
+      {description && (
+        <div className={expanded ? "work-title-desc expanded" : "work-title-desc"}>
+          <p ref={descriptionRef}>{description}</p>
+          {(overflowing || expanded) && (
+            <button type="button" onClick={() => setExpanded((value) => !value)}>
+              {expanded ? "접기" : "더보기"}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
