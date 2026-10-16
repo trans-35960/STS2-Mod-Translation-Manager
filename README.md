@@ -12,11 +12,19 @@ Slay the Spire 2 모드 관리와 모드 번역을 돕는 Windows 데스크톱 �
 
 ## 스크린샷
 
-> 아래 스크린샷은 이전 버전 화면입니다. 지금 버튼 배치와 다를 수 있습니다.
+> 스크린샷은 샘플 데이터로 찍었습니다.
 
-![모드 관리 대시보드](assets/screenshots/mods-dashboard.png)
+### 모드 관리
 
-![번역 워크벤치](assets/screenshots/translation-workbench.png)
+![모드 관리](assets/screenshots/mods-dashboard.png)
+
+번역 상태별로 모드를 묶어 보여 줍니다. 최근 게임 오류, 창작마당 링크, 선행 모드 경고, 언어 파일 미리보기를 한 화면에서 확인합니다.
+
+### 번역 도구
+
+![번역 도구](assets/screenshots/translation-workbench.png)
+
+번역 시트를 편집하고 검증합니다. 수정이 필요한 항목은 종류별로 묶이고, 용어 치환, 조사 위치 고치기, AI 수정 프롬프트를 바로 실행할 수 있습니다.
 
 ## 설치
 
