@@ -396,7 +396,7 @@ function ModsPage(props: {
   function renderGroup(group: ModGroup) {
     const isGrouped = group.mods.length > 1;
     const attachedTranslationGroup = attachedTranslationMods(group);
-    const isExpanded = expandedGroups[group.id] ?? (attachedTranslationGroup ? !simpleView : props.activeFilter !== "all" || props.changeFilter !== "all" || props.translationApplyFilter !== "all");
+    const isExpanded = expandedGroups[group.id] ?? (attachedTranslationGroup ? false : props.activeFilter !== "all" || props.changeFilter !== "all" || props.translationApplyFilter !== "all");
     if (attachedTranslationGroup) {
       const { parent, children } = attachedTranslationGroup;
       return (
@@ -582,8 +582,8 @@ function ModsPage(props: {
             <ModResizableHead className="table-action-head" label="액션" onMouseDown={(event) => startDetailColumnResize("actions", event)} />
           </div>
         )}
-        {simpleView
-          ? sections.map((section) => (
+        {/* Both views share the sections, so switching keeps the order and grouping. */}
+        {sections.map((section) => (
               <React.Fragment key={section.id}>
                 <ModSectionHeader
                   section={section}
@@ -599,8 +599,7 @@ function ModsPage(props: {
                 />
                 {!collapsedSections[section.id] && visibleSectionGroups(section, sectionFacets[section.id]).map(renderGroup)}
               </React.Fragment>
-            ))
-          : groups.map(renderGroup)}
+            ))}
         {groups.length === 0 && <div className="empty compact">조건에 맞는 모드가 없습니다.</div>}
       </div>
       </div>
