@@ -281,6 +281,90 @@ mod tests {
         assert_eq!(language_label("kor"), "한국어");
     }
 
+    fn write_localization_root(contents: &Path, owner: &str, keys: usize) {
+        let body = (0..keys)
+            .map(|index| format!("\"K{index}.title\":\"Name {index}\""))
+            .collect::<Vec<_>>()
+            .join(",");
+        for language in ["eng", "zhs"] {
+            let dir = contents.join(owner).join("localization").join(language);
+            fs::create_dir_all(&dir).expect("create localization");
+            fs::write(dir.join("cards.json"), format!("{{{body}}}")).expect("write cards");
+        }
+    }
+
+    #[test]
+    fn language_preview_counts_only_root_named_after_pck() {
+        let scan_root =
+            std::env::temp_dir().join(format!("sts2-preview-two-roots-{}", timestamp_string()));
+        let contents = scan_root.join("ModId.pck.contents");
+        // The stale root is bigger, but the game loads res://<pck_name>/localization.
+        write_localization_root(&contents, "OldName", 5);
+        write_localization_root(&contents, "ModId", 3);
+
+        let previews = language_preview_from_scan_root(&scan_root);
+
+        assert_eq!(previews.len(), 2);
+        for language in &previews {
+            assert_eq!(language.files, 1);
+            assert_eq!(language.keys, 3);
+            assert!(
+                language.sample_path.starts_with("res://ModId/localization/"),
+                "{}",
+                language.sample_path
+            );
+        }
+        let default = default_translation_resource_path(&scan_root, "kor").expect("default path");
+        assert!(default.starts_with("res://ModId/localization/"), "{default}");
+        let _ = fs::remove_dir_all(&scan_root);
+    }
+
+    #[test]
+    fn language_preview_picks_largest_root_without_name_match() {
+        let scan_root =
+            std::env::temp_dir().join(format!("sts2-preview-largest-root-{}", timestamp_string()));
+        let contents = scan_root.join("Other.pck.contents");
+        write_localization_root(&contents, "Small", 2);
+        write_localization_root(&contents, "Large", 4);
+
+        let previews = language_preview_from_scan_root(&scan_root);
+
+        assert_eq!(previews.len(), 2);
+        assert!(previews.iter().all(|language| language.keys == 4
+            && language.sample_path.starts_with("res://Large/localization/")));
+        let _ = fs::remove_dir_all(&scan_root);
+    }
+
+    #[test]
+    fn pck_listing_prefers_localization_root_matching_hint() {
+        let paths = [
+            "res://YUIExtra/localization/eng/cards.json",
+            "res://YUIExtra/localization/zhs/cards.json",
+            "res://YUIExtra/localization/zhs/relics.json",
+            "res://YUISpireExpansion/localization/eng/cards.json",
+            "res://YUISpireExpansion/localization/zhs/cards.json",
+        ];
+        let preferred = preferred_localization_root_for_paths(
+            paths.iter().map(|path| (*path, 1)),
+            || vec![normalize_root_hint("YUISpireExpansion")],
+        );
+
+        assert_eq!(
+            preferred.as_deref(),
+            Some("res://yuispireexpansion/localization")
+        );
+        assert!(!path_in_localization_root(paths[0], preferred.as_deref()));
+        assert!(path_in_localization_root(paths[3], preferred.as_deref()));
+        // A single root never filters anything.
+        assert_eq!(
+            preferred_localization_root_for_paths(
+                paths[..3].iter().map(|path| (*path, 1)),
+                Vec::new
+            ),
+            None
+        );
+    }
+
     #[test]
     fn language_preview_does_not_inherit_parent_kor_path() {
         let root = std::env::temp_dir()

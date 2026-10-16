@@ -139,26 +139,34 @@ fn pck_language_preview(source: &Path, vendor_dir: &Path) -> Vec<LanguagePreview
     collect_pck_files(source, &mut pcks);
     pcks.sort();
 
+    let paths = pcks
+        .iter()
+        .flat_map(|pck| list_pck_resource_paths(pck, vendor_dir))
+        .filter(|path| listed_resource_path_is_translation_candidate(path))
+        .collect::<Vec<_>>();
+    let preferred = preferred_localization_root_for_paths(
+        paths.iter().map(|path| (path.as_str(), 1)),
+        || localization_root_hints(source),
+    );
+
     let mut by_code = BTreeMap::<String, LanguagePreviewBuilder>::new();
-    for pck in pcks {
-        for path in list_pck_resource_paths(&pck, vendor_dir) {
-            if !listed_resource_path_is_translation_candidate(&path) {
-                continue;
-            }
-            let relative = path.trim_start_matches("res://");
-            let code = infer_language_code(Path::new(relative))
-                .unwrap_or_else(|| "unknown".to_string());
-            let entry = by_code
-                .entry(code.clone())
-                .or_insert_with(|| LanguagePreviewBuilder {
-                    code: code.clone(),
-                    label: language_label(&code).to_string(),
-                    files: 0,
-                    keys: 0,
-                    sample_path: path.clone(),
-                });
-            entry.files += 1;
+    for path in paths {
+        if !path_in_localization_root(&path, preferred.as_deref()) {
+            continue;
         }
+        let relative = path.trim_start_matches("res://");
+        let code =
+            infer_language_code(Path::new(relative)).unwrap_or_else(|| "unknown".to_string());
+        let entry = by_code
+            .entry(code.clone())
+            .or_insert_with(|| LanguagePreviewBuilder {
+                code: code.clone(),
+                label: language_label(&code).to_string(),
+                files: 0,
+                keys: 0,
+                sample_path: path.clone(),
+            });
+        entry.files += 1;
     }
 
     let mut previews = by_code
@@ -180,12 +188,26 @@ fn language_preview_from_scan_root(scan_root: &Path) -> Vec<LanguagePreviewDto> 
         return Vec::new();
     };
 
+    let files = candidates
+        .into_iter()
+        .filter(|candidate| !is_hardcoded_source_file(&candidate.path))
+        .map(|candidate| {
+            let keys = count_json_translation_keys(&candidate.path);
+            let root_path = candidate_root_path(scan_root, &candidate.path);
+            (candidate.path, root_path, keys)
+        })
+        .collect::<Vec<_>>();
+    let preferred = preferred_localization_root_for_paths(
+        files.iter().map(|(_, root_path, keys)| (root_path.as_str(), *keys)),
+        || localization_root_hints(scan_root),
+    );
+
     let mut by_code = BTreeMap::<String, LanguagePreviewBuilder>::new();
-    for candidate in candidates {
-        if is_hardcoded_source_file(&candidate.path) {
+    for (path, root_path, keys) in files {
+        if !path_in_localization_root(&root_path, preferred.as_deref()) {
             continue;
         }
-        let code = infer_language_code_for_candidate(scan_root, &candidate.path)
+        let code = infer_language_code_for_candidate(scan_root, &path)
             .unwrap_or_else(|| "unknown".to_string());
         let entry = by_code
             .entry(code.clone())
@@ -194,10 +216,10 @@ fn language_preview_from_scan_root(scan_root: &Path) -> Vec<LanguagePreviewDto> 
                 label: language_label(&code).to_string(),
                 files: 0,
                 keys: 0,
-                sample_path: resource_display_path(&candidate.path),
+                sample_path: resource_display_path(&path),
             });
         entry.files += 1;
-        entry.keys += count_json_translation_keys(&candidate.path);
+        entry.keys += keys;
     }
 
     let mut previews = by_code
@@ -596,7 +618,7 @@ fn language_preview_cache_path(config: &AppConfig) -> PathBuf {
 fn language_cache_key(record: &ModRecord, extraction_source: &Path, vendor_dir: &Path) -> String {
     format!(
         "{}|{}|{}|{}|{}|{}|{}|{}",
-        "sts2-localization-v7",
+        "sts2-localization-v8",
         record.source.as_key(),
         record.stable_key(),
         record.fingerprint.bytes,
@@ -664,3 +686,123 @@ fn unescape_cache_field(value: &str) -> String {
     output
 }
 
+
+/// `…/localization` part of a resource or file path, lowercased with `/`
+/// separators. Groups files by the localization root they belong to.
+fn localization_root_key(path: &str) -> Option<String> {
+    let normalized = path.replace('\\', "/").to_ascii_lowercase();
+    let parts = normalized.split('/').collect::<Vec<_>>();
+    let index = parts.iter().position(|part| *part == "localization")?;
+    Some(parts[..=index].join("/"))
+}
+
+/// Folder that holds a localization root (`res://<this>/localization`).
+fn localization_root_owner(root_key: &str) -> &str {
+    root_key
+        .trim_end_matches("/localization")
+        .rsplit('/')
+        .next()
+        .unwrap_or("")
+}
+
+fn normalize_root_hint(value: &str) -> String {
+    value
+        .chars()
+        .filter(char::is_ascii_alphanumeric)
+        .map(|character| character.to_ascii_lowercase())
+        .collect()
+}
+
+/// Names the game may load a mod's localization under: the game reads
+/// `res://<pck_name>/localization/<lang>/`, and `pck_name` is usually the
+/// manifest id, so the pck file name and the manifest id are both hints.
+fn localization_root_hints(path: &Path) -> Vec<String> {
+    let mut hints = Vec::new();
+    let mut pcks = Vec::new();
+    collect_pck_files(path, &mut pcks);
+    hints.extend(
+        pcks.iter()
+            .filter_map(|pck| pck.file_stem())
+            .map(|stem| stem.to_string_lossy().to_string()),
+    );
+    let mut names = pck_resource_roots(path);
+    names.push(path.to_path_buf());
+    hints.extend(names.iter().filter_map(|root| {
+        let name = root.file_name()?.to_string_lossy().to_string();
+        let lower = name.to_ascii_lowercase();
+        lower
+            .strip_suffix(".pck.contents")
+            .map(|_| name[..name.len() - ".pck.contents".len()].to_string())
+    }));
+    let manifest_dir = if path.is_file() { path.parent() } else { Some(path) };
+    if let Some(id) = manifest_dir.and_then(|dir| read_mod_manifest_info(dir).id) {
+        hints.push(id);
+    }
+    let mut hints = hints
+        .iter()
+        .map(|hint| normalize_root_hint(hint))
+        .filter(|hint| !hint.is_empty())
+        .collect::<Vec<_>>();
+    hints.sort();
+    hints.dedup();
+    hints
+}
+
+/// When a mod ships several localization roots (for example a stale
+/// `res://OldName/localization` next to `res://ModId/localization`), picks the
+/// one to translate: the root named after the pck/manifest id, otherwise the
+/// largest. Returns `None` when there is at most one root.
+fn preferred_localization_root(
+    weights: &BTreeMap<String, usize>,
+    hints: impl FnOnce() -> Vec<String>,
+) -> Option<String> {
+    if weights.len() <= 1 {
+        return None;
+    }
+    let hints = hints();
+    weights
+        .keys()
+        .find(|root| {
+            let owner = normalize_root_hint(localization_root_owner(root));
+            !owner.is_empty() && hints.contains(&owner)
+        })
+        .or_else(|| {
+            weights
+                .iter()
+                .max_by(|(left, left_weight), (right, right_weight)| {
+                    left_weight.cmp(right_weight).then_with(|| right.cmp(left))
+                })
+                .map(|(root, _)| root)
+        })
+        .cloned()
+}
+
+/// Path used to group a scanned file by localization root: the `res://` path
+/// inside a pck, otherwise the path relative to the scan root, so folders
+/// above the mod never count as a root.
+fn candidate_root_path(scan_root: &Path, path: &Path) -> String {
+    if pck_resource_relative_path(path).is_some() {
+        return resource_display_path(path);
+    }
+    slash_path(path.strip_prefix(scan_root).unwrap_or(path))
+}
+
+fn path_in_localization_root(path: &str, preferred: Option<&str>) -> bool {
+    match (preferred, localization_root_key(path)) {
+        (Some(preferred), Some(root)) => root == preferred,
+        _ => true,
+    }
+}
+
+fn preferred_localization_root_for_paths<'a>(
+    paths: impl Iterator<Item = (&'a str, usize)>,
+    hints: impl FnOnce() -> Vec<String>,
+) -> Option<String> {
+    let mut weights = BTreeMap::<String, usize>::new();
+    for (path, weight) in paths {
+        if let Some(root) = localization_root_key(path) {
+            *weights.entry(root).or_default() += weight;
+        }
+    }
+    preferred_localization_root(&weights, hints)
+}

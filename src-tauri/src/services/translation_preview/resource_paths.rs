@@ -141,8 +141,20 @@ fn default_translation_resource_path(scan_root: &Path, _target_language: &str) -
         entry.0 += 1;
         entry.1 += count_json_translation_keys(&candidate.path);
     }
+    let preferred = preferred_localization_root_for_paths(
+        by_dir
+            .iter()
+            .map(|(dir, (_, keys))| (candidate_root_path(scan_root, dir), *keys))
+            .collect::<Vec<_>>()
+            .iter()
+            .map(|(path, keys)| (path.as_str(), *keys)),
+        || localization_root_hints(scan_root),
+    );
     by_dir
         .into_iter()
+        .filter(|(dir, _)| {
+            path_in_localization_root(&candidate_root_path(scan_root, dir), preferred.as_deref())
+        })
         .max_by(
             |(left_path, (left_files, left_keys)), (right_path, (right_files, right_keys))| {
                 left_keys
