@@ -379,9 +379,14 @@ select {
   white-space: nowrap;
 }
 
+/* The target chip shows the language code next to its icon, so it sizes to fit. */
+.translation-target-chip {
+  gap: 5px;
+  width: auto;
+  padding: 0 10px;
+}
+
 .translation-target-chip span {
-  overflow: hidden;
-  max-width: 28px;
   text-transform: uppercase;
 }
 
@@ -665,6 +670,18 @@ select {
 }
 
 .date-cell small,
+.translation-apply-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.translation-apply-pills .pill {
+  max-width: 100%;
+  white-space: nowrap;
+}
+
 .translation-apply-cell small {
   overflow: hidden;
   color: #7b8aa0;

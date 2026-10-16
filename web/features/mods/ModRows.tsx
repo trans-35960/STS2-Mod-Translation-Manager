@@ -1174,10 +1174,11 @@ function sourcePathLine(mod: ModRow): string {
 function TranslationApplyCell({ mod, targetLanguage }: { mod: ModRow; targetLanguage: string }) {
   const status = translationStatus(mod, targetLanguage);
   const tone = status.kind === "translated" ? "good" : status.kind === "untranslated" ? "warn" : "info";
-  const label =
+  // One pill per source so combined sources wrap instead of overflowing the narrow column.
+  const labels =
     status.kind === "translated"
-      ? status.sources.map((source) => TRANSLATION_SOURCE_LABELS[source]).join(" + ")
-      : status.kind === "untranslated"
+      ? status.sources.map((source) => TRANSLATION_SOURCE_LABELS[source])
+      : [status.kind === "untranslated"
         ? status.patchOff
           ? "번역모드 꺼짐"
           : "미번역"
@@ -1185,7 +1186,7 @@ function TranslationApplyCell({ mod, targetLanguage }: { mod: ModRow; targetLang
           ? "언어 파일 없음"
           : status.kind === "system"
             ? "시스템"
-            : "번역 모드";
+            : "번역 모드"];
   const hasPatch = mod.translation_patch_count > 0;
   const detail = mod.translation_applied
     ? formatShortDate(mod.translation_applied_epoch)
@@ -1194,8 +1195,14 @@ function TranslationApplyCell({ mod, targetLanguage }: { mod: ModRow; targetLang
       : "직접 적용 없음";
   return (
     <div className="translation-apply-cell">
-      <Pill tone={tone}>{label}</Pill>
-      <small>{detail}</small>
+      <div className="translation-apply-pills">
+        {labels.map((label) => (
+          <Pill tone={tone} key={label}>
+            {label}
+          </Pill>
+        ))}
+      </div>
+      <small title={detail}>{detail}</small>
     </div>
   );
 }
