@@ -92,6 +92,23 @@ fn bridge_target_for_sheet(
     })
 }
 
+/// Takes what the bridge already applies for the sheet's mod into the sheet's
+/// empty entries, so applying the sheet keeps it. 0 when the mod or the
+/// shared folder is not found.
+fn carry_over_bridge_translations(sheet: &mut JsonTranslationSheet) -> usize {
+    let Some(shared) = bridge::shared_root() else {
+        return 0;
+    };
+    let app = app();
+    let Ok(report) = app.scan_preview_report() else {
+        return 0;
+    };
+    let Some(target) = bridge_target_for_sheet(&app, &report.summary, sheet) else {
+        return 0;
+    };
+    bridge::carry_over_applied_translations(&shared, &target.mod_id, sheet)
+}
+
 /// Applies a sheet through the bridge: loc table values go to
 /// `translations/`, DLL string literals to `strings/`, and the bridge puts
 /// them into the game. `Ok(None)` for sheets the bridge cannot carry (files
@@ -144,6 +161,15 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
         .ok_or_else(|| "번역 대상 모드의 manifest id를 찾지 못해 브리지로 적용할 수 없습니다.".to_string())?;
     let shared = bridge::shared_root()
         .ok_or_else(|| "공용 폴더(%APPDATA%)를 찾지 못했습니다.".to_string())?;
+    // Checked before writing: an empty sheet would remove every table file
+    // and so take out what was applied before.
+    let has_values = tables
+        .values
+        .values()
+        .any(|values| values.values().any(|value| !value.is_empty()));
+    if dll_assembly.is_none() && !has_values {
+        return Err("적용할 번역값이 없습니다. translated_value를 입력하거나 CSV/JSON을 먼저 매칭해 주세요.".to_string());
+    }
     let updated_at = epoch_seconds(Some(SystemTime::now())).unwrap_or(0);
     let (output_dir, entries, table_count) = match dll_assembly.as_deref() {
         Some(assembly) => {
@@ -173,9 +199,6 @@ fn apply_sheet_to_bridge(sheet_path: &Path) -> Result<Option<JsonApplyDto>, Stri
             (report.dir, report.entries, report.tables)
         }
     };
-    if entries == 0 && dll_assembly.is_none() {
-        return Err("적용할 번역값이 없습니다. translated_value를 입력하거나 CSV/JSON을 먼저 매칭해 주세요.".to_string());
-    }
     let disabled_patch_mods = disable_patch_mods_once(&app, &summary, &target.mod_id)?;
     record_translation_apply(
         sheet_path,

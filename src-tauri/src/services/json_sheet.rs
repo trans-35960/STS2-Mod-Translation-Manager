@@ -32,7 +32,8 @@ pub(crate) fn create_json_translation_sheet(
     let mut sheet = read_sheet(&report.sheet_path).map_err(|error| error.to_string())?;
     let siblings = sibling_language_sheets(&report.sheet_path, &sheet);
     let shared = carry_over_sibling_translations(&mut sheet, output_saved, &siblings);
-    let report = if shared > 0 {
+    let applied = carry_over_bridge_translations(&mut sheet);
+    let report = if shared + applied > 0 {
         write_sheet(&report.sheet_path, &sheet).map_err(|error| error.to_string())?;
         sheet = read_sheet(&report.sheet_path).map_err(|error| error.to_string())?;
         create_report_for_saved_sheet(&report.sheet_path, &sheet)
@@ -47,6 +48,9 @@ pub(crate) fn create_json_translation_sheet(
     );
     if shared > 0 {
         message.push_str(&format!(", 다른 원본 언어 시트의 번역 {shared}개 반영"));
+    }
+    if applied > 0 {
+        message.push_str(&format!(", 게임에 적용 중인 번역 {applied}개 반영"));
     }
     Ok(JsonSheetActionDto {
         message,
