@@ -39,6 +39,7 @@ use sts2_mod_manager::json_translation::{
 };
 use sts2_mod_manager::launcher::{LaunchReport, LaunchStatus};
 use sts2_mod_manager::leftover_text;
+use sts2_mod_manager::load_order::LoadOrderMod;
 use sts2_mod_manager::mod_compat::{
     ReferenceChecker, mod_dll_paths, read_game_release, version_at_least,
 };
@@ -82,5 +83,6 @@ include!("json_sheet/dto.rs");
 include!("pck.rs");
 include!("glossary.rs");
 include!("bridge.rs");
+include!("load_order.rs");
 include!("leftover_text.rs");
 include!("tests.rs");

@@ -152,6 +152,33 @@ export type SaveSettingsRequest = {
   modViewMode: "detail" | "simple";
 };
 
+export type ModOrderKey = {
+  id: string;
+  /** `mods_directory` or `steam_workshop`. */
+  source: string;
+};
+
+export type ModLoadOrderEntry = ModOrderKey & {
+  /** Mod row key. */
+  key: string;
+  /** Where the game really loads it, 0-based. */
+  load_index: number;
+  /** Named in the saved order; otherwise the game puts it last on its own. */
+  listed: boolean;
+  /** The bridge: always first. */
+  pinned: boolean;
+  /** Dependencies placed below it, which the game loads first anyway. */
+  waits_for: string[];
+  missing_dependencies: string[];
+  circular: boolean;
+};
+
+export type ModLoadOrder = {
+  settings_found: boolean;
+  game_running: boolean;
+  entries: ModLoadOrderEntry[];
+};
+
 export type ModToggleRequest = {
   key: string;
   active: boolean;

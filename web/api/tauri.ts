@@ -26,6 +26,8 @@ import type {
   LanguageCompareValue,
   ModDeleteRequest,
   ModToggleRequest,
+  ModLoadOrder,
+  ModOrderKey,
   NodeTranslationResult,
   ModErrorIdentity,
   ModErrorReport,
@@ -56,6 +58,8 @@ export type CommandArgs = {
   };
   toggle_mod: { key: string; active: boolean; force?: boolean | null };
   toggle_mods: { changes: ModToggleRequest[] };
+  load_mod_load_order: { draft?: ModOrderKey[] | null };
+  save_mod_load_order: { order: ModOrderKey[] };
   delete_mod: { key: string; path: string };
   delete_mods: { items: ModDeleteRequest[] };
   restore_deleted_mod: { id: string };
@@ -196,6 +200,8 @@ export type CommandResult = {
   import_dropped_mods: ActionResult;
   toggle_mod: ActionResult;
   toggle_mods: ActionResult;
+  load_mod_load_order: ModLoadOrder;
+  save_mod_load_order: ModLoadOrder;
   delete_mod: ActionResult;
   delete_mods: ActionResult;
   restore_deleted_mod: ActionResult;

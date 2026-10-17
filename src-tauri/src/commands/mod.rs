@@ -116,6 +116,20 @@ pub(crate) async fn toggle_mods(changes: Vec<ModToggleDto>) -> Result<ActionDto,
 }
 
 #[tauri::command]
+pub(crate) async fn load_mod_load_order(
+    draft: Option<Vec<ModOrderKeyDto>>,
+) -> Result<ModLoadOrderDto, String> {
+    run_blocking(move || crate::services::load_mod_load_order(draft)).await
+}
+
+#[tauri::command]
+pub(crate) async fn save_mod_load_order(
+    order: Vec<ModOrderKeyDto>,
+) -> Result<ModLoadOrderDto, String> {
+    run_blocking(move || crate::services::save_mod_load_order(order)).await
+}
+
+#[tauri::command]
 pub(crate) async fn delete_mod(key: String, path: String) -> Result<ActionDto, String> {
     run_blocking(move || crate::services::delete_mod(key, path)).await
 }

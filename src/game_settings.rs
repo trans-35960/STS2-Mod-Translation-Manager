@@ -111,6 +111,51 @@ pub fn move_mod_first(
     Ok(true)
 }
 
+/// Rewrites the mod list so the `order` entries (id, source) come first, in
+/// that order, followed by the remaining entries as they were. Entries keep
+/// their on/off state; ones the game has not recorded yet are added enabled.
+/// Returns whether the file changed; nothing is written when it is missing.
+pub fn write_mod_order(
+    settings_path: &Path,
+    backup_root: &Path,
+    order: &[(String, String)],
+) -> AppResult<bool> {
+    let Some(mut root) = read_settings(settings_path)? else {
+        return Ok(false);
+    };
+    let Some(list) = root
+        .pointer_mut("/mod_settings/mod_list")
+        .and_then(Value::as_array_mut)
+    else {
+        return Ok(false);
+    };
+    let original = list.clone();
+    let mut rest = std::mem::take(list);
+    let mut ordered = Vec::with_capacity(rest.len() + order.len());
+    for (id, source) in order {
+        let position = rest.iter().position(|entry| {
+            entry.get("id").and_then(Value::as_str) == Some(id.as_str())
+                && entry.get("source").and_then(Value::as_str) == Some(source.as_str())
+        });
+        ordered.push(match position {
+            Some(index) => rest.remove(index),
+            None => json!({ "id": id, "is_enabled": true, "source": source }),
+        });
+    }
+    ordered.extend(rest);
+    if ordered == original {
+        *list = original;
+        return Ok(false);
+    }
+    *list = ordered;
+    backup_settings(settings_path, backup_root)?;
+    let text = serde_json::to_string_pretty(&root).map_err(|error| {
+        AppError::InvalidCommand(format!("게임 설정을 저장하지 못했습니다: {error}"))
+    })?;
+    write_atomically(settings_path, text.as_bytes())?;
+    Ok(true)
+}
+
 fn read_settings(settings_path: &Path) -> AppResult<Option<Value>> {
     if !settings_path.is_file() {
         return Ok(None);
@@ -361,6 +406,47 @@ mod tests {
         assert_eq!(with_new[0].id, "Bridge");
         assert!(with_new[0].is_enabled);
         assert_eq!(with_new.len(), 3);
+    }
+
+    #[test]
+    fn writes_mod_order_and_keeps_unlisted_entries() {
+        let dir = test_dir("writes_mod_order_and_keeps_unlisted_entries");
+        let path = dir.join("settings.save");
+        fs::write(&path, SAMPLE).expect("write");
+        let backups = dir.join("backups");
+
+        let changed = write_mod_order(
+            &path,
+            &backups,
+            &[
+                ("MpLib".to_string(), SOURCE_WORKSHOP.to_string()),
+                ("STS2-RitsuLib".to_string(), SOURCE_WORKSHOP.to_string()),
+            ],
+        )
+        .expect("write order");
+        let entries = read_mod_entries(&path);
+        let again = write_mod_order(
+            &path,
+            &backups,
+            &[
+                ("MpLib".to_string(), SOURCE_WORKSHOP.to_string()),
+                ("STS2-RitsuLib".to_string(), SOURCE_WORKSHOP.to_string()),
+            ],
+        )
+        .expect("same order");
+
+        assert!(changed);
+        assert!(!again, "same order: no rewrite");
+        let ids = entries
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(ids, ["MpLib", "STS2-RitsuLib", "LustTravel2"]);
+        assert!(entries[0].is_enabled, "new entries start enabled");
+        assert!(!entries[2].is_enabled, "keeps the user's on/off state");
+        let root: Value =
+            serde_json::from_str(&fs::read_to_string(&path).expect("read")).expect("json");
+        assert_eq!(root["schema_version"], 8);
     }
 
     #[test]
