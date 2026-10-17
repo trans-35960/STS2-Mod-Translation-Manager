@@ -4,9 +4,10 @@ namespace Sts2ModManagerBridge;
 
 /// <summary>
 /// Lives under the scene root for the whole session and opens the edit
-/// panel on F8. Opening it re-reads the shared folder, so F8 also picks up
-/// what the app just applied. Ctrl+F8 toggles the <c>(#number)</c> prefixes
-/// without opening the panel.
+/// panel on its hotkey (F8 by default). Opening it re-reads the shared
+/// folder, so it also picks up what the app just applied. The numbers hotkey
+/// (Ctrl+F8) toggles the <c>(#number)</c> prefixes without opening the panel.
+/// Both are changeable in the panel (<see cref="Hotkeys"/>).
 /// </summary>
 public partial class HotkeyListener : Node
 {
@@ -33,18 +34,20 @@ public partial class HotkeyListener : Node
 
     public override void _Input(InputEvent @event)
     {
-        if (@event is not InputEventKey { Pressed: true, Echo: false, Keycode: Key.F8 } key
-            || key.AltPressed || key.ShiftPressed)
+        if (@event is not InputEventKey { Pressed: true, Echo: false } key)
         {
             return;
         }
-        GetViewport().SetInputAsHandled();
-        if (key.CtrlPressed)
+        if (Hotkeys.Matches(key, HotkeyAction.ToggleNumbers))
         {
+            GetViewport().SetInputAsHandled();
             Injector.ShowKeys = !Injector.ShowKeys;
             Injector.Reload();
-            return;
         }
-        _panel?.Toggle();
+        else if (Hotkeys.Matches(key, HotkeyAction.TogglePanel))
+        {
+            GetViewport().SetInputAsHandled();
+            _panel?.Toggle();
+        }
     }
 }
