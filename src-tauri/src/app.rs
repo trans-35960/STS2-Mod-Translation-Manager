@@ -24,6 +24,8 @@ pub fn run() {
             commands::import_dropped_mods,
             commands::toggle_mod,
             commands::toggle_mods,
+            commands::load_mod_load_order,
+            commands::save_mod_load_order,
             commands::delete_mod,
             commands::delete_mods,
             commands::restore_deleted_mod,

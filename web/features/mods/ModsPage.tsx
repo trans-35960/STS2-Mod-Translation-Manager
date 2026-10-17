@@ -6,6 +6,7 @@ import {
   Gamepad2,
   Languages,
   List,
+  ListOrdered,
   Play,
   Search,
   CheckSquare,
@@ -40,6 +41,7 @@ import { ExtractConfirmModal } from "./ExtractModal";
 import { ImportMenu } from "./ImportMenu";
 import { ModGroupTableRow, ModTableRow, SimpleModGroupRow, SimpleModRow } from "./ModRows";
 import { ModErrorsModal } from "./ModErrorsModal";
+import { ModLoadOrderModal } from "./ModLoadOrderModal";
 import { PresetMenu } from "./PresetMenu";
 import {
   buildModGroups,
@@ -168,6 +170,7 @@ function ModsPage(props: {
   const modErrors = useModErrors(props.mods, props.launchRunning);
   const [errorModalKey, setErrorModalKey] = React.useState<string | null>(null);
   const [dllMod, setDllMod] = React.useState<ModRow | null>(null);
+  const [loadOrderOpen, setLoadOrderOpen] = React.useState(false);
   const [collapsedSections, setCollapsedSections] = React.useState<Partial<Record<TranslationSection, boolean>>>({});
   const [sectionFacets, setSectionFacets] = React.useState<Partial<Record<TranslationSection, string>>>({});
   const showChangeDetails = props.statFilter === "changed";
@@ -548,6 +551,16 @@ function ModsPage(props: {
           </span>
         )}
         <button
+          className="toolbar-icon-button"
+          type="button"
+          aria-label="모드 로드 순서"
+          data-tooltip="모드 로드 순서"
+          onClick={() => setLoadOrderOpen(true)}
+          disabled={Boolean(props.busy)}
+        >
+          <ListOrdered size={16} />
+        </button>
+        <button
           className={simpleView ? "toolbar-icon-button active" : "toolbar-icon-button"}
           type="button"
           aria-label={simpleView ? "상세 보기" : "심플 보기"}
@@ -613,6 +626,7 @@ function ModsPage(props: {
           onOpenPath={props.onOpenPath}
         />
       )}
+      {loadOrderOpen && <ModLoadOrderModal mods={props.mods} onClose={() => setLoadOrderOpen(false)} />}
       {dllMod && (
         <DllTranslateModal
           mod={dllMod}

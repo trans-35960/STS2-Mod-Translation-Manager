@@ -501,6 +501,43 @@ pub(crate) struct ModErrorDto {
     pub(crate) patched_game_code: bool,
 }
 
+/// A mod in the game's load order, named the way `settings.save` names it.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub(crate) struct ModOrderKeyDto {
+    pub(crate) id: String,
+    /// `mods_directory` or `steam_workshop`.
+    pub(crate) source: String,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct ModLoadOrderDto {
+    /// The game has written `settings.save` (it does on first launch); the
+    /// order cannot be saved before that.
+    pub(crate) settings_found: bool,
+    pub(crate) game_running: bool,
+    /// Mods set active here, in the order being edited (saved order unless a
+    /// draft was passed).
+    pub(crate) entries: Vec<ModLoadOrderEntryDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct ModLoadOrderEntryDto {
+    pub(crate) id: String,
+    pub(crate) source: String,
+    /// Mod row key, to show the row's name.
+    pub(crate) key: String,
+    /// Position the game actually loads it at, 0-based.
+    pub(crate) load_index: usize,
+    /// Named in the saved order; otherwise the game puts it last on its own.
+    pub(crate) listed: bool,
+    /// Kept first: the bridge has to load before other mods.
+    pub(crate) pinned: bool,
+    /// Dependencies placed below this mod, which the game loads first anyway.
+    pub(crate) waits_for: Vec<String>,
+    pub(crate) missing_dependencies: Vec<String>,
+    pub(crate) circular: bool,
+}
+
 #[derive(Debug, Deserialize)]
 pub(crate) struct ModToggleDto {
     pub(crate) key: String,

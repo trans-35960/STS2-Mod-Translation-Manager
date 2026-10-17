@@ -7,6 +7,7 @@ use crate::domain::{ModRecord, ModSource, ScanReport, ScanSummary};
 use crate::error::{AppError, AppResult};
 use crate::game_settings::{self, GameModChange, SOURCE_MODS_DIRECTORY, SOURCE_WORKSHOP};
 use crate::launcher::{self, LaunchReport, LaunchStatus};
+use crate::load_order::{self, LoadOrderMod};
 use crate::preset::{self, Preset, PresetApplyReport, PresetExportReport, PresetImportReport};
 use crate::save_backup;
 use crate::state::{
@@ -137,6 +138,45 @@ impl App {
             }
         }
         write_desired_active_mod_keys(&desired, &summary, &self.config.state_dir)
+    }
+
+    /// Mods the game will load on the next launch from this app (the ones set
+    /// active here), one per manifest, with the row key each belongs to.
+    /// Records without a readable manifest (archives) are left out.
+    pub fn load_order_mods(&self) -> AppResult<Vec<(String, LoadOrderMod)>> {
+        let summary = self.scan()?;
+        let desired = desired_active_mod_keys(&summary, &self.config.state_dir)?;
+        let mut seen_keys = BTreeSet::new();
+        let mut mods = Vec::new();
+        for record in summary.records() {
+            let key = record.stable_key();
+            if !desired.contains(&key) || !seen_keys.insert(key.clone()) {
+                continue;
+            }
+            let (source, depth) = if record.is_workshop() {
+                (SOURCE_WORKSHOP, 0)
+            } else {
+                (SOURCE_MODS_DIRECTORY, 2)
+            };
+            for manifest in find_mod_manifests(&record.path, depth) {
+                if let Some((id, dependencies)) = load_order::read_manifest_load_info(&manifest) {
+                    mods.push((
+                        key.clone(),
+                        LoadOrderMod {
+                            id,
+                            source: source.to_string(),
+                            dependencies,
+                        },
+                    ));
+                }
+            }
+        }
+        Ok(mods)
+    }
+
+    /// Whether the game is running; it rewrites `settings.save` itself then.
+    pub fn game_running(&self) -> bool {
+        self.launch_status().running
     }
 
     pub fn disable_all_mods(&self) -> AppResult<Vec<DisabledModAction>> {

@@ -2651,4 +2651,42 @@ Packed file: Shadowverse/localization/eng/cards.json
 
         assert!(rows[1].dependencies[0].active);
     }
+
+    #[test]
+    fn load_order_entries_pin_the_bridge_and_explain_dependency_waits() {
+        let candidate = |key: &str, id: &str, source: &str, dependencies: &[&str]| {
+            (
+                key.to_string(),
+                LoadOrderMod {
+                    id: id.to_string(),
+                    source: source.to_string(),
+                    dependencies: dependencies.iter().map(|id| id.to_string()).collect(),
+                },
+            )
+        };
+        let order_key = |id: &str| ModOrderKeyDto {
+            id: id.to_string(),
+            source: game_settings::SOURCE_WORKSHOP.to_string(),
+        };
+        let mods = vec![
+            candidate("workshop-char", "Char", game_settings::SOURCE_WORKSHOP, &["Lib"]),
+            candidate("workshop-lib", "Lib", game_settings::SOURCE_WORKSHOP, &[]),
+            candidate("workshop-new", "New", game_settings::SOURCE_WORKSHOP, &[]),
+            candidate(
+                "sts2modmanagerbridge",
+                bridge::BRIDGE_MOD_ID,
+                game_settings::SOURCE_MODS_DIRECTORY,
+                &[],
+            ),
+        ];
+
+        let entries = load_order_entries(&[order_key("Char"), order_key("Lib")], mods);
+
+        let ids = entries.iter().map(|entry| entry.id.as_str()).collect::<Vec<_>>();
+        assert_eq!(ids, [bridge::BRIDGE_MOD_ID, "Char", "Lib", "New"]);
+        assert!(entries[0].pinned && entries[0].load_index == 0);
+        assert_eq!(entries[1].waits_for, ["Lib"]);
+        assert_eq!((entries[1].load_index, entries[2].load_index), (2, 1));
+        assert!(!entries[3].listed);
+    }
 }
