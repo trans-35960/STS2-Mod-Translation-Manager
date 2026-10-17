@@ -490,6 +490,100 @@ pub fn stored_translations(shared: &Path, mod_id: &str) -> Vec<StoredTranslation
         .collect()
 }
 
+/// Fills empty entries of `sheet` with what the shared folder already applies
+/// for `mod_id` in the sheet's target language. Applying writes exactly the
+/// sheet's values, so a sheet made without them (another install, another
+/// workspace, a lost sheet) would otherwise take them out of the game.
+/// A table value whose recorded source differs from the entry's source is
+/// marked updated. Returns how many entries changed.
+pub fn carry_over_applied_translations(
+    shared: &Path,
+    mod_id: &str,
+    sheet: &mut JsonTranslationSheet,
+) -> usize {
+    let language = sheet.target_language.clone();
+    let dir = translations_dir(shared, mod_id, &language);
+    let assembly = Path::new(&sheet.source_path)
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().to_string());
+    let dll_strings = assembly
+        .as_deref()
+        .and_then(|assembly| {
+            read_json::<StoredStringsFile>(&strings_path(shared, mod_id, &language, assembly))
+        })
+        .map(|file| {
+            file.strings
+                .into_iter()
+                .filter(|string| !string.translation.is_empty())
+                .map(|string| (string.original, string.translation))
+                .collect::<BTreeMap<_, _>>()
+        })
+        .unwrap_or_default();
+    let mut tables = BTreeMap::<String, AppliedTable>::new();
+    let mut changed = 0;
+    for entry in &mut sheet.entries {
+        if entry.status == JsonTranslationStatus::Removed || !entry.translated_value.is_empty() {
+            continue;
+        }
+        let (value, previous_source) = if entry.key.starts_with("dll://") {
+            match dll_strings.get(&entry.source_value) {
+                Some(value) => (value.clone(), None),
+                None => continue,
+            }
+        } else {
+            let TableLocation::Table {
+                table,
+                key,
+                language: source_lang,
+            } = table_location(&entry.key)
+            else {
+                continue;
+            };
+            let applied = tables
+                .entry(table.clone())
+                .or_insert_with(|| AppliedTable::read(&dir, &table));
+            let Some(value) = applied.values.get(&key).filter(|value| !value.is_empty()) else {
+                continue;
+            };
+            let previous_source = applied
+                .info
+                .get(&key)
+                .filter(|info| info.source_lang.as_deref() == Some(source_lang.as_str()))
+                .and_then(|info| info.source.clone())
+                .filter(|source| source != &entry.source_value);
+            (value.clone(), previous_source)
+        };
+        entry.translated_value = value;
+        if previous_source.is_some() {
+            entry.status = JsonTranslationStatus::Updated;
+            entry.previous_source_value = previous_source;
+        } else if matches!(
+            entry.status,
+            JsonTranslationStatus::New | JsonTranslationStatus::Missing
+        ) {
+            entry.status = JsonTranslationStatus::Ready;
+        }
+        changed += 1;
+    }
+    changed
+}
+
+/// One table file of a language folder with its `_info`.
+#[derive(Default)]
+struct AppliedTable {
+    values: BTreeMap<String, String>,
+    info: BTreeMap<String, EntryInfo>,
+}
+
+impl AppliedTable {
+    fn read(dir: &Path, table: &str) -> Self {
+        Self {
+            values: read_json(&dir.join(format!("{table}.json"))).unwrap_or_default(),
+            info: read_json(&dir.join("_info").join(format!("{table}.json"))).unwrap_or_default(),
+        }
+    }
+}
+
 #[derive(Deserialize)]
 struct StoredStringsFile {
     #[serde(default)]
@@ -760,6 +854,113 @@ mod tests {
         assert_eq!(written["assembly"], "Mod");
         assert_eq!(written["strings"][0]["translation"], "오만");
         assert!(!cleared);
+    }
+
+    #[test]
+    fn sheet_from_another_source_language_keeps_applied_translations() {
+        let shared = temp_dir("carry-applied");
+        // Applied earlier from a zhs sheet.
+        let applied = sheet_tables(&JsonTranslationSheet {
+            source_path: String::new(),
+            target_language: "kor".to_string(),
+            updated_epoch: 0,
+            entries: vec![
+                entry(
+                    "file://Mod/localization/zhs/cards.json#/A.title",
+                    "节制",
+                    "절제",
+                ),
+                entry(
+                    "file://Mod/localization/zhs/cards.json#/B.title",
+                    "旧",
+                    "옛것",
+                ),
+                entry(
+                    "file://Mod/localization/zhs/powers.json#/P.title",
+                    "力量",
+                    "힘",
+                ),
+            ],
+        });
+        write_translations(&shared, "Mod", "kor", &applied, None, 1).expect("write");
+
+        // A new jpn sheet with only an in-game edit in it.
+        let mut new_entry = entry(
+            "file://Mod/localization/jpn/cards.json#/A.title",
+            "節制",
+            "",
+        );
+        new_entry.status = JsonTranslationStatus::New;
+        let mut changed_entry = entry("file://Mod/localization/zhs/cards.json#/B.title", "新", "");
+        changed_entry.status = JsonTranslationStatus::New;
+        let mut sheet = JsonTranslationSheet {
+            source_path: String::new(),
+            target_language: "kor".to_string(),
+            updated_epoch: 0,
+            entries: vec![
+                new_entry,
+                changed_entry,
+                entry(
+                    "file://Mod/localization/jpn/powers.json#/P.title",
+                    "力",
+                    "편집한 힘",
+                ),
+                entry(
+                    "file://Mod/localization/jpn/relics.json#/R.title",
+                    "遺物",
+                    "",
+                ),
+            ],
+        };
+        let changed = carry_over_applied_translations(&shared, "Mod", &mut sheet);
+        let other_language = carry_over_applied_translations(
+            &shared,
+            "Mod",
+            &mut JsonTranslationSheet {
+                target_language: "eng".to_string(),
+                ..sheet.clone()
+            },
+        );
+        fs::remove_dir_all(&shared).ok();
+
+        assert_eq!(changed, 2);
+        assert_eq!(other_language, 0);
+        assert_eq!(sheet.entries[0].translated_value, "절제");
+        assert_eq!(sheet.entries[0].status, JsonTranslationStatus::Ready);
+        assert_eq!(sheet.entries[1].translated_value, "옛것");
+        assert_eq!(sheet.entries[1].status, JsonTranslationStatus::Updated);
+        assert_eq!(
+            sheet.entries[1].previous_source_value.as_deref(),
+            Some("旧")
+        );
+        assert_eq!(sheet.entries[2].translated_value, "편집한 힘");
+        assert_eq!(sheet.entries[3].translated_value, "");
+    }
+
+    #[test]
+    fn dll_sheet_keeps_applied_strings() {
+        let shared = temp_dir("carry-strings");
+        let strings = vec![DllString {
+            original: "傲慢".to_string(),
+            translation: "오만".to_string(),
+            id: None,
+        }];
+        write_strings(&shared, "Mod", "kor", "Mod", &strings, 1).expect("write");
+        let mut sheet = JsonTranslationSheet {
+            source_path: "C:/work/source/Mod.dll".to_string(),
+            target_language: "kor".to_string(),
+            updated_epoch: 0,
+            entries: vec![
+                entry("dll://10:4", "傲慢", ""),
+                entry("dll://20:4", "谦虚", ""),
+            ],
+        };
+        let changed = carry_over_applied_translations(&shared, "Mod", &mut sheet);
+        fs::remove_dir_all(&shared).ok();
+
+        assert_eq!(changed, 1);
+        assert_eq!(sheet.entries[0].translated_value, "오만");
+        assert_eq!(sheet.entries[1].translated_value, "");
     }
 
     #[test]
