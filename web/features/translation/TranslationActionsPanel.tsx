@@ -217,6 +217,7 @@ export function TranslationActionsPanel({
   projectTree,
   activeProjectPath,
   setActiveProjectPath,
+  isDllSession,
   sourceLanguageOptions,
   selectedSourceLanguage,
   targetLanguageOptions,
@@ -238,6 +239,8 @@ export function TranslationActionsPanel({
   projectTree: TranslationProjectNode | null;
   activeProjectPath: string | null;
   setActiveProjectPath: (path: string | null) => void;
+  /** The sheet holds a DLL's strings, kept apart from the mod's pck/json languages. */
+  isDllSession: boolean;
   sourceLanguageOptions: LanguagePreview[];
   selectedSourceLanguage: LanguagePreview | undefined;
   targetLanguageOptions: TargetLanguageOption[];
@@ -393,7 +396,11 @@ export function TranslationActionsPanel({
               ))}
             </select>
           </label>
-          <small>원본 언어는 가장 많은 key를 가진 MAIN 언어를 기본으로 선택합니다.</small>
+          <small>
+            {isDllSession
+              ? "DLL 문자열 시트는 pck/json 언어 시트와 따로 관리합니다. 대상 언어를 바꾸면 DLL 시트를 그 언어로 다시 엽니다."
+              : "원본 언어는 가장 많은 key를 가진 MAIN 언어를 기본으로 선택합니다."}
+          </small>
         </article>
         {props.sheet && !currentSheetMatchesTarget && (
           <p className="inline-warning">현재 시트는 {props.sheet.target_language}용입니다. {props.targetLanguage} 번역은 별도 시트로 생성/업데이트됩니다.</p>

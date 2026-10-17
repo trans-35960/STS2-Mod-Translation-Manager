@@ -126,6 +126,7 @@ function TranslationToolsPage(props: TranslationToolsPageProps) {
           projectTree={ui.projectTree}
           activeProjectPath={ui.activeProjectPath}
           setActiveProjectPath={ui.setActiveProjectPath}
+          isDllSession={ui.isDllSession}
           sourceLanguageOptions={ui.sourceLanguageOptions}
           selectedSourceLanguage={ui.selectedSourceLanguage}
           targetLanguageOptions={ui.targetLanguageOptions}

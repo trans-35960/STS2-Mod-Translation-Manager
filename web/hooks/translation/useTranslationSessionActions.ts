@@ -9,8 +9,10 @@ import {
 } from "../../features/mods/modUtils";
 import {
   inferPckTargetPath,
+  isHardcodedSheet,
   replaceLocalizationLanguageInPath,
   retargetTranslationSheetPath,
+  translationLanguagesMatch,
 } from "../../features/translation/translationUtils";
 import { previewJsonReport, previewJsonSheet } from "../../previewData";
 import type { ExtractionTreeNode, ModRow, TranslationPreparationProgress } from "../../types";
@@ -22,11 +24,15 @@ import type { TranslationActionsParams } from "./types";
 export function useTranslationSessionActions({
   appendLog,
   dashboard,
+  jsonExistingSheet,
+  jsonOutputSheet,
   jsonSheet,
+  jsonSource,
   jsonTargetLanguage,
   settingsDraft,
   translationProject,
   clearStoredSession,
+  saveSheetNow,
   setBusy,
   setCompareSamplePaths,
   setCompareValuesByLanguage,
@@ -287,6 +293,10 @@ export function useTranslationSessionActions({
   }
 
   async function switchTranslationSourceLanguage(samplePath: string) {
+    if (isHardcodedSheet(jsonSheet?.source_path || jsonSource)) {
+      appendLog("DLL 문자열 시트에는 원본 언어가 없습니다. pck/json 번역은 모드 목록에서 따로 여세요.");
+      return;
+    }
     const modKey = translationProject?.modKey;
     const fallbackMod: ModRow | null = translationProject?.modKey
       ? {
@@ -345,11 +355,59 @@ export function useTranslationSessionActions({
     await openModLanguageInTranslationTools(mod, resourcePath);
   }
 
-  function setTargetLanguage(value: string) {
+  async function setTargetLanguage(value: string) {
+    if (isHardcodedSheet(jsonSheet?.source_path || jsonSource)) {
+      await switchDllTargetLanguage(value);
+      return;
+    }
     setJsonTargetLanguage(value);
     setJsonOutputSheet((current) => retargetTranslationSheetPath(current, value));
     setJsonExistingSheet((current) => retargetTranslationSheetPath(current, value));
     setJsonPckTargetPath((current) => replaceLocalizationLanguageInPath(current || inferPckTargetPath(jsonSheet), value));
+    resetLanguageDependentState();
+  }
+
+  /**
+   * A DLL sheet is its own resource, apart from the mod's pck/json languages:
+   * switching its target reopens the same DLL's sheet for that language
+   * instead of leaving a sheet of another language (or resource) on screen.
+   */
+  async function switchDllTargetLanguage(value: string) {
+    // Edits belong to the current language's sheet; write them before leaving it.
+    if (jsonSheet && translationLanguagesMatch(jsonSheet.target_language, jsonTargetLanguage) && !(await saveSheetNow())) {
+      appendLog("현재 DLL 시트를 저장하지 못해 대상 언어를 바꾸지 않았습니다.");
+      return;
+    }
+    const outputPath = retargetTranslationSheetPath(jsonOutputSheet || jsonExistingSheet, value);
+    setJsonTargetLanguage(value);
+    setJsonOutputSheet(outputPath);
+    setJsonExistingSheet(outputPath);
+    resetLanguageDependentState();
+    if (isPreviewRuntime() || !jsonSource) {
+      return;
+    }
+    setBusy("create_json_translation_sheet");
+    setJsonToolError("");
+    try {
+      const result = await invokeCommand("create_json_translation_sheet", {
+        sourcePath: jsonSource,
+        existingSheetPath: outputPath || null,
+        outputPath: outputPath || null,
+        targetLanguage: value,
+      });
+      setJsonSheet(result.sheet);
+      setJsonReport(result.report);
+      appendLog(result.message);
+    } catch (error) {
+      const message = `DLL 번역 시트 전환 실패: ${formatError(error)}`;
+      setJsonToolError(message);
+      appendLog(message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function resetLanguageDependentState() {
     setCompareSamplePaths([]);
     setCompareValuesByLanguage({});
     setCompareViewEnabled(false);

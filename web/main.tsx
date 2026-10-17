@@ -643,7 +643,7 @@ function App() {
               setOutputSheetPath={setJsonOutputSheet}
               setTranslatedOutputPath={setJsonTranslatedOutput}
               setPckTargetPath={setJsonPckTargetPath}
-              setTargetLanguage={setTargetLanguage}
+              setTargetLanguage={(value) => void setTargetLanguage(value)}
               onEditEntry={updateTranslationEntry}
               onReplaceEntries={replaceTranslationEntries}
               onAcknowledgeIssues={acknowledgeValidationIssues}

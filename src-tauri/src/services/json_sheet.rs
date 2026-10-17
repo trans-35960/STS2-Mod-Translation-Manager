@@ -90,7 +90,10 @@ fn sibling_language_sheets(sheet_path: &Path, sheet: &JsonTranslationSheet) -> V
         .filter_map(|path| {
             let saved = sheet_saved_time(&path)?;
             let sibling = read_sheet(&path).ok()?;
-            (sibling.source_path != sheet.source_path).then_some(SiblingSheet {
+            // DLL sheets are a separate resource, not another source language.
+            (sibling.source_path != sheet.source_path
+                && !is_hardcoded_source_file(Path::new(&sibling.source_path)))
+            .then_some(SiblingSheet {
                 sheet: sibling,
                 saved,
             })
