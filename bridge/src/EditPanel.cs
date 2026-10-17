@@ -5,8 +5,9 @@ using MegaCrit.Sts2.Core.Localization;
 namespace Sts2ModManagerBridge;
 
 /// <summary>
-/// In-game translation editor (F8): search the translated keys, fix one and
-/// see it right away, or report a mistranslation for the app.
+/// In-game translation editor (F8 by default): search the translated keys,
+/// fix one and see it right away, copy a grammar check prompt for an AI
+/// chat, or report a mistranslation for the app.
 /// <para>
 /// It is its own embedded <see cref="Window"/> so typing goes to it and not
 /// to the game's many <c>_Input</c> hotkeys: a focused sub-window receives
@@ -36,7 +37,12 @@ public partial class EditPanel : Window
     private Button _revert = null!;
     private Button _report = null!;
     private Label _message = null!;
+    private VBoxContainer _hotkeyArea = null!;
+    private readonly Dictionary<HotkeyAction, Button> _hotkeyButtons = new();
     private CatalogEntry? _selected;
+
+    /// <summary>The action waiting for its new key in the hotkey settings.</summary>
+    private HotkeyAction? _capturing;
 
     /// <summary>
     /// The reference picked last ("" = the source text, else a language
@@ -46,7 +52,7 @@ public partial class EditPanel : Window
 
     public EditPanel()
     {
-        Title = "번역 수정 · F8/Esc 닫기 · Ctrl+Enter 저장";
+        UpdateTitle();
         Visible = false;
         // A separate OS window: in full screen a click on the game would put
         // the game in front and hide the panel. Always-on-top keeps it
@@ -93,7 +99,7 @@ public partial class EditPanel : Window
             Refilter(keepSelection: true);
         };
         searchRow.AddChild(_viewToggle);
-        _showKeys = new CheckBox { Text = "화면에 #번호 표시", TooltipText = "번역된 문장 앞에 (#번호)를 붙여 게임 화면에서 본 문장을 찾기 쉽게 합니다 (Ctrl+F8)" };
+        _showKeys = new CheckBox { Text = "화면에 #번호 표시" };
         _showKeys.Toggled += pressed =>
         {
             Injector.ShowKeys = pressed;
@@ -103,7 +109,15 @@ public partial class EditPanel : Window
         var reload = new Button { Text = "다시 불러오기" };
         reload.Pressed += () => ReloadAndShow("공용 폴더에서 다시 불러왔습니다");
         searchRow.AddChild(reload);
+        var hotkeys = new Button { Text = "단축키", TooltipText = "게임이나 다른 모드와 겹치는 단축키를 바꿉니다" };
+        hotkeys.Pressed += () =>
+        {
+            _hotkeyArea.Visible = !_hotkeyArea.Visible;
+            StopCapture();
+        };
+        searchRow.AddChild(hotkeys);
         layout.AddChild(searchRow);
+        layout.AddChild(BuildHotkeyArea());
 
         var split = new HSplitContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         layout.AddChild(split);
@@ -193,6 +207,13 @@ public partial class EditPanel : Window
 
         var valueRow = new HBoxContainer();
         valueRow.AddChild(new Label { Text = "번역", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
+        var copyPrompt = new Button
+        {
+            Text = "검수 프롬프트 복사",
+            TooltipText = "원문과 번역 칸의 내용으로 문법·형식 검수 프롬프트를 만들어 복사합니다. AI 채팅에 붙여 넣으세요",
+        };
+        copyPrompt.Pressed += CopyCheckPrompt;
+        valueRow.AddChild(copyPrompt);
         var copyValue = new Button { Text = "복사" };
         copyValue.Pressed += () => Copy(_value.Text, "번역");
         valueRow.AddChild(copyValue);
@@ -229,8 +250,92 @@ public partial class EditPanel : Window
         _message = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
         layout.AddChild(_message);
 
+        UpdateHotkeyTexts();
         Select(null);
     }
+
+    private Control BuildHotkeyArea()
+    {
+        _hotkeyArea = new VBoxContainer { Visible = false };
+        _hotkeyArea.AddChild(new Label
+        {
+            Text = "바꿀 단축키의 버튼을 누른 뒤 새 키 조합을 누르세요 (Esc 취소). 패널 열기와 #번호 표시는 게임 어디서나 동작합니다.",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+        });
+        var grid = new GridContainer { Columns = 4 };
+        grid.AddThemeConstantOverride("h_separation", 12);
+        foreach (var action in Hotkeys.Actions)
+        {
+            grid.AddChild(new Label { Text = Hotkeys.Label(action) });
+            var button = new Button { CustomMinimumSize = new Vector2(150, 0) };
+            button.Pressed += () => StartCapture(action);
+            grid.AddChild(button);
+            _hotkeyButtons[action] = button;
+        }
+        _hotkeyArea.AddChild(grid);
+        var reset = new Button { Text = "기본값으로", SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin };
+        reset.Pressed += () =>
+        {
+            StopCapture();
+            Hotkeys.ResetAll();
+            UpdateHotkeyTexts();
+            ShowMessage("단축키를 기본값으로 되돌렸습니다.");
+        };
+        _hotkeyArea.AddChild(reset);
+        _hotkeyArea.AddChild(new HSeparator());
+        return _hotkeyArea;
+    }
+
+    private void StartCapture(HotkeyAction action)
+    {
+        _capturing = action;
+        UpdateHotkeyTexts();
+        ShowMessage($"'{Hotkeys.Label(action)}'에 쓸 키 조합을 누르세요. Esc를 누르면 취소합니다.");
+    }
+
+    private void StopCapture()
+    {
+        if (_capturing == null)
+        {
+            return;
+        }
+        _capturing = null;
+        UpdateHotkeyTexts();
+    }
+
+    /// <summary>Takes the key pressed while a hotkey button waits for one.</summary>
+    private void Capture(HotkeyAction action, InputEventKey key)
+    {
+        if (Hotkeys.IsModifierOnly(key))
+        {
+            return;
+        }
+        StopCapture();
+        if (key.Keycode == Key.Escape)
+        {
+            ShowMessage("단축키 변경을 취소했습니다.");
+            return;
+        }
+        var combo = Hotkeys.Combo(key);
+        var error = Hotkeys.Set(action, combo);
+        UpdateHotkeyTexts();
+        ShowMessage(error == null
+            ? $"'{Hotkeys.Label(action)}' 단축키를 {Hotkeys.Format(combo)}(으)로 바꿨습니다."
+            : $"{Hotkeys.Format(combo)}은(는) 쓸 수 없습니다. {error}");
+    }
+
+    private void UpdateHotkeyTexts()
+    {
+        foreach (var (action, button) in _hotkeyButtons)
+        {
+            button.Text = _capturing == action ? "키를 누르세요…" : Hotkeys.Text(action);
+        }
+        _showKeys.TooltipText = $"번역된 문장 앞에 (#번호)를 붙여 게임 화면에서 본 문장을 찾기 쉽게 합니다 ({Hotkeys.Text(HotkeyAction.ToggleNumbers)})";
+        UpdateTitle();
+    }
+
+    private void UpdateTitle() =>
+        Title = $"번역 수정 · {Hotkeys.Text(HotkeyAction.TogglePanel)}/Esc 닫기 · {Hotkeys.Text(HotkeyAction.Save)} 저장 · {Hotkeys.Text(HotkeyAction.CopyCheckPrompt)} 검수 프롬프트 복사";
 
     /// <summary>Opens the panel with fresh translations, or closes it.</summary>
     public void Toggle()
@@ -240,6 +345,7 @@ public partial class EditPanel : Window
             Hide();
             return;
         }
+        StopCapture();
         var screen = GetParent<Node>().GetViewport().GetVisibleRect().Size;
         var size = new Vector2I(
             Math.Min(1200, (int)(screen.X * 0.9f)),
@@ -261,16 +367,34 @@ public partial class EditPanel : Window
         {
             return;
         }
-        if (key.Keycode == Key.Escape || (key.Keycode == Key.F8 && !key.CtrlPressed && !key.AltPressed && !key.ShiftPressed))
+        if (_capturing is { } action)
+        {
+            Capture(action, key);
+            SetInputAsHandled();
+            return;
+        }
+        if (key.Keycode == Key.Escape || Hotkeys.Matches(key, HotkeyAction.TogglePanel))
         {
             Hide();
-            SetInputAsHandled();
         }
-        else if (key.Keycode is Key.Enter or Key.KpEnter && key.CtrlPressed)
+        else if (Hotkeys.Matches(key, HotkeyAction.Save))
         {
             Save();
-            SetInputAsHandled();
         }
+        else if (Hotkeys.Matches(key, HotkeyAction.CopyCheckPrompt))
+        {
+            CopyCheckPrompt();
+        }
+        else if (Hotkeys.Matches(key, HotkeyAction.ToggleNumbers))
+        {
+            // Goes through the check box's Toggled handler.
+            _showKeys.ButtonPressed = !_showKeys.ButtonPressed;
+        }
+        else
+        {
+            return;
+        }
+        SetInputAsHandled();
     }
 
     private void ReloadAndShow(string message)
@@ -451,6 +575,23 @@ public partial class EditPanel : Window
         }
         DisplayServer.ClipboardSet(text);
         ShowMessage($"{what}을(를) 복사했습니다.");
+    }
+
+    private void CopyCheckPrompt()
+    {
+        if (_selected is not { } entry)
+        {
+            ShowMessage("목록에서 항목을 먼저 고르세요.");
+            return;
+        }
+        if (_value.Text.Trim().Length == 0)
+        {
+            ShowMessage("번역 칸이 비어 있습니다.");
+            return;
+        }
+        var reference = _referenceLanguage.Selected >= 0 ? _referenceLanguage.GetItemMetadata(_referenceLanguage.Selected).AsString() : "";
+        DisplayServer.ClipboardSet(CheckPrompt.Build(entry, _value.Text, Injector.CatalogLanguage, reference));
+        ShowMessage("검수 프롬프트를 복사했습니다. AI 채팅에 붙여 넣으세요 (번역 칸의 저장 전 내용 기준).");
     }
 
     private void Save()

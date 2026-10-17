@@ -28,5 +28,8 @@ public static class SharedPaths
 
     public static string StatusFile => Path.Combine(Root, "status", "bridge.json");
 
+    /// <summary>Key bindings changed in the edit panel.</summary>
+    public static string HotkeysFile => Path.Combine(Root, "settings", "hotkeys.json");
+
     public static string FormatFile => Path.Combine(Root, "format.json");
 }
